@@ -230,8 +230,8 @@ function AuthScreen({onLogin}){
             <div style={{width:42,height:42,borderRadius:10,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🎓</div>
             <span style={{fontSize:22,fontWeight:700,color:"#fff",letterSpacing:"-.4px"}}>Luderis</span>
           </div>
-          <h1 style={{color:"#fff",fontSize:34,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",letterSpacing:"-.5px"}}>Conectá con el aprendizaje</h1>
-          <p style={{color:"rgba(255,255,255,.75)",fontSize:15,lineHeight:1.7,margin:0}}>La plataforma donde docentes y estudiantes se encuentran. Sin intermediarios, sin comisiones.</p>
+          <h1 style={{color:"#fff",fontSize:34,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",letterSpacing:"-.5px"}}>Aprendé lo que quieras, enseñá lo que sabés.</h1>
+          <p style={{color:"rgba(255,255,255,.75)",fontSize:15,lineHeight:1.7,margin:0}}>Conectamos personas para compartir conocimiento.</p>
         </div>
         {/* Features */}
         <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:16}}>
