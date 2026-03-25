@@ -11,7 +11,27 @@ let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{r
 const C={...THEMES[_themeKey()]};
 function applyTheme(key){Object.assign(C,THEMES[key]||THEMES.dark);try{localStorage.setItem("cl_theme",key);}catch{}}
 const FONT="-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif";
-const MATERIAS=["Matemáticas","Física","Química","Inglés","Programación","Historia","Biología","Literatura","Economía","Arte"];
+const MATERIAS=[
+"Idiomas",
+"Arte y Creatividad",
+"Música",
+"Deportes y Actividad Física",
+"Cocina y Gastronomía",
+"Desarrollo Personal y Bienestar",
+"Negocios y Finanzas",
+"Marketing y Comunicación",
+"Programación y Tecnología",
+"Diseño y Multimedia",
+"Ciencia y Matemática",
+"Humanidades y Ciencias Sociales",
+"Oficios y Manualidades",
+"Educación y Tutorías",
+"Conducción y Manejo",
+"Animales y Cuidado",
+"Hobbies y Tiempo Libre",
+"Viajes y Cultura",
+"Otros"
+];
 const avatarColor=(l)=>["#F5C842","#4ECB71","#E05C5C","#5CA8E0","#C85CE0"][(l||"?").toUpperCase().charCodeAt(0)%5];
 const fmt=(d)=>d?new Date(d).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"}):"";
 
