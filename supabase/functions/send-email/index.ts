@@ -222,7 +222,194 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
       </p>
     `, `Nuevo mensaje de ${data.de_nombre}.`),
   }),
+
+  comprobante_inscripcion: (data, appUrl) => ({
+    subject: `Comprobante de inscripción — ${data.pub_titulo}`,
+    preheader: "Tu inscripción fue registrada exitosamente.",
+    html: emailBase(`
+      <h2>¡Te inscribiste exitosamente!</h2>
+      <p>Tu inscripción fue registrada. Ya tenés acceso a la clase.</p>
+      <div class="info-box">
+        <div class="label">Clase / Curso</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Docente</div>
+        <div class="value">${data.docente_nombre}</div>
+      </div>
+      ${data.modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.modalidad}</div></div>` : ""}
+      ${data.precio ? `<div class="info-box"><div class="label">Precio acordado</div><div class="value">${data.moneda || "ARS"} ${Number(data.precio).toLocaleString("es-AR")}</div></div>` : ""}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ver mi clase →</a>
+      </p>
+      <p style="font-size:12px;color:#A0AEC0;text-align:center;">Guardá este email como comprobante de tu inscripción.</p>
+    `, "Tu inscripción fue registrada exitosamente."),
+  }),
+
+  contraoferta: (data, appUrl) => ({
+    subject: `Nueva contraoferta en "${data.pub_titulo}"`,
+    preheader: `${data.de_nombre} te hizo una contraoferta.`,
+    html: emailBase(`
+      <h2>Recibiste una contraoferta</h2>
+      <p><strong>${data.de_nombre}</strong> ${data.mi_rol === "alumno" ? "(el alumno)" : "(el docente)"} te hizo una contraoferta.</p>
+      <div class="info-box">
+        <div class="label">Publicación</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Nuevo precio propuesto</div>
+        <div class="value" style="font-size:20px;color:${BRAND.blue};font-weight:800;">$${Number(data.precio_nuevo).toLocaleString("es-AR")} / ${data.tipo_precio || "hora"}</div>
+      </div>
+      ${data.mensaje ? `<div class="info-box"><div class="label">Mensaje</div><div class="value" style="font-style:italic">"${data.mensaje}"</div></div>` : ""}
+      <p>Entrá para aceptar, rechazar o hacer tu propia contraoferta.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ver contraoferta →</a>
+      </p>
+    `, `${data.de_nombre} te hizo una contraoferta.`),
+  }),
+
+  nueva_evaluacion: (data, appUrl) => ({
+    subject: `Nueva evaluación en "${data.curso_titulo}"`,
+    preheader: "Hay una nueva evaluación disponible en tu curso.",
+    html: emailBase(`
+      <h2>Nueva evaluación disponible</h2>
+      <p>Tu docente publicó una nueva evaluación en el curso.</p>
+      <div class="info-box">
+        <div class="label">Evaluación</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Tipo</div>
+        <div class="value">${data.tipo_eval === "diagnostico" ? "🔍 Diagnóstico" : data.tipo_eval === "checkpoint" ? "📍 Checkpoint" : "🏁 Evaluación final"}</div>
+      </div>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ir a la evaluación →</a>
+      </p>
+    `, "Hay una nueva evaluación disponible."),
+  }),
+
+  alerta_coincidencia: (data, appUrl) => ({
+    subject: `🔔 Nueva clase que puede interesarte — ${data.pub_titulo}`,
+    preheader: "Encontramos una publicación que coincide con tu alerta.",
+    html: emailBase(`
+      <h2>¡Encontramos algo para vos!</h2>
+      <p>Apareció una publicación que coincide con tu alerta.</p>
+      <div class="info-box">
+        <div class="label">Tu alerta</div>
+        <div class="value" style="font-style:italic">"${data.alerta_descripcion}"</div>
+      </div>
+      <div class="divider"/>
+      <div class="info-box">
+        <div class="label">Nueva publicación</div>
+        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
+      </div>
+      ${data.pub_materia ? `<div class="info-box"><div class="label">Materia</div><div class="value">${data.pub_materia}</div></div>` : ""}
+      <div class="info-box">
+        <div class="label">Tipo</div>
+        <div class="value">${data.pub_tipo}</div>
+      </div>
+      ${data.pub_precio ? `<div class="info-box"><div class="label">Precio</div><div class="value" style="color:${BRAND.blue};font-weight:700;">${data.pub_precio}</div></div>` : ""}
+      ${data.pub_modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.pub_modalidad}</div></div>` : ""}
+      ${data.razon ? `<div class="info-box" style="background:#EBF8F4;border-color:#2EC4A040;"><div class="label" style="color:#2EC4A0;">¿Por qué coincide?</div><div class="value">${data.razon}</div></div>` : ""}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${data.pub_url || appUrl}" class="btn">Ver publicación →</a>
+      </p>
+      <p style="font-size:12px;color:#A0AEC0;text-align:center;">Podés pausar o eliminar esta alerta desde Mi Cuenta → Alertas.</p>
+    `, "Encontramos una publicación que coincide con tu alerta."),
+  }),
 };
+
+// ── Templates adicionales ──────────────────────────────────────────────────────
+Object.assign(TEMPLATES, {
+
+  comprobante_inscripcion: (data: any, appUrl: string) => ({
+    subject: `Inscripción confirmada — ${data.pub_titulo}`,
+    preheader: "Tu inscripción fue registrada exitosamente.",
+    html: emailBase(`
+      <h2>¡Inscripción confirmada!</h2>
+      <p>Te inscribiste exitosamente. Guardá este email como comprobante.</p>
+      <div class="info-box">
+        <div class="label">Clase / Curso</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Docente</div>
+        <div class="value">${data.docente_nombre}</div>
+      </div>
+      ${data.modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.modalidad}</div></div>` : ""}
+      ${data.precio ? `<div class="info-box"><div class="label">Precio</div><div class="value">$${Number(data.precio).toLocaleString("es-AR")} ${data.moneda || "ARS"}</div></div>` : ""}
+      <p>Ya podés acceder al contenido desde Luderis.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ver mi inscripción →</a>
+      </p>
+    `, "Tu inscripción fue confirmada."),
+  }),
+
+  contraoferta: (data: any, appUrl: string) => ({
+    subject: `Nueva contraoferta en "${data.pub_titulo}"`,
+    preheader: `${data.de_nombre} te envió una contraoferta.`,
+    html: emailBase(`
+      <h2>Recibiste una contraoferta</h2>
+      <p><strong>${data.de_nombre}</strong> respondió con una contraoferta.</p>
+      <div class="info-box">
+        <div class="label">Publicación</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Precio propuesto</div>
+        <div class="value">$${Number(data.precio_nuevo).toLocaleString("es-AR")} / ${data.tipo_precio || "hora"}</div>
+      </div>
+      ${data.mensaje ? `<div class="info-box"><div class="label">Mensaje</div><div class="value" style="font-style:italic">"${data.mensaje}"</div></div>` : ""}
+      <p>Ingresá a Luderis para aceptar, rechazar o hacer tu propia contraoferta.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ver la contraoferta →</a>
+      </p>
+    `, `${data.de_nombre} te envió una contraoferta.`),
+  }),
+
+  nueva_evaluacion: (data: any, appUrl: string) => ({
+    subject: `Nueva evaluación disponible — ${data.curso_titulo}`,
+    preheader: "Tu docente publicó una nueva evaluación.",
+    html: emailBase(`
+      <h2>Nueva evaluación disponible</h2>
+      <p>Tu docente publicó una nueva evaluación en el curso.</p>
+      <div class="info-box">
+        <div class="label">Evaluación</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Tipo</div>
+        <div class="value" style="text-transform:capitalize">${data.tipo_eval || "evaluación"}</div>
+      </div>
+      <p>Ingresá a Luderis para completarla antes de la fecha límite.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ir a la evaluación →</a>
+      </p>
+    `, "Tu docente publicó una nueva evaluación."),
+  }),
+
+  alerta_publicacion: (data: any, appUrl: string) => ({
+    subject: `Nueva publicación que te puede interesar — ${data.pub_titulo}`,
+    preheader: `Se publicó algo similar a lo que buscabas: ${data.criterio_desc}`,
+    html: emailBase(`
+      <h2>¡Apareció algo que te puede interesar!</h2>
+      <p>Una nueva publicación coincide con tu alerta: <em>${data.criterio_desc}</em></p>
+      <div class="info-box">
+        <div class="label">Publicación</div>
+        <div class="value">${data.pub_titulo}</div>
+      </div>
+      ${data.materia ? `<div class="info-box"><div class="label">Materia</div><div class="value">${data.materia}</div></div>` : ""}
+      ${data.modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.modalidad}</div></div>` : ""}
+      ${data.precio ? `<div class="info-box"><div class="label">Precio</div><div class="value">${data.precio}</div></div>` : ""}
+      ${data.descripcion ? `<div class="info-box"><div class="label">Descripción</div><div class="value" style="font-size:13px">${data.descripcion}…</div></div>` : ""}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}" class="btn">Ver publicación →</a>
+      </p>
+      <p style="font-size:12px;color:#718096;text-align:center;">Podés gestionar tus alertas desde Mi Cuenta → Alertas.</p>
+    `, `Nueva publicación: ${data.pub_titulo}`),
+  }),
+
+});
 
 // ── Handler principal ──────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
