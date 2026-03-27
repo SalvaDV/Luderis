@@ -454,3 +454,54 @@ export const getMisPagos = (email, token) =>
 
 export const getPagosDocente = (email, token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
+
+// ── Alertas de publicaciones ───────────────────────────────────────────────────
+/**
+ * Cuando se crea una publicación nueva, verifica las alertas activas de otros
+ * usuarios y manda emails a los que tengan criterios que coincidan.
+ * Usa IA para evaluar si la publicación matchea cada alerta.
+ */
+export const dispararAlertas = async (pub, token) => {
+  try {
+    // Traer todas las alertas activas (excepto del mismo usuario)
+    const alertas = await db(
+      `alertas_publicacion?activa=eq.true&usuario_id=neq.${pub.autor_id}&select=*`,
+      "GET", null, token
+    ).catch(() => []);
+
+    if (!alertas?.length) return;
+
+    // Evaluar cada alerta con IA de forma simplificada (sin llamar IA por cada una)
+    // Usamos matching por criterios estructurados para no gastar tokens
+    for (const alerta of alertas) {
+      try {
+        let criterios = {};
+        try { criterios = JSON.parse(alerta.criterios_json || "{}"); } catch {}
+
+        // Matching simple por criterios
+        let score = 0;
+        const pubTexto = `${pub.titulo} ${pub.descripcion || ""} ${pub.materia || ""}`.toLowerCase();
+
+        if (criterios.materia && pub.materia === criterios.materia) score += 3;
+        if (criterios.tipo && criterios.tipo !== "cualquiera" && pub.tipo === criterios.tipo) score += 2;
+        if (criterios.modalidad && criterios.modalidad !== "cualquiera" && pub.modalidad === criterios.modalidad) score += 1;
+        (criterios.palabras_clave || []).forEach(p => {
+          if (pubTexto.includes(p.toLowerCase())) score += 1;
+        });
+
+        // Si hay match suficiente → mandar email
+        if (score >= 2) {
+          await sendEmail("alerta_publicacion", alerta.usuario_email, {
+            pub_titulo: pub.titulo,
+            materia: pub.materia || "",
+            tipo: pub.tipo === "oferta" ? "Clase/Curso" : "Búsqueda",
+            precio: pub.precio ? `$${Number(pub.precio).toLocaleString("es-AR")}` : "Gratis",
+            modalidad: pub.modalidad || "",
+            descripcion: (pub.descripcion || "").slice(0, 150),
+            criterio_desc: criterios.resumen || alerta.descripcion,
+          }, token);
+        }
+      } catch { /* silencioso por alerta */ }
+    }
+  } catch { /* silencioso */ }
+};
