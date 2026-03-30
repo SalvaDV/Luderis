@@ -6,7 +6,7 @@ export const THEMES={
   dark:{bg:"#080F1C",surface:"#0E1829",card:"#131E2F",border:"#1E2D42",accent:"#2EC4A0",accentDim:"#2EC4A015",text:"#E8EFF8",muted:"#5C7A9A",success:"#2EC4A0",danger:"#E05C5C",sidebar:"#080F1C",info:"#1A6ED8",purple:"#7B5CF0",warn:"#E0955C",sidebarBorder:"#1E2D42"},
   light:{bg:"#F6F9FF",surface:"#FFFFFF",card:"#FFFFFF",border:"#DDE5F5",accent:"#1A6ED8",accentDim:"#1A6ED810",text:"#0D1F3C",muted:"#5A7294",success:"#2EC4A0",danger:"#E53E3E",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#DD8A1A",sidebarBorder:"#DDE5F5"},
 };
-let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{return "light";}};
+export let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{return "light";}};
 export const C={...THEMES[_themeKey()]};
 export function applyTheme(key){Object.assign(C,THEMES[key]||THEMES.dark);try{localStorage.setItem("cl_theme",key);}catch{}}
 export const FONT="-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif";
