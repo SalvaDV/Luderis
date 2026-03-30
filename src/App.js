@@ -2086,6 +2086,8 @@ const PostFormModal  = React.lazy(() => import('./PostFormModal'));
 const OnboardingModal= React.lazy(() => import('./OnboardingModal'));
 const MiCuentaPage   = React.lazy(() => import('./MiCuentaPage'));
 
+import AgendaPage, { DocentesDestacados } from "./AgendaPage";
+
 // Named exports from PostFormModal bundle
 const PerfilPage     = React.lazy(() => import('./PostFormModal').then(m => ({ default: m.PerfilPage })));
 
