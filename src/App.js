@@ -1336,7 +1336,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
           ):(
             <div>
               <div style={viewMode==="cards"?{display:"grid",gap:11}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
-                {sorted.slice((pagina-1)*PAGE_SIZE,pagina*PAGE_SIZE).map(p=>(
+                {sorted.slice(0,pagina*PAGE_SIZE).map(p=>(
                   viewMode==="lista"?(
                     <div key={p.id} onClick={()=>onOpenDetail(p)} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
                       onMouseEnter={e=>e.currentTarget.style.background=C.bg}
@@ -1356,25 +1356,18 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                   )
                 ))}
               </div>
-              {/* Paginador */}
-              {sorted.length>PAGE_SIZE&&(
-                <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:6,marginTop:20,flexWrap:"wrap"}}>
-                  <button onClick={()=>{setPagina(p=>Math.max(1,p-1));window.scrollTo({top:0,behavior:"smooth"});}}
-                    disabled={pagina===1}
-                    style={{padding:"7px 14px",borderRadius:8,background:pagina===1?C.bg:C.surface,border:`1px solid ${C.border}`,color:pagina===1?C.muted:C.text,cursor:pagina===1?"default":"pointer",fontSize:13,fontFamily:FONT,opacity:pagina===1?.5:1}}>← Ant.</button>
-                  {Array.from({length:Math.ceil(sorted.length/PAGE_SIZE)},(_,i)=>i+1).map(n=>(
-                    <button key={n} onClick={()=>{setPagina(n);window.scrollTo({top:0,behavior:"smooth"});}}
-                      style={{width:34,height:34,borderRadius:8,background:n===pagina?C.accent:C.surface,border:`1px solid ${n===pagina?C.accent:C.border}`,color:n===pagina?"#fff":C.text,cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:n===pagina?700:400}}>
-                      {n}
-                    </button>
-                  ))}
-                  <button onClick={()=>{setPagina(p=>Math.min(Math.ceil(sorted.length/PAGE_SIZE),p+1));window.scrollTo({top:0,behavior:"smooth"});}}
-                    disabled={pagina>=Math.ceil(sorted.length/PAGE_SIZE)}
-                    style={{padding:"7px 14px",borderRadius:8,background:pagina>=Math.ceil(sorted.length/PAGE_SIZE)?C.bg:C.surface,border:`1px solid ${C.border}`,color:pagina>=Math.ceil(sorted.length/PAGE_SIZE)?C.muted:C.text,cursor:pagina>=Math.ceil(sorted.length/PAGE_SIZE)?"default":"pointer",fontSize:13,fontFamily:FONT,opacity:pagina>=Math.ceil(sorted.length/PAGE_SIZE)?.5:1}}>Sig. →</button>
-                </div>
-              )}
-              <div style={{textAlign:"center",fontSize:11,color:C.muted,padding:"10px 0"}}>
-                Mostrando {Math.min((pagina-1)*PAGE_SIZE+1,sorted.length)}–{Math.min(pagina*PAGE_SIZE,sorted.length)} de {sorted.length}
+              {/* Sentinel para infinite scroll */}
+              <div ref={sentinelRef} style={{height:40,display:"flex",alignItems:"center",justifyContent:"center",marginTop:8}}>
+                {pagina*PAGE_SIZE<sorted.length?(
+                  <div style={{display:"flex",alignItems:"center",gap:8,color:C.muted,fontSize:12}}>
+                    <div style={{width:16,height:16,border:`2px solid ${C.accent}`,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                    Cargando más…
+                  </div>
+                ):(
+                  sorted.length>0&&<div style={{color:C.muted,fontSize:11}}>
+                    {sorted.length} publicación{sorted.length!==1?"es":""} en total
+                  </div>
+                )}
               </div>
             </div>
           )}
