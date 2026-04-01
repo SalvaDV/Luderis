@@ -2126,8 +2126,7 @@ function ChatModal({post,session,onClose,onUnreadChange}){
   const sendMsg=async(overrideQ)=>{
     const txt=(overrideQ||input).trim();
     if(!txt&&!imagenPrevia)return;
-    const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?"
-"+txt:""}`:txt;
+    const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
     setInput("");setImagenPrevia(null);
     try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
     try{
