@@ -1348,6 +1348,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                       </div>
                       <div style={{flexShrink:0,textAlign:"right"}}>
                         {p.precio?<div style={{fontWeight:700,color:C.accent,fontSize:14}}>{fmtPrice(p.precio)}</div>:<div style={{fontSize:12,color:C.success,fontWeight:600}}>Gratis</div>}
+                      {p.tiene_prueba&&<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>✓ Clase de prueba</div>}
                         <Tag tipo={p.tipo}/>
                       </div>
                     </div>
@@ -2450,7 +2451,17 @@ export default function App(){
       try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done)setShowOnboarding(true);}catch{}
     });
   },[session?.user?.email]);// eslint-disable-line
-  const [chatPost,setChatPost]=useState(null);const [detailPost,setDetailPost]=useState(null);const [cursoPost,setCursoPost]=useState(null);const [perfilEmail,setPerfilEmail]=useState(null);const [chatsKey,setChatsKey]=useState(0);
+  const [chatPost,setChatPost]=useState(null);const [detailPost,setDetailPost]=useState(null);const [cursoPost,setCursoPost]=useState(null);
+  // SEO: update title/meta when viewing a specific publication
+  useEffect(()=>{
+    if(cursoPost||detailPost){
+      const pub=cursoPost||detailPost;
+      document.title=`${pub.titulo} — Luderis`;
+      let meta=document.querySelector("meta[name='description']");
+      if(!meta){meta=document.createElement("meta");meta.name="description";document.head.appendChild(meta);}
+      meta.content=((pub.descripcion||"").slice(0,155))||`Clases de ${pub.materia||"educación"} en Luderis`;
+    }
+  },[cursoPost,detailPost]);const [perfilEmail,setPerfilEmail]=useState(null);const [chatsKey,setChatsKey]=useState(0);
   const [page,setPageRaw]=useState(()=>{try{return sessionStorage.getItem("cl_page")||"explore";}catch{return "explore";}});
   const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
@@ -2487,6 +2498,40 @@ export default function App(){
     return()=>window.removeEventListener("focus",syncRol);
   },[session]);
   // Handle Google OAuth callback — tokens come back in URL hash
+  // ── Notificaciones push del browser ────────────────────────────────────────
+  const pedirPermisoNotif=useCallback(()=>{
+    if(!("Notification" in window))return;
+    if(Notification.permission==="default"){
+      Notification.requestPermission().then(p=>{
+        if(p==="granted"){
+          try{localStorage.setItem("cl_notif_ok","1");}catch{}
+        }
+      });
+    }
+  },[]);
+
+  const mostrarNotifPush=useCallback((titulo,cuerpo,icon="/logo.png")=>{
+    if(!("Notification" in window)||Notification.permission!=="granted")return;
+    try{
+      const n=new Notification(titulo,{body:cuerpo,icon,badge:"/logo.png",tag:"luderis-notif",renotify:true});
+      n.onclick=()=>{window.focus();n.close();};
+      setTimeout(()=>n.close(),6000);
+    }catch{}
+  },[]);
+
+  // Pedir permiso la primera vez que el usuario entra (con delay para no ser intrusivo)
+  useEffect(()=>{
+    if(!session)return;
+    const ya=localStorage.getItem("cl_notif_ok");
+    if(!ya){setTimeout(pedirPermisoNotif,8000);}
+  },[session,pedirPermisoNotif]);
+
+  // Exponer globalmente para usarla desde cualquier lado
+  useEffect(()=>{
+    window.__pushNotif=mostrarNotifPush;
+    return()=>{window.__pushNotif=null;};
+  },[mostrarNotifPush]);
+
   useEffect(()=>{
     if(!window.location.hash.includes("access_token"))return;
     sb.getSessionFromUrl().then(async s=>{
@@ -2517,13 +2562,25 @@ export default function App(){
     ]).then(([msgs,ofertas,nfs])=>{
       const openId=chatPostRef.current?.id;
       const openOtro=chatPostRef.current?.autor_email;
-      setUnread(msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__"&&!(m.publicacion_id===openId&&(m.de_nombre===openOtro||m.para_nombre===openOtro))).length);
+      const newUnread=msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__"&&!(m.publicacion_id===openId&&(m.de_nombre===openOtro||m.para_nombre===openOtro))).length;
+      // Push notification si hay mensajes nuevos y la tab no está activa
+      if(newUnread>0&&document.hidden&&window.__pushNotif){
+        const lastMsg=msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__").slice(-1)[0];
+        if(lastMsg){const senderName=sb.getDisplayName(lastMsg.de_nombre)||"Alguien";window.__pushNotif(`Mensaje de ${senderName}`,(lastMsg.texto||"").slice(0,80));}
+      }
+      setUnread(newUnread);
       setOfertasCount(ofertas.length);
       // Notifs para Mis inscripciones
       const notifsInsc=(nfs||[]).filter(n=>["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"].includes(n.tipo));
       setNotifCount(notifsInsc.length);setNotifs(nfs||[]);
       // Badge Mi Cuenta: notifs de ofertas/contras/inscripciones recibidas
       const notifsCuenta=(nfs||[]).filter(n=>["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema"].includes(n.tipo));
+      // Push para notificaciones nuevas
+      if(notifsCuenta.length>0&&document.hidden&&window.__pushNotif){
+        const lastNotif=notifsCuenta[0];
+        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta"};
+        window.__pushNotif(LABELS[lastNotif.tipo]||"Notificación",lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis");
+      }
       setOfertasAceptadasNuevas(notifsCuenta.length);
     }).catch(()=>{});
   },[session]);
@@ -2533,6 +2590,12 @@ export default function App(){
     // Share link handler — si viene ?pub=ID en la URL, abrir el popup
     try{
       const params=new URLSearchParams(window.location.search);
+      // Abrir perfil de docente si viene ?perfil=email en la URL
+      const perfilParam=params.get("perfil");
+      if(perfilParam){setPerfilEmail(decodeURIComponent(perfilParam));setPage("explore");}
+      // Guardar código de referido si viene ?ref=CODE
+      const refCode=params.get("ref");
+      if(refCode){try{localStorage.setItem("cl_ref_code",refCode);}catch{}}
       const pubId=params.get("pub");
       if(pubId){
         window.history.replaceState({},"",window.location.pathname);
@@ -2550,8 +2613,27 @@ export default function App(){
     document.addEventListener("visibilitychange",onVisibility);
     return()=>{clearInterval(t);document.removeEventListener("visibilitychange",onVisibility);};
   },[refreshUnread]);
-  const PAGE_TITLES={explore:"Explorar — ClasseLink",chats:"Mis chats — ClasseLink",favoritos:"Favoritos — ClasseLink",inscripciones:"Mis inscripciones — ClasseLink",cuenta:"Mi cuenta — ClasseLink"};
-  useEffect(()=>{document.title=PAGE_TITLES[page]||"Luderis";},[page]);// eslint-disable-line
+  const PAGE_TITLES={explore:"Explorar — Luderis",chats:"Mis chats — Luderis",favoritos:"Favoritos — Luderis",inscripciones:"Mis inscripciones — Luderis",cuenta:"Mi cuenta — Luderis"};
+  useEffect(()=>{
+    document.title=PAGE_TITLES[page]||"Luderis — Aprendé y enseñá lo que quieras";
+    // Update meta description per page
+    const descs={
+      explore:"Explorá clases particulares, cursos online y presenciales en Argentina. Matemática, inglés, guitarra, programación y mucho más.",
+      chats:"Tus conversaciones con docentes y alumnos en Luderis.",
+      inscripciones:"Tus clases y cursos activos en Luderis.",
+      cuenta:"Gestioná tu perfil, publicaciones y estadísticas en Luderis.",
+    };
+    let meta=document.querySelector("meta[name='description']");
+    if(!meta){meta=document.createElement("meta");meta.name="description";document.head.appendChild(meta);}
+    meta.content=descs[page]||"Luderis — La plataforma educativa argentina. Encontrá docentes verificados para clases particulares y cursos online o presenciales.";
+    // OG tags
+    let ogTitle=document.querySelector("meta[property='og:title']");
+    if(!ogTitle){ogTitle=document.createElement("meta");ogTitle.setAttribute("property","og:title");document.head.appendChild(ogTitle);}
+    ogTitle.content=document.title;
+    let ogDesc=document.querySelector("meta[property='og:description']");
+    if(!ogDesc){ogDesc=document.createElement("meta");ogDesc.setAttribute("property","og:description");document.head.appendChild(ogDesc);}
+    ogDesc.content=meta.content;
+  },[page]);// eslint-disable-line
   const logout=()=>{sb.clearSession();setSession(null);};
   const openChat=(p)=>{chatPostRef.current=p;setChatPost(p);};
   const closeChat=()=>{chatPostRef.current=null;setChatPost(null);refreshUnread();setChatsKey(k=>k+1);};
