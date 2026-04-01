@@ -3807,27 +3807,10 @@ function InscripcionModal({post,session,onClose,onDone}){
   const [metodo,setMetodo]=useState(null);// null | "mp" | "stripe" | "gratis"
   const [loadingInsc,setLoadingInsc]=useState(false);
   const [errInsc,setErrInsc]=useState("");
-  const [paqueteElegido,setPaqueteElegido]=useState(null); // null = precio normal
 
   // Precio efectivo según paquete elegido
   const tienePrecio=post.precio&&parseFloat(post.precio)>0;
   const precioBase=parseFloat(post.precio)||0;
-  const precioEfectivo=paqueteElegido
-    ?(()=>{
-      const pt=parseFloat(paqueteElegido.precio_total)||0;
-      const desc=parseFloat(paqueteElegido.descuento)||0;
-      // Si tiene precio_total explícito, usarlo
-      if(pt>0)return pt;
-      // Si tiene descuento, aplicarlo al precio base * clases
-      if(desc>0)return Math.round(precioBase*(paqueteElegido.clases||1)*(1-desc/100));
-      // Fallback: precio base * clases sin descuento (no debería llegar acá)
-      return precioBase*(paqueteElegido.clases||1);
-    })()
-    :precioBase;
-  const precio=tienePrecio
-    ?`${post.moneda||"ARS"} $${precioEfectivo.toLocaleString("es-AR")}${paqueteElegido?` (${paqueteElegido.clases} clases)`:""}`
-    :"Gratis";
-
   const inscribirDirecto=async(metodoElegido)=>{
     setLoadingInsc(true);
     try{
