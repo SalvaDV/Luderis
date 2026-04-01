@@ -3806,6 +3806,7 @@ function InscripcionModal({post,session,onClose,onDone}){
   const [paso,setPaso]=useState(1); // 1=elegir cantidad (o skip si no hay paquetes) 2=elegir pago
   const [metodo,setMetodo]=useState(null);// null | "mp" | "stripe" | "gratis"
   const [loadingInsc,setLoadingInsc]=useState(false);
+  const [errInsc,setErrInsc]=useState("");
   const [paqueteElegido,setPaqueteElegido]=useState(null); // null = precio normal
 
   // Precio efectivo según paquete elegido
@@ -3814,8 +3815,10 @@ function InscripcionModal({post,session,onClose,onDone}){
   const precioEfectivo=paqueteElegido
     ?(()=>{
       const pt=parseFloat(paqueteElegido.precio_total);
-      if(pt>0)return pt; // precio total ingresado manualmente
-      return Math.round(precioBase*(paqueteElegido.clases||1)*(1-(paqueteElegido.descuento||0)/100));
+      const calc=Math.round(precioBase*(paqueteElegido.clases||1)*(1-(paqueteElegido.descuento||0)/100));
+      console.log("[Paquete]",{precio_total:paqueteElegido.precio_total,pt,precioBase,clases:paqueteElegido.clases,descuento:paqueteElegido.descuento,calc,usando:pt>0?"precio_total":"calc"});
+      if(pt>0)return pt;
+      return calc;
     })()
     :precioBase;
   const precio=tienePrecio
@@ -3853,7 +3856,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       setTimeout(()=>{onClose();onDone();},700);
     }catch(e){
       if(e.message?.includes("uq_inscripcion")){onClose();onDone();}
-      else{toast("Error al inscribirse: "+e.message,"error");}
+      else{toast("Error al inscribirse: "+e.message,"error");setErrInsc("Error: "+e.message);}
     }finally{setLoadingInsc(false);}
   };
 
@@ -3988,6 +3991,7 @@ function InscripcionModal({post,session,onClose,onDone}){
               {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={precioEfectivo} cantidadOverride={paqueteElegido?.clases||1} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} clases`:null}/>}
               {metodo==="stripe"&&<StripeCheckoutBtn post={post} session={session} onDone={onDone} onClose={onClose}/>}
               {loadingInsc&&<div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center",padding:"8px",color:C.muted,fontSize:13}}><Spinner small/>Procesando…</div>}
+              {errInsc&&<div style={{color:C.danger,fontSize:12,padding:"8px 12px",background:C.danger+"10",borderRadius:8,textAlign:"center"}}>{errInsc}</div>}
             </>
           )}
 
