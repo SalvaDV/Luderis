@@ -22,7 +22,7 @@ import AuthScreen from "./AuthScreen";
 import { PriceSlider } from "./PostFormModal";
 
 
-function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender}){
+function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin}){
   const nombre=sb.getDisplayName(session.user.email);
   const nav=[
     {id:"explore",icon:"🔍",label:t("explore")},
@@ -100,7 +100,7 @@ function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCou
           </button>);
         })}
         <div style={{margin:"10px 8px",height:1,background:C.border}}/>
-        {(()=>{const rol=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";return(rol==="admin"||session.user.email==="salvadordevedia@gmail.com")&&(
+        {esAdmin&&(
           <button onClick={()=>{if(mobile)onClose();window.__openAdmin&&window.__openAdmin();}}
             style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#7B3FBE20,#1A6ED820)",color:"#7B3FBE",fontWeight:600,fontSize:13,cursor:"pointer",marginBottom:4,fontFamily:FONT,textAlign:"left",transition:"background .12s"}}
             onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#7B3FBE30,#1A6ED830)"}
@@ -108,7 +108,7 @@ function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCou
             <span style={{fontSize:16}}>⚙️</span>
             <span>Panel Admin</span>
           </button>
-        );})()}
+        )}
         <button onClick={()=>{onNewPost();if(mobile)onClose();}}
           style={{width:"100%",padding:"9px 12px",borderRadius:20,border:"none",background:LUD.grad,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:"0 4px 12px rgba(26,110,216,.3)",transition:"opacity .15s"}}
           onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
@@ -2485,12 +2485,20 @@ export default function App(){
   });
   const sessionRef=useRef(session);useEffect(()=>{sessionRef.current=session;},[session]);
   useEffect(()=>{window.__openAdmin=()=>setShowAdmin(true);return()=>{window.__openAdmin=null;};},[]);
-  // Re-sync rol from DB on app load and on window focus (catches rol changes made by admin)
+  const [esAdmin,setEsAdmin]=useState(()=>{
+    const rol=localStorage.getItem("cl_rol_"+(session?.user?.email||""))||"alumno";
+    return rol==="admin"||session?.user?.email==="salvadordevedia@gmail.com";
+  });
+
+  // Re-sync rol from DB on app load and on window focus
   useEffect(()=>{
     const syncRol=()=>{
       if(!session?.user?.email)return;
       sb.getUsuarioByEmail(session.user.email,session.access_token).then(u=>{
-        if(u?.rol)try{localStorage.setItem("cl_rol_"+session.user.email,u.rol);}catch{}
+        if(u?.rol){
+          try{localStorage.setItem("cl_rol_"+session.user.email,u.rol);}catch{}
+          setEsAdmin(u.rol==="admin"||session.user.email==="salvadordevedia@gmail.com");
+        }
       }).catch(()=>{});
     };
     syncRol();
@@ -2522,8 +2530,18 @@ export default function App(){
   // Pedir permiso la primera vez que el usuario entra (con delay para no ser intrusivo)
   useEffect(()=>{
     if(!session)return;
-    const ya=localStorage.getItem("cl_notif_ok");
-    if(!ya){setTimeout(pedirPermisoNotif,8000);}
+    if(!("Notification" in window))return;
+    // Si ya está granted no hacer nada, si está denied tampoco
+    if(Notification.permission==="granted"){try{localStorage.setItem("cl_notif_ok","1");}catch{}return;}
+    if(Notification.permission==="denied")return;
+    // Si es la primera vez (default), pedir después de 8 segundos
+    const ya=localStorage.getItem("cl_notif_asked_"+session.user.email);
+    if(!ya){
+      setTimeout(()=>{
+        try{localStorage.setItem("cl_notif_asked_"+session.user.email,"1");}catch{}
+        pedirPermisoNotif();
+      },8000);
+    }
   },[session,pedirPermisoNotif]);
 
   // Exponer globalmente para usarla desde cualquier lado
@@ -2650,7 +2668,7 @@ export default function App(){
   return(
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:FONT,color:C.text,display:"flex"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tabPulse{0%,100%{opacity:1}50%{opacity:0.5}}*{box-sizing:border-box}html,body,#root{background:${C.bg};color:${C.text};min-height:100vh;font-family:${FONT}}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}::-webkit-scrollbar-track{background:transparent}.cl-card-anim{animation:fadeUp .2s ease both}.cl-fade{animation:fadeIn .15s ease both}input,textarea,select{color-scheme:${_themeKey()==="light"?"light":"dark"};background-color:${C.surface}!important;color:${C.text}!important;border-color:${C.border}}input::placeholder,textarea::placeholder{color:${C.muted};opacity:1}input:focus,textarea:focus,select:focus{border-color:${C.accent}!important;outline:none}@media(max-width:768px){input,textarea,select{font-size:16px!important}.cl-hide-desk{display:none!important}button{-webkit-tap-highlight-color:transparent}}.cl-tabs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.cl-tabs-scroll::-webkit-scrollbar{display:none}.cl-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.cl-grid-2{grid-template-columns:1fr!important}}.cl-row-wrap{display:flex;flex-wrap:wrap;gap:8px}`}</style>
-      <Sidebar page={page} setPage={setPage} session={session} onLogout={logout} onNewPost={()=>{setEditPost(null);setShowForm(true);}} unreadCount={unread} ofertasCount={ofertasCount} notifCount={notifCount} ofertasAceptadasNuevas={ofertasAceptadasNuevas} mobile={isMobile} open={sidebarOpen} onClose={()=>setSidebarOpen(false)} theme={currentTheme} onToggleTheme={toggleTheme} onForceRender={()=>forceThemeRender(n=>n+1)}/>
+      <Sidebar page={page} setPage={setPage} session={session} onLogout={logout} onNewPost={()=>{setEditPost(null);setShowForm(true);}} unreadCount={unread} ofertasCount={ofertasCount} notifCount={notifCount} ofertasAceptadasNuevas={ofertasAceptadasNuevas} mobile={isMobile} open={sidebarOpen} onClose={()=>setSidebarOpen(false)} theme={currentTheme} onToggleTheme={toggleTheme} onForceRender={()=>forceThemeRender(n=>n+1)} esAdmin={esAdmin}/>
       {isMobile&&(
         <>
           {/* Top bar mobile */}
