@@ -1,0 +1,813 @@
+import React, { useState, useEffect } from "react";
+import * as sb from "./supabase";
+import {
+  C, FONT, useDebounce, t, LUD,
+  Avatar, Spinner, Btn, Label, ErrMsg, Chip, Modal,
+  StarRating, Tag, VerifiedBadge, SearchableSelect,
+  fmt, fmtPrice, calcAvg, calcDuracion,
+  safeDisplayName, avatarColor, MATERIAS,
+} from "./shared";
+
+function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,token}){
+  const [pregunta,setPregunta]=useState("");const [respuesta,setRespuesta]=useState("");const [estado,setEstado]=useState("cargando");const [feedback,setFeedback]=useState("");
+  // Debounce: esperar 1.5s después del último cambio en titulo/descripcion
+  // Y solo generar pregunta cuando descripcion tiene al menos 20 caracteres
+  const tituloDebounced=useDebounce(titulo,5000);
+  const descripcionDebounced=useDebounce(descripcion,5000);
+  useEffect(()=>{
+    if(!tituloDebounced||!materia)return;
+    // Esperar que haya suficiente descripcion para una pregunta contextual
+    if(descripcionDebounced&&descripcionDebounced.length<20)return;
+    setEstado("cargando");setRespuesta("");setPregunta("");setFeedback("");
+    if(onEstadoChange)onEstadoChange("cargando");
+    sb.verificarConIA(tituloDebounced,materia,descripcionDebounced||"","",token)
+      .then(r=>{setPregunta(r.pregunta||"Contá tu experiencia.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");})
+      .catch(()=>{setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");});
+  },[tituloDebounced,descripcionDebounced,materia]);// eslint-disable-line
+  const evaluar=async()=>{if(!respuesta.trim())return;setEstado("evaluando");try{const r=await sb.verificarConIA(titulo,materia,descripcion||"",respuesta,token);
+    setFeedback(r.feedback||"");
+    if(r.correcta){setEstado("ok");onVerificado();}
+    else{setEstado("error");}}catch{setEstado("error");setFeedback("No se pudo evaluar.");}};
+  if(estado==="ok")return <div style={{color:C.success,fontSize:12,padding:"7px 11px",background:"#4ECB7115",borderRadius:8,border:"1px solid #4ECB7133"}}>✓ ¡Verificado!</div>;
+  return(<div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:12,marginTop:8}}>
+    <div style={{color:C.accent,fontSize:10,fontWeight:700,marginBottom:5,letterSpacing:1}}>✓ VERIFICACIÓN (IA)</div>
+    {estado==="cargando"?<div style={{color:C.muted,fontSize:12,display:"flex",alignItems:"center",gap:6}}><Spinner small/>Generando...</div>:(<>
+      <p style={{color:C.text,fontSize:12,marginBottom:7,lineHeight:1.5}}>{pregunta}</p>
+      <textarea value={respuesta} onChange={e=>setRespuesta(e.target.value)} placeholder="Tu respuesta..." style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",resize:"vertical",minHeight:52,boxSizing:"border-box",fontFamily:FONT,marginBottom:7}}/>
+      {estado==="error"&&<div style={{color:C.danger,fontSize:12,marginBottom:7,background:"#E05C5C15",borderRadius:7,padding:"7px 10px",lineHeight:1.5}}>{feedback||"Respuesta incorrecta. Intentá de nuevo."}</div>}
+      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+        {estado==="error"
+          ?<button onClick={()=>{setEstado("cargando");setRespuesta("");setFeedback("");sb.verificarConIA(titulo,materia,descripcion||"","",token).then(r2=>{setPregunta(r2.pregunta||"Contá tu experiencia.");setEstado("esperando");}).catch(()=>{setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");});}} style={{background:C.accent,color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:FONT}}>Nueva pregunta →</button>
+          :<button onClick={evaluar} disabled={estado==="evaluando"||!respuesta.trim()} style={{background:C.accent,color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:FONT,opacity:!respuesta.trim()?0.5:1}}>{estado==="evaluando"?"Evaluando...":"Verificar →"}</button>
+        }
+
+      </div>
+    </>)}
+  </div>);
+}
+
+
+
+// ─── STREAK / RACHA ───────────────────────────────────────────────────────────
+// ─── STREAK SYSTEM ────────────────────────────────────────────────────────────
+// Milestones con recompensas visuales
+const STREAK_MILESTONES=[3,7,14,30,60,100,365];
+const STREAK_LABELS={3:"3 días 🌱",7:"1 semana 🔥",14:"2 semanas ⚡",30:"1 mes 🏆",60:"2 meses 💎",100:"100 días 🦁",365:"1 año 👑"};
+
+function calcStreak(email){
+  try{
+    const KEY=`cl_streak_${email}`;
+    const DAYS_KEY=`cl_streak_days_${email}`;
+    const today=new Date().toDateString();
+    const last=localStorage.getItem(KEY);
+    const days=parseInt(localStorage.getItem(DAYS_KEY)||"0");
+    if(!last){localStorage.setItem(KEY,today);localStorage.setItem(DAYS_KEY,"1");return 1;}
+    const diff=Math.floor((new Date()-new Date(last))/(86400000));
+    if(diff===0)return days||1;
+    if(diff===1){const n=(days||1)+1;localStorage.setItem(DAYS_KEY,String(n));localStorage.setItem(KEY,today);return n;}
+    localStorage.setItem(DAYS_KEY,"1");localStorage.setItem(KEY,today);return 1;
+  }catch{return 1;}
+}
+
+function StreakBadge({session}){
+  const [streak,setStreak]=React.useState(()=>calcStreak(session.user.email));
+  const [showModal,setShowModal]=React.useState(false);
+  const [newMilestone,setNewMilestone]=React.useState(null);
+
+  React.useEffect(()=>{
+    // Detectar si acabamos de alcanzar un milestone
+    const prev=parseInt(localStorage.getItem(`cl_streak_days_${session.user.email}_prev`)||"0");
+    if(STREAK_MILESTONES.includes(streak)&&streak>prev){
+      setNewMilestone(streak);
+      localStorage.setItem(`cl_streak_days_${session.user.email}_prev`,String(streak));
+      setTimeout(()=>setNewMilestone(null),5000);
+    }
+  },[streak]);
+
+  const nextMilestone=STREAK_MILESTONES.find(m=>m>streak)||null;
+  const progress=nextMilestone?(streak/(nextMilestone))*100:100;
+
+  return(
+    <>
+      <button onClick={()=>setShowModal(true)}
+        style={{display:"inline-flex",alignItems:"center",gap:6,background:streak>=7?"linear-gradient(135deg,#E0955C22,#F59E0B22)":"#E0955C12",border:`1px solid ${streak>=7?"#F59E0B55":"#E0955C33"}`,borderRadius:20,padding:"5px 14px",marginBottom:10,cursor:"pointer",fontFamily:FONT,transition:"all .15s"}}
+        onMouseEnter={e=>e.currentTarget.style.background=streak>=7?"linear-gradient(135deg,#E0955C33,#F59E0B33)":"#E0955C22"}
+        onMouseLeave={e=>e.currentTarget.style.background=streak>=7?"linear-gradient(135deg,#E0955C22,#F59E0B22)":"#E0955C12"}>
+        <span style={{fontSize:streak>=30?20:streak>=7?18:15}}>{streak>=30?"🏆":streak>=7?"🔥":"🌱"}</span>
+        <span style={{fontWeight:700,color:streak>=7?"#B45309":C.warn,fontSize:13}}>{streak} día{streak!==1?"s":""}</span>
+        {streak>=3&&<span style={{color:C.muted,fontSize:10}}>en Luderis</span>}
+      </button>
+
+      {/* Modal de detalle del streak */}
+      {showModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}} onClick={()=>setShowModal(false)}>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(360px,95vw)",padding:"28px 24px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:48,marginBottom:8}}>{streak>=100?"👑":streak>=30?"🏆":streak>=14?"⚡":streak>=7?"🔥":"🌱"}</div>
+              <div style={{fontSize:28,fontWeight:800,color:C.text}}>{streak} día{streak!==1?"s":" "} seguido{streak!==1?"s":""}</div>
+              <div style={{color:C.muted,fontSize:13,marginTop:4}}>Tu racha activa en Luderis</div>
+            </div>
+            {/* Barra de progreso al siguiente milestone */}
+            {nextMilestone&&(
+              <div style={{marginBottom:20}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.muted,marginBottom:6}}>
+                  <span>Progreso</span>
+                  <span>Próximo: {STREAK_LABELS[nextMilestone]}</span>
+                </div>
+                <div style={{height:8,background:C.bg,borderRadius:4,border:`1px solid ${C.border}`}}>
+                  <div style={{height:"100%",width:`${Math.min(progress,100)}%`,background:"linear-gradient(90deg,#F59E0B,#E0955C)",borderRadius:4,transition:"width .5s ease"}}/>
+                </div>
+                <div style={{textAlign:"right",fontSize:11,color:C.muted,marginTop:4}}>{nextMilestone-streak} día{nextMilestone-streak!==1?"s":""} más</div>
+              </div>
+            )}
+            {/* Milestones desbloqueados */}
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:20}}>
+              {STREAK_MILESTONES.filter(m=>m<=streak).map(m=>(
+                <span key={m} style={{background:"linear-gradient(135deg,#F59E0B,#E0955C)",color:"#fff",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700}}>{STREAK_LABELS[m]}</span>
+              ))}
+              {STREAK_MILESTONES.filter(m=>m>streak).slice(0,2).map(m=>(
+                <span key={m} style={{background:C.bg,border:`1px solid ${C.border}`,color:C.muted,borderRadius:20,padding:"3px 10px",fontSize:11}}>🔒 {STREAK_LABELS[m]}</span>
+              ))}
+            </div>
+            <button onClick={()=>setShowModal(false)}
+              style={{width:"100%",background:C.accent,border:"none",borderRadius:12,color:"#fff",padding:"11px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>
+              ¡Seguir aprendiendo!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Celebración de milestone */}
+      {newMilestone&&(
+        <div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:600,background:"linear-gradient(135deg,#F59E0B,#E0955C)",borderRadius:20,padding:"12px 24px",color:"#fff",fontWeight:700,fontSize:15,boxShadow:"0 8px 30px rgba(245,158,11,.4)",animation:"fadeUp .3s ease",fontFamily:FONT,display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:22}}>🎉</span> ¡Lograste {STREAK_LABELS[newMilestone]}!
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── ASISTENTE IA PUBLICACIÓN ─────────────────────────────────────────────────
+function AsistentePublicacion({tipo,materia,titulo,descripcion,modo,session,onApply}){
+  const [open,setOpen]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [sugerencia,setSugerencia]=useState(null);
+  const [error,setError]=useState("");
+
+  const generar=async()=>{
+    if(!materia){setError("Elegí una materia primero.");return;}
+    setLoading(true);setError("");setSugerencia(null);
+    try{
+      const tieneContenido=titulo&&descripcion;
+      const contexto=[
+        `Tipo: ${tipo==="oferta"?"Oferta de clases":"Búsqueda de clases"}`,
+        `Materia: ${materia}`,
+        modo&&modo!=="particular"?`Modalidad de clase: ${modo==="grupal"||modo==="curso"?"Curso":"Clase particular"}`:"",
+        titulo?`Título actual: "${titulo}"`:"",
+        descripcion?`Descripción actual: "${descripcion}"`:"",
+      ].filter(Boolean).join(". ");
+      const instruccion=tieneContenido
+        ?`Tenés título y descripción. Mejorá ambos haciéndolos más atractivos y claros. Mantené la esencia pero optimizá el lenguaje.`
+        :titulo
+          ?`Ya tiene título. Generá una descripción que lo complemente bien.`
+          :`Generá un título atractivo y descripción clara para esta publicación.`;
+      const raw=await sb.callIA(
+        `Sos un asistente para docentes de una plataforma educativa argentina (ClasseLink).\n${instruccion}\nSIEMPRE respondé con JSON válido sin markdown:\n{"titulo":"...","descripcion":"...","precio_sugerido":null,"consejos":["...","..."]}\n- titulo: máximo 60 caracteres, específico y atractivo\n- descripcion: 2-3 oraciones, máximo 250 caracteres, mencionar metodología o beneficios\n- precio_sugerido: número en ARS o null si no aplica\n- consejos: 2 tips concretos para mejorar la publicación`,
+        `${contexto}\n\n${instruccion}\nRespondé SOLO JSON.`,
+        400,
+        session?.access_token
+      );
+      const match=raw.match(/\{[\s\S]*\}/);
+      if(!match)throw new Error("Sin respuesta");
+      setSugerencia(JSON.parse(match[0]));
+    }catch(e){setError("No se pudo generar. Intentá de nuevo.");}
+    finally{setLoading(false);}
+  };
+
+  if(!open)return(
+    <button type="button" onClick={()=>{setOpen(true);generar();}}
+      style={{display:"flex",alignItems:"center",gap:6,background:"#C85CE015",border:"1px solid #C85CE033",borderRadius:9,color:C.purple,padding:"7px 12px",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:FONT,width:"100%",marginBottom:9}}>
+      <span style={{fontSize:14}}>✦</span> {titulo&&descripcion?"Mejorar con IA":titulo?"Completar descripción con IA":"Completar con IA"}
+    </button>
+  );
+
+  return(
+    <div style={{background:C.surface,border:`1px solid ${C.purple}44`,borderRadius:12,padding:14,marginBottom:12,animation:"fadeIn .15s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <span style={{fontWeight:700,color:C.purple,fontSize:12}}>✦ Asistente IA</span>
+        <button onClick={()=>{setOpen(false);setSugerencia(null);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+      </div>
+      {loading&&<div style={{display:"flex",alignItems:"center",gap:8,color:C.muted,fontSize:12,padding:"8px 0"}}><Spinner small/>Generando sugerencias…</div>}
+      {error&&<div style={{color:C.danger,fontSize:12,marginBottom:8}}>{error}<button onClick={generar} style={{background:"none",border:"none",color:C.accent,fontSize:11,cursor:"pointer",fontFamily:FONT,marginLeft:8}}>Reintentar</button></div>}
+      {sugerencia&&!loading&&(
+        <>
+          <div style={{background:C.card,borderRadius:10,padding:"10px 13px",marginBottom:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:4}}>TÍTULO SUGERIDO</div>
+            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:8}}>{sugerencia.titulo}</div>
+            <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:4}}>DESCRIPCIÓN SUGERIDA</div>
+            <div style={{color:C.muted,fontSize:12,lineHeight:1.5,marginBottom:sugerencia.consejos?.length?8:0}}>{sugerencia.descripcion}</div>
+            {sugerencia.consejos?.length>0&&(
+              <div style={{marginTop:8,borderTop:`1px solid ${C.border}`,paddingTop:8}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:5}}>TIPS</div>
+                {sugerencia.consejos.map((c,i)=><div key={i} style={{fontSize:11,color:C.muted,marginBottom:3}}>💡 {c}</div>)}
+              </div>
+            )}
+          </div>
+          <div style={{display:"flex",gap:7}}>
+            <button onClick={()=>onApply(sugerencia)} style={{flex:1,background:C.purple,border:"none",borderRadius:9,color:"#fff",padding:"8px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT}}>Usar sugerencia ✓</button>
+            <button onClick={generar} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"8px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Regenerar ↺</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── POST FORM MODAL ──────────────────────────────────────────────────────────
+// ─── VERIFICAR ALERTAS CON IA ─────────────────────────────────────────────────
+// Se llama cuando se crea una publicación nueva.
+// Obtiene las alertas activas y usa IA para ver si alguna coincide.
+async function verificarAlertas(pub,token){
+  try{
+    // Obtener todas las alertas activas de otros usuarios
+    const alertas=await sb.db(
+      `alertas_publicacion?activa=eq.true&usuario_email=neq.${encodeURIComponent(pub.autor_email)}&select=*`,
+      "GET",null,token
+    ).catch(()=>[]);
+    if(!alertas?.length)return;
+
+    const pubCtx=`Título: "${pub.titulo}". Materia: "${pub.materia||""}". Descripción: "${(pub.descripcion||"").slice(0,200)}". Tipo: ${pub.tipo}. Modalidad: ${pub.modalidad||"cualquiera"}.`;
+
+    for(const alerta of alertas){
+      try{
+        const raw=await sb.callIA(
+          `Sos un sistema de alertas para Luderis, plataforma educativa argentina.\nEvaluás si una publicación nueva coincide con la descripción de alerta de un usuario.\nRespondé SOLO con JSON: {"coincide":true/false,"score":0-10,"razon":"frase breve"}\nScore 7+ = coincide. Sé generoso si hay relación temática.`,
+          `Publicación nueva: ${pubCtx}\n\nAlerta del usuario: "${alerta.descripcion}"\n\nRespondé SOLO JSON.`,
+          300,token
+        );
+        const match=raw.match(/\{[\s\S]*\}/);
+        if(!match)continue;
+        const res=JSON.parse(match[0]);
+        if(res.coincide&&res.score>=7){
+          // Enviar email
+          const appUrl=window.location.origin;
+          await sb.sendEmail("alerta_coincidencia",alerta.usuario_email,{
+            alerta_descripcion:alerta.descripcion,
+            pub_titulo:pub.titulo,
+            pub_materia:pub.materia||"",
+            pub_tipo:pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
+            pub_precio:pub.precio?`$${Number(pub.precio).toLocaleString("es-AR")}`:"Gratis",
+            pub_modalidad:pub.modalidad||"",
+            razon:res.razon,
+            pub_url:`${appUrl}?pub=${pub.id}`,
+          },token).catch(()=>{});
+          // Actualizar stats de la alerta
+          sb.db(`alertas_publicacion?id=eq.${alerta.id}`,"PATCH",{
+            ultima_vez:new Date().toISOString(),
+            total_matches:(alerta.total_matches||0)+1,
+          },token).catch(()=>{});
+        }
+      }catch{}
+    }
+  }catch{}
+}
+
+// ─── FUNCIÓN GLOBAL: DISPARAR ALERTAS ────────────────────────────────────────
+// Se llama cuando una publicación pasa a estado activo:true
+// Puede ser al crear (si no tiene wizard), al omitir wizard, o al finalizar wizard
+async function dispararAlertasIA(pub, session){
+  try{
+    const alertas=await sb.db(
+      `alertas_publicacion?activa=eq.true&usuario_id=neq.${session.user.id}&select=*`,
+      "GET",null,session.access_token
+    ).catch(()=>[]);
+    if(!alertas?.length)return;
+
+    const pubPerfil={
+      titulo:pub.titulo||"",
+      descripcion:(pub.descripcion||"").slice(0,300),
+      materia:pub.materia||"",
+      tipo:pub.tipo||"oferta",
+      modalidad:pub.modalidad||"",
+      ubicacion:pub.ubicacion||"",
+      precio:pub.precio?String(pub.precio):"Gratis",
+      nivel:pub.nivel||"",
+      certificado:pub.otorga_certificado?"Sí":"No",
+      frecuencia:pub.frecuencia||"",
+    };
+
+    for(const alerta of alertas){
+      try{
+        const tipoAlerta=alerta.tipo_alerta||"ambos";
+        if(tipoAlerta!=="ambos"&&pubPerfil.tipo!==tipoAlerta)continue;
+
+        let criterios={};
+        try{criterios=JSON.parse(alerta.criterios_json||"{}");}catch{}
+
+        const alertaCtx=[
+          `Descripción libre: "${alerta.descripcion}"`,
+          criterios.materia?`Materia de interés: ${criterios.materia}`:"",
+          criterios.modalidad&&criterios.modalidad!=="cualquiera"?`Modalidad preferida: ${criterios.modalidad}`:"",
+          criterios.palabras_clave?.length?`Palabras clave: ${criterios.palabras_clave.join(", ")}`:"",
+          alerta.usuario_ciudad?`Ciudad del usuario: ${alerta.usuario_ciudad}`:"",
+        ].filter(Boolean).join("\n");
+
+        const pubCtx=[
+          `Título: "${pubPerfil.titulo}"`,
+          `Descripción: "${pubPerfil.descripcion}"`,
+          `Materia: ${pubPerfil.materia||"No especificada"}`,
+          `Modalidad: ${pubPerfil.modalidad||"No especificada"}`,
+          pubPerfil.ubicacion?`Ubicación: ${pubPerfil.ubicacion}`:"Sin ubicación",
+          `Precio: ${pubPerfil.precio}`,
+          pubPerfil.nivel?`Nivel: ${pubPerfil.nivel}`:"",
+          `Otorga certificado: ${pubPerfil.certificado}`,
+          pubPerfil.frecuencia?`Frecuencia: ${pubPerfil.frecuencia}`:"",
+        ].filter(Boolean).join("\n");
+
+        const raw=await sb.callIA(
+          `Sos un sistema de matching para alertas educativas en Argentina.\nEvaluá si una publicación nueva es relevante para la búsqueda del usuario.\n\nREGLAS (evaluá TODAS):\n1. TEMA: ¿El título/descripción/materia es relevante? Considerá sinónimos y conceptos relacionados. Es el criterio más importante.\n2. MODALIDAD: Si pidió "presencial" y es "virtual" → NO coincide. Si no especificó → cualquiera sirve.\n3. UBICACIÓN: Si mencionó ciudad y la clase es presencial en otra ciudad → NO coincide. Si es virtual → ubicación no importa.\n4. CERTIFICADO: Si explícitamente quiere certificado y la pub no lo otorga → NO coincide.\n5. NIVEL: Si mencionó nivel específico y no coincide → penaliza pero no descarta solo por esto.\n6. PRECIO: Solo considerar si el usuario mencionó un rango explícito.\n\nREGLA FINAL: El TEMA debe coincidir. Contradicciones duras (modalidad, ciudad, certificado) → NO coincide.\nSi el usuario NO especificó restricciones → solo el tema importa.\n\nRespondé SOLO con JSON sin markdown: {"match":true,"razon":"frase"} o {"match":false,"razon":"por qué no"}`,
+          `ALERTA DEL USUARIO:\n${alertaCtx}\n\nPUBLICACIÓN:\n${pubCtx}`,
+          120,session.access_token
+        );
+
+        let match=false;let razon="";
+        try{
+          const j=JSON.parse(raw.match(/\{[\s\S]*?\}/)?.[0]||"{}");
+          match=j.match===true;razon=j.razon||"";
+        }catch{match=raw.includes('"match":true')||raw.includes('"match": true');}
+        console.log(`[Alerta] "${alerta.descripcion}" → pub:"${pub.titulo}" → match:${match} ${razon}`);
+
+        if(match){
+          const pubUrl=`${window.location.origin}${window.location.pathname}?pub=${pub.id}`;
+          sb.sendEmail("alerta_publicacion",alerta.usuario_email,{
+            pub_titulo:pub.titulo,
+            materia:pub.materia||"",
+            tipo:pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
+            precio:pubPerfil.precio,
+            modalidad:pub.modalidad||"",
+            descripcion:(pub.descripcion||"").slice(0,150),
+            criterio_desc:alerta.descripcion,
+            pub_url:pubUrl,
+          },session.access_token).catch(()=>{});
+        }
+      }catch{}
+    }
+  }catch{}
+}
+
+function PostFormModal({session,postToEdit,onClose,onSave}){
+  const editing=!!postToEdit;
+  const [tipo,setTipo]=useState(postToEdit?.tipo||"busqueda");const [materia,setMateria]=useState(postToEdit?.materia||"");const [titulo,setTitulo]=useState(postToEdit?.titulo||"");const [descripcion,setDescripcion]=useState(postToEdit?.descripcion||"");
+  const [modo,setModo]=useState((postToEdit?.modo==="grupal"?"curso":postToEdit?.modo)||"particular");const [precio,setPrecio]=useState(postToEdit?.precio||"");const [precioTipo,setPrecioTipo]=useState(postToEdit?.precio_tipo||"hora");
+  const [tienePrueba,setTienePrueba]=useState(postToEdit?.tiene_prueba||false);const [precioPrueba,setPrecioPrueba]=useState(postToEdit?.precio_prueba||"");
+  const [paquetes,setPaquetes]=useState(()=>{try{return JSON.parse(postToEdit?.paquetes||"[]");}catch{return [];}});
+  const [sinc,setSinc]=useState(postToEdit?.sinc||"sinc");const [fechaInicio,setFechaInicio]=useState(postToEdit?.fecha_inicio||"");const [fechaFin,setFechaFin]=useState(postToEdit?.fecha_fin||"");
+  const [clasesSinc,setClasesSinc]=useState(()=>{try{return postToEdit?.clases_sinc?JSON.parse(postToEdit.clases_sinc):[]}catch{return [];}});
+  const [verificado,setVerificado]=useState(postToEdit?.verificado||false);const [saving,setSaving]=useState(false);const [err,setErr]=useState("");
+  const [modalidadForm,setModalidadForm]=useState(postToEdit?.modalidad||"");
+  const [nivel,setNivel]=useState(postToEdit?.nivel||"");
+  const [requisitos,setRequisitos]=useState(postToEdit?.requisitos||"");
+  const [maxAlumnos,setMaxAlumnos]=useState(postToEdit?.max_alumnos||"");
+  const [bannerUrl,setBannerUrl]=useState(postToEdit?.banner_url||"");
+  const [moneda,setMoneda]=useState(postToEdit?.moneda||"ARS");
+  const [showPreview,setShowPreview]=useState(false);
+  const [verificacionPendiente,setVerificacionPendiente]=useState(false);
+  const [idioma,setIdioma]=useState(postToEdit?.idioma||"");
+  const [frecuencia,setFrecuencia]=useState(postToEdit?.frecuencia||"");
+  const [otorgaCertificado,setOtorgaCertificado]=useState(postToEdit?.otorga_certificado||false);
+  const DESC_MAX=2000;
+  const addClase=()=>setClasesSinc(prev=>[...prev,{dia:"Lunes",hora_inicio:"09:00",hora_fin:"10:00"}]);
+  const updClase=(i,f,v)=>setClasesSinc(prev=>prev.map((c,idx)=>idx===i?{...c,[f]:v}:c));
+  const remClase=(i)=>setClasesSinc(prev=>prev.filter((_,idx)=>idx!==i));
+  const durCalc=calcDuracion(fechaInicio,fechaFin);
+  const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:9,fontFamily:FONT};
+  const guardar=async()=>{
+    if(!titulo.trim()){setErr("El título es obligatorio");return;}
+    if(!materia){setErr("Seleccioná una materia");return;}
+    if(!descripcion.trim()||descripcion.trim().length<20){setErr("La descripción debe tener al menos 20 caracteres");return;}
+    if(tipo==="oferta"){
+      if(!precio||parseFloat(precio)<=0){setErr("El precio es obligatorio");return;}
+      if(!modalidadForm){setErr("Indicá si la clase es virtual, presencial o mixta");return;}
+      if(!nivel){setErr("Indicá el nivel de los alumnos");return;}
+    }
+    setSaving(true);setErr("");
+    try{
+      const modoDb=modo==="curso"?"grupal":modo;
+      const esCursoNuevo=tipo==="oferta"&&modo==="curso"&&!editing;
+      const esParticularNuevo=tipo==="oferta"&&modo==="particular"&&!editing;
+      // Cursos y clases particulares nuevas nacen con activo:false hasta validar
+      const activoInicial=editing?undefined:(esCursoNuevo||esParticularNuevo)?false:true;
+      const data={tipo,materia,titulo,descripcion,autor_id:session.user.id,activo:activoInicial??true,verificado,modo:modoDb,modalidad:modalidadForm||null,moneda:moneda||"ARS"};
+      data.nivel=nivel||null;
+      data.modalidad=modalidadForm||null;
+      if(requisitos)data.requisitos=requisitos;
+      if(maxAlumnos)data.max_alumnos=parseInt(maxAlumnos);
+      if(idioma)data.idioma=idioma;
+      if(tipo==="oferta"&&modo!=="particular"&&frecuencia)data.frecuencia=frecuencia;
+      if(tipo==="oferta"&&modo==="particular")data.frecuencia=frecuencia||null;// opcional en particulares
+      data.otorga_certificado=otorgaCertificado;
+      // estado_validacion se maneja localmente (columna pendiente de crear en DB)
+      const _estadoLocal=activoInicial===false?"pendiente":undefined;
+      if(tipo==="oferta"){data.precio=parseFloat(precio)||null;data.moneda=moneda||"ARS";data.tiene_prueba=tienePrueba;data.precio_prueba=tienePrueba?(parseFloat(precioPrueba)||null):null;if(paquetes.length)data.paquetes=JSON.stringify(paquetes);if(modo==="particular")data.precio_tipo=precioTipo;else{data.sinc=sinc;data.duracion_curso=modo==="curso"?"curso":null;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
+      let savedPub=null;
+      if(editing){
+        await sb.updatePublicacion(postToEdit.id,data,session.access_token);
+        // Disparar alertas también en edición — la publicación actualizada puede matchear
+        const pubActualizada={...postToEdit,...data,id:postToEdit.id,autor_id:session.user.id};
+        savedPub=pubActualizada;
+      }
+      else{const r=await sb.insertPublicacion(data,session.access_token);savedPub=r?.[0]||null;}
+      // Verificar alertas activas — notificar usuarios por IA si coincide
+      if(savedPub?.id&&!editing){
+        verificarAlertas(savedPub,session.access_token).catch(()=>{});
+      }
+      // ── Disparar alertas solo si la pub se activa de inmediato ──
+      // (si tiene wizard de validación, las alertas se disparan cuando el docente activa)
+      if(savedPub&&activoInicial===true){
+        dispararAlertasIA(savedPub,session).catch(()=>{});
+      }
+      // Inyectar estado_validacion local en el objeto guardado para que el wizard funcione sin columna DB
+      if(savedPub&&_estadoLocal)savedPub.estado_validacion=_estadoLocal;
+      if(savedPub&&activoInicial===false)savedPub.activo=false;
+      // Inyectar autor_email/id: el INSERT no devuelve JOIN con usuarios, CursoPage lo necesita para esMio
+      if(savedPub){savedPub.autor_email=session.user.email;savedPub.autor_id=session.user.id;}
+      onSave(savedPub,{esCursoNuevo,esParticularNuevo});
+      onClose();
+    }catch(e){setSaving(false);setErr("Error: "+e.message);}
+  };
+  // ── Wizard state ──────────────────────────────────────────────────────────
+  const [paso,setPaso]=useState(editing?2:1);
+  // Pasos: 1=Tipo/Formato  2=Contenido  3=Detalles  4=Precio
+  // Para búsquedas solo hay 2 pasos (1 y 2)
+  const totalPasos=tipo==="busqueda"?2:4;
+
+  const canNext1=!!tipo&&(tipo==="busqueda"||!!modo);
+  const canNext2=titulo.trim().length>=3&&!!materia&&descripcion.trim().length>=20;
+  const canNext3=tipo==="busqueda"||(!!modalidadForm&&!!nivel);
+  const canPublish=tipo==="busqueda"||(!!precio&&parseFloat(precio)>0&&!verificacionPendiente);
+
+  const nextPaso=()=>{
+    if(paso===1&&!canNext1)return;
+    if(paso===2&&!canNext2){setErr("Completá título (mín 3 caracteres), materia y descripción (mín 20 caracteres)");return;}
+    if(paso===3&&!canNext3){setErr("Indicá modalidad y nivel de alumnos");return;}
+    setErr("");
+    if(tipo==="busqueda"&&paso===2){guardar();return;}
+    if(paso===totalPasos){guardar();return;}
+    setPaso(p=>p+1);
+  };
+
+  const PASO_LABELS=tipo==="busqueda"
+    ?["Tipo","Contenido"]
+    :["Tipo","Contenido","Detalles","Precio"];
+
+  return(
+    <Modal onClose={onClose}>
+      <div style={{padding:"20px 20px 16px"}}>
+
+        {/* Header con progreso */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div>
+            <h3 style={{color:C.text,margin:0,fontSize:16,fontWeight:700}}>
+              {editing?"Editar publicación":paso===1?"¿Qué querés publicar?":paso===2?"Contanos más":paso===3?"Detalles de la clase":"Precio y condiciones"}
+            </h3>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>Paso {paso} de {totalPasos}</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+
+        {/* Barra de progreso */}
+        <div style={{display:"flex",gap:4,marginBottom:20}}>
+          {PASO_LABELS.map((label,i)=>{
+            const n=i+1;
+            const done=n<paso;
+            const active=n===paso;
+            return(
+              <div key={n} style={{flex:1,display:"flex",flexDirection:"column",gap:4,cursor:done?"pointer":"default"}}
+                onClick={()=>{if(done)setPaso(n);}}>
+                <div style={{height:3,borderRadius:2,background:done||active?"linear-gradient(90deg,#1A6ED8,#2EC4A0)":C.border,transition:"background .3s"}}/>
+                <div style={{fontSize:9,color:active?C.accent:done?C.success:C.muted,fontWeight:active||done?700:400,textAlign:"center",transition:"color .3s"}}>
+                  {done?"✓ ":""}{label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── PASO 1: Tipo + Formato ── */}
+        {paso===1&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <Label>¿Buscás o ofrecés?</Label>
+              <div style={{display:"flex",gap:8}}>
+                {[{v:"busqueda",icon:"🔍",label:"Busco clases",sub:"Encontrá un docente"},{v:"oferta",icon:"🎓",label:"Ofrezco clases",sub:"Publicá tus clases"}].map(({v,icon,label,sub})=>(
+                  <button key={v} onClick={()=>setTipo(v)}
+                    style={{flex:1,padding:"14px 10px",borderRadius:14,border:`2px solid ${tipo===v?C.accent:C.border}`,background:tipo===v?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"center",transition:"all .15s"}}>
+                    <div style={{fontSize:26,marginBottom:6}}>{icon}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:tipo===v?C.accent:C.text}}>{label}</div>
+                    <div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {tipo==="oferta"&&(
+              <div>
+                <Label>¿Qué formato?</Label>
+                <div style={{display:"flex",gap:8}}>
+                  {[{v:"particular",icon:"👤",label:"Clase particular",sub:"1 a 1, a tu ritmo"},{v:"curso",icon:"📚",label:"Curso",sub:"Varios alumnos, programa fijo"}].map(({v,icon,label,sub})=>(
+                    <button key={v} onClick={()=>setModo(v)}
+                      style={{flex:1,padding:"14px 10px",borderRadius:14,border:`2px solid ${modo===v?C.accent:C.border}`,background:modo===v?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"center",transition:"all .15s"}}>
+                      <div style={{fontSize:26,marginBottom:6}}>{icon}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:modo===v?C.accent:C.text}}>{label}</div>
+                      <div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── PASO 2: Contenido ── */}
+        {paso===2&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <SearchableSelect value={materia} onChange={setMateria} options={MATERIAS} placeholder="Seleccioná una materia" style={{marginBottom:0}}/>
+            {materia&&<AsistentePublicacion tipo={tipo} materia={materia} titulo={titulo} descripcion={descripcion} modo={modo} session={session} onApply={(s)=>{if(s.titulo)setTitulo(s.titulo);if(s.descripcion)setDescripcion(s.descripcion.slice(0,300));if(s.precio_sugerido)setPrecio(String(s.precio_sugerido));}}/>}
+            <div style={{position:"relative"}}>
+              <input value={titulo} onChange={e=>setTitulo(e.target.value.slice(0,80))}
+                placeholder={tipo==="busqueda"?"Título de tu búsqueda":"Título del curso o clase"}
+                style={{...iS,marginBottom:0,paddingRight:48}}/>
+              <span style={{position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",fontSize:10,color:titulo.length>=70?C.danger:C.muted,fontFamily:FONT,pointerEvents:"none"}}>{titulo.length}/80</span>
+            </div>
+            <div style={{position:"relative"}}>
+              <textarea value={descripcion} onChange={e=>setDescripcion(e.target.value.slice(0,DESC_MAX))}
+                placeholder="Descripción detallada..." rows={4}
+                style={{...iS,resize:"vertical",marginBottom:0,paddingBottom:22}}/>
+              <span style={{position:"absolute",bottom:8,right:11,fontSize:10,color:descripcion.length>=DESC_MAX?C.danger:C.muted,fontFamily:FONT,pointerEvents:"none"}}>{descripcion.length}/{DESC_MAX}</span>
+            </div>
+            <div>
+              <Label>{tipo==="busqueda"?"Requisitos del docente (opcional)":"Requisitos previos (opcional)"}</Label>
+              <input value={requisitos} onChange={e=>setRequisitos(e.target.value.slice(0,150))}
+                placeholder={tipo==="busqueda"?"Ej: Con experiencia en CBC...":"Ej: Conocimientos básicos de álgebra..."}
+                style={{...iS,marginBottom:0}}/>
+            </div>
+          </div>
+        )}
+
+        {/* ── PASO 3: Detalles (solo ofertas) ── */}
+        {paso===3&&tipo==="oferta"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+              <div>
+                <Label>Modalidad <span style={{color:C.danger,fontSize:11}}>*</span></Label>
+                <select value={modalidadForm} onChange={e=>setModalidadForm(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>
+                  <option value="">No especificada</option>
+                  <option value="presencial">📍 Presencial</option>
+                  <option value="virtual">🌐 Virtual</option>
+                  <option value="mixto">⟳ Mixto</option>
+                </select>
+              </div>
+              <div>
+                <Label>Nivel <span style={{color:C.danger,fontSize:11}}>*</span></Label>
+                <select value={nivel} onChange={e=>setNivel(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>
+                  <option value="">No especificado</option>
+                  <option value="primaria">Primaria</option>
+                  <option value="secundaria">Secundaria</option>
+                  <option value="universitario">Universitario</option>
+                  <option value="adultos">Adultos / Profesional</option>
+                  <option value="todos">Todos los niveles</option>
+                </select>
+              </div>
+              <div>
+                <Label>Idioma</Label>
+                <select value={idioma} onChange={e=>setIdioma(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>
+                  <option value="">Español (por defecto)</option>
+                  <option value="Español">🇦🇷 Español</option>
+                  <option value="Inglés">🇬🇧 Inglés</option>
+                  <option value="Portugués">🇧🇷 Portugués</option>
+                  <option value="Francés">🇫🇷 Francés</option>
+                  <option value="Alemán">🇩🇪 Alemán</option>
+                  <option value="Italiano">🇮🇹 Italiano</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div>
+                <Label>Frecuencia {modo==="particular"&&<span style={{color:C.muted,fontSize:11}}>(opcional)</span>}</Label>
+                <select value={frecuencia} onChange={e=>setFrecuencia(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>
+                  <option value="">Sin especificar</option>
+                  <option value="1 vez por semana">1 vez por semana</option>
+                  <option value="2 veces por semana">2 veces por semana</option>
+                  <option value="3 veces por semana">3 veces por semana</option>
+                  <option value="Diaria">Diaria</option>
+                  <option value="A convenir">A convenir</option>
+                </select>
+              </div>
+            </div>
+            {modo==="curso"&&(
+              <>
+                <div>
+                  <Label>Tipo de curso</Label>
+                  <div style={{display:"flex",gap:7}}>{[{v:"sinc",l:"Sincrónico"},{v:"asinc",l:"Asincrónico"}].map(({v,l})=>(<button key={v} onClick={()=>setSinc(v)} style={{flex:1,padding:"8px",borderRadius:9,fontWeight:600,fontSize:12,cursor:"pointer",background:sinc===v?C.accent:C.card,color:sinc===v?"#fff":C.muted,border:`1px solid ${sinc===v?"transparent":C.border}`,fontFamily:FONT}}>{l}</button>))}</div>
+                </div>
+                <div style={{display:"flex",gap:7}}>
+                  <div style={{flex:1}}>
+                    <Label>Inicio</Label>
+                    <input type="date" value={fechaInicio} onChange={e=>{setFechaInicio(e.target.value);if(fechaFin&&fechaFin<=e.target.value)setFechaFin("");}} style={{...iS,margin:0,colorScheme:"light dark"}}/>
+                    {fechaInicio&&new Date(fechaInicio)<new Date(new Date().toDateString())&&<div style={{color:"#B45309",fontSize:11,marginTop:2}}>⚠ La fecha ya pasó</div>}
+                  </div>
+                  <div style={{flex:1}}>
+                    <Label>Fin</Label>
+                    <input type="date" value={fechaFin} onChange={e=>setFechaFin(e.target.value)} min={fechaInicio?(()=>{const d=new Date(fechaInicio);d.setDate(d.getDate()+1);return d.toISOString().split("T")[0];})():undefined} disabled={!fechaInicio} style={{...iS,margin:0,colorScheme:"light dark",opacity:fechaInicio?1:0.4}}/>
+                  </div>
+                </div>
+                {durCalc&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,padding:"7px 12px",fontSize:12,color:C.accent}}>⏱ Duración: <strong>{durCalc}</strong></div>}
+                {sinc==="sinc"&&(
+                  <>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <Label>Horarios semanales</Label>
+                      <button onClick={addClase} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"3px 9px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>+ Agregar</button>
+                    </div>
+                    {clasesSinc.map((c,i)=>{
+                      const toMin=(t)=>{if(!t)return null;const p=t.split(":");if(p.length<2)return null;const h=parseInt(p[0]);const m=parseInt(p[1]);if(isNaN(h)||isNaN(m))return null;return h*60+m;};
+                      const fi=toMin(c.hora_inicio);const ff=toMin(c.hora_fin);
+                      const inv=fi!==null&&ff!==null&&ff<=fi;
+                      return(
+                        <div key={i} style={{display:"flex",gap:5,alignItems:"center",background:C.card,borderRadius:9,padding:"7px 9px",border:`1px solid ${inv?"#E05C5C44":C.border}`,flexWrap:"wrap"}}>
+                          <select value={c.dia} onChange={e=>updClase(i,"dia",e.target.value)} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,cursor:"pointer",outline:"none",flex:2}}>{["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(d=><option key={d}>{d}</option>)}</select>
+                          <input type="time" value={c.hora_inicio} onChange={e=>{const v=e.target.value;updClase(i,"hora_inicio",v);if(c.hora_fin&&toMin(c.hora_fin)!==null&&toMin(c.hora_fin)<=toMin(v)){const[h,m]=v.split(":").map(Number);const fin=`${String(h+(m>=30?1:0)).padStart(2,"0")}:${m>=30?"00":String(m+30).padStart(2,"0")}`;updClase(i,"hora_fin",fin);}}} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
+                          <span style={{color:C.muted,fontSize:11}}>→</span>
+                          <input type="text" value={c.hora_fin} onChange={e=>updClase(i,"hora_fin",e.target.value)} placeholder="HH:MM" maxLength={5} style={{background:C.surface,border:`1px solid ${inv?C.danger:C.border}`,borderRadius:7,padding:"4px 7px",color:inv?C.danger:C.text,fontSize:11,fontFamily:FONT,outline:"none",flex:2,width:0}}/>
+                          {inv&&<span style={{fontSize:10,color:C.danger,width:"100%",paddingLeft:2}}>⚠ Fin debe ser posterior al inicio</span>}
+                          <button onClick={()=>remClase(i)} style={{background:"none",border:"none",color:C.danger,fontSize:15,cursor:"pointer",flexShrink:0}}>×</button>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </>
+            )}
+            <div onClick={()=>setOtorgaCertificado(v=>!v)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.accentDim,borderRadius:8,cursor:"pointer"}}>
+              <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${otorgaCertificado?C.accent:C.border}`,background:otorgaCertificado?C.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
+                {otorgaCertificado&&<span style={{color:"#fff",fontSize:13,fontWeight:700}}>✓</span>}
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:C.text}}>Otorga certificado de aprobación</div>
+                <div style={{fontSize:11,color:C.muted}}>Los alumnos podrán descargarlo al completar el curso</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── PASO 4: Precio (solo ofertas) ── */}
+        {paso===4&&tipo==="oferta"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {/* Precio base */}
+            {modo==="particular"?(
+              <div>
+                <Label>Precio por clase <span style={{color:C.danger,fontSize:11}}>*</span></Label>
+                <div style={{display:"flex",gap:7}}>
+                  <select value={moneda} onChange={e=>setMoneda(e.target.value)} style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
+                    {[["ARS","$ ARS"],["USD","US$"],["EUR","€"],["BRL","R$"],["CLP","CLP"],["MXN","MXN"],["UYU","UYU"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                  </select>
+                  <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:2}}/>
+                  <select value={precioTipo} onChange={e=>setPrecioTipo(e.target.value)} style={{...iS,margin:0,flex:1,cursor:"pointer"}}>
+                    <option value="hora">/ hora</option>
+                    <option value="clase">/ clase</option>
+                  </select>
+                </div>
+              </div>
+            ):(
+              <div>
+                <Label>Precio total del curso <span style={{color:C.danger,fontSize:11}}>*</span></Label>
+                <div style={{display:"flex",gap:7}}>
+                  <select value={moneda} onChange={e=>setMoneda(e.target.value)} style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
+                    {[["ARS","$ ARS"],["USD","US$"],["EUR","€"],["BRL","R$"],["CLP","CLP"],["MXN","MXN"],["UYU","UYU"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                  </select>
+                  <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:1}}/>
+                </div>
+              </div>
+            )}
+
+            {/* Clase de prueba */}
+            {modo==="particular"&&precio&&(
+              <div style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:12,padding:"12px 14px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setTienePrueba(v=>!v)}>
+                  <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${tienePrueba?C.accent:"#CBD5E0"}`,background:tienePrueba?"linear-gradient(135deg,#1A6ED8,#2EC4A0)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {tienePrueba&&<span style={{color:"#fff",fontSize:11,fontWeight:700}}>✓</span>}
+                  </div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:C.text}}>Ofrecer clase de prueba</div>
+                    <div style={{fontSize:11,color:C.muted}}>Atrae más alumnos — podés ponerla gratis o con descuento</div>
+                  </div>
+                </div>
+                {tienePrueba&&(
+                  <div style={{display:"flex",gap:8,alignItems:"center",marginTop:10}}>
+                    <span style={{fontSize:12,color:C.muted,flexShrink:0}}>Precio de prueba:</span>
+                    <input value={precioPrueba} onChange={e=>setPrecioPrueba(e.target.value)} placeholder="0 = gratis" type="number" min="0"
+                      style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT}}/>
+                    <span style={{fontSize:12,color:C.muted}}>{moneda}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Paquetes */}
+            {modo==="particular"&&precio&&(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <Label style={{margin:0}}>Paquetes de clases <span style={{fontSize:10,color:C.muted,fontWeight:400}}>— precios especiales por cantidad</span></Label>
+                  <button onClick={()=>{if(paquetes.length<5)setPaquetes(prev=>[...prev,{clases:5,descuento:10,nombre:""}]);}}
+                    disabled={paquetes.length>=5}
+                    style={{background:C.accentDim,border:`1px solid ${C.accent}40`,borderRadius:8,color:C.accent,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FONT,opacity:paquetes.length>=5?.4:1}}>
+                    + Agregar
+                  </button>
+                </div>
+                {paquetes.length===0&&(
+                  <div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"10px",background:C.bg,borderRadius:8}}>
+                    Sin paquetes. Agregá uno para ofrecer descuentos por cantidad.
+                  </div>
+                )}
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {paquetes.map((pq,i)=>{
+                    const precioNum=parseFloat(precio)||0;
+                    const precioFinal=pq.descuento>0?(precioNum*(pq.clases||1)*(1-(pq.descuento||0)/100)):(pq.precio_total||(precioNum*(pq.clases||1)));
+                    return(
+                      <div key={i} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>NOMBRE (opcional)</div>
+                            <input value={pq.nombre||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,nombre:e.target.value}:p))}
+                              placeholder={`Ej: Pack ${pq.clases||5} clases`}
+                              style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                          </div>
+                          <button onClick={()=>setPaquetes(prev=>prev.filter((_,j)=>j!==i))}
+                            style={{background:"none",border:"none",color:C.danger,fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1,flexShrink:0,marginTop:16}}>×</button>
+                        </div>
+                        <div style={{display:"flex",gap:8}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>CLASES</div>
+                            <input type="number" min="2" max="100" value={pq.clases||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,clases:parseInt(e.target.value)||0}:p))}
+                              style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                          </div>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>% DESCUENTO</div>
+                            <input type="number" min="0" max="80" value={pq.descuento||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,descuento:parseInt(e.target.value)||0,precio_total:0}:p))}
+                              placeholder="0"
+                              style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                          </div>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>PRECIO TOTAL</div>
+                            <input type="number" min="0" value={pq.precio_total||Math.round(precioFinal)||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,precio_total:parseFloat(e.target.value)||0,descuento:0}:p))}
+                              placeholder="Auto"
+                              style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                          </div>
+                        </div>
+                        {(pq.clases>0&&precioNum>0)&&(
+                          <div style={{fontSize:11,color:C.success,fontWeight:600,background:C.success+"10",borderRadius:6,padding:"4px 10px",alignSelf:"flex-start"}}>
+                            ${Math.round(precioFinal).toLocaleString("es-AR")} total · ${Math.round(precioFinal/(pq.clases||1)).toLocaleString("es-AR")}/clase
+                            {pq.descuento>0&&<span style={{color:C.muted,marginLeft:6}}>(ahorrás ${(precioNum*(pq.clases||1)-precioFinal).toLocaleString("es-AR")})</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Verificacion IA */}
+            {tipo==="oferta"&&titulo&&materia&&!verificado&&(
+              <VerificacionIA titulo={titulo} materia={materia} descripcion={descripcion} onVerificado={(v)=>{setVerificado(v!==false);setVerificacionPendiente(false);}} onEstadoChange={(e)=>setVerificacionPendiente(e==="cargando")} token={session?.access_token}/>
+            )}
+            {tipo==="oferta"&&verificacionPendiente&&(
+              <div style={{color:C.warn,fontSize:11,padding:"5px 10px",background:"#E0955C15",borderRadius:7,border:"1px solid #E0955C33",display:"flex",alignItems:"center",gap:6}}><Spinner small/>Verificando…</div>
+            )}
+            {tipo==="oferta"&&verificado&&(
+              <div style={{color:C.success,fontSize:11,padding:"5px 10px",background:"#4ECB7115",borderRadius:7,border:"1px solid #4ECB7133"}}>✓ Verificado</div>
+            )}
+          </div>
+        )}
+
+        <ErrMsg msg={err}/>
+
+        {/* ── Footer navegación ── */}
+        <div style={{display:"flex",gap:8,marginTop:18}}>
+          {paso>1&&(
+            <button onClick={()=>{setErr("");setPaso(p=>p-1);}}
+              style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:11,color:C.text,padding:"10px 16px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,flexShrink:0}}>
+              ← Atrás
+            </button>
+          )}
+          <Btn onClick={nextPaso}
+            disabled={saving||verificacionPendiente||(paso===1&&!canNext1)||(paso===4&&sinc==="sinc"&&clasesSinc.some(c=>{const p=(t)=>{if(!t)return null;const s=t.split(":");if(s.length<2)return null;const h=parseInt(s[0]);const m=parseInt(s[1]);return isNaN(h)||isNaN(m)?null:h*60+m;};const fi=p(c.hora_inicio);const ff=p(c.hora_fin);return fi!==null&&ff!==null&&ff<=fi;}))}
+            style={{flex:1,padding:"11px",fontSize:13,borderRadius:11}}>
+            {saving?"Guardando…":paso===totalPasos?(tipo==="busqueda"?"Publicar →":verificado?"Publicar →":"Publicar sin verificar →"):"Siguiente →"}
+          </Btn>
+        </div>
+
+      </div>
+    </Modal>
+  );
+}
+
+export { VerificacionIA, StreakBadge, PerfilPage, dispararAlertasIA, PriceSlider };
+export default PostFormModal;
