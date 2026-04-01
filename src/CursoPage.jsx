@@ -1560,101 +1560,129 @@ function CertificadoBtn({post,session,inscripcion}){
       canvas.width=1200;canvas.height=848;
       const ctx=canvas.getContext("2d");
 
-      // Fondo
-      ctx.fillStyle="#fff";
+      // ── Fondo degradado profesional ──
+      const grad=ctx.createLinearGradient(0,0,1200,848);
+      grad.addColorStop(0,"#0F3F7A");
+      grad.addColorStop(0.5,"#1A6ED8");
+      grad.addColorStop(1,"#0A2A5E");
+      ctx.fillStyle=grad;
       ctx.fillRect(0,0,1200,848);
 
-      // Borde decorativo
+      // Círculos decorativos de fondo
+      ctx.save();
+      ctx.globalAlpha=0.06;
+      ctx.fillStyle="#2EC4A0";
+      ctx.beginPath();ctx.arc(1100,100,280,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(100,750,200,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+
+      // Borde dorado doble
       ctx.strokeStyle="#F5C842";ctx.lineWidth=3;
-      ctx.strokeRect(24,24,1152,800);
-      ctx.strokeStyle="#F5C84244";ctx.lineWidth=1;
-      ctx.strokeRect(32,32,1136,784);
+      ctx.strokeRect(30,30,1140,788);
+      ctx.strokeStyle="rgba(245,200,66,.3)";ctx.lineWidth=1;
+      ctx.strokeRect(40,40,1120,768);
 
-      // Logo / título app
+      // ── Header ──
+      // Franja teal superior
+      ctx.fillStyle="rgba(46,196,160,.15)";
+      ctx.fillRect(30,30,1140,120);
+
       ctx.fillStyle="#F5C842";
-      ctx.font="bold 22px Georgia, serif";
+      ctx.font="bold 32px Georgia, serif";
       ctx.textAlign="center";
-      ctx.fillText("Luderis",600,90);
+      ctx.fillText("LUDERIS",600,85);
+      ctx.fillStyle="rgba(255,255,255,.6)";
+      ctx.font="14px Georgia, serif";
+      ctx.fillText("Plataforma Educativa Argentina",600,112);
 
-      // Texto principal
-      ctx.fillStyle="#F0EDE6";
-      ctx.font="28px Georgia, serif";
-      ctx.fillText("Certificado de finalización",600,160);
+      // ── Título certificado ──
+      ctx.fillStyle="#ffffff";
+      ctx.font="bold 42px Georgia, serif";
+      ctx.fillText("Certificado de Finalización",600,210);
 
-      // Línea decorativa
-      ctx.strokeStyle="#F5C84255";ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(200,185);ctx.lineTo(1000,185);ctx.stroke();
+      // Línea dorada
+      ctx.strokeStyle="#F5C842";ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(250,235);ctx.lineTo(950,235);ctx.stroke();
 
-      // "Certifica que"
-      ctx.fillStyle="#888";
+      // ── Cuerpo ──
+      ctx.fillStyle="rgba(255,255,255,.65)";
       ctx.font="18px Georgia, serif";
-      ctx.fillText("Este certificado acredita que",600,230);
+      ctx.fillText("Se certifica que",600,285);
 
       // Nombre del alumno
-      const nombre=session.user.user_metadata?.display_name||safeDisplayName(null,session.user.email)||"Alumno";
+      const nombre=session.user.user_metadata?.display_name||safeDisplayName(null,session.user.email)||session.user.email.split("@")[0];
       ctx.fillStyle="#F5C842";
-      ctx.font="bold 48px Georgia, serif";
-      ctx.fillText(nombre,600,310);
+      ctx.font="bold 52px Georgia, serif";
+      ctx.fillText(nombre,600,365);
 
-      // "completó exitosamente"
-      ctx.fillStyle="#F0EDE6";
+      ctx.fillStyle="#ffffff";
       ctx.font="20px Georgia, serif";
-      ctx.fillText("completó exitosamente el curso",600,365);
+      ctx.fillText("completó exitosamente",600,415);
 
       // Título del curso
-      ctx.fillStyle="#F0EDE6";
-      ctx.font="bold 32px Georgia, serif";
-      // Truncar si es muy largo
-      const titulo=post.titulo.length>60?post.titulo.slice(0,57)+"...":post.titulo;
-      ctx.fillText(`"${titulo}"`,600,420);
+      ctx.fillStyle="#ffffff";
+      ctx.font="bold 30px Georgia, serif";
+      const titulo=post.titulo.length>55?post.titulo.slice(0,52)+"...":post.titulo;
+      ctx.fillText(`"${titulo}"`,600,468);
 
-      // Materia
-      ctx.fillStyle="#888";
-      ctx.font="18px Georgia, serif";
-      ctx.fillText(`Materia: ${post.materia}`,600,465);
-
-      // Docente
+      // Materia y docente
+      ctx.fillStyle="rgba(255,255,255,.7)";
+      ctx.font="17px Georgia, serif";
       const docente=post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)||"Docente";
-      ctx.fillText(`Dictado por: ${docente}`,600,500);
+      ctx.fillText(`${post.materia||""}  ·  Docente: ${docente}`,600,515);
 
-      // Fecha
+      // Línea baja
+      ctx.strokeStyle="rgba(245,200,66,.4)";ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(250,560);ctx.lineTo(950,560);ctx.stroke();
+
+      // ── Footer ──
       const fecha=new Date().toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"});
-      ctx.fillText(`Fecha: ${fecha}`,600,535);
+      ctx.fillStyle="rgba(255,255,255,.6)";
+      ctx.font="15px Georgia, serif";
+      ctx.fillText(fecha,600,600);
 
-      // Línea divisoria baja
-      ctx.strokeStyle="#F5C84255";ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(200,580);ctx.lineTo(1000,580);ctx.stroke();
-
-      // Firma simulada
+      // ID verificable único
+      const uid=[post.id?.slice(0,6)||"XXXXX",Date.now().toString(36).toUpperCase().slice(-4),Math.random().toString(36).slice(2,6).toUpperCase()].join("-");
       ctx.fillStyle="#F5C842";
-      ctx.font="italic 16px Georgia, serif";
-      ctx.fillText("Luderis — Plataforma Educativa",600,640);
+      ctx.font="bold 13px monospace";
+      ctx.fillText(`ID: ${uid}`,600,640);
 
-      // ID único
-      const uid=Math.random().toString(36).slice(2,10).toUpperCase();
-      ctx.fillStyle=C.muted;
-      ctx.font="12px monospace";
-      ctx.fillText(`ID: ${uid}`,600,700);
+      ctx.fillStyle="rgba(255,255,255,.4)";
+      ctx.font="11px Georgia, serif";
+      ctx.fillText(`Verificable en luderis.com/certificado/${uid}`,600,665);
+
+      // Sello "APROBADO"
+      ctx.save();
+      ctx.translate(1060,690);ctx.rotate(-0.3);
+      ctx.strokeStyle="#2EC4A0";ctx.lineWidth=3;
+      ctx.strokeRect(-52,-26,104,52);
+      ctx.fillStyle="#2EC4A0";
+      ctx.font="bold 18px Arial, sans-serif";
+      ctx.textAlign="center";
+      ctx.fillText("APROBADO",0,7);
+      ctx.restore();
 
       // Descargar
       const link=document.createElement("a");
-      link.download=`certificado-${post.titulo.slice(0,30).replace(/\s+/g,"-")}.png`;
+      link.download=`certificado-${post.titulo.slice(0,30).replace(/\s+/g,"-")}-${uid}.png`;
       link.href=canvas.toDataURL("image/png");
       link.click();
     }catch(e){alert("Error al generar: "+e.message);}
     finally{setGenerando(false);}
   };
 
-  // Solo mostrar si el curso está finalizado y el alumno está inscripto
   if(!post.finalizado&&!inscripcion?.clase_finalizada)return null;
 
   return(
     <button onClick={generar} disabled={generando}
-      style={{display:"flex",alignItems:"center",gap:8,background:"#4ECB7118",border:"1px solid #4ECB7133",
-        borderRadius:10,padding:"10px 16px",cursor:"pointer",fontFamily:FONT,
-        color:C.success,fontSize:13,fontWeight:600,width:"100%",justifyContent:"center",marginTop:10}}>
-      <span style={{fontSize:16}}>🎓</span>
-      {generando?"Generando...":"Descargar certificado"}
+      style={{display:"flex",alignItems:"center",gap:8,background:"linear-gradient(135deg,#1A6ED815,#2EC4A015)",
+        border:"1px solid #2EC4A040",borderRadius:12,padding:"12px 18px",cursor:"pointer",fontFamily:FONT,
+        color:C.success,fontSize:14,fontWeight:700,width:"100%",justifyContent:"center",marginTop:10,
+        transition:"all .15s",boxShadow:"0 2px 8px rgba(46,196,160,.1)"}}
+      onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED825,#2EC4A025)"}
+      onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED815,#2EC4A015)"}>
+      <span style={{fontSize:18}}>🎓</span>
+      {generando?"Generando certificado…":"Descargar certificado"}
     </button>
   );
 }
