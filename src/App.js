@@ -1000,10 +1000,10 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
         const fU={};Object.keys(uMap).forEach(e=>{if(uMap[e].count>0)fU[e]=uMap[e].sum/uMap[e].count;});
         setReseñasUserMap(fU);
       } else {
-        const actSample=activos.slice(0,20);
-        const rData=await Promise.allSettled(actSample.map(p=>sb.getReseñas(p.id,session.access_token)));
+        // Consultar todas las publicaciones, no solo 20
+        const rData=await Promise.allSettled(activos.map(p=>sb.getReseñas(p.id,session.access_token)));
         const pMap={};const uMap={};
-        actSample.forEach((p,i)=>{
+        activos.forEach((p,i)=>{
           const r=rData[i].status==="fulfilled"?rData[i].value:[];
           const avg=r.length?r.reduce((a,rv)=>a+(rv.estrellas||0),0)/r.length:null;
           pMap[p.id]={avg,count:r.length};

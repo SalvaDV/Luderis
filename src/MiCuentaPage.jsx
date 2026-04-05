@@ -1137,7 +1137,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   useEffect(()=>{if(onClearBadge)onClearBadge();},[]);// eslint-disable-line
   // Credenciales
   const [showAddDoc,setShowAddDoc]=useState(false);
-  const [docTipo,setDocTipo]=useState("titulo");const [docTitulo,setDocTitulo]=useState("");const [docInst,setDocInst]=useState("");const [docAño,setDocAño]=useState("");const [docDesc,setDocDesc]=useState("");const [savingDoc,setSavingDoc]=useState(false);
+  const [docTipo,setDocTipo]=useState("titulo");const [docTitulo,setDocTitulo]=useState("");const [docInst,setDocInst]=useState("");const [docAño,setDocAño]=useState("");const [docDesc,setDocDesc]=useState("");const [docUrl,setDocUrl]=useState("");const [docPais,setDocPais]=useState("");const [savingDoc,setSavingDoc]=useState(false);
   // Perfil edición
   const [editingPerfil,setEditingPerfil]=useState(false);
   const [displayName,setDisplayName]=useState(()=>{try{return localStorage.getItem("dn_"+session.user.email)||"";}catch{return "";}});
@@ -1201,7 +1201,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const addDoc=async()=>{
     if(!docTitulo.trim())return;setSavingDoc(true);
     try{
-      await sb.insertDocumento({usuario_id:session.user.id,usuario_email:email,tipo:docTipo,titulo:docTitulo,institucion:docInst,año:docAño,descripcion:docDesc},session.access_token);
+      await sb.insertDocumento({usuario_id:session.user.id,usuario_email:email,tipo:docTipo,titulo:docTitulo.trim(),institucion:docInst.trim()||null,año:docAño.trim()||null,descripcion:docDesc.trim()||null,url_verificacion:docUrl.trim()||null,pais:docPais.trim()||null},session.access_token);
       setDocTitulo("");setDocInst("");setDocAño("");setDocDesc("");setShowAddDoc(false);await cargar();
     }catch(e){alert("Error: "+e.message);}finally{setSavingDoc(false);}
   };
@@ -1523,11 +1523,18 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
                 {TIPOS_DOC.map(({v,l})=>(<button key={v} onClick={()=>setDocTipo(v)} style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",background:docTipo===v?C.accent:"transparent",color:docTipo===v?"#fff":C.muted,border:`1px solid ${docTipo===v?C.accent:C.border}`,fontFamily:FONT,fontWeight:600,transition:"all .12s"}}>{l}</button>))}
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-                <div><Label>Título *</Label><input value={docTitulo} onChange={e=>setDocTitulo(e.target.value)} placeholder="Nombre del documento" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
-                <div><Label>Institución</Label><input value={docInst} onChange={e=>setDocInst(e.target.value)} placeholder="Opcional" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div><Label>Título *</Label><input value={docTitulo} onChange={e=>setDocTitulo(e.target.value)} placeholder="Ej: Licenciado en Matemática" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                  <div><Label>Institución</Label><input value={docInst} onChange={e=>setDocInst(e.target.value)} placeholder="Ej: UBA, Berklee..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div><Label>Año de obtención</Label><input value={docAño} onChange={e=>setDocAño(e.target.value)} placeholder="Ej: 2021" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                  <div><Label>País</Label><input value={docPais} onChange={e=>setDocPais(e.target.value)} placeholder="Ej: Argentina" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                </div>
+                <div><Label>Descripción (opcional)</Label><textarea value={docDesc} onChange={e=>setDocDesc(e.target.value.slice(0,300))} placeholder="Descripción breve, especialización, etc." rows={2} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",resize:"none"}}/></div>
+                <div><Label>URL de verificación (opcional)</Label><input value={docUrl} onChange={e=>setDocUrl(e.target.value)} placeholder="Link al certificado online, LinkedIn, etc." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
               </div>
-              <input value={docAño} onChange={e=>setDocAño(e.target.value)} placeholder="Año (opcional)" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",marginBottom:10}}/>
               <div style={{display:"flex",gap:8}}>
                 <button onClick={addDoc} disabled={savingDoc||!docTitulo.trim()} style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:!docTitulo.trim()?0.5:1}}>{savingDoc?"Guardando...":"Guardar"}</button>
                 <button onClick={()=>setShowAddDoc(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"8px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
@@ -1548,7 +1555,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                   <div style={{fontWeight:600,color:C.text,fontSize:14}}>{d.titulo}</div>
                   {d.institucion&&<div style={{color:C.muted,fontSize:12,marginTop:2}}>{d.institucion}</div>}
                   {d.año&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{d.año}</div>}
+                  {d.pais&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>🌎 {d.pais}</div>}
                   {d.descripcion&&<div style={{color:C.muted,fontSize:12,marginTop:6,lineHeight:1.5}}>{d.descripcion}</div>}
+                  {d.url_verificacion&&<a href={d.url_verificacion} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,marginTop:4,display:"inline-flex",alignItems:"center",gap:4}}>🔗 Verificar credencial</a>}
                 </div>
                 <button onClick={()=>removeDoc(d.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,cursor:"pointer",fontSize:12,padding:"4px 9px",flexShrink:0,transition:"all .12s"}}
                   onMouseEnter={e=>{e.currentTarget.style.color=C.danger;e.currentTarget.style.borderColor=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}>Eliminar</button>

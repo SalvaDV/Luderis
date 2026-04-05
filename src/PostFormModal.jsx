@@ -877,7 +877,9 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
     setLoading(true);setError(null);
     Promise.all([
       sb.getPublicaciones({autor:autorEmail},session.access_token).catch(()=>[]),
-      sb.getReseñasByAutor(autorEmail,session.access_token).catch(()=>[]),
+      // Query reseñas via publicaciones del docente (autor_pub_email es el campo correcto)
+      sb.db(`reseñas?autor_pub_email=eq.${encodeURIComponent(autorEmail)}&order=created_at.desc`,
+        "GET",null,session.access_token).catch(()=>[]),
       sb.getDocumentos(autorEmail,session.access_token).catch(()=>[]),
       sb.getUsuarioByEmail(autorEmail,session.access_token).catch(()=>null),
     ]).then(([p,r,d,u])=>{
