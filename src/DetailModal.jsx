@@ -229,8 +229,21 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 )}
               </div>
 
+              {/* Rating prominente */}
+              {reseñasUsuario&&reseñasUsuario.length>0&&(()=>{const avg=calcAvg(reseñasUsuario);return avg>0&&(
+                <div style={{background:"#FFF9E6",border:"1px solid #F59E0B33",borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
+                  <div style={{textAlign:"center",flexShrink:0}}>
+                    <div style={{fontSize:22,fontWeight:800,color:"#F59E0B",lineHeight:1}}>{avg.toFixed(1)}</div>
+                    <div style={{display:"flex",gap:1}}>{Array.from({length:5}).map((_,j)=><span key={j} style={{fontSize:10,color:j<Math.round(avg)?"#F59E0B":"#E5E7EB"}}>★</span>)}</div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#92400E"}}>{reseñasUsuario.length} reseña{reseñasUsuario.length!==1?"s":""}</div>
+                    <div style={{fontSize:11,color:"#B45309"}}>de alumnos verificados</div>
+                  </div>
+                </div>
+              );})()}
               {/* Info extra */}
-              <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{marginTop:8,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
                 {[
                   {icon:"✓",txt:"Sin intermediarios ni comisiones"},
                   post.tipo==="oferta"&&{icon:"🔒",txt:"Pago acordado directamente"},

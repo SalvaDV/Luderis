@@ -867,65 +867,63 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
 
 // ── PerfilPage — Perfil público de un usuario ─────────────────────────────────
 function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
-  const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);const [loading,setLoading]=useState(true);const [error,setError]=useState(null);
+  const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);
+  const [loading,setLoading]=useState(true);const [error,setError]=useState(null);
   const [perfilData,setPerfilData]=useState(null);
+  const [tab,setTab]=useState("clases");// clases | reseñas | credenciales
 
-  // Guard: autorEmail puede llegar vacío/null
   useEffect(()=>{
-    if(!autorEmail){setError("Email de usuario no disponible.");setLoading(false);return;}
+    if(!autorEmail){setError("Email no disponible.");setLoading(false);return;}
     setLoading(true);setError(null);
     Promise.all([
       sb.getPublicaciones({autor:autorEmail},session.access_token).catch(()=>[]),
       sb.getReseñasByAutor(autorEmail,session.access_token).catch(()=>[]),
       sb.getDocumentos(autorEmail,session.access_token).catch(()=>[]),
       sb.getUsuarioByEmail(autorEmail,session.access_token).catch(()=>null),
-    ]).then(([p,r,d,u])=>{setPubs((p||[]).filter(x=>x.activo!==false));setReseñas(r||[]);setDocs(d||[]);if(u)setPerfilData(u);})
-    .catch(e=>setError(e.message))
-    .finally(()=>setLoading(false));
+    ]).then(([p,r,d,u])=>{
+      setPubs((p||[]).filter(x=>x.activo!==false));
+      setReseñas(r||[]);setDocs(d||[]);if(u)setPerfilData(u);
+    }).catch(e=>setError(e.message)).finally(()=>setLoading(false));
   },[autorEmail,session]);
 
-  const nombre=autorEmail?(safeDisplayName(null,autorEmail)):"Usuario";
-  const savedColor=autorEmail?localStorage.getItem("avatarColor_"+autorEmail):null;
-  const perfilColor=savedColor||avatarColor(nombre[0]);
-  const avg=calcAvg(reseñas);
-  const TIPO_ICON={titulo:"🎓",certificado:"📜",experiencia:"💼",otro:"📄"};
-
-  // SEO: actualizar título cuando se abre el perfil
   useEffect(()=>{
     if(!loading&&perfilData){
       const n=perfilData.display_name||perfilData.nombre||nombre;
       document.title=`${n} — Docente en Luderis`;
-      let meta=document.querySelector("meta[name='description']");
-      if(!meta){meta=document.createElement("meta");meta.name="description";document.head.appendChild(meta);}
-      const materiasList=[...new Set(pubs.map(p=>p.materia).filter(Boolean))].slice(0,3).join(", ");
-      meta.content=`Clases con ${n} en Luderis${materiasList?" · "+materiasList:""}${perfilData.ubicacion?" · "+perfilData.ubicacion:""}. ${reseñas.length} reseñas.`;
       const url=window.location.origin+"?perfil="+encodeURIComponent(autorEmail);
       window.history.pushState({},"",url);
     }
     return()=>{window.history.pushState({},"",window.location.pathname);};
   },[loading,perfilData]);
 
-  const compartirPerfil=()=>{
-    const n=perfilData?.display_name||perfilData?.nombre||nombre;
+  const nombre=safeDisplayName(null,autorEmail)||"Usuario";
+  const displayNombre=perfilData?.display_name||perfilData?.nombre||nombre;
+  const avg=calcAvg(reseñas);
+  const totalInscriptos=pubs.reduce((a,p)=>a+(p.cantidad_inscriptos||0),0);
+  const materias=[...new Set(pubs.map(p=>p.materia).filter(Boolean))];
+  const perfilColor=localStorage.getItem("avatarColor_"+autorEmail)||avatarColor(displayNombre[0]);
+  const videoUrl=perfilData?.video_presentacion||null;
+  const TIPO_ICON={titulo:"🎓",certificado:"📜",experiencia:"💼",otro:"📄"};
+
+  const compartir=()=>{
     const url=window.location.origin+"?perfil="+encodeURIComponent(autorEmail);
-    if(navigator.share){navigator.share({title:n+" en Luderis",url});}
-    else{
-      navigator.clipboard.writeText(url).then(()=>{
-        const btn=document.getElementById("btn-compartir-perfil");
-        if(btn){btn.textContent="✓ Copiado";setTimeout(()=>{btn.textContent="🔗 Compartir";},2000);}
-      }).catch(()=>{});
-    }
+    if(navigator.share)navigator.share({title:displayNombre+" en Luderis",url});
+    else navigator.clipboard.writeText(url).then(()=>{
+      const b=document.getElementById("btn-comp-perf");
+      if(b){b.textContent="✓ Copiado";setTimeout(()=>b.textContent="🔗 Compartir",2000);}
+    }).catch(()=>{});
   };
 
   return(
     <div style={{position:"fixed",inset:0,background:C.bg,zIndex:400,overflowY:"auto",fontFamily:FONT}}>
-      <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-        <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>← Volver</button>
-        <div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:C.text,fontSize:15}}>{nombre}</div><div style={{fontSize:11,color:C.muted}}>Perfil del usuario</div></div>
-        <button id="btn-compartir-perfil" onClick={compartirPerfil}
-          style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT,flexShrink:0}}>
-          🔗 Compartir
-        </button>
+      {/* Sticky nav */}
+      <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
+        <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT,flexShrink:0}}>← Volver</button>
+        <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+          <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayNombre}</div>
+          <div style={{fontSize:11,color:C.muted}}>Docente en Luderis</div>
+        </div>
+        <button id="btn-comp-perf" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0}}>🔗 Compartir</button>
         {onOpenChat&&autorEmail!==session.user.email&&(
           <button onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
             style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:600,flexShrink:0}}>
@@ -933,77 +931,175 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
           </button>
         )}
       </div>
-      <div style={{maxWidth:720,margin:"0 auto",padding:"24px 20px"}}>
-        {error?<div style={{color:C.danger,textAlign:"center",padding:40,fontSize:14}}>{error}</div>:(
-        <>
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:18,padding:"24px",marginBottom:20}}>
-          <div style={{display:"flex",gap:16,alignItems:"center",marginBottom:16}}>
-            <div style={{width:68,height:68,borderRadius:"50%",background:perfilColor,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:26,color:"#fff",fontFamily:FONT,flexShrink:0}}>{nombre[0].toUpperCase()}</div>
-            <div style={{flex:1}}>
-              <h2 style={{color:C.text,fontSize:20,fontWeight:700,margin:"0 0 3px"}}>{perfilData?.display_name||perfilData?.nombre||nombre}</h2>
-              <div style={{color:C.muted,fontSize:13,marginBottom:4}}>{autorEmail}</div>
-              {perfilData?.ubicacion&&<div style={{color:C.muted,fontSize:12,marginBottom:4}}>📍 {perfilData.ubicacion}</div>}
-              {perfilData?.bio&&<p style={{color:C.muted,fontSize:12,margin:"0 0 6px",lineHeight:1.5}}>{perfilData.bio}</p>}
-              <StarRating val={avg} count={reseñas.length}/>
+
+      {error?<div style={{color:C.danger,textAlign:"center",padding:40}}>{error}</div>:(
+      <div style={{maxWidth:720,margin:"0 auto"}}>
+
+        {/* Hero banner */}
+        <div style={{background:`linear-gradient(135deg,${perfilColor}CC,${perfilColor}88)`,padding:"32px 24px 0",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:-30,right:-30,width:160,height:160,borderRadius:"50%",background:"rgba(255,255,255,.08)"}}/>
+          <div style={{display:"flex",gap:18,alignItems:"flex-end"}}>
+            <div style={{width:88,height:88,borderRadius:"50%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:34,color:perfilColor,flexShrink:0,boxShadow:"0 4px 20px rgba(0,0,0,.2)",marginBottom:-20,position:"relative",zIndex:1}}>
+              {displayNombre[0].toUpperCase()}
+            </div>
+            <div style={{paddingBottom:24,flex:1,minWidth:0}}>
+              <h1 style={{color:"#fff",fontSize:22,fontWeight:800,margin:"0 0 4px",textShadow:"0 1px 4px rgba(0,0,0,.2)"}}>{displayNombre}</h1>
+              {perfilData?.ubicacion&&<div style={{color:"rgba(255,255,255,.85)",fontSize:13}}>📍 {perfilData.ubicacion}</div>}
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                {materias.slice(0,4).map(m=><span key={m} style={{fontSize:11,background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:20,padding:"2px 10px",fontWeight:600}}>{m}</span>)}
+              </div>
             </div>
           </div>
-          {/* Docs/credenciales */}
-          {docs.length>0&&(
-            <div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:8}}>
-              {docs.map((d,i)=>(
-                <span key={i} style={{fontSize:11,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px",color:C.accent,fontWeight:600}}>
-                  {TIPO_ICON[d.tipo_doc]||"📄"} {d.titulo}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Publicaciones activas */}
-        {loading?<Spinner/>:(
-          <>
-          {pubs.length>0&&(
-            <div style={{marginBottom:20}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:12}}>Publicaciones ({pubs.length})</div>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {pubs.slice(0,8).map(p=>(
+        <div style={{padding:"28px 20px 20px"}}>
+          {/* Stats bar */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:20}}>
+            {[
+              {n:avg?avg.toFixed(1):"—",label:"Rating",icon:"⭐",color:"#F59E0B"},
+              {n:reseñas.length,label:"Reseñas",icon:"💬",color:C.accent},
+              {n:pubs.length,label:"Clases",icon:"📚",color:C.success},
+              {n:totalInscriptos,label:"Alumnos",icon:"👥",color:C.purple||"#7B3FBE"},
+            ].map(s=>(
+              <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px",textAlign:"center"}}>
+                <div style={{fontSize:11}}>{s.icon}</div>
+                <div style={{fontSize:18,fontWeight:800,color:s.color}}>{s.n}</div>
+                <div style={{fontSize:10,color:C.muted}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bio */}
+          {perfilData?.bio&&(
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>Sobre mí</div>
+              <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0}}>{perfilData.bio}</p>
+            </div>
+          )}
+
+          {/* Video de presentación */}
+          {videoUrl&&(
+            <div style={{marginBottom:16}}>
+              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8}}>🎬 Video de presentación</div>
+              <div style={{borderRadius:14,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
+                <iframe src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl}
+                  style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
+              </div>
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div style={{display:"flex",gap:2,background:C.surface,borderRadius:12,padding:3,marginBottom:16}}>
+            {[["clases",`Clases (${pubs.length})`],["reseñas",`Reseñas (${reseñas.length})`],["credenciales",`Credenciales (${docs.length})`]].map(([id,label])=>(
+              <button key={id} onClick={()=>setTab(id)}
+                style={{flex:1,padding:"7px",borderRadius:10,border:"none",fontSize:12,cursor:"pointer",fontFamily:FONT,
+                  fontWeight:tab===id?700:400,background:tab===id?C.accent:"transparent",color:tab===id?"#fff":C.muted,transition:"all .15s"}}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {loading&&<Spinner/>}
+
+          {/* Tab: Clases */}
+          {!loading&&tab==="clases"&&(
+            pubs.length===0
+              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin clases activas</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {pubs.map(p=>(
                   <div key={p.id} onClick={()=>onOpenDetail&&onOpenDetail(p)}
-                    style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"box-shadow .15s"}}
-                    onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.1)"}
-                    onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
-                    <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:4}}>{p.titulo}</div>
-                    <div style={{fontSize:12,color:C.muted,marginBottom:6}}>{p.materia}</div>
-                    <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
-                      {p.precio&&<span style={{fontSize:12,color:C.accent,fontWeight:700}}>${Number(p.precio).toLocaleString("es-AR")}/{p.precio_tipo||"hora"}</span>}
-                      {p.modalidad&&<span style={{fontSize:11,color:C.muted,background:C.surface,borderRadius:6,padding:"2px 7px"}}>{p.modalidad}</span>}
-                      {p.tiene_prueba&&<span style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:20,padding:"2px 8px"}}>✓ Clase de prueba</span>}
+                    style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .15s",display:"flex",gap:12,alignItems:"center"}}
+                    onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.1)";e.currentTarget.style.borderColor=C.accent+"44";}}
+                    onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=C.border;}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:3}}>{p.titulo}</div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                        {p.precio&&<span style={{fontSize:12,color:C.accent,fontWeight:700}}>${Number(p.precio).toLocaleString("es-AR")}/{p.precio_tipo||"hora"}</span>}
+                        {p.modalidad&&<span style={{fontSize:11,color:C.muted,background:C.surface,borderRadius:6,padding:"1px 7px"}}>{p.modalidad}</span>}
+                        {p.tiene_prueba&&<span style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:20,padding:"1px 8px"}}>✓ Prueba</span>}
+                        {p.sinc==="sinc"&&p.clases_sinc&&<span style={{fontSize:10,color:C.accent,fontWeight:700,background:C.accentDim,borderRadius:20,padding:"1px 8px"}}>📅 Recurrente</span>}
+                      </div>
+                    </div>
+                    <span style={{color:C.muted,fontSize:18,flexShrink:0}}>›</span>
+                  </div>
+                ))}
+              </div>
+          )}
+
+          {/* Tab: Reseñas */}
+          {!loading&&tab==="reseñas"&&(
+            reseñas.length===0
+              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin reseñas todavía</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {/* Rating summary */}
+                {avg>0&&(
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px",display:"flex",gap:16,alignItems:"center",marginBottom:4}}>
+                    <div style={{textAlign:"center",flexShrink:0}}>
+                      <div style={{fontSize:40,fontWeight:800,color:"#F59E0B",lineHeight:1}}>{avg.toFixed(1)}</div>
+                      <div style={{fontSize:11,color:C.muted}}>{reseñas.length} reseña{reseñas.length!==1?"s":""}</div>
+                    </div>
+                    <div style={{flex:1}}>
+                      {[5,4,3,2,1].map(n=>{
+                        const cnt=reseñas.filter(r=>r.estrellas===n).length;
+                        const pct=reseñas.length?Math.round(cnt/reseñas.length*100):0;
+                        return(
+                          <div key={n} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                            <span style={{fontSize:10,color:C.muted,width:8}}>{n}</span>
+                            <div style={{flex:1,height:6,background:C.border,borderRadius:3}}>
+                              <div style={{width:`${pct}%`,height:"100%",background:"#F59E0B",borderRadius:3}}/>
+                            </div>
+                            <span style={{fontSize:10,color:C.muted,width:24}}>{cnt}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {reseñas.map((r,i)=>(
+                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <div style={{display:"flex",gap:2}}>
+                        {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
+                      </div>
+                      <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
+                    </div>
+                    {r.comentario&&<p style={{color:C.text,fontSize:13,margin:"0 0 6px",lineHeight:1.5}}>{r.comentario}</p>}
+                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_email?.split("@")[0]}</div>
+                  </div>
+                ))}
+              </div>
+          )}
+
+          {/* Tab: Credenciales */}
+          {!loading&&tab==="credenciales"&&(
+            docs.length===0
+              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin credenciales cargadas</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {docs.map((d,i)=>(
+                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",gap:12,alignItems:"center"}}>
+                    <span style={{fontSize:22,flexShrink:0}}>{TIPO_ICON[d.tipo_doc]||"📄"}</span>
+                    <div>
+                      <div style={{fontWeight:600,color:C.text,fontSize:13}}>{d.titulo}</div>
+                      {d.descripcion&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{d.descripcion}</div>}
                     </div>
                   </div>
                 ))}
               </div>
+          )}
+
+          {/* CTA consultar — sticky bottom si no es propio */}
+          {autorEmail!==session.user.email&&onOpenChat&&(
+            <div style={{position:"sticky",bottom:0,background:C.bg,paddingTop:12,marginTop:20,borderTop:`1px solid ${C.border}`}}>
+              <button onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
+                style={{width:"100%",background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:14,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 16px rgba(26,110,216,.3)"}}>
+                💬 Consultarle a {displayNombre.split(" ")[0]}
+              </button>
             </div>
           )}
-          {reseñas.length>0&&(
-            <div>
-              <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:12}}>Reseñas ({reseñas.length})</div>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {reseñas.slice(0,5).map((r,i)=>(
-                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px"}}>
-                    <div style={{display:"flex",gap:3,marginBottom:5}}>
-                      {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
-                    </div>
-                    {r.comentario&&<p style={{color:C.muted,fontSize:13,margin:"0 0 4px",lineHeight:1.5}}>{r.comentario}</p>}
-                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_email?.split("@")[0]} · {fmtRel(r.created_at)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          </>
-        )}
-        </>
-        )}
+
+        </div>
       </div>
+      )}
     </div>
   );
 }

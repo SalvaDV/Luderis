@@ -1143,6 +1143,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const [displayName,setDisplayName]=useState(()=>{try{return localStorage.getItem("dn_"+session.user.email)||"";}catch{return "";}});
   const [bio,setBio]=useState("");
   const [ubicacionPerfil,setUbicacionPerfil]=useState("");
+  const [videoPresentacion,setVideoPresentacion]=useState("");
   const [avatarUrl,setAvatarUrl]=useState("");
   const [savingDisplayName,setSavingDisplayName]=useState(false);
   const [perfilLoaded,setPerfilLoaded]=useState(false);
@@ -1150,7 +1151,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   useEffect(()=>{
     if(perfilLoaded)return;
     sb.getUsuarioByIdFull(session.user.id,session.access_token).then(u=>{
-      if(u){if(u.bio)setBio(u.bio);if(u.ubicacion)setUbicacionPerfil(u.ubicacion);if(u.avatar_url)setAvatarUrl(u.avatar_url);}
+      if(u){if(u.bio)setBio(u.bio);if(u.ubicacion)setUbicacionPerfil(u.ubicacion);if(u.avatar_url)setAvatarUrl(u.avatar_url);if(u.video_presentacion)setVideoPresentacion(u.video_presentacion);}
       setPerfilLoaded(true);
     }).catch(()=>setPerfilLoaded(true));
   },[session.user.id,session.access_token,perfilLoaded]);
@@ -1280,6 +1281,11 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 <textarea value={bio} onChange={e=>setBio(e.target.value.slice(0,200))} placeholder="Contá algo sobre vos..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px 22px",color:C.text,fontSize:13,outline:"none",resize:"vertical",minHeight:60,boxSizing:"border-box",fontFamily:FONT}}/>
                 <span style={{position:"absolute",bottom:6,right:10,fontSize:10,color:bio.length>=200?C.danger:C.muted}}>{bio.length}/200</span>
               </div>
+              <div>
+                <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>🎬 Video de presentación (YouTube)</label>
+                <input value={videoPresentacion} onChange={e=>setVideoPresentacion(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                <div style={{fontSize:10,color:C.muted,marginTop:3}}>Se muestra en tu perfil público.</div>
+              </div>
               <Label>Color de avatar</Label>
               <div style={{display:"flex",gap:7,marginBottom:14,flexWrap:"wrap"}}>
                 {AVATAR_COLORS.map(c=>(<button key={c} onClick={()=>saveColor(c)} style={{width:26,height:26,borderRadius:"50%",background:c,border:currentColor===c?`2.5px solid ${C.text}`:"2.5px solid transparent",cursor:"pointer",padding:0}}/>))}
@@ -1290,7 +1296,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                   setSavingDisplayName(true);
                   try{
                     sb.setDisplayName(email,newName);
-                    await sb.updateUsuario(uid,{display_name:newName,nombre:newName,bio:bio.trim()||null,ubicacion:ubicacionPerfil.trim()||null,avatar_url:avatarUrl.trim()||null},session.access_token);
+                    await sb.updateUsuario(uid,{display_name:newName,nombre:newName,bio:bio.trim()||null,ubicacion:ubicacionPerfil.trim()||null,avatar_url:avatarUrl.trim()||null,video_presentacion:videoPresentacion.trim()||null},session.access_token);
                     // Guardar bio y ciudad en localStorage para el progreso de perfil
                     try{
                       if(bio.trim())localStorage.setItem("cl_bio_"+session.user.email,bio.trim());else localStorage.removeItem("cl_bio_"+session.user.email);
