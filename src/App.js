@@ -670,14 +670,23 @@ function ForoPage({session}){
   const [respuestaTexto,setRespuestaTexto]=useState("");
   const [savingResp,setSavingResp]=useState(false);
 
+  const [foroError,setForoError]=useState(null);
+
   const cargar=useCallback(async()=>{
-    setLoading(true);
+    setLoading(true);setForoError(null);
     try{
       const data=await sb.db(
         `foro_posts?materia=eq.${encodeURIComponent(materiaActiva)}&order=created_at.desc&select=*`,
         "GET",null,session.access_token
-      ).catch(()=>[]);
+      );
       setPosts(data||[]);
+    }catch(e){
+      if(e.message?.includes("404")||e.message?.includes("42P01")||e.message?.includes("relation")){
+        setForoError("tabla_no_existe");
+      }else{
+        setForoError(e.message);
+      }
+      setPosts([]);
     }finally{setLoading(false);}
   },[materiaActiva,session]);
 
@@ -703,7 +712,14 @@ function ForoPage({session}){
       },session.access_token,"return=minimal");
       setTitulo("");setCuerpo("");setShowForm(false);
       cargar();
-    }catch(e){toast("Error: "+e.message,"error");}
+      toast("¡Pregunta publicada!","success");
+    }catch(e){
+      if(e.message?.includes("42P01")||e.message?.includes("relation")){
+        toast("El foro no está configurado aún. Ejecutá el SQL primero.","error",5000);
+      }else{
+        toast("Error: "+e.message,"error");
+      }
+    }
     finally{setSaving(false);}
   };
 
@@ -800,7 +816,38 @@ function ForoPage({session}){
       )}
 
       {/* Lista de posts */}
-      {loading?<Spinner/>:posts.length===0?(
+      {loading?<Spinner/>:foroError==="tabla_no_existe"?(
+        <div style={{background:"#FFF3CD",border:"1px solid #FFC107",borderRadius:12,padding:"20px 24px"}}>
+          <div style={{fontWeight:700,color:"#856404",fontSize:15,marginBottom:8}}>⚠️ Foro no configurado</div>
+          <div style={{color:"#856404",fontSize:13,marginBottom:12}}>Ejecutá este SQL en Supabase → SQL Editor para activar el foro:</div>
+          <pre style={{background:"#fff",borderRadius:8,padding:"12px",fontSize:11,color:"#333",overflow:"auto",marginBottom:8}}>{`CREATE TABLE IF NOT EXISTS foro_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  materia TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  cuerpo TEXT,
+  autor_email TEXT,
+  autor_nombre TEXT,
+  respuestas_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS foro_respuestas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  foro_post_id UUID REFERENCES foro_posts(id) ON DELETE CASCADE,
+  cuerpo TEXT,
+  autor_email TEXT,
+  autor_nombre TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE foro_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE foro_respuestas ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "foro_read" ON foro_posts FOR SELECT USING (true);
+CREATE POLICY "foro_insert" ON foro_posts FOR INSERT WITH CHECK (true);
+CREATE POLICY "foro_resp_read" ON foro_respuestas FOR SELECT USING (true);
+CREATE POLICY "foro_resp_insert" ON foro_respuestas FOR INSERT WITH CHECK (true);`}</pre>
+        </div>
+      ):foroError?(
+        <div style={{color:C.danger,fontSize:13,padding:"16px",background:C.danger+"10",borderRadius:10}}>Error: {foroError}</div>
+      ):posts.length===0?(
         <div style={{textAlign:"center",padding:"48px 0",color:C.muted}}>
           <div style={{fontSize:32,marginBottom:12}}>🤔</div>
           <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Nadie preguntó sobre {materiaActiva} todavía</div>

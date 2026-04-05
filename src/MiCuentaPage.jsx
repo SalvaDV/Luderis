@@ -726,7 +726,7 @@ function BilleteraTab({session}){
     try{
       const [bil,movs]=await Promise.all([
         sb.db(`billetera?usuario_id=eq.${session.user.id}&select=saldo`,
-          "GET",null,session.access_token).then(r=>r?.[0]||{saldo:0}),
+          "GET",null,session.access_token).then(r=>r?.[0]||{saldo:0}).catch(()=>({saldo:0})),
         sb.db(`billetera_movimientos?usuario_id=eq.${session.user.id}&order=created_at.desc&limit=20`,
           "GET",null,session.access_token).catch(()=>[]),
       ]);
@@ -745,13 +745,13 @@ function BilleteraTab({session}){
     try{
       // Crear preferencia MP para cargar saldo
       const result=await sb.createMPCheckout({
-        publicacion_id:null,
+        publicacion_id:"00000000-0000-0000-0000-000000000001",// placeholder para recarga billetera
         titulo:`Recarga de billetera Luderis — $${n.toLocaleString("es-AR")}`,
-        descripcion:"Créditos para usar en clases",
+        descripcion:"Créditos para usar en clases en Luderis",
         precio:n,cantidad:1,
         alumno_email:session.user.email,
         alumno_nombre:session.user.email.split("@")[0],
-        docente_email:"billetera@luderis.com",
+        docente_email:session.user.email,
         tipo:"recarga_billetera",
       },session.access_token);
       if(result.disabled){toast("Pago online no disponible aún","info");return;}
