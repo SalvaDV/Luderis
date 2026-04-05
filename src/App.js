@@ -2735,7 +2735,7 @@ export default function App(){
       if(!meta){meta=document.createElement("meta");meta.name="description";document.head.appendChild(meta);}
       meta.content=((pub.descripcion||"").slice(0,155))||`Clases de ${pub.materia||"educación"} en Luderis`;
     }
-  },[cursoPost,detailPost]);const [perfilEmail,setPerfilEmail]=useState(null);const [chatsKey,setChatsKey]=useState(0);
+  },[cursoPost,detailPost]);const [perfilEmail,setPerfilEmail]=useState(null);const [certVerifId,setCertVerifId]=useState(null);const [chatsKey,setChatsKey]=useState(0);
   const [page,setPageRaw]=useState(()=>{try{return sessionStorage.getItem("cl_page")||"explore";}catch{return "explore";}});
   const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
