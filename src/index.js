@@ -5,7 +5,7 @@ import App from './App';
 import * as Sentry from "@sentry/react";
 
 Sentry.init({
-  dsn: "TU_DSN_AQUI",
+  dsn: "https://7048964b77b715c46288eb43fddb4129@o4511175376437248.ingest.us.sentry.io/4511175379517440",
   environment: process.env.NODE_ENV,
   enabled: process.env.NODE_ENV === "production",
   tracesSampleRate: 0.1,
