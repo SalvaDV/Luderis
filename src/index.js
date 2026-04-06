@@ -10,6 +10,10 @@ Sentry.init({
   enabled: process.env.NODE_ENV === "production",
   tracesSampleRate: 0.1,
 });
+// Test de Sentry — borrar después de verificar
+setTimeout(() => {
+  throw new Error("Test Sentry Luderis");
+}, 3000);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<React.StrictMode><App /></React.StrictMode>);
