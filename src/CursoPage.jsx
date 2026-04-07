@@ -1836,38 +1836,59 @@ function ProgresoCurso({post,session}){
 // ─── FLASHCARDS CON IA ───────────────────────────────────────────────────────
 const FC_KEY=(postId)=>`cl_flashcards_${postId}`;
 function FlashcardsDeck({cards,onDelete}){
-  const [idx,setIdx]=useState(0);const [flip,setFlip]=useState(false);const [done,setDone]=useState([]);
+  const [idx,setIdx]=useState(0);const [flipped,setFlipped]=useState(false);const [done,setDone]=useState([]);
   if(!cards||cards.length===0)return null;
   const remaining=cards.filter((_,i)=>!done.includes(i));
   if(remaining.length===0)return(
     <div style={{textAlign:"center",padding:"32px 0"}}>
-      <div style={{fontSize:36,marginBottom:10}}>🎉</div>
-      <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:6}}>¡Completaste todas las flashcards!</div>
-      <button onClick={()=>setDone([])} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 20px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT}}>Volver a empezar</button>
+      <div style={{fontSize:40,marginBottom:10}}>🎉</div>
+      <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:6}}>¡Completaste todas!</div>
+      <button onClick={()=>{setDone([]);setIdx(0);setFlipped(false);}} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 22px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT}}>Volver a empezar</button>
     </div>
   );
   const realIdx=cards.indexOf(remaining[idx%remaining.length]);
   const card=cards[realIdx];
   return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14,padding:"10px 0"}}>
-      <div style={{fontSize:12,color:C.muted}}>{remaining.length} restantes · {done.length} completadas</div>
-      {/* Card */}
-      <div onClick={()=>setFlip(f=>!f)} style={{width:"100%",maxWidth:460,minHeight:160,background:flip?C.accentDim:C.surface,border:`2px solid ${flip?C.accent:C.border}`,borderRadius:18,padding:"28px 24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(0,0,0,.07)",transition:"all .2s",position:"relative"}}>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.5,marginBottom:8,textTransform:"uppercase"}}>{flip?"RESPUESTA":"PREGUNTA"} · click para voltear</div>
-          <div style={{fontSize:15,color:C.text,fontWeight:flip?500:700,lineHeight:1.6}}>{flip?card.respuesta:card.pregunta}</div>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,padding:"10px 0"}}>
+      <style>{`
+        .fc-scene{width:100%;max-width:460px;height:190px;perspective:900px;cursor:pointer;}
+        .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);}
+        .fc-card.flipped{transform:rotateY(180deg);}
+        .fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;text-align:center;box-shadow:0 4px 22px rgba(0,0,0,.08);}
+        .fc-front{background:var(--fc-surface);border:2px solid var(--fc-border);}
+        .fc-back{background:var(--fc-accent-dim);border:2px solid var(--fc-accent);transform:rotateY(180deg);}
+      `}</style>
+      <div style={{"--fc-surface":C.surface,"--fc-border":C.border,"--fc-accent-dim":C.accentDim,"--fc-accent":C.accent}} className="fc-scene" onClick={()=>setFlipped(f=>!f)}>
+        <div className={`fc-card${flipped?" flipped":""}`}>
+          <div className="fc-face fc-front">
+            <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.8,marginBottom:10,textTransform:"uppercase"}}>Pregunta · tap para voltear</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,lineHeight:1.6}}>{card.pregunta}</div>
+          </div>
+          <div className="fc-face fc-back">
+            <div style={{fontSize:10,color:C.accent,fontWeight:700,letterSpacing:.8,marginBottom:10,textTransform:"uppercase"}}>Respuesta</div>
+            <div style={{fontSize:14,color:C.text,fontWeight:400,lineHeight:1.65}}>{card.respuesta}</div>
+          </div>
         </div>
-        {onDelete&&<button onClick={e=>{e.stopPropagation();onDelete(realIdx);}} style={{position:"absolute",top:8,right:10,background:"none",border:"none",color:C.muted,fontSize:16,cursor:"pointer",opacity:.5}} title="Eliminar">×</button>}
       </div>
-      {/* Controles */}
-      <div style={{display:"flex",gap:10}}>
-        <button onClick={()=>{setDone(d=>[...d,realIdx]);setFlip(false);if(idx>=remaining.length-1)setIdx(0);}} style={{background:"#2EC4A020",border:"1px solid #2EC4A050",borderRadius:10,color:"#0F6E56",padding:"8px 18px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✓ La sabía</button>
-        <button onClick={()=>{setFlip(false);setIdx(i=>(i+1)%remaining.length);}} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"8px 18px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>→ Siguiente</button>
-      </div>
-      {/* Miniprogress */}
+      {/* Progreso */}
+      <div style={{fontSize:11,color:C.muted}}>{done.length}/{cards.length} completadas · {remaining.length} restantes</div>
       <div style={{width:"100%",maxWidth:460,height:4,background:C.border,borderRadius:2}}>
-        <div style={{height:"100%",width:`${(done.length/cards.length)*100}%`,background:C.accent,borderRadius:2,transition:"width .4s"}}/>
+        <div style={{height:"100%",width:`${(done.length/cards.length)*100}%`,background:C.accent,borderRadius:2,transition:"width .5s"}}/>
       </div>
+      {/* Botones */}
+      {flipped&&(
+        <div style={{display:"flex",gap:10,marginTop:4}}>
+          <button onClick={()=>{setDone(d=>[...d,realIdx]);setFlipped(false);if(idx>=remaining.length-1)setIdx(0);else setIdx(i=>i);}}
+            style={{background:"#2EC4A018",border:"1px solid #2EC4A055",borderRadius:10,color:"#0F6E56",padding:"9px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✓ La sabía</button>
+          <button onClick={()=>{setFlipped(false);setTimeout(()=>setIdx(i=>(i+1)%remaining.length),200);}}
+            style={{background:"#E53E3E12",border:"1px solid #E53E3E44",borderRadius:10,color:C.danger,padding:"9px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✗ Repasar</button>
+        </div>
+      )}
+      {!flipped&&(
+        <button onClick={()=>{setFlipped(false);setTimeout(()=>setIdx(i=>(i+1)%remaining.length),200);}}
+          style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"9px 20px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Saltear →</button>
+      )}
+      {onDelete&&<button onClick={()=>onDelete(realIdx)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,marginTop:-4,fontFamily:FONT}}>🗑 Eliminar esta tarjeta</button>}
     </div>
   );
 }
@@ -2036,186 +2057,21 @@ function NotasPrivadas({storageKey,session,post}){
   );
 }
 
-// ─── Q&A DEL CURSO ───────────────────────────────────────────────────────────
-function QACurso({post,session,esMio,esAyudante}){
-  const [preguntas,setPreguntas]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [texto,setTexto]=useState("");
-  const [enviando,setEnviando]=useState(false);
-  const [expandida,setExpandida]=useState(null);
-  const [respTexto,setRespTexto]=useState({});
-  const [respuestas,setRespuestas]=useState({});
-  const [generandoIA,setGenerandoIA]=useState(null);
-  const miEmail=session.user.email;
-  const miNombre=sb.getDisplayName(miEmail)||miEmail.split("@")[0];
-  const esStaff=esMio||esAyudante;
-
-  const cargar=useCallback(async()=>{
-    try{
-      const data=await sb.getForoPosts(post.id,session.access_token).catch(()=>[]);
-      // Filtramos por tipo qa (texto empieza con "[qa]") o todos si no hay foro separado
-      const qa=(data||[]).filter(p=>p.texto?.startsWith("[qa]"));
-      setPreguntas(qa.map(p=>({...p,texto:p.texto.replace("[qa]","").trim()})));
-    }finally{setLoading(false);}
-  },[post.id,session.access_token]);
-
-  useEffect(()=>{cargar();},[cargar]);
-
-  const enviar=async()=>{
-    if(!texto.trim())return;
-    setEnviando(true);
-    try{
-      await sb.insertForoPost({publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:"[qa] "+texto.trim()},session.access_token);
-      setTexto("");await cargar();
-    }catch(e){alert(e.message);}finally{setEnviando(false);}
-  };
-
-  const cargarResp=async(postId)=>{
-    if(respuestas[postId])return;
-    const r=await sb.getForoRespuestas(postId,session.access_token).catch(()=>[]);
-    setRespuestas(prev=>({...prev,[postId]:r||[]}));
-  };
-
-  const toggle=async(id)=>{
-    if(expandida===id){setExpandida(null);return;}
-    setExpandida(id);await cargarResp(id);
-  };
-
-  const responder=async(postId)=>{
-    const txt=(respTexto[postId]||"").trim();if(!txt)return;
-    try{
-      await sb.insertForoRespuesta({foro_post_id:postId,publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:txt},session.access_token);
-      setRespTexto(p=>({...p,[postId]:""}));
-      const r=await sb.getForoRespuestas(postId,session.access_token).catch(()=>[]);
-      setRespuestas(prev=>({...prev,[postId]:r||[]}));
-    }catch(e){alert(e.message);}
-  };
-
-  const responderConIA=async(postId,preguntaTxt)=>{
-    setGenerandoIA(postId);
-    try{
-      const r=await sb.callIA(
-        `Sos un asistente educativo experto. Respondé esta pregunta de un alumno del curso "${post.titulo}" de forma clara, concisa y educativa. Máximo 3 párrafos. Usá español rioplatense.`,
-        preguntaTxt,400,session.access_token
-      );
-      setRespTexto(p=>({...p,[postId]:r}));
-    }catch(e){alert("Error IA: "+e.message);}finally{setGenerandoIA(null);}
-  };
-
-  return(
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
-      {/* Header */}
-      <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:18}}>❓</span>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:700,color:C.text,fontSize:14}}>Preguntas y Respuestas</div>
-          <div style={{fontSize:11,color:C.muted}}>{preguntas.length} pregunta{preguntas.length!==1?"s":""} · las respuestas benefician a todos</div>
-        </div>
-      </div>
-
-      {/* Hacer pregunta */}
-      <div style={{padding:"12px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",gap:8}}>
-        <textarea value={texto} onChange={e=>setTexto(e.target.value)}
-          onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();enviar();}}}
-          placeholder="Escribí tu pregunta… (visible para todos los inscriptos)"
-          rows={2}
-          style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"8px 12px",color:C.text,fontSize:13,fontFamily:FONT,resize:"none",outline:"none"}}/>
-        <button onClick={enviar} disabled={!texto.trim()||enviando}
-          style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,alignSelf:"flex-end",opacity:!texto.trim()?.4:1}}>
-          {enviando?"…":"Preguntar"}
-        </button>
-      </div>
-
-      {/* Lista preguntas */}
-      <div style={{maxHeight:480,overflowY:"auto"}}>
-        {loading?<div style={{padding:"24px",display:"flex",justifyContent:"center"}}><Spinner/></div>
-          :preguntas.length===0
-            ?<div style={{padding:"32px",textAlign:"center",color:C.muted,fontSize:13}}>
-                <div style={{fontSize:32,marginBottom:8}}>🙋</div>
-                Todavía no hay preguntas. ¡Sé el primero en consultar!
-              </div>
-            :preguntas.map((p,i)=>{
-              const abierta=expandida===p.id;
-              const resps=respuestas[p.id]||[];
-              const tieneRespuesta=resps.length>0;
-              return(
-                <div key={p.id||i} style={{borderBottom:`1px solid ${C.border}`}}>
-                  <div onClick={()=>toggle(p.id)}
-                    style={{padding:"12px 14px",cursor:"pointer",display:"flex",gap:10,alignItems:"flex-start",background:abierta?C.accentDim:"transparent",transition:"background .12s"}}
-                    onMouseEnter={e=>{if(!abierta)e.currentTarget.style.background=C.bg;}}
-                    onMouseLeave={e=>{if(!abierta)e.currentTarget.style.background="transparent";}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:tieneRespuesta?"#2EC4A015":"#F59E0B15",border:`1px solid ${tieneRespuesta?"#2EC4A044":"#F59E0B44"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>
-                      {tieneRespuesta?"✓":"?"}
-                    </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,color:C.text,fontWeight:abierta?700:400,lineHeight:1.5}}>{p.texto}</div>
-                      <div style={{fontSize:10,color:C.muted,marginTop:3}}>
-                        {p.autor_nombre||p.autor_email?.split("@")[0]} · {fmtRel(p.created_at)}
-                        {tieneRespuesta&&<span style={{color:C.success,marginLeft:8,fontWeight:600}}>· {resps.length} respuesta{resps.length!==1?"s":""}</span>}
-                      </div>
-                    </div>
-                    <span style={{color:C.muted,fontSize:12,flexShrink:0,marginTop:2}}>{abierta?"▲":"▼"}</span>
-                  </div>
-
-                  {abierta&&(
-                    <div style={{background:C.bg,padding:"10px 14px 14px 52px",borderTop:`1px solid ${C.border}`}}>
-                      {/* Respuestas */}
-                      {resps.map((r,ri)=>{
-                        const esDoc=r.autor_email===post.autor_email;
-                        return(
-                          <div key={ri} style={{marginBottom:10,padding:"10px 12px",background:esDoc?"#2EC4A010":C.surface,border:`1px solid ${esDoc?"#2EC4A033":C.border}`,borderRadius:10}}>
-                            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5}}>
-                              <Avatar letra={(r.autor_nombre||"?")[0]} size={20}/>
-                              <span style={{fontSize:12,fontWeight:700,color:esDoc?C.success:C.text}}>{r.autor_nombre||r.autor_email?.split("@")[0]}</span>
-                              {esDoc&&<span style={{fontSize:9,background:"#2EC4A015",color:C.success,borderRadius:20,padding:"1px 6px",border:"1px solid #2EC4A033",fontWeight:700}}>Docente</span>}
-                              <span style={{fontSize:10,color:C.muted,marginLeft:"auto"}}>{fmtRel(r.created_at)}</span>
-                            </div>
-                            <div style={{fontSize:13,color:C.text,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{r.texto}</div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Caja responder */}
-                      <div style={{marginTop:8,display:"flex",gap:7,flexDirection:"column"}}>
-                        <textarea value={respTexto[p.id]||""} onChange={e=>setRespTexto(prev=>({...prev,[p.id]:e.target.value}))}
-                          placeholder={esStaff?"Respondé esta pregunta…":"Agregá información adicional…"}
-                          rows={2}
-                          style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 12px",color:C.text,fontSize:12,fontFamily:FONT,resize:"none",outline:"none",boxSizing:"border-box"}}/>
-                        <div style={{display:"flex",gap:6}}>
-                          {esStaff&&(
-                            <button onClick={()=>responderConIA(p.id,p.texto)} disabled={generandoIA===p.id}
-                              style={{background:"#7B3FBE18",border:"1px solid #7B3FBE33",borderRadius:8,color:"#7B3FBE",padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>
-                              {generandoIA===p.id?"Generando…":"✨ Sugerir con IA"}
-                            </button>
-                          )}
-                          <button onClick={()=>responder(p.id)} disabled={!(respTexto[p.id]||"").trim()}
-                            style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,marginLeft:"auto",opacity:!(respTexto[p.id]||"").trim()?.4:1}}>
-                            Responder
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-        }
-      </div>
-    </div>
-  );
-}
-
-// ─── FORO DEL CURSO ───────────────────────────────────────────────────────────
+// ─── FORO DEL CURSO (incluye Q&A) ────────────────────────────────────────────
 function ForoCurso({post,session,esMio,esAyudante}){
   const [posts,setPosts]=useState([]);
   const [loading,setLoading]=useState(true);
   const [texto,setTexto]=useState("");
+  const [tipoNuevo,setTipoNuevo]=useState("disc");// "disc"|"qa"
+  const [filtro,setFiltro]=useState("todos");// "todos"|"qa"|"disc"
   const [enviando,setEnviando]=useState(false);
   const [expandedPost,setExpandedPost]=useState(null);
-  const [respuestas,setRespuestas]=useState({});// {postId: [...]}
-  const [respuestaTexto,setRespuestaTexto]=useState({});// {postId: texto}
+  const [respuestas,setRespuestas]=useState({});
+  const [respuestaTexto,setRespuestaTexto]=useState({});
+  const [generandoIA,setGenerandoIA]=useState(null);
   const miEmail=session.user.email;
-  const miNombre=session.user.user_metadata?.display_name||miEmail.split("@")[0];
+  const miNombre=sb.getDisplayName(miEmail)||miEmail.split("@")[0];
+  const esStaff=esMio||esAyudante;
 
   useEffect(()=>{
     sb.getForoPosts(post.id,session.access_token)
@@ -2227,24 +2083,18 @@ function ForoCurso({post,session,esMio,esAyudante}){
   const enviarPost=async()=>{
     if(!texto.trim())return;
     setEnviando(true);
+    const prefijo=tipoNuevo==="qa"?"[qa] ":"";
     try{
-      const r=await sb.insertForoPost({
-        publicacion_id:post.id,
-        autor_email:miEmail,
-        autor_nombre:miNombre,
-        texto:texto.trim(),
-      },session.access_token);
+      const r=await sb.insertForoPost({publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:prefijo+texto.trim()},session.access_token);
       setPosts(prev=>[...prev,...(r||[])]);
       setTexto("");
-    }catch(e){
-      // Fallback local si tabla no existe
-      const fakePost={id:"local_"+Date.now(),publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:texto.trim(),created_at:new Date().toISOString()};
-      setPosts(prev=>[...prev,fakePost]);
-      setTexto("");
+    }catch{
+      const fake={id:"local_"+Date.now(),publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:prefijo+texto.trim(),created_at:new Date().toISOString()};
+      setPosts(prev=>[...prev,fake]);setTexto("");
     }finally{setEnviando(false);}
   };
 
-  const cargarRespuestas=async(postId)=>{
+  const cargarResps=async(postId)=>{
     if(respuestas[postId])return;
     const r=await sb.getForoRespuestas(postId,session.access_token).catch(()=>[]);
     setRespuestas(prev=>({...prev,[postId]:r||[]}));
@@ -2252,76 +2102,113 @@ function ForoCurso({post,session,esMio,esAyudante}){
 
   const togglePost=async(postId)=>{
     if(expandedPost===postId){setExpandedPost(null);return;}
-    setExpandedPost(postId);
-    await cargarRespuestas(postId);
+    setExpandedPost(postId);await cargarResps(postId);
   };
 
   const enviarRespuesta=async(postId)=>{
-    const txt=(respuestaTexto[postId]||"").trim();
-    if(!txt)return;
+    const txt=(respuestaTexto[postId]||"").trim();if(!txt)return;
     try{
-      const r=await sb.insertForoRespuesta({
-        foro_post_id:postId,
-        publicacion_id:post.id,
-        autor_email:miEmail,
-        autor_nombre:miNombre,
-        texto:txt,
-      },session.access_token);
+      const r=await sb.insertForoRespuesta({foro_post_id:postId,publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:txt},session.access_token);
       setRespuestas(prev=>({...prev,[postId]:[...(prev[postId]||[]),...(r||[{id:"local_"+Date.now(),autor_email:miEmail,autor_nombre:miNombre,texto:txt,created_at:new Date().toISOString()}])]}));
       setRespuestaTexto(prev=>({...prev,[postId]:""}));
     }catch{
-      const fake={id:"local_"+Date.now(),autor_email:miEmail,autor_nombre:miNombre,texto:txt,created_at:new Date().toISOString()};
-      setRespuestas(prev=>({...prev,[postId]:[...(prev[postId]||[]),fake]}));
+      setRespuestas(prev=>({...prev,[postId]:[...(prev[postId]||[]),{id:"local_"+Date.now(),autor_email:miEmail,autor_nombre:miNombre,texto:txt,created_at:new Date().toISOString()}]}));
       setRespuestaTexto(prev=>({...prev,[postId]:""}));
     }
   };
+
+  const sugerirConIA=async(postId,textoPregunta)=>{
+    setGenerandoIA(postId);
+    try{
+      const r=await sb.callIA(
+        `Sos docente del curso "${post.titulo}". Respondé la siguiente pregunta de un alumno de forma clara, concisa y educativa. Usá español rioplatense.`,
+        textoPregunta,400,session.access_token
+      );
+      setRespuestaTexto(prev=>({...prev,[postId]:r}));
+    }catch(e){toast("Error IA: "+e.message,"error");}
+    setGenerandoIA(null);
+  };
+
+  const postsFiltrados=posts.filter(p=>{
+    if(filtro==="qa")return p.texto?.startsWith("[qa]");
+    if(filtro==="disc")return!p.texto?.startsWith("[qa]");
+    return true;
+  });
+  const totalQA=posts.filter(p=>p.texto?.startsWith("[qa]")).length;
+  const totalDisc=posts.filter(p=>!p.texto?.startsWith("[qa]")).length;
 
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT};
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {/* Formulario nueva pregunta */}
+      {/* Nuevo post */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>💬 Hacer una pregunta</div>
+        {/* Tipo selector */}
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          {[{id:"disc",label:"💬 Discusión"},{id:"qa",label:"❓ Pregunta"}].map(t=>(
+            <button key={t.id} onClick={()=>setTipoNuevo(t.id)}
+              style={{padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:FONT,
+                background:tipoNuevo===t.id?C.accent:C.surface,
+                color:tipoNuevo===t.id?"#fff":C.muted,
+                border:`1px solid ${tipoNuevo===t.id?"transparent":C.border}`}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
         <textarea value={texto} onChange={e=>setTexto(e.target.value.slice(0,500))}
-          placeholder="Escribí tu pregunta o comentario para el grupo..."
-          style={{...iS,minHeight:72,resize:"vertical",marginBottom:8}}/>
+          placeholder={tipoNuevo==="qa"?"Escribí tu pregunta al docente o al grupo…":"Escribí tu comentario o aporte…"}
+          style={{...iS,minHeight:68,resize:"vertical",marginBottom:8}}/>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:10,color:C.muted}}>{texto.length}/500</span>
           <button onClick={enviarPost} disabled={enviando||!texto.trim()}
-            style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"7px 16px",
-              fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,
-              opacity:!texto.trim()?0.5:1}}>
-            {enviando?"Enviando...":"Publicar →"}
+            style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"7px 16px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,opacity:!texto.trim()?0.5:1}}>
+            {enviando?"Enviando…":"Publicar →"}
           </button>
         </div>
       </div>
 
-      {/* Lista de posts */}
-      {loading?<Spinner small/>:posts.length===0?(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
-          Sin preguntas aún. ¡Sé el primero en preguntar!
+      {/* Filtros */}
+      {posts.length>0&&(
+        <div style={{display:"flex",gap:4}}>
+          {[{id:"todos",label:`Todo (${posts.length})`},{id:"qa",label:`❓ Preguntas (${totalQA})`},{id:"disc",label:`💬 Debates (${totalDisc})`}].map(f=>(
+            <button key={f.id} onClick={()=>setFiltro(f.id)}
+              style={{padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:filtro===f.id?700:400,cursor:"pointer",fontFamily:FONT,
+                background:filtro===f.id?C.accentDim:"transparent",
+                color:filtro===f.id?C.accent:C.muted,
+                border:`1px solid ${filtro===f.id?C.accent+"55":C.border}`}}>
+              {f.label}
+            </button>
+          ))}
         </div>
-      ):posts.map(p=>{
+      )}
+
+      {/* Lista */}
+      {loading?<Spinner small/>:postsFiltrados.length===0?(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
+          {filtro==="qa"?"Sin preguntas aún.":filtro==="disc"?"Sin debates aún.":"¡Sé el primero en participar!"}
+        </div>
+      ):postsFiltrados.map(p=>{
+        const isQA=p.texto?.startsWith("[qa]");
+        const textoVisible=isQA?p.texto.replace("[qa]","").trim():p.texto;
         const isExpanded=expandedPost===p.id;
         const resps=respuestas[p.id]||[];
         const esMiPost=p.autor_email===miEmail;
+        const esDocPost=(p.autor_email===post.autor_email)||(post.ayudantes||[]).includes(p.autor_email);
         return(
-          <div key={p.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
-            {/* Header del post */}
+          <div key={p.id} style={{background:C.card,border:`1px solid ${isQA?"#F59E0B44":C.border}`,borderRadius:12,overflow:"hidden"}}>
             <div style={{padding:"12px 14px"}}>
               <div style={{display:"flex",gap:9,alignItems:"flex-start"}}>
                 <Avatar letra={(p.autor_nombre||"?")[0]} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                     <span style={{fontWeight:600,color:C.text,fontSize:12}}>
-                      {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}
-                      {(p.autor_email===post.autor_email)||(post.ayudantes||[]).includes(p.autor_email)?
-                        <span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 6px",marginLeft:6,border:`1px solid ${C.accent}33`}}>Docente</span>:null}
+                      {p.autor_nombre||safeDisplayName(null,p.autor_email)}
+                      {esDocPost&&<span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 6px",marginLeft:6,border:`1px solid ${C.accent}33`}}>Docente</span>}
+                      {isQA&&<span style={{fontSize:9,background:"#F59E0B15",color:"#B45309",borderRadius:20,padding:"1px 6px",marginLeft:4,border:"1px solid #F59E0B33"}}>❓ Pregunta</span>}
                     </span>
                     <span style={{fontSize:10,color:C.muted}}>{fmtRel(p.created_at)}</span>
                   </div>
-                  <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{p.texto}</p>
+                  <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{textoVisible}</p>
                 </div>
               </div>
               <div style={{display:"flex",gap:10,marginTop:8,paddingLeft:37}}>
@@ -2330,47 +2217,52 @@ function ForoCurso({post,session,esMio,esAyudante}){
                   💬 {p.respuestas?.[0]?.count||resps.length||0} respuesta{(p.respuestas?.[0]?.count||resps.length)!==1?"s":""}  {isExpanded?"▴":"▾"}
                 </button>
                 {(esMiPost||esMio||esAyudante)&&!p.id?.startsWith("local_")&&(
-                  <button onClick={async()=>{
-                    await sb.deleteForoPost(p.id,session.access_token).catch(()=>{});
-                    setPosts(prev=>prev.filter(x=>x.id!==p.id));
-                  }} style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:0}}>Eliminar</button>
+                  <button onClick={async()=>{await sb.deleteForoPost(p.id,session.access_token).catch(()=>{});setPosts(prev=>prev.filter(x=>x.id!==p.id));}}
+                    style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:0}}>Eliminar</button>
                 )}
               </div>
             </div>
 
-            {/* Respuestas expandidas */}
             {isExpanded&&(
               <div style={{borderTop:`1px solid ${C.border}`,background:C.surface,padding:"10px 14px"}}>
                 {resps.length>0&&(
                   <div style={{marginBottom:10,display:"flex",flexDirection:"column",gap:8}}>
-                    {resps.map(r=>(
-                      <div key={r.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                        <Avatar letra={(r.autor_nombre||"?")[0]} size={22}/>
-                        <div style={{flex:1,background:C.card,borderRadius:8,padding:"7px 10px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                            <span style={{fontWeight:600,color:C.text,fontSize:11}}>
-                              {r.autor_nombre||safeDisplayName(r.autor_nombre,r.autor_email)}
-                              {r.autor_email===post.autor_email?<span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 5px",marginLeft:5}}>Docente</span>:null}
-                            </span>
-                            <span style={{fontSize:9,color:C.muted}}>{fmtRel(r.created_at)}</span>
+                    {resps.map(r=>{
+                      const esDocR=r.autor_email===post.autor_email;
+                      return(
+                        <div key={r.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                          <Avatar letra={(r.autor_nombre||"?")[0]} size={22}/>
+                          <div style={{flex:1,background:esDocR?"#2EC4A010":C.card,border:`1px solid ${esDocR?"#2EC4A033":C.border}`,borderRadius:8,padding:"7px 10px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                              <span style={{fontWeight:600,color:C.text,fontSize:11}}>
+                                {r.autor_nombre||safeDisplayName(null,r.autor_email)}
+                                {esDocR&&<span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 5px",marginLeft:5}}>Docente</span>}
+                              </span>
+                              <span style={{fontSize:9,color:C.muted}}>{fmtRel(r.created_at)}</span>
+                            </div>
+                            <p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.4}}>{r.texto}</p>
                           </div>
-                          <p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.4}}>{r.texto}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
-                {/* Responder */}
-                <div style={{display:"flex",gap:7,alignItems:"flex-end"}}>
-                  <textarea value={respuestaTexto[p.id]||""} onChange={e=>setRespuestaTexto(prev=>({...prev,[p.id]:e.target.value.slice(0,300)}))}
-                    placeholder="Escribí una respuesta..."
-                    style={{...iS,minHeight:50,resize:"none",flex:1}}/>
-                  <button onClick={()=>enviarRespuesta(p.id)} disabled={!(respuestaTexto[p.id]||"").trim()}
-                    style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"9px 14px",
-                      fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,
-                      opacity:!(respuestaTexto[p.id]||"").trim()?0.5:1,flexShrink:0}}>
-                    ↑
-                  </button>
+                <div style={{display:"flex",gap:7,alignItems:"flex-end",flexDirection:"column"}}>
+                  {esStaff&&isQA&&(
+                    <button onClick={()=>sugerirConIA(p.id,textoVisible)} disabled={!!generandoIA}
+                      style={{background:"#7B3FBE15",border:"1px solid #7B3FBE33",borderRadius:8,color:"#7B3FBE",padding:"5px 10px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT,alignSelf:"flex-end",opacity:generandoIA?0.6:1}}>
+                      {generandoIA===p.id?"…":"✨ Sugerir respuesta con IA"}
+                    </button>
+                  )}
+                  <div style={{display:"flex",gap:7,alignItems:"flex-end",width:"100%"}}>
+                    <textarea value={respuestaTexto[p.id]||""} onChange={e=>setRespuestaTexto(prev=>({...prev,[p.id]:e.target.value.slice(0,300)}))}
+                      placeholder="Escribí una respuesta…"
+                      style={{...iS,minHeight:50,resize:"none",flex:1}}/>
+                    <button onClick={()=>enviarRespuesta(p.id)} disabled={!(respuestaTexto[p.id]||"").trim()}
+                      style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"9px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,opacity:!(respuestaTexto[p.id]||"").trim()?0.5:1,flexShrink:0}}>
+                      ↑
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -4142,17 +4034,18 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     setIniciandoClase(true);
     try{
       const inscs=await sb.getInscripciones(post.id,session.access_token).catch(()=>[]);
-      const emails=inscs.map(i=>i.alumno_email).filter(Boolean);
       const jitsiUrl=`https://meet.jit.si/${jitsiRoomCurso}`;
       let enviados=0;
       // Notificaciones in-app + emails a todos los inscriptos
-      for(const email of emails){
+      for(const ins of inscs){
+        const email=ins.alumno_email;if(!email)continue;
         try{
-          await sb.insertNotificacion({usuario_id:null,alumno_email:email,tipo:"clase_iniciada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token);
+          await sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:email,tipo:"clase_iniciada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token);
           await sb.sendEmail("clase_iniciada",email,{pub_titulo:post.titulo,docente_nombre:docenteDisplayName,jitsi_url:jitsiUrl},session.access_token);
           enviados++;
         }catch(e){console.warn("Error notif a",email,e.message);}
       }
+      const emails=inscs.map(i=>i.alumno_email).filter(Boolean);
       setClaseActiva(true);
       setShowJitsiCurso(true);
       if(emails.length===0){
@@ -4360,7 +4253,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                       post.ayudantes=newAyuds;setInscripciones([...inscripciones]);
                       // Notificar al nuevo ayudante
                       if(!isAyud){
-                        sb.insertNotificacion({usuario_id:null,alumno_email:ins.alumno_email,tipo:"nuevo_ayudante",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+                        sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"nuevo_ayudante",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
                       }
                     }} style={{background:isAyud?"#C85CE022":"#5CA8E015",border:`1px solid ${isAyud?"#C85CE044":"#5CA8E033"}`,borderRadius:7,color:isAyud?C.purple:C.info,padding:"3px 9px",cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:FONT,flexShrink:0}}>
                       {isAyud?"Quitar ayudante":"+ Ayudante"}
@@ -4384,8 +4277,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
               ...(hasCal?[{id:"calendario",label:"📅 Calendario"}]:[]),
               {id:"flashcards",label:"🃏 Flashcards"},
               {id:"misnotas",label:"📝 Mis notas"},
-              {id:"qa",label:"❓ Q&A"},
-              {id:"foro",label:"🗣 Foro"},
+              {id:"foro",label:"🗣 Foro / Q&A"},
               {id:"chat",label:mensajesNuevos>0?`💬 Chat (${mensajesNuevos})`:"💬 Chat"},
             ].map(tab=>(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
@@ -4554,14 +4446,6 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             {tieneAcceso
               ?<Flashcards post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>
               :<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>Inscribite para usar las flashcards.</div>
-            }
-          </div>}
-
-          {/* ── TAB: Q&A ── */}
-          {tabActivo==="qa"&&<div style={{marginBottom:18}}>
-            {tieneAcceso
-              ?<QACurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>
-              :<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>Inscribite para acceder al Q&amp;A.</div>
             }
           </div>}
 

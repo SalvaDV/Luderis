@@ -342,6 +342,9 @@ export const insertDenuncia = (data, token) =>
 export const getNotificaciones = (email, token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&leida=eq.false&order=created_at.desc`, "GET", null, token);
 
+export const getTodasNotificaciones = (email, token) =>
+  db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=60`, "GET", null, token);
+
 export const insertNotificacion = (data, token) =>
   db("notificaciones", "POST", data, token, "return=representation");
 

@@ -1445,16 +1445,25 @@ function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
   const [loading,setLoading]=useState(true);
   const [tab,setTab]=useState("todas");
 
+  const autoMarkTimer=useRef(null);
   useEffect(()=>{
     if(!open)return;
     setLoading(true);
-    sb.getNotificaciones(session.user.email,session.access_token).then(data=>{
+    // Cargar TODAS las notifs (no solo sin leer) para el panel
+    sb.getTodasNotificaciones(session.user.email,session.access_token).then(data=>{
       setNotifs((data||[]).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)));
+      // Auto-marcar como leídas después de 2s (el usuario ya las vio)
+      autoMarkTimer.current=setTimeout(()=>{
+        sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(()=>{});
+        setNotifs(p=>p.map(n=>({...n,leida:true})));
+      },2000);
     }).catch(()=>{}).finally(()=>setLoading(false));
+    return()=>clearTimeout(autoMarkTimer.current);
   },[open,session.user.email,session.access_token]);
 
   const marcarTodo=async()=>{
-    await sb.marcarNotifsTipoLeidas(session.user.email,["nueva_inscripcion","oferta_aceptada","oferta_rechazada","contraoferta","nuevo_mensaje","nueva_oferta","nuevo_contenido","nuevo_ayudante","valorar_curso","alerta_publicacion"],session.access_token).catch(()=>{});
+    clearTimeout(autoMarkTimer.current);
+    await sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(()=>{});
     setNotifs(p=>p.map(n=>({...n,leida:true})));
   };
 
