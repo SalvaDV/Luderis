@@ -4136,8 +4136,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [claseActiva,setClaseActiva]=useState(false);const [iniciandoClase,setIniciandoClase]=useState(false);
   const [showJitsiCurso,setShowJitsiCurso]=useState(false);
   const jitsiRoomCurso=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
-  const docenteDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
   const esMio=post.autor_email===session.user.email||post.autor_id===session.user.id;const miEmail=session.user.email;const miUid=session.user.id;
+  const docenteDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
   const iniciarClase=async()=>{
     setIniciandoClase(true);
     try{
