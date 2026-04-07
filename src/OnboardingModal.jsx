@@ -421,7 +421,10 @@ Respondé SOLO JSON.`,
               <h2 style={{color:C.text,fontSize:19,fontWeight:800,margin:"0 0 4px",letterSpacing:"-.3px"}}>{cur.title}</h2>
               <p style={{color:C.muted,fontSize:12,margin:0}}>{cur.sub}</p>
             </div>
-            <span style={{fontSize:11,color:C.muted,flexShrink:0,marginTop:4}}>{step+1} / {allSteps.length}</span>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginTop:2}}>
+              <span style={{fontSize:11,color:C.muted}}>{step+1} / {allSteps.length}</span>
+              <button onClick={onClose} title="Cerrar" style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 2px"}}>×</button>
+            </div>
           </div>
           {/* Breadcrumb visual */}
           <div style={{display:"flex",gap:4,marginTop:12}}>
@@ -447,12 +450,6 @@ Respondé SOLO JSON.`,
             )}
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            {!isLast&&cur.id!=="kyc_identidad"&&cur.id!=="kyc_terminos"&&(
-              <button onClick={()=>setStep(s=>s+1)}
-                style={{background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:"0 4px"}}>
-                Saltar
-              </button>
-            )}
             <button onClick={handleNext} disabled={!cur.canNext||saving}
               style={{background:isLast?LUD.grad:(cur.canNext?LUD.grad:C.border),border:"none",borderRadius:20,color:"#fff",padding:"10px 28px",fontWeight:700,fontSize:14,cursor:cur.canNext&&!saving?"pointer":"default",fontFamily:FONT,boxShadow:cur.canNext?"0 4px 12px rgba(26,110,216,.3)":"none",transition:"all .2s",opacity:cur.canNext?1:0.5}}>
               {saving?"Guardando…":isLast?"Empezar →":"Continuar →"}
