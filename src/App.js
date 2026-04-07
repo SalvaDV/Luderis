@@ -737,6 +737,30 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
             </div>
           );})()}
 
+          {/* Banner docente nuevo sin publicaciones */}
+          {(()=>{
+            const esDoc=rolUsuario==="docente"||rolUsuario==="ambos";
+            const misPubs=posts.filter(p=>p.autor_email===session.user.email&&p.tipo==="oferta");
+            let yaVisto=false;try{yaVisto=localStorage.getItem("cl_hide_docwelcome_"+session.user.email)==="1";}catch{}
+            if(!esDoc||misPubs.length>0||loading||yaVisto)return null;
+            return(
+              <div data-docwelcome="1" style={{background:`linear-gradient(135deg,${C.accentDim},${C.bg})`,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 18px",marginBottom:14,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:4}}>📢 ¿Querés aparecer acá?</div>
+                  <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Publicá tu primera clase y empezá a recibir alumnos. Solo tarda 2 minutos.</div>
+                </div>
+                <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
+                  <button onClick={()=>{if(typeof window._openNewPost==="function")window._openNewPost();}}
+                    style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"8px 18px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 10px rgba(26,110,216,.25)"}}>
+                    Publicar ahora →
+                  </button>
+                  <button onClick={e=>{e.currentTarget.closest("[data-docwelcome]").remove();try{localStorage.setItem("cl_hide_docwelcome_"+session.user.email,"1");}catch{}}}
+                    style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"2px 4px"}} title="Cerrar">×</button>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Lista de resultados */}
           {loading?<Spinner/>:sorted.length===0?(
             <div style={{textAlign:"center",color:C.muted,padding:"60px 0",fontSize:13}}>
@@ -1074,7 +1098,33 @@ function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat,onRefreshOfert
         <div><h2 style={{fontSize:20,color:C.text,margin:"0 0 3px",fontWeight:700}}>Mis publicaciones</h2><p style={{color:C.muted,fontSize:12,margin:0}}>{posts.length} publicación{posts.length!==1?"es":""}</p></div>
         <Btn onClick={onNew} style={{padding:"7px 13px",fontSize:12}}>+ Nueva</Btn>
       </div>
-      {loading?<Spinner/>:posts.length===0?(<div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12}}>—</div><p style={{color:C.muted,fontSize:13}}>Todavía no publicaste nada.</p><Btn onClick={onNew} style={{marginTop:12}}>Crear primera publicación</Btn></div>):(
+      {loading?<Spinner/>:posts.length===0?(
+        <div style={{maxWidth:480,margin:"0 auto"}}>
+          {/* Checklist guiado para docentes nuevos */}
+          <div style={{background:`linear-gradient(135deg,${C.accentDim},${C.bg})`,border:`1px solid ${C.accent}33`,borderRadius:18,padding:"28px 28px 24px",marginBottom:16}}>
+            <div style={{fontSize:28,marginBottom:10}}>👋</div>
+            <div style={{fontWeight:800,color:C.text,fontSize:17,marginBottom:6}}>¡Bienvenido/a a Luderis!</div>
+            <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 20px"}}>Seguí estos pasos para empezar a recibir alumnos.</p>
+            {[
+              {n:1,icon:"👤",label:"Completá tu perfil",sub:"Nombre, foto y bio generan más confianza.",done:true},
+              {n:2,icon:"📢",label:"Publicá tu primera clase",sub:"Describí lo que enseñás, el precio y tu modalidad.",done:false,action:true},
+              {n:3,icon:"🎓",label:"Conseguí tu primer alumno",sub:"Vas a recibir una notificación cuando alguien se inscriba.",done:false},
+            ].map(s=>(
+              <div key={s.n} style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14,opacity:s.done||s.action?1:.55}}>
+                <div style={{width:32,height:32,borderRadius:"50%",background:s.done?C.success:s.action?C.accent:C.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,color:s.done||s.action?"#fff":C.muted,fontWeight:700}}>
+                  {s.done?"✓":s.n}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>{s.icon} {s.label}</div>
+                  <div style={{color:C.muted,fontSize:11,lineHeight:1.4}}>{s.sub}</div>
+                  {s.action&&<button onClick={onNew} style={{marginTop:8,background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"7px 18px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 10px rgba(26,110,216,.25)"}}>Publicar ahora →</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{color:C.muted,fontSize:11,textAlign:"center"}}>¿Tenés dudas? Usá el chat de soporte en la esquina inferior derecha.</p>
+        </div>
+      ):(
         <div style={{display:"grid",gap:14}}>
           {posts.map(p=>(<div key={p.id}>
             <MyPostCard post={p} session={session} onEdit={onEdit} onToggle={toggle} onDelete={remove} onOpenCurso={onOpenCurso} toggling={toggling} ofertasPendientes={ofertasMap[p.id]||0}/>
@@ -1793,6 +1843,8 @@ export default function App(){
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Exponer función global para que el sidebar pueda abrir el panel
   useEffect(()=>{window._openNotifPanel=()=>setNotifPanelOpen(v=>!v);return()=>{window._openNotifPanel=null;};},[]);// eslint-disable-line
+  // Exponer apertura del formulario de nueva publicación (usado por banners)
+  useEffect(()=>{window._openNewPost=()=>{setEditPost(null);setShowForm(true);};return()=>{window._openNewPost=null;};},[]);// eslint-disable-line
   // Exponer navegación a publicación (para notification click)
   useEffect(()=>{
     window.__openPub=(pubId)=>{
@@ -2125,7 +2177,7 @@ export default function App(){
     }
   }}/>
       </React.Suspense>}
-      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} onClose={()=>setShowOnboarding(false)}/></React.Suspense>}
+      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} onClose={()=>setShowOnboarding(false)} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
       {showAdmin&&<AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/>}
       <ScrollToTopBtn/>
       <ChatBotWidget/>

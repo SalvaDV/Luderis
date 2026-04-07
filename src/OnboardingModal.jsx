@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as sb from "./supabase";
 import { C, FONT, LUD, MATERIAS, CATEGORIAS_DATA } from "./shared";
 
-function OnboardingModal({session,onClose}){
+function OnboardingModal({session,onClose,onPublicar}){
   const [step,setStep]=useState(0);
   const [rol,setRol]=useState("");// "alumno" | "docente" | "ambos"
   const [materias,setMaterias]=useState([]);
@@ -276,9 +276,19 @@ function OnboardingModal({session,onClose}){
         </div>
         <p style={{color:C.muted,fontSize:13,lineHeight:1.8,margin:"0 0 16px"}}>
           {esDocente
-            ?"Tu verificación fue enviada. Una vez aprobada, podrás publicar tus clases y cursos."
+            ?"Tu verificación fue enviada. Ya podés empezar a publicar — una vez aprobada, tus clases quedarán visibles para todos."
             :"Explorá publicaciones, inscribite en cursos, y cuando quieras podés completar la verificación para enseñar también."}
         </p>
+        {esDocente&&onPublicar&&(
+          <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 20px",marginBottom:16,textAlign:"left"}}>
+            <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>🚀 Siguiente paso recomendado</div>
+            <p style={{color:C.muted,fontSize:12,margin:"0 0 12px",lineHeight:1.5}}>Publicá tu primera clase ahora. Solo tarda 2 minutos y empezás a aparecer en los resultados.</p>
+            <button onClick={()=>finish(onPublicar)} disabled={saving}
+              style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(26,110,216,.3)"}}>
+              {saving?"Guardando…":"Publicar mi primera clase →"}
+            </button>
+          </div>
+        )}
         {materias.length>0&&(
           <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginTop:8}}>
             {materias.slice(0,5).map(m=>{
@@ -323,7 +333,7 @@ function OnboardingModal({session,onClose}){
   const cur=allSteps[step];
   const isLast=step===allSteps.length-1;
 
-  const finish=async()=>{
+  const finish=async(postAction)=>{
     setSaving(true);
     try{
       // Guardar preferencias en tabla usuarios
@@ -393,11 +403,12 @@ Respondé SOLO JSON.`,
         if(presupuesto)localStorage.setItem("cl_presupuesto_"+session.user.email,presupuesto);
       }catch{}
       onClose();
+      if(postAction)postAction();
     }catch(e){
       console.error("Onboarding error:",e);
-      // Fallback: guardar solo en localStorage
       try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}
       onClose();
+      if(postAction)postAction();
     }finally{setSaving(false);}
   };
 
