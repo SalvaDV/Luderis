@@ -1834,8 +1834,11 @@ function ProgresoCurso({post,session}){
 }
 
 // ─── FLASHCARDS CON IA ───────────────────────────────────────────────────────
-const FC_KEY=(postId)=>`cl_flashcards_${postId}`;
-function FlashcardsDeck({cards,onDelete}){
+
+// Shared deck key in contenido_curso: tipo="flashcards", texto=JSON
+const FC_PRIV_KEY=(postId,email)=>`cl_fc_priv_${postId}_${email}`;
+
+function FlashcardsDeck({cards,onDelete,titulo}){
   const [idx,setIdx]=useState(0);const [flipped,setFlipped]=useState(false);const [done,setDone]=useState([]);
   if(!cards||cards.length===0)return null;
   const remaining=cards.filter((_,i)=>!done.includes(i));
@@ -1893,111 +1896,259 @@ function FlashcardsDeck({cards,onDelete}){
   );
 }
 
-function Flashcards({post,session,esMio,esAyudante}){
-  const [cards,setCards]=useState(()=>{try{return JSON.parse(localStorage.getItem(FC_KEY(post.id))||"[]");}catch{return[];}});
+// ─── EDITOR DE MAZO (para crear/editar antes de guardar) ─────────────────────
+function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,post,isShared}){
+  const [titulo,setTitulo]=useState(tituloProp||"");
+  const [cards,setCards]=useState(cardsProp||[{pregunta:"",respuesta:""}]);
   const [generando,setGenerando]=useState(false);
   const [tema,setTema]=useState("");
-  const [modo,setModo]=useState("repaso");// "repaso"|"agregar"
-  const [manualP,setManualP]=useState("");const [manualR,setManualR]=useState("");
+  const [guardando,setGuardando]=useState(false);
 
-  const save=(c)=>{setCards(c);try{localStorage.setItem(FC_KEY(post.id),JSON.stringify(c));}catch{}};
+  const updateCard=(i,field,val)=>{const c=[...cards];c[i]={...c[i],[field]:val};setCards(c);};
+  const addCard=()=>setCards(c=>[...c,{pregunta:"",respuesta:""}]);
+  const removeCard=(i)=>{if(cards.length===1)return;const c=[...cards];c.splice(i,1);setCards(c);};
 
   const generarConIA=async()=>{
     const contexto=tema.trim()||post.titulo;
     setGenerando(true);
     try{
-      const prompt=`Generá exactamente 8 flashcards de estudio sobre "${contexto}" para el curso "${post.titulo}". Devolvé SOLO un array JSON válido con objetos {pregunta,respuesta}. Sin texto extra, solo el JSON. Máximo 120 caracteres por campo. Usá español rioplatense.`;
-      const r=await sb.callIA("Sos un experto generador de flashcards educativas.",prompt,600,session.access_token);
+      const prompt=`Generá exactamente 8 flashcards de estudio sobre "${contexto}" para el curso "${post.titulo}". Devolvé SOLO un array JSON con objetos {pregunta,respuesta}. Sin texto extra. Máximo 120 chars por campo. Español rioplatense.`;
+      const r=await sb.callIA("Sos un experto en flashcards educativas.",prompt,600,session.access_token);
       const match=r.match(/\[[\s\S]*\]/);
-      if(!match)throw new Error("IA no devolvió JSON");
+      if(!match)throw new Error("IA no devolvió JSON válido");
       const nuevas=JSON.parse(match[0]);
       if(!Array.isArray(nuevas)||!nuevas[0]?.pregunta)throw new Error("Formato incorrecto");
-      save([...cards,...nuevas.slice(0,8)]);
-      setTema("");setModo("repaso");
-      toast(`✨ ${nuevas.slice(0,8).length} flashcards generadas`,"success");
-    }catch(e){toast("Error al generar: "+e.message,"error");}
+      // NO guardar automáticamente — mostrar para editar
+      setCards(prev=>{const base=prev.filter(c=>c.pregunta.trim()||c.respuesta.trim());return[...base,...nuevas.slice(0,8)];});
+      setTema("");
+      toast(`✨ ${nuevas.length} tarjetas generadas — revisalas antes de guardar`,"info",4000);
+    }catch(e){toast("Error IA: "+e.message,"error");}
     setGenerando(false);
   };
 
-  const agregarManual=()=>{
-    if(!manualP.trim()||!manualR.trim())return;
-    save([...cards,{pregunta:manualP.trim(),respuesta:manualR.trim()}]);
-    setManualP("");setManualR("");
+  const handleSave=async()=>{
+    const validas=cards.filter(c=>c.pregunta.trim()&&c.respuesta.trim());
+    if(!validas.length){toast("Agregá al menos una tarjeta completa","error");return;}
+    if(!titulo.trim()){toast("Ponele un nombre al mazo","error");return;}
+    setGuardando(true);
+    await onSave(titulo.trim(),validas);
+    setGuardando(false);
   };
 
-  const eliminar=(i)=>{const c=[...cards];c.splice(i,1);save(c);};
-
-  const iS={background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 13px",color:C.text,fontSize:13,fontFamily:FONT,width:"100%",boxSizing:"border-box",outline:"none",marginBottom:8};
+  const iS={background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none",boxSizing:"border-box"};
 
   return(
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
-      {/* Header */}
-      <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:18}}>🃏</span>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:700,color:C.text,fontSize:14}}>Flashcards</div>
-          <div style={{fontSize:11,color:C.muted}}>{cards.length} tarjetas · repaso con spaced repetition</div>
+      <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:18}}>{isShared?"📢":"🃏"}</span>
+        <div style={{flex:1,fontWeight:700,color:C.text,fontSize:14}}>{isShared?"Crear mazo compartido":"Crear mazo personal"}</div>
+        <button onClick={onCancel} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer"}}>×</button>
+      </div>
+      <div style={{padding:"16px 18px",display:"flex",flexDirection:"column",gap:14}}>
+        {/* Nombre del mazo */}
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:5}}>NOMBRE DEL MAZO</div>
+          <input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Ej: Derivadas, Revolución Francesa…"
+            style={{...iS,width:"100%"}}/>
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setModo(m=>m==="repaso"?"agregar":"repaso")}
-            style={{background:modo==="agregar"?C.accentDim:"none",border:`1px solid ${modo==="agregar"?C.accent:C.border}`,borderRadius:8,color:modo==="agregar"?C.accent:C.muted,padding:"5px 10px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>
-            {modo==="agregar"?"← Repasar":"+ Agregar"}
+
+        {/* Generar con IA */}
+        <div style={{background:"#7B3FBE0A",border:"1px solid #7B3FBE25",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{fontWeight:700,color:"#7B3FBE",fontSize:12,marginBottom:8}}>✨ Generar con IA (podés editar después)</div>
+          <div style={{display:"flex",gap:7}}>
+            <input value={tema} onChange={e=>setTema(e.target.value)} placeholder={`Tema (ej: "fotosíntesis")`}
+              style={{...iS,flex:1}}
+              onKeyDown={e=>e.key==="Enter"&&!generando&&generarConIA()}/>
+            <button onClick={generarConIA} disabled={generando}
+              style={{background:"#7B3FBE",border:"none",borderRadius:8,color:"#fff",padding:"7px 14px",cursor:"pointer",fontWeight:700,fontSize:11,fontFamily:FONT,opacity:generando?.6:1,flexShrink:0}}>
+              {generando?"…":"✨ Generar"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tarjetas */}
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>TARJETAS ({cards.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:360,overflowY:"auto"}}>
+            {cards.map((c,i)=>(
+              <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",display:"flex",gap:8,alignItems:"flex-start"}}>
+                <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
+                  <input value={c.pregunta} onChange={e=>updateCard(i,"pregunta",e.target.value)}
+                    placeholder="Pregunta" style={{...iS,width:"100%",borderColor:c.pregunta.trim()?"":C.danger+"66"}}/>
+                  <input value={c.respuesta} onChange={e=>updateCard(i,"respuesta",e.target.value)}
+                    placeholder="Respuesta" style={{...iS,width:"100%",borderColor:c.respuesta.trim()?"":C.danger+"66"}}/>
+                </div>
+                <button onClick={()=>removeCard(i)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,flexShrink:0,paddingTop:2}} title="Eliminar">×</button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addCard} style={{marginTop:8,background:"none",border:`1px dashed ${C.border}`,borderRadius:9,color:C.muted,padding:"7px",cursor:"pointer",fontSize:12,fontFamily:FONT,width:"100%"}}>+ Agregar tarjeta</button>
+        </div>
+
+        {/* Guardar */}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={handleSave} disabled={guardando}
+            style={{flex:1,background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"10px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT,opacity:guardando?.6:1}}>
+            {guardando?"Guardando…":"💾 Guardar mazo"}
           </button>
-          {cards.length>0&&<button onClick={()=>{if(window.confirm("¿Borrar todas las flashcards?"))save([]);}}
-            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
-            🗑 Borrar todo
-          </button>}
+          <button onClick={onCancel} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"10px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div style={{padding:"16px 18px"}}>
-        {modo==="repaso"?(
-          cards.length===0?(
-            <div style={{textAlign:"center",padding:"32px 0",color:C.muted}}>
-              <div style={{fontSize:32,marginBottom:10}}>🃏</div>
-              <div style={{fontSize:14,marginBottom:16}}>No tenés flashcards aún.</div>
-              <button onClick={()=>setModo("agregar")} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 20px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT}}>Crear flashcards</button>
+function Flashcards({post,session,esMio,esAyudante}){
+  const esStaff=esMio||esAyudante;
+  const miEmail=session.user.email;
+  const privKey=FC_PRIV_KEY(post.id,miEmail);
+
+  // Mazo privado (localStorage)
+  const [privCards,setPrivCards]=useState(()=>{try{return JSON.parse(localStorage.getItem(privKey)||"[]");}catch{return[];}});
+  const savePriv=(c)=>{setPrivCards(c);try{localStorage.setItem(privKey,JSON.stringify(c));}catch{}};
+
+  // Mazos compartidos (contenido_curso con tipo="flashcards")
+  const [sharedDecks,setSharedDecks]=useState([]);
+  const [loadingDecks,setLoadingDecks]=useState(true);
+
+  // Vista activa: "lista"|"practica-priv"|"practica-shared-{id}"|"crear-priv"|"crear-shared"|"editar-shared-{id}"
+  const [vista,setVista]=useState("lista");
+  const [editingDeck,setEditingDeck]=useState(null);// {id,titulo,cards}
+
+  useEffect(()=>{
+    sb.getContenido(post.id,session.access_token)
+      .then(items=>{
+        const fc=(items||[]).filter(x=>x.tipo==="flashcards");
+        setSharedDecks(fc.map(x=>({id:x.id,titulo:x.titulo,cards:JSON.parse(x.texto||"[]")})));
+      })
+      .catch(()=>{})
+      .finally(()=>setLoadingDecks(false));
+  },[post.id,session.access_token]);
+
+  const guardarPriv=(titulo,cards)=>{
+    savePriv(cards);// título no aplica para el mazo privado único
+    setVista("lista");toast("Mazo personal guardado ✓","success");
+  };
+
+  const guardarShared=async(titulo,cards)=>{
+    if(editingDeck){
+      // Editar existente
+      await sb.updateContenido(editingDeck.id,{titulo,texto:JSON.stringify(cards)},session.access_token);
+      setSharedDecks(prev=>prev.map(d=>d.id===editingDeck.id?{...d,titulo,cards}:d));
+      toast("Mazo actualizado ✓","success");
+    }else{
+      // Crear nuevo
+      const r=await sb.insertContenido({publicacion_id:post.id,tipo:"flashcards",titulo,texto:JSON.stringify(cards),orden:999},session.access_token);
+      const nuevo=r?.[0];if(nuevo)setSharedDecks(prev=>[...prev,{id:nuevo.id,titulo,cards}]);
+      toast("Mazo compartido creado ✓","success");
+    }
+    setEditingDeck(null);setVista("lista");
+  };
+
+  const eliminarShared=async(id)=>{
+    if(!window.confirm("¿Eliminar este mazo compartido?"))return;
+    await sb.deleteContenido(id,session.access_token).catch(()=>{});
+    setSharedDecks(prev=>prev.filter(d=>d.id!==id));
+  };
+
+  // ── Práctica privada
+  if(vista==="practica-priv")return(
+    <div>
+      <button onClick={()=>setVista("lista")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,marginBottom:10,fontWeight:700}}>← Volver</button>
+      <FlashcardsDeck cards={privCards} titulo="Mi mazo personal" onDelete={i=>{const c=[...privCards];c.splice(i,1);savePriv(c);}}/>
+    </div>
+  );
+
+  // ── Práctica de mazo compartido
+  if(vista.startsWith("practica-shared-")){
+    const id=vista.replace("practica-shared-","");
+    const deck=sharedDecks.find(d=>d.id===id);
+    if(!deck)return null;
+    return(
+      <div>
+        <button onClick={()=>setVista("lista")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,marginBottom:10,fontWeight:700}}>← Volver</button>
+        <FlashcardsDeck cards={deck.cards} titulo={deck.titulo}/>
+      </div>
+    );
+  }
+
+  // ── Crear mazo privado
+  if(vista==="crear-priv")return(
+    <DeckEditor titulo="Mi mazo personal" cards={privCards.length?privCards:[{pregunta:"",respuesta:""}]}
+      onSave={guardarPriv} onCancel={()=>setVista("lista")} session={session} post={post} isShared={false}/>
+  );
+
+  // ── Crear/editar mazo compartido
+  if(vista==="crear-shared"||vista==="editar-shared")return(
+    <DeckEditor titulo={editingDeck?.titulo||""} cards={editingDeck?.cards||[{pregunta:"",respuesta:""}]}
+      onSave={guardarShared} onCancel={()=>{setEditingDeck(null);setVista("lista");}} session={session} post={post} isShared={true}/>
+  );
+
+  // ── Lista de mazos
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {/* Mazos del docente */}
+      {loadingDecks?<Spinner small/>:(sharedDecks.length>0||esStaff)&&(
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.muted}}>📢 MAZOS DEL DOCENTE</div>
+            {esStaff&&<button onClick={()=>{setEditingDeck(null);setVista("crear-shared");}}
+              style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>
+              + Crear mazo
+            </button>}
+          </div>
+          {sharedDecks.length===0?(
+            <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
+              Todavía no hay mazos compartidos.{esStaff?" Creá uno para la clase.":""}
             </div>
-          ):<FlashcardsDeck cards={cards} onDelete={eliminar}/>
-        ):(
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            {/* Generador IA */}
-            <div style={{background:"#7B3FBE10",border:"1px solid #7B3FBE30",borderRadius:12,padding:"14px 16px"}}>
-              <div style={{fontWeight:700,color:"#7B3FBE",fontSize:13,marginBottom:8}}>✨ Generar con IA</div>
-              <input value={tema} onChange={e=>setTema(e.target.value)} placeholder={`Tema a estudiar (ej: "derivadas", "fotosíntesis")`} style={{...iS,marginBottom:8}}/>
-              <button onClick={generarConIA} disabled={generando}
-                style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:9,color:"#fff",padding:"9px 18px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT,opacity:generando?.6:1,width:"100%"}}>
-                {generando?"Generando…":"✨ Generar 8 flashcards"}
-              </button>
-            </div>
-            {/* Manual */}
-            <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px"}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8}}>✍ Agregar manual</div>
-              <input value={manualP} onChange={e=>setManualP(e.target.value)} placeholder="Pregunta" style={iS}/>
-              <input value={manualR} onChange={e=>setManualR(e.target.value)} placeholder="Respuesta" style={iS}
-                onKeyDown={e=>e.key==="Enter"&&agregarManual()}/>
-              <button onClick={agregarManual} disabled={!manualP.trim()||!manualR.trim()}
-                style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"9px 18px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT,opacity:(!manualP.trim()||!manualR.trim())?.4:1}}>
-                Agregar tarjeta
-              </button>
-            </div>
-            {/* Lista existentes */}
-            {cards.length>0&&(
-              <div>
-                <div style={{fontSize:12,color:C.muted,fontWeight:700,marginBottom:8}}>TARJETAS EXISTENTES ({cards.length})</div>
-                <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  {cards.map((c,i)=>(
-                    <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 12px",display:"flex",gap:10,alignItems:"flex-start"}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,color:C.text}}>{c.pregunta}</div>
-                        <div style={{fontSize:11,color:C.muted,marginTop:2}}>{c.respuesta}</div>
-                      </div>
-                      <button onClick={()=>eliminar(i)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
-                    </div>
-                  ))}
-                </div>
+          ):sharedDecks.map(deck=>(
+            <div key={deck.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+              <span style={{fontSize:20}}>🃏</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:13}}>{deck.titulo}</div>
+                <div style={{fontSize:11,color:C.muted}}>{deck.cards.length} tarjetas</div>
               </div>
-            )}
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>setVista(`practica-shared-${deck.id}`)}
+                  style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 13px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>
+                  ▶ Practicar
+                </button>
+                {esStaff&&<>
+                  <button onClick={()=>{setEditingDeck(deck);setVista("editar-shared");}}
+                    style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>✏</button>
+                  <button onClick={()=>eliminarShared(deck.id)}
+                    style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.danger,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>🗑</button>
+                </>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mazo privado del alumno */}
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted}}>🔒 MI MAZO PERSONAL</div>
+          <button onClick={()=>setVista("crear-priv")}
+            style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
+            {privCards.length?"✏ Editar":"+ Crear"}
+          </button>
+        </div>
+        {privCards.length===0?(
+          <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
+            Creá tu propio mazo privado para repasar.
+          </div>
+        ):(
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:20}}>🔒</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,color:C.text,fontSize:13}}>Mi mazo personal</div>
+              <div style={{fontSize:11,color:C.muted}}>{privCards.length} tarjetas · solo vos lo ves</div>
+            </div>
+            <button onClick={()=>setVista("practica-priv")}
+              style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 13px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>
+              ▶ Practicar
+            </button>
           </div>
         )}
       </div>

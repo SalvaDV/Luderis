@@ -346,7 +346,7 @@ export const getTodasNotificaciones = (email, token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=60`, "GET", null, token);
 
 export const insertNotificacion = (data, token) =>
-  db("notificaciones", "POST", data, token, "return=representation");
+  db("notificaciones", "POST", data, token, "return=minimal");
 
 export const marcarNotifLeida = (id, token) =>
   db(`notificaciones?id=eq.${id}`, "PATCH", { leida: true }, token);

@@ -1066,7 +1066,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
                       <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
                     </div>
                     {r.comentario&&<p style={{color:C.text,fontSize:13,margin:"0 0 6px",lineHeight:1.5}}>{r.comentario}</p>}
-                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_email?.split("@")[0]}</div>
+                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_nombre||safeDisplayName(null,r.alumno_email)}</div>
                   </div>
                 ))}
               </div>
