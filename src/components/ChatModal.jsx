@@ -8,10 +8,12 @@ const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5
 export default function ChatModal({post,session,onClose,onUnreadChange}){
   const miEmail=session.user.email;const otroEmail=post.autor_email;
   const [msgs,setMsgs]=useState([]);const [input,setInput]=useState("");const [loading,setLoading]=useState(true);
+  const [enviando,setEnviando]=useState(false);
   const [otroEscribiendo,setOtroEscribiendo]=useState(false);
   const [imagenPrevia,setImagenPrevia]=useState(null);// base64 de imagen a enviar
-  const [subiendoImg,setSubiendoImg]=useState(false);
+  const [leyendoImg,setLeyendoImg]=useState(false);
   const bottomRef=useRef(null);const markedRef=useRef(false);
+  const cargandoRef=useRef(false);// evitar cargar() simultáneos
   const escribiendoTimer=useRef(null);
   const fileInputRef=useRef(null);
 
@@ -47,6 +49,8 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     if(onUnreadChange)onUnreadChange();
   },[post.id,miEmail,session.access_token,onUnreadChange]);
   const cargar=useCallback(async()=>{
+    if(cargandoRef.current)return;// evitar requests simultáneos
+    cargandoRef.current=true;
     try{
       // Traer todos los mensajes del usuario y filtrar por esta conversación
       const todos=await sb.getMisChats(miEmail,session.access_token);
@@ -60,6 +64,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
       const tieneNoLeidos=data.some(m=>m.para_nombre===miEmail&&!m.leido);
       if(tieneNoLeidos||!markedRef.current){await marcar();markedRef.current=true;}
     }catch(e){console.error(e);setLoading(false);}
+    finally{cargandoRef.current=false;}
   },[post.id,miEmail,otroEmail,session.access_token,marcar]);
   useEffect(()=>{
     cargar();
@@ -93,8 +98,10 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     const file=e.target.files?.[0];
     if(!file)return;
     if(file.size>4*1024*1024){alert("La imagen no puede superar 4MB");return;}
+    setLeyendoImg(true);
     const reader=new FileReader();
-    reader.onload=(ev)=>setImagenPrevia(ev.target.result);
+    reader.onload=(ev)=>{setImagenPrevia(ev.target.result);setLeyendoImg(false);};
+    reader.onerror=()=>setLeyendoImg(false);
     reader.readAsDataURL(file);
     e.target.value="";
   };
@@ -102,8 +109,9 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
   const sendMsg=async(overrideQ)=>{
     const txt=(overrideQ||input).trim();
     if(!txt&&!imagenPrevia)return;
+    if(enviando)return;
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
-    setInput("");setImagenPrevia(null);
+    setInput("");setImagenPrevia(null);setEnviando(true);
     try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
     try{
       await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:mensajeTexto,leido:false,pub_titulo:post.titulo},session.access_token);
@@ -111,11 +119,12 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
       (()=>{const ck=`cl_email_sent_${post.id}_${otroEmail}`;const last=parseInt(localStorage.getItem(ck)||"0");if(Date.now()-last>2*60*60*1000){sb.sendEmail("nuevo_mensaje",otroEmail,{pub_titulo:post.titulo,de_nombre:sb.getDisplayName(miEmail)||miEmail.split("@")[0],preview:imagenPrevia?"[Imagen]":txt},session.access_token).catch(()=>{});try{localStorage.setItem(ck,Date.now());}catch{}}})();
       cargar();
     }catch(e){alert("Error al enviar: "+e.message);}
+    finally{setEnviando(false);}
   };
   const nombre=post.autor_nombre||safeDisplayName(null,otroEmail)||"Usuario";
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"12px"}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,98vw)",height:"min(680px,90vh)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"8px"}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,calc(100vw - 16px))",height:"min(680px,85vh)",maxHeight:"85dvh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Anti-puenteo */}
         <div style={{background:C.warn+"12",borderBottom:`1px solid ${C.warn}25`,padding:"6px 14px",display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
           <span style={{fontSize:12}}>🛡️</span>
@@ -166,12 +175,13 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
         <div style={{padding:"10px 13px",borderTop:`1px solid ${C.border}`,display:"flex",gap:7,flexShrink:0,alignItems:"flex-end"}}>
           {/* Botón imagen */}
           <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImageSelect}/>
-          <button onClick={()=>fileInputRef.current?.click()}
-            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 10px",cursor:"pointer",color:C.muted,fontSize:16,flexShrink:0,lineHeight:1,transition:"all .15s"}}
+          <button onClick={()=>!leyendoImg&&fileInputRef.current?.click()}
+            disabled={leyendoImg}
+            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 10px",cursor:leyendoImg?"default":"pointer",color:C.muted,fontSize:16,flexShrink:0,lineHeight:1,transition:"all .15s",opacity:leyendoImg?.5:1}}
             title="Enviar imagen"
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
+            onMouseEnter={e=>{if(!leyendoImg){e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            📎
+            {leyendoImg?"⏳":"📎"}
           </button>
           <textarea value={input} onChange={handleInputChange}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
@@ -180,8 +190,10 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
             style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 13px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:120,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
             onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
           />
-          <button onClick={()=>sendMsg()} disabled={!input.trim()&&!imagenPrevia}
-            style={{background:C.accent,border:"none",borderRadius:9,padding:"9px 13px",fontWeight:700,cursor:"pointer",color:"#fff",fontSize:15,flexShrink:0,opacity:(!input.trim()&&!imagenPrevia)?.4:1,transition:"opacity .15s"}}>↑</button>
+          <button onClick={()=>sendMsg()} disabled={(!input.trim()&&!imagenPrevia)||enviando}
+            style={{background:C.accent,border:"none",borderRadius:9,padding:"9px 13px",fontWeight:700,cursor:"pointer",color:"#fff",fontSize:15,flexShrink:0,opacity:((!input.trim()&&!imagenPrevia)||enviando)?.4:1,transition:"opacity .15s"}}>
+            {enviando?"…":"↑"}
+          </button>
         </div>
       </div>
     </div>

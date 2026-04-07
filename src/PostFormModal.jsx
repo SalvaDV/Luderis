@@ -565,7 +565,7 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
         {/* ── PASO 3: Detalles (solo ofertas) ── */}
         {paso===3&&tipo==="oferta"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:9}}>
               <div>
                 <Label>Modalidad <span style={{color:C.danger,fontSize:11}}>*</span></Label>
                 <select value={modalidadForm} onChange={e=>setModalidadForm(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>

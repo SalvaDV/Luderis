@@ -178,7 +178,7 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
       {seccion==="resumen"&&(
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {/* KPIs */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
             {[
               {label:"Clases activas",val:ofertas.length,color:C.success},
               {label:"Total alumnos",val:totalAlumnos,color:C.info},
@@ -306,7 +306,7 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
                 const mesesArr=Object.entries(porMes).slice(-6).map(([label,v])=>({label,v}));
                 return(
                   <>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10}}>
                       <div style={{background:C.success+"12",border:`1px solid ${C.success}30`,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
                         <div style={{fontSize:11,color:C.muted,marginBottom:4}}>INGRESOS BRUTOS</div>
                         <div style={{fontSize:24,fontWeight:800,color:C.success}}>${totalBruto.toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
@@ -1374,7 +1374,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {/* ── TABS DE NAVEGACIÓN ── */}
       <div style={{position:"relative",marginBottom:16}}>
       <style>{`.cl-tabs-fade::after{content:'';position:absolute;right:0;top:0;bottom:2px;width:40px;background:linear-gradient(to right,transparent,${C.surface});pointer-events:none;z-index:1}`}</style>
-      <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px"}}>
+      <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
         {[
           {id:"publicaciones",label:"Publicaciones",count:pubs.length},
           {id:"estadisticas",label:"Estadísticas",count:null},

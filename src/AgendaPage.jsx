@@ -77,7 +77,8 @@ function AgendaPage({session,onOpenCurso}){
       const ids=[...new Set((ins||[]).map(i=>i.publicacion_id))];
       if(!ids.length){setLoading(false);return;}
       sb.getPublicacionesByIds(ids,session.access_token).then(results=>{
-        const allPosts=(results||[]).filter(Boolean);
+        // Filtrar cursos finalizados — no mostrar en agenda
+        const allPosts=(results||[]).filter(Boolean).filter(p=>!p.finalizado);
         setPosts(allPosts);
       }).finally(()=>setLoading(false));
     });

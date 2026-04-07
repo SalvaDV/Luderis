@@ -113,7 +113,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, overflowY: "auto", fontFamily: FONT }}>
       {/* Header */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "12px 14px", display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10 }}>
         <button onClick={onClose} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: FONT }}>← Salir</button>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -126,10 +126,10 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       </div>
 
       {/* Tab bar */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 24px", display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none" }}>
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 8px", display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 14px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s" }}>
+            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 10px", fontSize: 12, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s" }}>
             {t.label}
           </button>
         ))}
@@ -250,6 +250,9 @@ function OverviewTab({ session }) {
         cohortUsuarios,
         cohortInscripciones,
         inscPorPub: pubsActivas > 0 ? (insc.length / pubsActivas).toFixed(1) : "—",
+        tasaResolucion: denuncias.length > 0 ? Math.round((denResueltas/denuncias.length)*100) : 0,
+        denResueltas,
+        accionesMap,
         kpiDenuncias: {
           total: denuncias.length,
           pendientes: denuncias.filter(d => !d.revisada).length,
@@ -291,7 +294,7 @@ function OverviewTab({ session }) {
       )}
 
       {/* KPIs principales */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 14 }}>
         <StatBox icon="👥" label="Usuarios totales" value={stats.totalUsuarios} sub={`+${stats.nuevosHoy} hoy · +${stats.nuevosSemana} esta semana`} color={C.info} />
         <StatBox icon="📋" label="Publicaciones" value={stats.totalPubs} sub={`${stats.pubsActivas} activas`} color={C.accent} />
         <StatBox icon="🎓" label="Inscripciones" value={stats.totalInscripciones} sub={`+${stats.inscSemana} esta semana`} color={C.success} />
@@ -304,7 +307,7 @@ function OverviewTab({ session }) {
 
       {/* KPIs de denuncias */}
       {stats.topMotivos !== undefined && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
           <Card>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🚨 Motivos más frecuentes</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -344,7 +347,7 @@ function OverviewTab({ session }) {
 
       {/* KPIs por categoría */}
       {stats.ingresosPorTipo && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
           <Card>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>💰 Ingresos por tipo de clase</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -383,7 +386,7 @@ function OverviewTab({ session }) {
 
       {/* KPIs de denuncias */}
       {stats.kpiDenuncias && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
           <Card>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🚨 Métricas de denuncias</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -449,7 +452,7 @@ function OverviewTab({ session }) {
       </Card>
 
       {/* Top docentes + Funnel conversión */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
         <Card>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🏆 Top docentes</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -591,7 +594,7 @@ function DocentesTab({ session }) {
           ))}
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowX: "auto" }}>
         {sorted.length === 0 && <div style={{ color: C.muted, fontSize: 13 }}>Sin docentes aún.</div>}
         {sorted.map(d => (
           <div key={d.email} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>

@@ -1802,12 +1802,12 @@ function ProgresoCurso({post,session}){
         ):filtrados.map((a,i)=>(
           <div key={a.email} style={{padding:"12px 18px",borderBottom:i<filtrados.length-1?`1px solid ${C.border}`:"none",display:"flex",gap:12,alignItems:"center"}}>
             <Avatar letra={a.nombre[0]} size={34}/>
-            <div style={{flex:1,overflow:"hidden"}}>
+            <div style={{flex:1,overflow:"hidden",minWidth:0}}>
               <div style={{fontWeight:600,color:C.text,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.nombre}</div>
               <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.email}</div>
             </div>
             {/* Métricas */}
-            <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
+            <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center",overflowX:"auto"}}>
               {totalQuizzesTotal>0&&(
                 <div style={{textAlign:"center",minWidth:54}}>
                   <div style={{fontSize:10,color:C.muted,marginBottom:2}}>Quiz</div>
@@ -1854,7 +1854,7 @@ function FlashcardsDeck({cards,onDelete,titulo}){
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,padding:"10px 0"}}>
       <style>{`
-        .fc-scene{width:100%;max-width:460px;height:190px;perspective:900px;cursor:pointer;}
+        .fc-scene{width:100%;max-width:min(460px,100%);height:clamp(160px,45vw,210px);perspective:900px;cursor:pointer;}
         .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);}
         .fc-card.flipped{transform:rotateY(180deg);}
         .fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;text-align:center;box-shadow:0 4px 22px rgba(0,0,0,.08);}
@@ -4388,7 +4388,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             {inscripciones.length===0?<div style={{color:C.muted,fontSize:12}}>Nadie inscripto aún.</div>:(
               <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {inscripciones.map(ins=>{
-                  const isAyud=(post.ayudantes||[]).includes(ins.alumno_email);
+                  // ayudantes[] stores UUIDs — compare with alumno_id
+                  const isAyud=(post.ayudantes||[]).includes(ins.alumno_id);
                   return(<div key={ins.id} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
                     <Avatar letra={ins.alumno_email[0]} size={26}/>
                     <div style={{flex:1,minWidth:0}}>
@@ -4399,7 +4400,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                     {ins.clase_finalizada&&<span style={{fontSize:10,background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.success,padding:"1px 7px"}}>✓</span>}
                     <button onClick={async()=>{
                       const ayuds=post.ayudantes||[];
-                      const newAyuds=isAyud?ayuds.filter(e=>e!==ins.alumno_email):[...ayuds,ins.alumno_email];
+                      // store UUID, not email
+                      const newAyuds=isAyud?ayuds.filter(id=>id!==ins.alumno_id):[...ayuds,ins.alumno_id];
                       await sb.updatePublicacion(post.id,{ayudantes:newAyuds},session.access_token);
                       post.ayudantes=newAyuds;setInscripciones([...inscripciones]);
                       // Notificar al nuevo ayudante
@@ -4419,7 +4421,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           {esMio&&<div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
             {[
               {icon:"👥",label:"Inscriptos",value:inscripciones.length},
-              {icon:"⭐",label:"Rating",value:post.calificacion_promedio>0?parseFloat(post.calificacion_promedio).toFixed(1)+"★":"—"},
+              {icon:"⭐",label:"Rating",value:parseFloat(post.calificacion_promedio||0)>0?parseFloat(post.calificacion_promedio).toFixed(1)+"★":"—"},
               {icon:"📝",label:"Contenido",value:contenido.length},
             ].map(s=>(
               <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"8px 13px",flex:1,minWidth:80}}>
@@ -4429,7 +4431,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             ))}
           </div>}
           {/* ── TABS ── */}
-          <div style={{display:"flex",gap:2,marginBottom:14,background:C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`}}>
+          <style>{`.curso-tabs::-webkit-scrollbar{display:none}`}</style>
+          <div className="curso-tabs" style={{display:"flex",gap:2,marginBottom:14,background:C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",flexWrap:"nowrap"}}>
             {[
               {id:"contenido",label:"📁 Contenido"},
               ...(post.tipo==="oferta"&&(esMio||esAyudante)?[
@@ -4444,7 +4447,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
               {id:"chat",label:mensajesNuevos>0?`💬 Chat (${mensajesNuevos})`:"💬 Chat"},
             ].map(tab=>(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
-                style={{flex:1,padding:"7px 4px",borderRadius:9,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
+                style={{flexShrink:0,padding:"7px 8px",borderRadius:9,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
                   fontWeight:tabActivo===tab.id?700:400,fontSize:11,cursor:"pointer",fontFamily:FONT,
                   background:tabActivo===tab.id?C.accent:tab.pendiente?"#F5C84212":"transparent",
                   color:tabActivo===tab.id?"#fff":tab.pendiente?C.accent:C.muted,

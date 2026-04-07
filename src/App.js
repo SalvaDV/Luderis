@@ -444,7 +444,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
                     <button key={cat.label} onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");}}
-                      style={{flexShrink:0,width:120,borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",transition:"transform .2s",textAlign:"left",display:"flex",flexDirection:"column"}}
+                      style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",transition:"transform .2s",textAlign:"left",display:"flex",flexDirection:"column"}}
                       onMouseEnter={e=>e.currentTarget.style.transform="translateY(-4px) scale(1.02)"}
                       onMouseLeave={e=>e.currentTarget.style.transform="none"}>
                       {/* Área visual */}
@@ -507,7 +507,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 <div style={{display:"flex",gap:14}} className="cl-hscroll">
                   {data.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:p.tipo==="busqueda"?"#FFFBEB":C.surface,border:`1px solid ${p.tipo==="busqueda"?"#F59E0B44":C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:220,transition:"all .18s",borderTop:`3px solid ${p.tipo==="busqueda"?"#F59E0B":C.accent}`}}
+                      style={{background:p.tipo==="busqueda"?"#FFFBEB":C.surface,border:`1px solid ${p.tipo==="busqueda"?"#F59E0B44":C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${p.tipo==="busqueda"?"#F59E0B":C.accent}`}}
                       onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
                       onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
                       {/* Avatar + nombre */}
