@@ -1466,6 +1466,7 @@ function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
     oferta_rechazada:{icon:"❌",color:"#E53E3E",label:"Oferta rechazada"},
     contraoferta:{icon:"🔄",color:"#F59E0B",label:"Contraoferta"},
     nuevo_mensaje:{icon:"💬",color:"#7B3FBE",label:"Mensaje nuevo"},
+    chat_grupal:{icon:"💬",color:"#1A6ED8",label:"Mensaje en grupo"},
     nuevo_contenido:{icon:"📚",color:"#1A6ED8",label:"Nuevo contenido"},
     nuevo_ayudante:{icon:"🤝",color:"#2EC4A0",label:"Co-docente agregado"},
     valorar_curso:{icon:"⭐",color:"#F59E0B",label:"Valorar curso"},
@@ -1754,6 +1755,19 @@ export default function App(){
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Exponer función global para que el sidebar pueda abrir el panel
   useEffect(()=>{window._openNotifPanel=()=>setNotifPanelOpen(v=>!v);return()=>{window._openNotifPanel=null;};},[]);// eslint-disable-line
+  // Exponer navegación a publicación (para notification click)
+  useEffect(()=>{
+    window.__openPub=(pubId)=>{
+      if(!pubId)return;
+      sb.getPublicacionesByIds([pubId],session?.access_token).then(pubs=>{
+        const pub=pubs?.[0];
+        if(!pub)return;
+        if(pub.tipo==="oferta")setCursoPost(pub);
+        else setDetailPost(pub);
+      }).catch(()=>{});
+    };
+    return()=>{window.__openPub=null;};
+  },[session]);//eslint-disable-line
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -1831,12 +1845,15 @@ export default function App(){
     }
   },[]);
 
-  const mostrarNotifPush=useCallback((titulo,cuerpo,icon="/logo.png")=>{
+  const mostrarNotifPush=useCallback((titulo,cuerpo,{icon="/logo.png",tag="luderis-notif",pubId=null}={})=>{
     if(!("Notification" in window)||Notification.permission!=="granted")return;
     try{
-      const n=new Notification(titulo,{body:cuerpo,icon,badge:"/logo.png",tag:"luderis-notif",renotify:true});
-      n.onclick=()=>{window.focus();n.close();};
-      setTimeout(()=>n.close(),6000);
+      const n=new Notification(titulo,{body:cuerpo,icon,badge:"/logo.png",tag,renotify:true,silent:false});
+      n.onclick=()=>{
+        window.focus();n.close();
+        if(pubId&&window.__openPub)window.__openPub(pubId);
+      };
+      setTimeout(()=>n.close(),8000);
     }catch{}
   },[]);
 
@@ -1897,7 +1914,16 @@ export default function App(){
       // Push notification si hay mensajes nuevos y la tab no está activa
       if(newUnread>0&&document.hidden&&window.__pushNotif){
         const lastMsg=msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__").slice(-1)[0];
-        if(lastMsg){const senderName=sb.getDisplayName(lastMsg.de_nombre)||"Alguien";window.__pushNotif(`Mensaje de ${senderName}`,(lastMsg.texto||"").slice(0,80));}
+        if(lastMsg){
+          const senderName=sb.getDisplayName(lastMsg.de_nombre)||"Alguien";
+          const isImg=lastMsg.texto?.startsWith("[img]");
+          const preview=isImg?"📷 Imagen":(lastMsg.texto||"").slice(0,100);
+          window.__pushNotif(
+            `💬 Mensaje de ${senderName}`,
+            preview,
+            {tag:`luderis-chat-${lastMsg.publicacion_id}`,pubId:lastMsg.publicacion_id}
+          );
+        }
       }
       setUnread(newUnread);
       setOfertasCount(ofertas.length);
@@ -1909,8 +1935,12 @@ export default function App(){
       // Push para notificaciones nuevas
       if(notifsCuenta.length>0&&document.hidden&&window.__pushNotif){
         const lastNotif=notifsCuenta[0];
-        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta"};
-        window.__pushNotif(LABELS[lastNotif.tipo]||"Notificación",lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis");
+        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta",oferta_rechazada:"❌ Oferta rechazada",contraoferta:"🔄 Contraoferta recibida"};
+        window.__pushNotif(
+          LABELS[lastNotif.tipo]||"🔔 Notificación",
+          lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis",
+          {tag:`luderis-cuenta-${lastNotif.tipo}`,pubId:lastNotif.publicacion_id}
+        );
       }
       setOfertasAceptadasNuevas(notifsCuenta.length);
     }).catch(()=>{});
