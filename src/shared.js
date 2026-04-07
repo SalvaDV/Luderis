@@ -364,15 +364,28 @@ export function useMPRetorno(onSuccess){
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const mp=params.get("mp");
+    const pubId=params.get("pub");
     if(!mp)return;
+    // Limpiar params de la URL inmediatamente
     const url=new URL(window.location.href);
     url.searchParams.delete("mp");
     url.searchParams.delete("pub");
     window.history.replaceState({},"",url.toString());
+
     if(mp==="success"){
-      toast("¡Pago aprobado! Ya tenés acceso a la clase 🎉","success",6000);
-      try{const p=JSON.parse(localStorage.getItem("mp_pending")||"{}");if(p.pub_id)onSuccess(p.pub_id);}catch{}
+      // NO inscribir aquí — el webhook de MercadoPago es quien inscribe y acredita.
+      // Solo notificamos al usuario y le avisamos que en segundos va a ver el acceso.
+      toast("¡Pago recibido! Confirmando acceso…","success",4000);
+      // Sondear cada 3s hasta que aparezca la inscripción (máx 30s)
       try{localStorage.removeItem("mp_pending");}catch{}
+      if(pubId&&onSuccess){
+        let intentos=0;
+        const t=setInterval(()=>{
+          intentos++;
+          onSuccess(pubId,false);// false = solo refrescar, no navegar
+          if(intentos>=10)clearInterval(t);
+        },3000);
+      }
     }else if(mp==="pending"){
       toast("El pago está siendo procesado. Te avisaremos cuando se confirme.","info",6000);
     }else if(mp==="failure"){
