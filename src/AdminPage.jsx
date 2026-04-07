@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
-import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn } from "./shared";
+import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm } from "./shared";
 
 // ─── ADMIN EMAILS — solo estos pueden acceder ─────────────────────────────────
 const FALLBACK_ADMIN = "salvadordevedia@gmail.com";
@@ -653,6 +653,7 @@ function UsersTab({ session, onChatUser }) {
   const [filtro, setFiltro] = useState("todos");
   const [selected, setSelected] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const {confirm:confirmU,confirmEl:confirmElU}=useConfirm();
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -684,7 +685,7 @@ function UsersTab({ session, onChatUser }) {
   };
 
   const eliminar = async (u) => {
-    if (!window.confirm(`¿Eliminar el usuario ${u.email}? Esta acción no se puede deshacer.`)) return;
+    if (!await confirmU({msg:`¿Eliminar el usuario ${u.email}? Esta acción no se puede deshacer.`,confirmLabel:"Eliminar",danger:true})) return;
     setActionLoading(true);
     try {
       await adminAction("eliminar_usuario", { user_id: u.id, user_email: u.email }, session.access_token);
@@ -708,6 +709,7 @@ function UsersTab({ session, onChatUser }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {confirmElU}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: 1, minWidth: 200 }}><SearchInput value={search} onChange={setSearch} placeholder="Buscar por email o nombre…" /></div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -782,6 +784,7 @@ function PubsTab({ session }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filtro, setFiltro] = useState("todas");
+  const {confirm:confirmP,confirmEl:confirmElP}=useConfirm();
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -801,7 +804,7 @@ function PubsTab({ session }) {
   };
 
   const eliminar = async (pub) => {
-    if (!window.confirm("¿Eliminar esta publicación?")) return;
+    if (!await confirmP({msg:"¿Eliminar esta publicación?",confirmLabel:"Eliminar",danger:true})) return;
     try {
       await adminAction("eliminar_pub", { pub_id: pub.id }, session.access_token);
       setPubs(prev => prev.filter(p => p.id !== pub.id));
@@ -822,6 +825,7 @@ function PubsTab({ session }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {confirmElP}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: 1, minWidth: 200 }}><SearchInput value={search} onChange={setSearch} placeholder="Buscar por título, materia, autor…" /></div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

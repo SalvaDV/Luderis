@@ -5,7 +5,7 @@ import {
   Avatar, Spinner, Btn, Input, Modal, Label, ErrMsg, Chip,
   MiniStars, StarRating, StatusBadge, VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
-  safeDisplayName, sanitizeContactInfo,
+  safeDisplayName, sanitizeContactInfo, useConfirm,
   CalendarioCurso,
   LUD,
   CATEGORIAS_DATA,
@@ -1012,18 +1012,11 @@ function EntregaTexto({texto}){
 
 // ─── QUIZ VIEWER (para alumnos y docentes) ─────────────────────────────────────
 function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
-  if(!item?.id)return<div style={{fontSize:12,color:C.muted,padding:"8px 0"}}>⚠ Quiz guardado — recargá la página para verlo.</div>;
+  // Parsear datos del quiz (antes de hooks para inicializar estado)
   let quizData={};
-  try{quizData=JSON.parse(item.texto||"{}"); }catch{}
+  try{quizData=JSON.parse(item?.texto||"{}"); }catch{}
   const {tipo_quiz,preguntas:_pregs,consigna,fecha_inicio,fecha_cierre}=quizData;
   const preguntas=Array.isArray(_pregs)?_pregs:[];
-
-  const ahora=new Date();
-  const inicio=fecha_inicio?new Date(fecha_inicio):null;
-  const cierre=fecha_cierre?new Date(fecha_cierre):null;
-  const noEmpezado=inicio&&ahora<inicio;
-  const cerrado=cierre&&ahora>cierre;
-  const abierto=!noEmpezado&&!cerrado;
 
   // Hooks siempre primero — sin returns condicionales antes de ellos
   const [miEntrega,setMiEntrega]=useState(null);
@@ -1039,6 +1032,7 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
   const [savingNota,setSavingNota]=useState(null);
 
   useEffect(()=>{
+    if(!item?.id)return;
     if(esMio||esAyudante){
       setLoadingEntregas(true);
       sb.getQuizEntregas(item.id,session.access_token)
@@ -1057,7 +1051,17 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
         .catch(()=>setMiEntrega(null))
         .finally(()=>setLoadingEntrega(false));
     }
-  },[item.id,session.user.email,esMio,esAyudante]);// eslint-disable-line
+  },[item?.id,session.user.email,esMio,esAyudante]);// eslint-disable-line
+
+  // Early return después de hooks
+  if(!item?.id)return<div style={{fontSize:12,color:C.muted,padding:"8px 0"}}>⚠ Quiz guardado — recargá la página para verlo.</div>;
+
+  const ahora=new Date();
+  const inicio=fecha_inicio?new Date(fecha_inicio):null;
+  const cierre=fecha_cierre?new Date(fecha_cierre):null;
+  const noEmpezado=inicio&&ahora<inicio;
+  const cerrado=cierre&&ahora>cierre;
+  const abierto=!noEmpezado&&!cerrado;
 
   const enviarMultiple=async()=>{
     if(respuestas.some(r=>r===null))return;
@@ -2001,6 +2005,7 @@ function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,p
 function Flashcards({post,session,esMio,esAyudante}){
   const esStaff=esMio||esAyudante;
   const miEmail=session.user.email;
+  const {confirm:confirmFC,confirmEl:confirmElFC}=useConfirm();
   const privKey=FC_PRIV_KEY(post.id,miEmail);
 
   // Mazo privado (localStorage)
@@ -2046,7 +2051,7 @@ function Flashcards({post,session,esMio,esAyudante}){
   };
 
   const eliminarShared=async(id)=>{
-    if(!window.confirm("¿Eliminar este mazo compartido?"))return;
+    if(!await confirmFC({msg:"¿Eliminar este mazo compartido?",confirmLabel:"Eliminar",danger:true}))return;
     await sb.deleteContenido(id,session.access_token).catch(()=>{});
     setSharedDecks(prev=>prev.filter(d=>d.id!==id));
   };
@@ -2087,6 +2092,7 @@ function Flashcards({post,session,esMio,esAyudante}){
   // ── Lista de mazos
   return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {confirmElFC}
       {/* Mazos del docente */}
       {loadingDecks?<Spinner small/>:(sharedDecks.length>0||esStaff)&&(
         <div>
@@ -2359,6 +2365,7 @@ function ForoCurso({post,session,esMio,esAyudante}){
                     </span>
                     <span style={{fontSize:10,color:C.muted}}>{fmtRel(p.created_at)}</span>
                   </div>
+                  {p.id?.startsWith("local_")&&<div style={{fontSize:10,color:"#B45309",background:"#F59E0B12",border:"1px solid #F59E0B33",borderRadius:6,padding:"2px 8px",marginBottom:4,display:"inline-block"}}>⚠ No guardado — error de conexión</div>}
                   <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{textoVisible}</p>
                 </div>
               </div>
@@ -4179,6 +4186,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [claseActiva,setClaseActiva]=useState(false);const [iniciandoClase,setIniciandoClase]=useState(false);
   const [showJitsiCurso,setShowJitsiCurso]=useState(false);
   const jitsiRoomCurso=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
+  const {confirm:confirmCP,confirmEl:confirmElCP}=useConfirm();
   const esMio=post.autor_email===session.user.email||post.autor_id===session.user.id;const miEmail=session.user.email;const miUid=session.user.id;
   const docenteDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
   const iniciarClase=async()=>{
@@ -4248,7 +4256,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             });});
           });
           if(choques.length>0){
-            const ok=window.confirm("⚠️ Esta clase se pisa con:\n"+choques.slice(0,3).join("\n")+"\n\n¿Querés inscribirte igual?");
+            const ok=await confirmCP({msg:"⚠️ Esta clase se pisa con:\n"+choques.slice(0,3).join("\n")+"\n\n¿Querés inscribirte igual?",confirmLabel:"Inscribirme igual",cancelLabel:"Cancelar"});
             if(!ok)return;
           }
         }
@@ -4315,6 +4323,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
   return(
     <div  ref={pageRef} style={{position:"fixed",inset:0,background:C.bg,zIndex:300,overflowY:"auto",fontFamily:FONT}}>
+      {confirmElCP}
       {showJitsiCurso&&<JitsiModal roomName={jitsiRoomCurso} displayName={docenteDisplayName} onClose={()=>setShowJitsiCurso(false)}/>}
       {/* Banner "Clase en vivo" para alumnos */}
       {claseActiva&&!esMio&&(

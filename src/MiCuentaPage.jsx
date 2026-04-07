@@ -145,8 +145,6 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
     ?Math.round((avg/5)*Math.min(totalAlumnos/10,1)*Math.min(todasOfertas.length/3,1)*100)
     :null;
 
-  if(todasOfertas.length===0)return null;
-
   const [pagos,setPagos]=useState([]);const [loadingPagos,setLoadingPagos]=useState(false);
   React.useEffect(()=>{
     if(seccion!=="ingresos")return;
@@ -154,6 +152,7 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
     sb.getPagosDocente(pubs[0]?.autor_email||"",null).then(p=>setPagos(p||[])).catch(()=>setPagos([])).finally(()=>setLoadingPagos(false));
   },[seccion]);
 
+  if(todasOfertas.length===0)return null;
   const secciones=[{id:"resumen",label:"Resumen"},{id:"ingresos",label:"💰 Ingresos"},{id:"publicaciones",label:"Publicaciones"},{id:"reseñas",label:"Reseñas"}];
   const statStyle={background:C.surface,borderRadius:12,padding:"12px 14px"};
 
@@ -554,7 +553,7 @@ function BusquedasConfirmList({busquedas,ofertasMap,session,toggle,toggling,onEd
   const [confirmBusq,setConfirmBusq]=useState(null);
   const handleEliminarBusq=async(p)=>{
     let ofertanteAcept=null;
-    try{const todas=await sb.getOfertasSobre(p.id,session.access_token);const ac=todas.find(o=>o.estado==="aceptada");if(ac)ofertanteAcept={nombre:ac.ofertante_nombre||ac.ofertante_safeDisplayName(null,email),email:ac.ofertante_email};}catch{}
+    try{const todas=await sb.getOfertasSobre(p.id,session.access_token);const ac=todas.find(o=>o.estado==="aceptada");if(ac)ofertanteAcept={nombre:ac.ofertante_nombre||ac.ofertante_email,email:ac.ofertante_email};}catch{}
     setConfirmBusq({p,ofertanteAcept});
   };
   const confirmarEliminar=async()=>{
@@ -1713,7 +1712,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
             <div style={{display:"flex",alignItems:"center",gap:7}}>
               <Avatar letra={(oferta.ofertante_nombre||oferta.ofertante_email||"?")[0]} size={26}/>
               <div>
-                <div style={{color:C.text,fontSize:12,fontWeight:600}}>{oferta.ofertante_nombre||oferta.ofertante_safeDisplayName(null,email)}</div>
+                <div style={{color:C.text,fontSize:12,fontWeight:600}}>{oferta.ofertante_nombre||oferta.ofertante_email}</div>
                 <div style={{color:C.muted,fontSize:10}}>{oferta.ofertante_email}</div>
               </div>
             </div>

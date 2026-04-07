@@ -277,6 +277,34 @@ export function SearchableSelect({value,onChange,options,placeholder="Todas",sty
 export const ErrMsg=({msg})=>msg?<div style={{color:C.danger,fontSize:12,margin:"5px 0",fontFamily:FONT,display:"flex",alignItems:"center",gap:5}}><span>⚠</span>{msg}</div>:null;
 export const Label=({children})=><div style={{color:C.muted,fontSize:12,fontWeight:600,letterSpacing:.3,marginBottom:6}}>{children}</div>;
 export const Modal=({children,onClose,width="min(600px,97vw)"})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}} onClick={onClose}><div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch"}} onClick={e=>e.stopPropagation()}>{children}</div></div>);
+
+/**
+ * Reemplaza window.confirm() con un modal accesible.
+ * Uso: const {confirmEl,confirm}=useConfirm();
+ *   await confirm({msg:"¿Borrar?",confirmLabel:"Borrar",danger:true}) → true/false
+ *   Renderizar {confirmEl} en el componente.
+ */
+export function useConfirm(){
+  const [state,setState]=React.useState(null);// {msg,confirmLabel,cancelLabel,danger,resolve}
+  const confirm=React.useCallback((opts)=>new Promise(resolve=>{
+    setState({msg:opts.msg||"¿Confirmar?",confirmLabel:opts.confirmLabel||"Confirmar",cancelLabel:opts.cancelLabel||"Cancelar",danger:!!opts.danger,resolve});
+  }),[]);
+  const close=(val)=>{if(state){state.resolve(val);setState(null);}};
+  const confirmEl=state?(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={()=>close(false)}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"min(360px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"20px 20px 16px"}}>
+          <div style={{fontSize:14,color:C.text,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{state.msg}</div>
+        </div>
+        <div style={{display:"flex",gap:8,padding:"0 16px 16px",justifyContent:"flex-end"}}>
+          <button onClick={()=>close(false)} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>{state.cancelLabel}</button>
+          <button onClick={()=>close(true)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:state.danger?C.danger:C.accent,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FONT}}>{state.confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  ):null;
+  return{confirm,confirmEl};
+}
 export const Chip=({label,val})=>val?(<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px"}}><div style={{color:C.muted,fontSize:11,marginBottom:2}}>{label}</div><div style={{color:C.text,fontWeight:600,fontSize:13}}>{val}</div></div>):null;
 export const MiniStars=({val,count})=>{if(!val)return null;const v=parseFloat(val);return(<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"linear-gradient(135deg,#F59E0B12,#F5C84212)",border:"1px solid #F59E0B35",borderRadius:20,padding:"3px 9px"}}><span style={{color:"#B45309",fontSize:12}}>★</span><span style={{color:"#B45309",fontSize:12,fontWeight:700}}>{v.toFixed(1)}</span>{count>0&&<span style={{color:C.muted,fontSize:11}}>({count})</span>}</span>);};
 

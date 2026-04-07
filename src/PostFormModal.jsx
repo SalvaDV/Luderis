@@ -4,7 +4,7 @@ import {
   C, FONT, useDebounce, t, LUD,
   Avatar, Spinner, Btn, Label, ErrMsg, Chip, Modal,
   StarRating, Tag, VerifiedBadge, SearchableSelect,
-  fmt, fmtPrice, calcAvg, calcDuracion,
+  fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, avatarColor, MATERIAS,
 } from "./shared";
 

@@ -11,7 +11,7 @@ import {
   Spinner, SkeletonCard, SkeletonList,
   Avatar, Tag, StatusBadge, VerifiedBadge, StarRating,
   Input, Btn, SearchableSelect,
-  ErrMsg, Label, Modal, Chip, MiniStars,
+  ErrMsg, Label, Modal, Chip, MiniStars, useConfirm,
   CalendarioCurso,
   useMPRetorno,
   useDebounce,
@@ -21,6 +21,8 @@ import LandingPage from "./LandingPage";
 import AuthScreen from "./AuthScreen";
 import { PriceSlider } from "./PostFormModal";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
+import AgendaPage, { DocentesDestacados } from "./AgendaPage";
+import AdminPage from "./AdminPage";
 import FavBtn from "./components/FavBtn";
 import DocBadge from "./components/DocBadge";
 import DenunciaModal from "./components/DenunciaModal";
@@ -33,7 +35,35 @@ import Sidebar from "./components/Sidebar";
 import CertificadoPage from "./components/CertificadoPage";
 import ChatModal from "./components/ChatModal";
 
-
+function BusquedaIA({onBuscar,iaLoading,onClose}){
+  const [q,setQ]=React.useState("");
+  const submit=()=>{if(q.trim()){onBuscar(q.trim());onClose();}};
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={onClose}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(480px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"20px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>✨ Buscar con IA</div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer"}}>×</button>
+        </div>
+        <div style={{padding:"12px 20px 20px"}}>
+          <p style={{fontSize:12,color:C.muted,margin:"0 0 12px"}}>Describí lo que querés aprender o encontrar. La IA va a buscar los cursos más relevantes.</p>
+          <textarea value={q} onChange={e=>setQ(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}}}
+            placeholder="Ej: clases de guitarra para principiantes…"
+            autoFocus rows={3}
+            style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",boxSizing:"border-box",marginBottom:10}}/>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+            <button onClick={onClose} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>Cancelar</button>
+            <button onClick={submit} disabled={!q.trim()||iaLoading}
+              style={{padding:"8px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FONT,opacity:(!q.trim()||iaLoading)?.5:1}}>
+              {iaLoading?"Buscando…":"Buscar →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);
@@ -49,7 +79,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const [categorias,setCategorias]=useState([]);
   const [favsMap,setFavsMap]=useState({});
   const [rechazadasIds,setRechazadasIds]=useState(new Set());
-  const [hideBanner,setHideBanner]=useState(()=>{try{return localStorage.getItem("cl_hide_rechazadas")==="1";}catch{return false;}});
+  const [seenRechazadas,setSeenRechazadas]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("cl_seen_rechazadas")||"[]"));}catch{return new Set();}});
   const [pendientesIds,setPendientesIds]=useState(new Set());
   const [mostrarRechazadas,setMostrarRechazadas]=useState(false);
   const [filtroUbicacion,setFiltroUbicacion]=useState("");
@@ -184,7 +214,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
         if(o.estado==="pendiente")pendSet.add(o.busqueda_id);
       });
       setRechazadasIds(rechSet);setPendientesIds(pendSet);
-      if(rechSet.size>0){try{if(localStorage.getItem("cl_hide_rechazadas")==="1"){}else{setHideBanner(false);}}catch{}}
+      // ya no hace nada aquí — la visibilidad del banner se deriva del estado
       const precios=activos.filter(p=>p.precio>0).map(p=>+p.precio);
       if(precios.length){const mn=Math.floor(Math.min(...precios)/100)*100;const mx=Math.ceil(Math.max(...precios)/100)*100;setPrecioMin(mn);setPrecioMax(mx);setSliderMin(mn);setSliderMax(mx);}
       const durs=activos.filter(p=>p.fecha_inicio&&p.fecha_fin).map(p=>Math.ceil((new Date(p.fecha_fin)-new Date(p.fecha_inicio))/604800000));
@@ -697,15 +727,15 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
             )}
           </div>
 
-          {/* Banner rechazadas */}
-          {rechazadasIds.size>0&&!hideBanner&&(
+          {/* Banner rechazadas — aparece cuando hay IDs nuevos no vistos */}
+          {(()=>{const nuevas=[...rechazadasIds].filter(id=>!seenRechazadas.has(id));return nuevas.length>0&&(
             <div style={{background:C.danger+"10",border:`1px solid ${C.danger}25`,borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <span style={{fontSize:12,color:C.muted,flex:1}}>
-                <span style={{color:C.danger,fontWeight:700}}>{rechazadasIds.size}</span> búsqueda{rechazadasIds.size!==1?"s":""} donde tu oferta fue rechazada (oculta{rechazadasIds.size!==1?"s":""})
+                <span style={{color:C.danger,fontWeight:700}}>{nuevas.length}</span> búsqueda{nuevas.length!==1?"s":""} donde tu oferta fue rechazada (oculta{nuevas.length!==1?"s":""})
               </span>
-              <button onClick={()=>{setHideBanner(true);try{localStorage.setItem("cl_hide_rechazadas","1");}catch{}}} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"2px 6px",flexShrink:0,borderRadius:"50%",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.border} onMouseLeave={e=>e.currentTarget.style.background="none"} title="Cerrar">×</button>
+              <button onClick={()=>{const next=new Set([...seenRechazadas,...rechazadasIds]);setSeenRechazadas(next);try{localStorage.setItem("cl_seen_rechazadas",JSON.stringify([...next]));}catch{}}} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"2px 6px",flexShrink:0,borderRadius:"50%",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.border} onMouseLeave={e=>e.currentTarget.style.background="none"} title="Cerrar">×</button>
             </div>
-          )}
+          );})()}
 
           {/* Lista de resultados */}
           {loading?<Spinner/>:sorted.length===0?(
@@ -1304,6 +1334,7 @@ function ChatsPage({session,onOpenChat}){
   const [grupos,setGrupos]=useState([]);const [loading,setLoading]=useState(true);
   const [nombresMap,setNombresMap]=useState({});
   const miEmail=session.user.email;
+  const {confirm,confirmEl}=useConfirm();
 
   const cargar=()=>{
     setLoading(true);
@@ -1341,7 +1372,7 @@ function ChatsPage({session,onOpenChat}){
 
   const borrarChat=async(pubId,otroEmail,e)=>{
     e.stopPropagation();
-    if(!window.confirm("¿Borrar esta conversación? Se eliminarán todos los mensajes."))return;
+    if(!await confirm({msg:"¿Borrar esta conversación? Se eliminarán todos los mensajes.",confirmLabel:"Borrar",danger:true}))return;
     try{
       // Use admin-actions edge function which has service role to bypass RLS
       const res=await fetch("https://hptdyehzqfpgtrpuydny.supabase.co/functions/v1/admin-actions",{
@@ -1359,6 +1390,7 @@ function ChatsPage({session,onOpenChat}){
 
   return(
     <div style={{fontFamily:FONT}}>
+      {confirmEl}
       <h2 style={{fontSize:20,color:C.text,margin:"0 0 16px",fontWeight:700}}>Mis chats</h2>
       {loading?<Spinner/>:grupos.length===0?(<div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12,color:C.border}}>◻</div><p style={{color:C.muted,fontSize:13,marginBottom:8}}>No iniciaste ninguna conversación.</p><p style={{color:C.muted,fontSize:12}}>Inscribite en una clase o que acepten tu oferta para poder chatear.</p></div>):(
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -1433,9 +1465,6 @@ const DetailModal    = React.lazy(() => import('./DetailModal'));
 const PostFormModal  = React.lazy(() => import('./PostFormModal'));
 const OnboardingModal= React.lazy(() => import('./OnboardingModal'));
 const MiCuentaPage   = React.lazy(() => import('./MiCuentaPage'));
-
-import AgendaPage, { DocentesDestacados } from "./AgendaPage";
-import AdminPage from "./AdminPage";
 
 // Named exports from PostFormModal bundle
 const PerfilPage     = React.lazy(() => import('./PostFormModal').then(m => ({ default: m.PerfilPage })));
