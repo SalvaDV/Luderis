@@ -92,6 +92,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const [iaExplanation,setIaExplanation]=useState("");
   const [iaLoading,setIaLoading]=useState(false);
   const [ordenamiento,setOrdenamiento]=useState("relevancia");
+  const [seccion,setSeccion]=useState("cursos");// "cursos" | "clases" — sección activa del explorador
 
   // Palabras clave de cercanía para el prompt IA
   const PALABRAS_CERCA=["cerca","cercanía","mi zona","mi barrio","mi ciudad","presencial cerca","local"];
@@ -372,8 +373,6 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   );
 
   const [viewMode,setViewMode]=useState("cards");// "cards" | "lista"
-  // Sección activa — determina toda la experiencia de exploración
-  const [seccion,setSeccion]=useState("cursos");// "cursos" | "clases"
   // Categorías visuales para el home — combina datos de DB con CATEGORIAS_DATA
   const cats=(categorias.length>0
     ?categorias.map(c=>({label:c.nombre,slug:c.slug,count:posts.filter(p=>p.materia===c.nombre).length}))
