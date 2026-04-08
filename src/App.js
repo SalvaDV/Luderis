@@ -309,7 +309,14 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   // Lista filtrada por IA (si hay) o todos los posts
   // Alumnos solo ven ofertas (clases/cursos), docentes ven todo
   const rolUsuario=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";
-  const visiblePosts=rolUsuario==="alumno"?posts.filter(p=>p.tipo==="oferta"||p.autor_email===session.user.email):posts;
+  const postsPorRol=rolUsuario==="alumno"?posts.filter(p=>p.tipo==="oferta"||p.autor_email===session.user.email):posts;
+  // Filtro por sección (cursos vs clases)
+  const visiblePosts=postsPorRol.filter(p=>{
+    if(p.tipo==="busqueda")return p.autor_email===session.user.email;// busquedas propias siempre visibles
+    if(seccion==="cursos")return p.modo==="curso"||p.modo==="grupal";
+    if(seccion==="clases")return p.modo==="particular"||!p.modo;
+    return true;
+  });
   const filteredConRol=iaResults!==null
     ?visiblePosts.filter(p=>iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
     :visiblePosts.filter(p=>(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax));
@@ -365,6 +372,8 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   );
 
   const [viewMode,setViewMode]=useState("cards");// "cards" | "lista"
+  // Sección activa — determina toda la experiencia de exploración
+  const [seccion,setSeccion]=useState("cursos");// "cursos" | "clases"
   // Categorías visuales para el home — combina datos de DB con CATEGORIAS_DATA
   const cats=(categorias.length>0
     ?categorias.map(c=>({label:c.nombre,slug:c.slug,count:posts.filter(p=>p.materia===c.nombre).length}))
@@ -394,9 +403,8 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
               </div>
             </div>
             <div style={{padding:"16px 20px",flex:1}}>
-              <div style={{marginBottom:16}}><FL ch="Tipo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todo"],["oferta","Clases"],["busqueda","Búsquedas"]].map(([v,l])=><FC key={v} label={l} active={filtroTipo===v} onClick={()=>{setFiltroTipo(v);if(v!=="oferta"){setFiltroModo("all");setFiltroSinc("all");}}}/>)}</div></div>
-              {(filtroTipo==="all"||filtroTipo==="oferta")&&(<div style={{marginBottom:16}}><FL ch="Formato"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["curso","Cursos"],["particular","Clases part."]].map(([v,l])=><FC key={v} label={l} active={filtroModo===v} onClick={()=>{setFiltroModo(v);if(v!=="curso")setFiltroSinc("all");}}/>)}</div></div>)}
-              {(filtroModo==="curso"||filtroModo==="all")&&(filtroTipo==="all"||filtroTipo==="oferta")&&(<div style={{marginBottom:16}}><FL ch="Sincronismo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["sinc","Sincrónico"],["asinc","Asincrónico"]].map(([v,l])=><FC key={v} label={l} active={filtroSinc===v} onClick={()=>setFiltroSinc(v)}/>)}</div></div>)}
+              {/* Filtros contextuales a la sección activa */}
+              {seccion==="cursos"&&(<div style={{marginBottom:16}}><FL ch="Sincronismo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["sinc","En vivo"],["asinc","A tu ritmo"]].map(([v,l])=><FC key={v} label={l} active={filtroSinc===v} onClick={()=>setFiltroSinc(v)}/>)}</div></div>)}
               <div style={{marginBottom:16}}><FL ch="Modalidad"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todas"],["presencial","Presencial"],["virtual","Virtual"],["mixto","Mixto"]].map(([v,l])=><FC key={v} label={l} active={filtroModalidad===v} onClick={()=>setFiltroModalidad(v)}/>)}</div></div>
               <div style={{marginBottom:16}}><FL ch="Materia"/>
                 <SearchableSelect value={filtroMateria} onChange={setFiltroMateria} options={categorias.length>0?categorias.map(c=>c.nombre):MATERIAS} placeholder="Todas"/>
@@ -439,23 +447,42 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
       {modoVista==="home"&&(
         <div>
           {/* Hero con búsqueda grande */}
-          <div style={{background:`linear-gradient(135deg,${LUD.dark} 0%,${LUD.blue} 60%,${LUD.teal} 100%)`,borderRadius:16,padding:"36px 28px",marginBottom:24,position:"relative",overflow:"hidden"}}>
+          <div style={{background:seccion==="cursos"?`linear-gradient(135deg,${LUD.dark} 0%,#7B3FBE 60%,${LUD.blue} 100%)`:`linear-gradient(135deg,${LUD.dark} 0%,${LUD.blue} 60%,${LUD.teal} 100%)`,borderRadius:16,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",transition:"background .4s"}}>
             <div style={{position:"absolute",width:280,height:280,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-80,right:-60,pointerEvents:"none"}}/>
             <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(46,196,160,.08)",bottom:-60,left:20,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
-              <h1 style={{color:"#fff",fontSize:"clamp(20px,4vw,30px)",fontWeight:800,margin:"0 0 6px",letterSpacing:"-.5px"}}>
-                Aprendé lo que quieras
+              {/* Tabs Cursos / Clases */}
+              <div style={{display:"flex",gap:4,background:"rgba(255,255,255,.12)",borderRadius:12,padding:4,marginBottom:20,backdropFilter:"blur(8px)",width:"fit-content"}}>
+                {[
+                  {id:"cursos",icon:"📚",label:"Cursos"},
+                  {id:"clases",icon:"🎯",label:"Clases particulares"},
+                ].map(tab=>(
+                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");}}
+                    style={{display:"flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
+                      background:seccion===tab.id?"#fff":"transparent",
+                      color:seccion===tab.id?LUD.blue:"rgba(255,255,255,.75)",
+                      boxShadow:seccion===tab.id?"0 2px 8px rgba(0,0,0,.15)":"none"}}>
+                    <span style={{fontSize:16}}>{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <h1 style={{color:"#fff",fontSize:"clamp(18px,4vw,26px)",fontWeight:800,margin:"0 0 6px",letterSpacing:"-.5px"}}>
+                {seccion==="cursos"?"Aprendé a tu ritmo":"Encontrá tu profe ideal"}
               </h1>
-              <p style={{color:"rgba(255,255,255,.75)",fontSize:14,margin:"0 0 20px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6}}>
+              <p style={{color:"rgba(255,255,255,.75)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>📍 {userCity}</span>}
-                {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:posts.length>0?`${posts.length} publicaciones disponibles`:"Buscá clases particulares, cursos y más"}
+                {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:
+                  visiblePosts.filter(p=>p.tipo==="oferta").length>0
+                    ?`${visiblePosts.filter(p=>p.tipo==="oferta").length} ${seccion==="cursos"?"cursos disponibles":"docentes disponibles"}`
+                    :seccion==="cursos"?"Encontrá el curso perfecto para vos":"Clases 1 a 1 o en grupo pequeño"}
               </p>
               <button onClick={()=>setShowBusquedaIA(true)}
                 style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.15)",border:"2px solid rgba(255,255,255,.25)",borderRadius:14,padding:"14px 20px",cursor:"pointer",fontFamily:FONT,textAlign:"left",backdropFilter:"blur(8px)",transition:"all .2s"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.22)";e.currentTarget.style.borderColor="rgba(255,255,255,.5)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.15)";e.currentTarget.style.borderColor="rgba(255,255,255,.25)";}}>
                 <span style={{fontSize:18,fontWeight:700,color:"rgba(255,255,255,.9)"}}>✦</span>
-                <span style={{color:"rgba(255,255,255,.65)",fontSize:15,flex:1}}>Describí lo que querés aprender…</span>
+                <span style={{color:"rgba(255,255,255,.65)",fontSize:15,flex:1}}>{seccion==="cursos"?"Describí qué querés aprender…":"Describí qué clase estás buscando…"}</span>
                 <span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:600,color:"rgba(255,255,255,.8)",flexShrink:0,whiteSpace:"nowrap"}}>Buscar con IA</span>
               </button>
             </div>
@@ -502,14 +529,19 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
             </div>
           </div>
 
-          {/* Accesos rápidos tipo ML */}
+          {/* Accesos rápidos — distintos según sección */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
-            {[
-              {icon:"🎯",title:"Clases particulares",desc:"Uno a uno",onClick:()=>{setFiltroModo("particular");setModoVista("resultados");}},
-              {icon:"📚",title:"Cursos",desc:"Con certificado",onClick:()=>{setFiltroModo("curso");setModoVista("resultados");}},
+            {(seccion==="cursos"?[
+              {icon:"⚡",title:"Sincrónicos",desc:"Con docente en vivo",onClick:()=>{setFiltroSinc("sinc");setModoVista("resultados");}},
+              {icon:"🎬",title:"A tu ritmo",desc:"Grabados, cuando quieras",onClick:()=>{setFiltroSinc("asinc");setModoVista("resultados");}},
               {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
               {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
-            ].map(item=>(
+            ]:[
+              {icon:"👤",title:"Uno a uno",desc:"Atención personalizada",onClick:()=>{setFiltroModalidad("all");setModoVista("resultados");}},
+              {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
+              {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
+              {icon:"📦",title:"Por paquete",desc:"Comprá varias clases",onClick:()=>{setModoVista("resultados");}},
+            ]).map(item=>(
               <button key={item.title} onClick={item.onClick}
                 style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 14px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s"}}
                 onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 20px rgba(0,0,0,.08)`;}}
@@ -522,11 +554,13 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
           </div>
 
           {/* Publicaciones destacadas — scroll horizontal */}
-          {loading?<Spinner/>:[
-            {label:"✨ Publicaciones recientes",data:recientes},
-            ...(cursos.length?[{label:"📚 Cursos",data:cursos}]:[]),
-            ...(particulares.length?[{label:"🎯 Clases particulares",data:particulares}]:[]),
-          ].map(({label,data})=>data.length>0&&(
+          {loading?<Spinner/>:(seccion==="cursos"?[
+            {label:"✨ Cursos recientes",data:cursos.slice(0,8)},
+            {label:"⭐ Mejor valorados",data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
+          ]:[
+            {label:"✨ Docentes disponibles",data:particulares.slice(0,8)},
+            {label:"⭐ Mejor valorados",data:[...particulares].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
+          ]).map(({label,data})=>data.length>0&&(
             <div key={label} style={{marginBottom:24}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontWeight:700,color:C.text,fontSize:15}}>{label}</div>
@@ -580,12 +614,18 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
 
           {/* Banner CTA: crear búsqueda */}
           <div style={{background:`linear-gradient(135deg,#7B3FBE15,#1A6ED815)`,border:"1px solid #7B3FBE25",borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{fontSize:36}}>🔍</div>
+            <div style={{fontSize:36}}>{seccion==="cursos"?"📚":"🔍"}</div>
             <div style={{flex:1,minWidth:200}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>¿No encontrás lo que buscás?</div>
-              <div style={{fontSize:13,color:C.muted}}>Publicá una búsqueda y los docentes te contactan a vos.</div>
+              <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>
+                {seccion==="cursos"?"¿No encontrás el curso que buscás?":"¿No encontrás el docente ideal?"}
+              </div>
+              <div style={{fontSize:13,color:C.muted}}>
+                {seccion==="cursos"
+                  ?"Describí el tema y te mostramos lo más relevante con IA."
+                  :"Publicá qué necesitás y los docentes te contactan a vos."}
+              </div>
             </div>
-            <button onClick={()=>{setShowBusquedaIA(true);}} style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(123,63,190,.3)",flexShrink:0,whiteSpace:"nowrap"}}>
+            <button onClick={()=>setShowBusquedaIA(true)} style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(123,63,190,.3)",flexShrink:0,whiteSpace:"nowrap"}}>
               Buscar con IA →
             </button>
           </div>
