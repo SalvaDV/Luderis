@@ -34,6 +34,9 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
               {nombre}
             </button>
             {post.tipo==="oferta"&&<DocBadge avgUser={avgUser} countPub={countPub} post={post}/>}
+      {post.tipo==="oferta"&&post.autor_disponible_ahora&&post.autor_disponible_hasta&&new Date(post.autor_disponible_hasta)>new Date()&&(
+        <span style={{display:"inline-block",fontSize:10,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"1px 8px",marginTop:2}}>🟢 Disponible hoy</span>
+      )}
             <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3,flexWrap:"wrap"}}>
               {post.materia&&<span style={{fontSize:12,color:C.muted}}>{post.materia}</span>}
               {post.created_at&&<span style={{fontSize:12,color:C.muted}}>· {fmtRel(post.created_at)}</span>}
@@ -66,6 +69,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
         {post.fecha_inicio&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>Inicia {fmt(post.fecha_inicio)}</span>}
         {yaOferte&&!esMio&&<span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:4,background:"#F59E0B12",border:"1px solid #F59E0B30",color:"#B45309"}}>Oferta enviada</span>}
         {fueRechazado&&<span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:4,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`}}>Oferta rechazada</span>}
+        {post.tipo==="busqueda"&&post.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(daysLeft<=3&&daysLeft>0)return(<div style={{fontSize:10,color:"#B45309",fontWeight:600}}>⏱ Expira en {daysLeft} día{daysLeft!==1?"s":""}</div>);return null;})()}
       </div>
 
       {/* Footer */}

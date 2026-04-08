@@ -376,7 +376,7 @@ export const deleteDocumento = (id, token) =>
 // ── Verificación IA ───────────────────────────────────────────────────────────
 
 export const getUsuarioByIdFull = (id, token) =>
-  db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url`, "GET", null, token)
+  db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
     .then(r => r?.[0] || null).catch(() => null);
 
 export const getUsuarioById = (id, token) =>
@@ -384,7 +384,7 @@ export const getUsuarioById = (id, token) =>
     .then(r => r?.[0] || null).catch(() => null);
 
 export const getUsuarioByEmail = (email, token) =>
-  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,rol`, "GET", null, token)
+  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
     .then(r => r?.[0] || null).catch(() => null);
 
 // ── IA helper — llama a la Supabase Edge Function "ai-proxy" ─────────────────
@@ -485,6 +485,15 @@ export const insertForoRespuesta = (data, token) =>
 
 export const deleteForoPost = (id, token) =>
   db(`foro_posts?id=eq.${id}`, "DELETE", null, token);
+
+// ── Clases realizadas ─────────────────────────────────────────────────────────
+
+export const insertClaseRealizada = (data, token) =>
+  db('clases_realizadas', 'POST', data, token, 'return=representation');
+export const getClasesRealizadas = (email, token) =>
+  db(`clases_realizadas?or=(docente_email.eq.${encodeURIComponent(email)},alumno_email.eq.${encodeURIComponent(email)})&order=fecha_clase.desc`, 'GET', null, token);
+export const confirmarClase = (claseId, userEmail, token) =>
+  rpc('confirmar_clase', { p_clase_id: claseId, p_usuario_email: userEmail }, token);
 
 // ── Publicaciones por IDs ─────────────────────────────────────────────────────
 
@@ -587,6 +596,37 @@ export const getMisPagos = (email, token) =>
 
 export const getPagosDocente = (email, token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
+
+// ── Alertas de búsquedas por materia ──────────────────────────────────────────
+
+export const getAlertasBusquedas = (email, token) =>
+  db(`alertas_busquedas?email=eq.${encodeURIComponent(email)}&order=created_at.desc`, 'GET', null, token);
+
+export const insertAlertaBusqueda = (data, token) =>
+  db('alertas_busquedas', 'POST', data, token, 'return=representation');
+
+export const updateAlertaBusqueda = (id, data, token) =>
+  db(`alertas_busquedas?id=eq.${id}`, 'PATCH', data, token);
+
+export const deleteAlertaBusqueda = (id, token) =>
+  db(`alertas_busquedas?id=eq.${id}`, 'DELETE', null, token);
+
+export const getAlertasMatchingMateria = (materia, token) =>
+  db(`alertas_busquedas?activa=eq.true&materias=cs.{${encodeURIComponent(materia)}}`, 'GET', null, token);
+
+// ── Métricas docente ──────────────────────────────────────────────────────────
+
+export const getMetricasDocente = (email, token) =>
+  db(`metricas_docente?autor_email=eq.${encodeURIComponent(email)}`, 'GET', null, token);
+
+export const registrarClickContacto = async (pubId, token) => {
+  try {
+    const p = await db(`publicaciones?id=eq.${pubId}&select=clicks_contacto`, 'GET', null, token);
+    if (p && p[0]) {
+      await db(`publicaciones?id=eq.${pubId}`, 'PATCH', { clicks_contacto: (p[0].clicks_contacto || 0) + 1 }, token);
+    }
+  } catch {}
+};
 
 // ── Alertas de publicaciones ──────────────────────────────────────────────────
 

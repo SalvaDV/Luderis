@@ -7,6 +7,7 @@ import {
   safeDisplayName, sanitizeContactInfo, avatarColor,
   LUD,
   _avatarCache,
+  MATERIAS,
 } from "./shared";
 import { MyPostCard, OfertasRecibidasModal } from "./App";
 import { StreakBadge } from "./PostFormModal";
@@ -694,6 +695,155 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
   );
 }
 
+// ─── CLASES TAB ───────────────────────────────────────────────────────────────
+function ClasesTab({session,misPubs}){
+  const miEmail=session.user.email;
+  const [clases,setClases]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [confirmando,setConfirmando]=useState(null);
+  const [showRegistrar,setShowRegistrar]=useState(false);
+  const [regPubId,setRegPubId]=useState("");
+  const [regAlumnoEmail,setRegAlumnoEmail]=useState("");
+  const [regFecha,setRegFecha]=useState("");
+  const [regDuracion,setRegDuracion]=useState("");
+  const [regNotas,setRegNotas]=useState("");
+  const [saving,setSaving]=useState(false);
+
+  const misOfertas=(misPubs||[]).filter(p=>p.tipo==="oferta");
+
+  const cargar=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const data=await sb.getClasesRealizadas(miEmail,session.access_token);
+      setClases(data||[]);
+    }catch{setClases([]);}finally{setLoading(false);}
+  },[miEmail,session.access_token]);
+
+  useEffect(()=>{cargar();},[cargar]);
+
+  const confirmar=async(clase)=>{
+    setConfirmando(clase.id);
+    try{
+      await sb.confirmarClase(clase.id,miEmail,session.access_token);
+      await cargar();
+      toast("Clase confirmada","success");
+    }catch(e){toast("Error: "+e.message,"error");}finally{setConfirmando(null);}
+  };
+
+  const registrar=async()=>{
+    if(!regAlumnoEmail.trim()||!regFecha){toast("Completá alumno y fecha","error");return;}
+    setSaving(true);
+    try{
+      const soyDocente=misOfertas.length>0;
+      const data={
+        docente_email:soyDocente?miEmail:regAlumnoEmail.trim(),
+        alumno_email:soyDocente?regAlumnoEmail.trim():miEmail,
+        fecha_clase:regFecha,
+        duracion_min:regDuracion?parseInt(regDuracion):null,
+        notas:regNotas.trim()||null,
+      };
+      if(regPubId)data.publicacion_id=regPubId;
+      await sb.insertClaseRealizada(data,session.access_token);
+      setShowRegistrar(false);setRegAlumnoEmail("");setRegFecha("");setRegDuracion("");setRegNotas("");setRegPubId("");
+      await cargar();
+      toast("Clase registrada","success");
+    }catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}
+  };
+
+  const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:13,color:C.muted}}>Registrá y confirmá clases realizadas para habilitar reseñas verificadas.</div>
+        {misOfertas.length>0&&(
+          <button onClick={()=>setShowRegistrar(v=>!v)}
+            style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:20,color:C.accent,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT}}>
+            {showRegistrar?"Cancelar":"+ Registrar clase"}
+          </button>
+        )}
+      </div>
+
+      {showRegistrar&&(
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:16}}>
+          <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:12}}>Registrar clase dada</div>
+          {misOfertas.length>0&&(
+            <div style={{marginBottom:8}}>
+              <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Publicación (opcional)</label>
+              <select value={regPubId} onChange={e=>setRegPubId(e.target.value)} style={{...iS,marginBottom:8}}>
+                <option value="">— Sin publicación específica —</option>
+                {misOfertas.map(p=><option key={p.id} value={p.id}>{p.titulo}</option>)}
+              </select>
+            </div>
+          )}
+          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Email del alumno *</label>
+          <input value={regAlumnoEmail} onChange={e=>setRegAlumnoEmail(e.target.value)} placeholder="alumno@email.com" style={iS}/>
+          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Fecha de la clase *</label>
+          <input type="date" value={regFecha} onChange={e=>setRegFecha(e.target.value)} style={iS}/>
+          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Duración (min) — opcional</label>
+          <input type="number" value={regDuracion} onChange={e=>setRegDuracion(e.target.value)} placeholder="60" style={iS}/>
+          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Notas (opcional)</label>
+          <textarea value={regNotas} onChange={e=>setRegNotas(e.target.value)} placeholder="Temas vistos, observaciones..." rows={2} style={{...iS,resize:"vertical"}}/>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={registrar} disabled={saving} style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:saving?0.6:1}}>{saving?"Guardando...":"Registrar"}</button>
+            <button onClick={()=>setShowRegistrar(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"8px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {loading?<Spinner/>:clases.length===0?(
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"40px 24px",textAlign:"center"}}>
+          <div style={{fontSize:36,marginBottom:12}}>📋</div>
+          <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin clases registradas</div>
+          <div style={{color:C.muted,fontSize:13}}>Registrá las clases que diste para que tus alumnos puedan confirmarte y dejarte reseñas verificadas.</div>
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {clases.map(c=>{
+            const soyDocente=c.docente_email===miEmail;
+            const contraparte=soyDocente?c.alumno_email:c.docente_email;
+            const yaConfirme=soyDocente?c.confirmado_docente:c.confirmado_alumno;
+            const ambasConfirmaron=c.confirmado_docente&&c.confirmado_alumno;
+            return(
+              <div key={c.id} style={{background:C.surface,border:`1px solid ${ambasConfirmaron?C.success+"44":C.border}`,borderRadius:12,padding:"14px 16px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
+                      {soyDocente?"Alumno":"Docente"}: <span style={{color:C.text,fontWeight:600}}>{contraparte}</span>
+                    </div>
+                    {c.publicacion_id&&<div style={{fontSize:12,color:C.accent,marginBottom:4}}>📌 Publicación vinculada</div>}
+                    <div style={{fontSize:12,color:C.muted}}>
+                      📅 {new Date(c.fecha_clase).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}
+                      {c.duracion_min&&<span> · ⏱ {c.duracion_min} min</span>}
+                    </div>
+                    {c.notas&&<div style={{fontSize:12,color:C.muted,marginTop:4,fontStyle:"italic"}}>{c.notas}</div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
+                    {ambasConfirmaron?(
+                      <span style={{fontSize:11,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"3px 10px",fontWeight:700}}>✓ Confirmada</span>
+                    ):(
+                      <span style={{fontSize:11,background:"#F59E0B12",color:"#B45309",border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700}}>⏳ Pendiente confirmación</span>
+                    )}
+                    {!yaConfirme&&!ambasConfirmaron&&(
+                      <button onClick={()=>confirmar(c)} disabled={confirmando===c.id}
+                        style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.success,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:confirmando===c.id?0.5:1}}>
+                        {confirmando===c.id?"...":"✓ Confirmar que se realizó"}
+                      </button>
+                    )}
+                    {ambasConfirmaron&&(
+                      <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px",fontWeight:600}}>⭐ Reseña habilitada</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MI CUENTA PAGE — perfil + credenciales + gestión de publicaciones ─────────
 // ─── ALERTAS TAB ──────────────────────────────────────────────────────────────
 // Sistema de alertas por email: el usuario define criterios con lenguaje natural
@@ -928,6 +1078,159 @@ ${refUrl}`;
   );
 }
 
+// --- ALERTAS BUSQUEDAS TAB ---
+function AlertasBusquedasTab({session}){
+  const [alertas,setAlertas]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [showForm,setShowForm]=useState(false);
+  const [materiaForm,setMateriaForm]=useState("");
+  const [modalidadForm,setModalidadForm]=useState("");
+  const [saving,setSaving]=useState(false);
+
+  const cargar=useCallback(async()=>{
+    try{
+      const data=await sb.getAlertasBusquedas(session.user.email,session.access_token);
+      setAlertas(data||[]);
+    }catch{setAlertas([]);}finally{setLoading(false);}
+  },[session.user.email,session.access_token]);// eslint-disable-line
+
+  useEffect(()=>{cargar();},[cargar]);
+
+  const crear=async()=>{
+    if(!materiaForm){toast("Selecciona una materia","error");return;}
+    setSaving(true);
+    try{
+      const materias=materiaForm?[materiaForm]:[];
+      await sb.insertAlertaBusqueda({
+        email:session.user.email,
+        usuario_id:session.user.id,
+        materias,
+        modalidad:modalidadForm||null,
+        activa:true,
+      },session.access_token);
+      setMateriaForm("");setModalidadForm("");setShowForm(false);
+      toast("Alerta creada. Te avisaremos cuando haya una busqueda en esa materia","success",4000);
+      cargar();
+    }catch(e){toast("Error al crear la alerta: "+e.message,"error");}
+    finally{setSaving(false);}
+  };
+
+  const eliminar=async(id)=>{
+    try{
+      await sb.deleteAlertaBusqueda(id,session.access_token);
+      setAlertas(p=>p.filter(a=>a.id!==id));
+      toast("Alerta eliminada","info");
+    }catch{}
+  };
+
+  const toggleActiva=async(alerta)=>{
+    try{
+      await sb.updateAlertaBusqueda(alerta.id,{activa:!alerta.activa},session.access_token);
+      setAlertas(p=>p.map(a=>a.id===alerta.id?{...a,activa:!a.activa}:a));
+    }catch{}
+  };
+
+  return(
+    <div style={{fontFamily:FONT}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px",marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4}}>🔔 Alertas de busquedas</div>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
+              Te notificamos cuando un alumno busca docente en tu materia.
+            </div>
+          </div>
+          <button onClick={()=>setShowForm(v=>!v)}
+            style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
+            + Agregar materia
+          </button>
+        </div>
+
+        {showForm&&(
+          <div style={{background:C.surface,border:`1px solid ${C.accent}33`,borderRadius:12,padding:"16px",marginTop:16}}>
+            <div style={{marginBottom:10}}>
+              <Label>Materia *</Label>
+              <select value={materiaForm} onChange={e=>setMateriaForm(e.target.value)}
+                style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",color:materiaForm?C.text:C.muted,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}>
+                <option value="">Selecciona una materia...</option>
+                {MATERIAS.map(m=><option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div style={{marginBottom:14}}>
+              <Label>Modalidad (opcional)</Label>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {[["","Todas"],["virtual","Virtual"],["presencial","Presencial"],["mixta","Mixta"]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setModalidadForm(v)}
+                    style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,
+                      background:modalidadForm===v?C.accent:"transparent",color:modalidadForm===v?"#fff":C.muted,
+                      border:`1px solid ${modalidadForm===v?C.accent:C.border}`,fontWeight:modalidadForm===v?700:400,transition:"all .12s"}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={crear} disabled={saving||!materiaForm}
+                style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"9px 24px",fontWeight:700,fontSize:13,cursor:saving?"wait":"pointer",fontFamily:FONT,opacity:saving||!materiaForm?0.6:1}}>
+                {saving?"Guardando...":"Crear alerta"}
+              </button>
+              <button onClick={()=>{setShowForm(false);setMateriaForm("");setModalidadForm("");}}
+                style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"9px 16px",cursor:"pointer",fontFamily:FONT,fontSize:13}}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {loading?<Spinner/>:alertas.length===0?(
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"48px 24px",textAlign:"center"}}>
+          <div style={{fontSize:40,marginBottom:12}}>🔔</div>
+          <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin alertas de busquedas</div>
+          <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Agrega materias para recibir notificaciones cuando un alumno busque docente en esa area.</div>
+          <button onClick={()=>setShowForm(true)}
+            style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"10px 24px",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
+            Agregar primera materia
+          </button>
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {alertas.map(a=>{
+            const materiasList=Array.isArray(a.materias)?a.materias:(a.materia?[a.materia]:[]);
+            return(
+              <div key={a.id} style={{background:C.surface,border:`1px solid ${a.activa?C.accent+"44":C.border}`,borderLeft:`3px solid ${a.activa?C.accent:C.muted}`,borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"center",opacity:a.activa?1:0.6,transition:"all .2s"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                    {materiasList.length>0
+                      ?materiasList.map(m=><span key={m} style={{fontSize:13,fontWeight:700,color:C.text}}>{m}</span>)
+                      :<span style={{fontSize:13,color:C.muted,fontStyle:"italic"}}>Materia no especificada</span>
+                    }
+                    {a.modalidad
+                      ?<span style={{fontSize:11,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 9px",fontWeight:600}}>{a.modalidad==="virtual"?"Virtual":a.modalidad==="presencial"?"Presencial":"Mixta"}</span>
+                      :<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>Todas las modalidades</span>
+                    }
+                  </div>
+                  <div style={{fontSize:11,color:C.muted,marginTop:4}}>Creada {fmtRel(a.created_at)}</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
+                  <button onClick={()=>toggleActiva(a)}
+                    style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:20,border:`1px solid ${a.activa?C.accent+"40":C.border}`,background:a.activa?C.accentDim:"transparent",color:a.activa?C.accent:C.muted,cursor:"pointer",fontFamily:FONT,whiteSpace:"nowrap"}}>
+                    {a.activa?"Activa":"Pausada"}
+                  </button>
+                  <button onClick={()=>eliminar(a.id)}
+                    style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.danger,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AlertasTab({session}){
   const [alertas,setAlertas]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -1130,11 +1433,39 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const [avatarUrl,setAvatarUrl]=useState("");
   const [savingDisplayName,setSavingDisplayName]=useState(false);
   const [perfilLoaded,setPerfilLoaded]=useState(false);
+  // Docente extra fields
+  const [tituloProfesional,setTituloProfesional]=useState("");
+  const [aniosExperiencia,setAniosExperiencia]=useState("");
+  const [metodologia,setMetodologia]=useState("");
+  const [franjaHoraria,setFranjaHoraria]=useState("");
+  const [idiomas,setIdiomas]=useState([]);
+  const [linkedinUrl,setLinkedinUrl]=useState("");
+  const [sitioWeb,setSitioWeb]=useState("");
+  // Disponibilidad ahora
+  const [disponibleAhora,setDisponibleAhora]=useState(false);
+  const [disponibleMensaje,setDisponibleMensaje]=useState("");
+  const [disponibleDuracion,setDisponibleDuracion]=useState("4h");
   // Cargar bio, ubicacion y avatar desde la tabla usuarios al montar
   useEffect(()=>{
     if(perfilLoaded)return;
     sb.getUsuarioByIdFull(session.user.id,session.access_token).then(u=>{
-      if(u){if(u.bio)setBio(u.bio);if(u.ubicacion)setUbicacionPerfil(u.ubicacion);if(u.avatar_url)setAvatarUrl(u.avatar_url);if(u.video_presentacion)setVideoPresentacion(u.video_presentacion);}
+      if(u){
+        if(u.bio)setBio(u.bio);
+        if(u.ubicacion)setUbicacionPerfil(u.ubicacion);
+        if(u.avatar_url)setAvatarUrl(u.avatar_url);
+        if(u.video_presentacion)setVideoPresentacion(u.video_presentacion);
+        if(u.titulo_profesional)setTituloProfesional(u.titulo_profesional);
+        if(u.anios_experiencia!=null)setAniosExperiencia(String(u.anios_experiencia));
+        if(u.metodologia)setMetodologia(u.metodologia);
+        if(u.franja_horaria)setFranjaHoraria(u.franja_horaria);
+        if(u.idiomas)setIdiomas(u.idiomas||[]);
+        if(u.linkedin_url)setLinkedinUrl(u.linkedin_url);
+        if(u.sitio_web)setSitioWeb(u.sitio_web);
+        // Disponibilidad: verificar si sigue vigente
+        const dispActiva=u.disponible_ahora&&u.disponible_hasta&&new Date(u.disponible_hasta)>new Date();
+        setDisponibleAhora(!!dispActiva);
+        if(u.disponible_mensaje)setDisponibleMensaje(u.disponible_mensaje);
+      }
       setPerfilLoaded(true);
     }).catch(()=>setPerfilLoaded(true));
   },[session.user.id,session.access_token,perfilLoaded]);
@@ -1269,6 +1600,78 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 <input value={videoPresentacion} onChange={e=>setVideoPresentacion(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 <div style={{fontSize:10,color:C.muted,marginTop:3}}>Se muestra en tu perfil público.</div>
               </div>
+              {/* ── Campos extra docente ── */}
+              {(()=>{const rolLocal=localStorage.getItem("cl_rol_"+email)||"alumno";if(rolLocal!=="docente"&&pubs.filter(p=>p.tipo==="oferta").length===0)return null;
+                const iDoc={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"};
+                const IDIOMAS_LIST=["Español","Inglés","Portugués","Francés","Alemán"];
+                const toggleIdioma=(id)=>setIdiomas(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+                return(
+                  <div style={{background:C.accentDim,border:`1px solid ${C.accent}22`,borderRadius:10,padding:"12px 14px",marginTop:8}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:1,marginBottom:10}}>PERFIL DOCENTE</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                      <div>
+                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Título profesional</label>
+                        <input value={tituloProfesional} onChange={e=>setTituloProfesional(e.target.value)} placeholder="Ej: Lic. en Matemática, Ing. Civil..." style={iDoc}/>
+                      </div>
+                      <div>
+                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Años de experiencia</label>
+                        <input type="number" min="0" value={aniosExperiencia} onChange={e=>setAniosExperiencia(e.target.value)} placeholder="5" style={iDoc}/>
+                      </div>
+                    </div>
+                    <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Metodología de enseñanza</label>
+                    <textarea value={metodologia} onChange={e=>setMetodologia(e.target.value)} placeholder="Describí tu metodología de enseñanza..." rows={2} style={{...iDoc,resize:"vertical",marginBottom:10}}/>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                      <div>
+                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Franja horaria</label>
+                        <select value={franjaHoraria} onChange={e=>setFranjaHoraria(e.target.value)} style={iDoc}>
+                          <option value="">— Seleccionar —</option>
+                          <option value="Mañana (8-12hs)">Mañana (8-12hs)</option>
+                          <option value="Tarde (12-18hs)">Tarde (12-18hs)</option>
+                          <option value="Noche (18-22hs)">Noche (18-22hs)</option>
+                          <option value="Flexible">Flexible</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>LinkedIn</label>
+                        <input value={linkedinUrl} onChange={e=>setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/..." style={iDoc}/>
+                      </div>
+                    </div>
+                    <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Idiomas</label>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+                      {IDIOMAS_LIST.map(id=>(
+                        <button key={id} onClick={()=>toggleIdioma(id)}
+                          style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,
+                            background:idiomas.includes(id)?C.accent:"transparent",
+                            color:idiomas.includes(id)?"#fff":C.muted,
+                            border:`1px solid ${idiomas.includes(id)?C.accent:C.border}`,fontWeight:idiomas.includes(id)?700:400}}>
+                          {id}
+                        </button>
+                      ))}
+                    </div>
+                    <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Sitio web</label>
+                    <input value={sitioWeb} onChange={e=>setSitioWeb(e.target.value)} placeholder="https://mipagina.com" style={iDoc}/>
+                  </div>
+                );
+              })()}
+              {/* Disponibilidad ahora */}
+              <div style={{background:disponibleAhora?"#F0FDF4":C.bg,border:`1px solid ${disponibleAhora?C.success+"40":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:disponibleAhora?10:0}}>
+                  <button onClick={()=>setDisponibleAhora(v=>!v)} style={{width:38,height:22,borderRadius:11,background:disponibleAhora?C.success:C.border,border:"none",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,padding:0}}>
+                    <span style={{position:"absolute",top:3,left:disponibleAhora?18:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",display:"block",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+                  </button>
+                  <label style={{fontSize:13,color:disponibleAhora?C.success:C.text,fontWeight:600,cursor:"pointer"}} onClick={()=>setDisponibleAhora(v=>!v)}>🟢 Estoy disponible ahora</label>
+                </div>
+                {disponibleAhora&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <input value={disponibleMensaje} onChange={e=>setDisponibleMensaje(e.target.value)} placeholder='Ej: "Puedo dar clases hoy de 14 a 18hs"' style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {[{v:"2h",l:"2 horas"},{v:"4h",l:"4 horas"},{v:"8h",l:"8 horas"},{v:"mañana",l:"Hasta mañana"}].map(opt=>(
+                        <button key={opt.v} onClick={()=>setDisponibleDuracion(opt.v)} style={{background:disponibleDuracion===opt.v?C.success:C.surface,border:`1px solid ${disponibleDuracion===opt.v?C.success:C.border}`,borderRadius:20,color:disponibleDuracion===opt.v?"#fff":C.muted,padding:"4px 12px",fontSize:12,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>{opt.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Label>Color de avatar</Label>
               <div style={{display:"flex",gap:7,marginBottom:14,flexWrap:"wrap"}}>
                 {AVATAR_COLORS.map(c=>(<button key={c} onClick={()=>saveColor(c)} style={{width:26,height:26,borderRadius:"50%",background:c,border:currentColor===c?`2.5px solid ${C.text}`:"2.5px solid transparent",cursor:"pointer",padding:0}}/>))}
@@ -1279,7 +1682,21 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                   setSavingDisplayName(true);
                   try{
                     sb.setDisplayName(email,newName);
-                    await sb.updateUsuario(uid,{display_name:newName,nombre:newName,bio:bio.trim()||null,ubicacion:ubicacionPerfil.trim()||null,avatar_url:avatarUrl.trim()||null,video_presentacion:videoPresentacion.trim()||null},session.access_token);
+                    // Calcular disponible_hasta según duración seleccionada
+                    const durMap={"2h":2*3600000,"4h":4*3600000,"8h":8*3600000,"mañana":24*3600000};
+                    const dispHasta=disponibleAhora?new Date(Date.now()+(durMap[disponibleDuracion]||4*3600000)).toISOString():null;
+                    await sb.updateUsuario(uid,{
+                      display_name:newName,nombre:newName,bio:bio.trim()||null,ubicacion:ubicacionPerfil.trim()||null,
+                      avatar_url:avatarUrl.trim()||null,video_presentacion:videoPresentacion.trim()||null,
+                      disponible_ahora:disponibleAhora,disponible_hasta:dispHasta,disponible_mensaje:disponibleAhora?disponibleMensaje.trim()||null:null,
+                      titulo_profesional:tituloProfesional.trim()||null,
+                      anios_experiencia:aniosExperiencia?parseInt(aniosExperiencia):null,
+                      metodologia:metodologia.trim()||null,
+                      franja_horaria:franjaHoraria||null,
+                      idiomas:idiomas.length?idiomas:null,
+                      linkedin_url:linkedinUrl.trim()||null,
+                      sitio_web:sitioWeb.trim()||null,
+                    },session.access_token);
                     // Guardar bio y ciudad en localStorage para el progreso de perfil
                     try{
                       if(bio.trim())localStorage.setItem("cl_bio_"+session.user.email,bio.trim());else localStorage.removeItem("cl_bio_"+session.user.email);
@@ -1333,6 +1750,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         {[
           {id:"publicaciones",label:"Publicaciones",count:pubs.length},
           {id:"estadisticas",label:"Estadísticas",count:null},
+          {id:"clases",label:"Mis clases",count:null},
           {id:"ofertas",label:"Actividad",count:(()=>{const visible=misOfertasEnv.filter(o=>!descartadas.includes(o.id));return visible.length||null;})()},
           {id:"credenciales",label:"Credenciales",count:docs.length||null},
           {id:"resenas",label:"Reseñas",count:reseñas.length||null},
@@ -1423,6 +1841,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
           {loading?<Spinner/>:<DocenteStats pubs={pubs} reseñas={reseñas} inscritosMap={inscritosMap}/>}
         </div>
       )}
+
+      {/* ── TAB: MIS CLASES ── */}
+      {tabCuenta==="clases"&&<ClasesTab session={session} misPubs={pubs}/>}
 
       {/* ── TAB: ACTIVIDAD (ofertas enviadas + recibidas) ── */}
       {tabCuenta==="ofertas"&&(
@@ -1565,11 +1986,14 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               {reseñas.map(r=>(<div key={r.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px"}}>
                 <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
                   <Avatar letra={r.autor_nombre?.[0]||"?"} size={32}/>
-                  <div>
-                    <div style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</div>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
+                      {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+                    </div>
                     <div style={{color:"#B45309",fontSize:12,marginTop:1}}>{"★".repeat(r.estrellas||0)}{"☆".repeat(5-(r.estrellas||0))}</div>
                   </div>
-                  <div style={{marginLeft:"auto",fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</div>
                 </div>
                 {r.texto&&<p style={{color:C.muted,fontSize:13,margin:0,lineHeight:1.6}}>{r.texto}</p>}
               </div>))}

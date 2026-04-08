@@ -965,7 +965,15 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               {displayNombre[0].toUpperCase()}
             </div>
             <div style={{paddingBottom:24,flex:1,minWidth:0}}>
-              <h1 style={{color:"#fff",fontSize:22,fontWeight:800,margin:"0 0 4px",textShadow:"0 1px 4px rgba(0,0,0,.2)"}}>{displayNombre}</h1>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <h1 style={{color:"#fff",fontSize:22,fontWeight:800,margin:"0 0 4px",textShadow:"0 1px 4px rgba(0,0,0,.2)"}}>{displayNombre}</h1>
+                {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
+                  <span style={{fontSize:11,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"3px 10px",boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>🟢 Disponible hoy</span>
+                )}
+              </div>
+              {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&perfilData?.disponible_mensaje&&(
+                <div style={{color:"rgba(255,255,255,.9)",fontSize:12,marginBottom:2,fontStyle:"italic"}}>"{perfilData.disponible_mensaje}"</div>
+              )}
               {perfilData?.ubicacion&&<div style={{color:"rgba(255,255,255,.85)",fontSize:13}}>📍 {perfilData.ubicacion}</div>}
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
                 {materias.slice(0,4).map(m=><span key={m} style={{fontSize:11,background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:20,padding:"2px 10px",fontWeight:600}}>{m}</span>)}
@@ -991,11 +999,43 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
             ))}
           </div>
 
-          {/* Bio */}
-          {perfilData?.bio&&(
+          {/* Bio + enriched docente info */}
+          {(perfilData?.bio||perfilData?.titulo_profesional||perfilData?.metodologia)&&(
             <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>Sobre mí</div>
-              <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0}}>{perfilData.bio}</p>
+              {perfilData?.titulo_profesional&&(
+                <div style={{fontSize:13,color:C.accent,fontWeight:700,marginBottom:6}}>{perfilData.titulo_profesional}</div>
+              )}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:perfilData?.bio||perfilData?.metodologia?10:0}}>
+                {perfilData?.anios_experiencia!=null&&perfilData.anios_experiencia>0&&(
+                  <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"2px 10px",fontWeight:700}}>{perfilData.anios_experiencia} {perfilData.anios_experiencia===1?"año":"años"} de experiencia</span>
+                )}
+                {perfilData?.franja_horaria&&(
+                  <span style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 10px"}}>🕐 {perfilData.franja_horaria}</span>
+                )}
+              </div>
+              {perfilData?.bio&&(
+                <>
+                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>Sobre mí</div>
+                  <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0,marginBottom:perfilData?.metodologia?10:0}}>{perfilData.bio}</p>
+                </>
+              )}
+              {perfilData?.metodologia&&(
+                <>
+                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6,marginTop:perfilData?.bio?10:0}}>Metodología</div>
+                  <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0}}>{perfilData.metodologia}</p>
+                </>
+              )}
+              {perfilData?.idiomas&&perfilData.idiomas.length>0&&(
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+                  {perfilData.idiomas.map(id=><span key={id} style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 9px"}}>🌐 {id}</span>)}
+                </div>
+              )}
+              {(perfilData?.linkedin_url||perfilData?.sitio_web)&&(
+                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:10}}>
+                  {perfilData.linkedin_url&&<a href={perfilData.linkedin_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>🔗 LinkedIn</a>}
+                  {perfilData.sitio_web&&<a href={perfilData.sitio_web} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>🌐 Sitio web</a>}
+                </div>
+              )}
             </div>
           )}
 
@@ -1080,8 +1120,11 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
                 {reseñas.map((r,i)=>(
                   <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                      <div style={{display:"flex",gap:2}}>
-                        {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
+                      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                        <div style={{display:"flex",gap:2}}>
+                          {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
+                        </div>
+                        {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
                       </div>
                       <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
                     </div>

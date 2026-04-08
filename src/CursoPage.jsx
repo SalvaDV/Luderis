@@ -102,12 +102,25 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
   const [texto,setTexto]=useState("");
   const [catScores,setCatScores]=useState({});// {conocimiento:4, didactica:5, ...}
   const [saving,setSaving]=useState(false);const [err,setErr]=useState("");
+  const [claseVerificada,setClaseVerificada]=useState(null);// {id} de la clase confirmada si existe
   const finalizado=!!post.finalizado||(inscripcion?.clase_finalizada);
   const cargar=()=>sb.getReseñas(post.id,session.access_token).then(r=>setReseñas(r)).finally(()=>setLoading(false));
   useEffect(()=>{cargar();},[post.id]); // eslint-disable-line
-  const puedeResena=!esMio&&(inscripcion?.clase_finalizada||post.finalizado);
+  // Buscar clase verificada del usuario con este docente
+  useEffect(()=>{
+    if(esMio||!session.user.email||!post.autor_email)return;
+    sb.getClasesRealizadas(session.user.email,session.access_token)
+      .then(cs=>{
+        const confirmada=(cs||[]).find(c=>
+          c.confirmado_docente&&c.confirmado_alumno&&
+          (c.docente_email===post.autor_email||c.alumno_email===post.autor_email)
+        );
+        setClaseVerificada(confirmada||null);
+      }).catch(()=>{});
+  },[session.user.email,post.autor_email,esMio]);// eslint-disable-line
+  const puedeResena=!esMio&&(inscripcion?.clase_finalizada||post.finalizado||!!claseVerificada);
 
-  if(!finalizado&&reseñas.length===0&&!loading)return(
+  if(!finalizado&&!claseVerificada&&reseñas.length===0&&!loading)return(
     <div style={{color:C.muted,fontSize:12,fontStyle:"italic",textAlign:"center",padding:"18px 0"}}>
       Las reseñas se habilitarán cuando el docente finalice las clases.
     </div>
@@ -122,16 +135,16 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
     const promedio=calcPromedioResena(catScores);
     setSaving(true);setErr("");
     try{
-      await sb.insertReseña({
+      const resenaData={
         publicacion_id:post.id,
         autor_id:session.user.id,
         autor_nombre:sb.getDisplayName(session.user.email),
         autor_pub_email:post.autor_email,
         texto:texto.trim(),
-        estrellas:Math.round(promedio),// compatibilidad con campo estrellas existente
-        // metadata extra guardada en texto si no hay columna dedicada
-        // TODO: agregar columna categorias_json a la tabla reseñas
-      },session.access_token);
+        estrellas:Math.round(promedio),
+      };
+      if(claseVerificada){resenaData.verificada=true;resenaData.clase_realizada_id=claseVerificada.id;}
+      await sb.insertReseña(resenaData,session.access_token);
       if(inscripcion?.clase_finalizada)await sb.updateInscripcion(inscripcion.id,{valorado:true},session.access_token).catch(()=>{});
       await cargar();setTexto("");setCatScores({});
     }catch(e){setErr("Error: "+e.message);}finally{setSaving(false);}
@@ -152,7 +165,10 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
         <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
           <Avatar letra={r.autor_nombre?.[0]||"?"} size={28}/>
           <div style={{flex:1}}>
-            <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
+              {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+            </div>
             <div style={{fontSize:12,color:"#B45309",marginTop:1}}>{"★".repeat(r.estrellas||0)}{"☆".repeat(5-(r.estrellas||0))} <span style={{color:C.muted}}>({r.estrellas?.toFixed?r.estrellas.toFixed(1):r.estrellas}/5)</span></div>
           </div>
           <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
