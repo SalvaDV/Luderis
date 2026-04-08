@@ -26,3 +26,4 @@ yarn-error.log*
 # Supabase local (no subir la config local, solo las funciones)
 supabase/.branches
 supabase/.temp
+.claude/
