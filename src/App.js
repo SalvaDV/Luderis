@@ -583,7 +583,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 </button>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Accesos rápidos — distintos según sección */}
           {seccion==="pedidos"?null:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
