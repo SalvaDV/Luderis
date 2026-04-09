@@ -6,6 +6,7 @@ import {
   safeDisplayName,
   useAutorAvatar,
   Avatar, Tag, MiniStars,
+  getPubTipo, TIPO_PUB,
 } from "../shared";
 import FavBtn from "./FavBtn";
 import DocBadge from "./DocBadge";
@@ -16,11 +17,12 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
   const nombre=post.autor_nombre||sb.getDisplayName(post.autor_email)||safeDisplayName(post.autor_nombre,post.autor_email)||"Usuario";
   const esMio=post.autor_email===session.user.email;
   const autorAvatar=useAutorAvatar(post.autor_email,session.access_token);
+  const T=getPubTipo(post);
   return(
     <div onClick={()=>onOpenDetail(post)} className="cl-card-anim"
-      style={{background:post.tipo==="busqueda"?"#FFFBEB":C.surface,border:`1px solid ${fueRechazado?C.danger+"40":post.tipo==="busqueda"?"#F59E0B33":C.border}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"box-shadow .18s,border-color .18s",fontFamily:FONT,borderLeft:esMio?`3px solid ${C.accent}`:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid #F59E0B`:undefined}}
-      onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 2px 14px rgba(0,0,0,.08)";e.currentTarget.style.borderColor=fueRechazado?C.danger+"60":C.accent+"50";}}
-      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=fueRechazado?C.danger+"40":C.border;}}>
+      style={{background:post.tipo==="busqueda"?TIPO_PUB.pedido.bg:C.surface,border:`1px solid ${fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"box-shadow .18s,border-color .18s",fontFamily:FONT,borderLeft:esMio?`3px solid ${C.accent}`:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined}}
+      onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 2px 14px ${T.dim}`;e.currentTarget.style.borderColor=fueRechazado?C.danger+"60":T.accent+"50";}}
+      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;}}>
 
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,gap:8}}>
@@ -58,9 +60,9 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
 
       {/* Tags info */}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
-        {post.precio?<span style={{fontSize:13,fontWeight:800,color:C.accent}}>{fmtPrice(post.precio,post.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}>{post.precio_tipo&&post.modo!=="curso"?` /${post.precio_tipo}`:""}</span></span>:<span style={{fontSize:12,fontWeight:700,color:C.success}}>Gratis</span>}
-        {(post.modo==="grupal"||post.modo==="curso")&&<span style={{fontSize:12,color:C.success,background:C.success+"12",borderRadius:4,padding:"3px 8px",border:`1px solid ${C.success}30`}}>📚 Curso</span>}
-        {post.modo==="particular"&&<span style={{fontSize:12,color:C.info,background:C.info+"12",borderRadius:4,padding:"3px 8px",border:`1px solid ${C.info}30`}}>👤 Particular</span>}
+        {post.precio?<span style={{fontSize:13,fontWeight:800,color:T.accent}}>{fmtPrice(post.precio,post.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}>{post.precio_tipo&&post.modo!=="curso"?` /${post.precio_tipo}`:""}</span></span>:<span style={{fontSize:12,fontWeight:700,color:C.success}}>Gratis</span>}
+        {(post.modo==="grupal"||post.modo==="curso")&&<span style={{fontSize:12,color:TIPO_PUB.curso.accent,background:TIPO_PUB.curso.dim,borderRadius:4,padding:"3px 8px",border:`1px solid ${TIPO_PUB.curso.border}`}}>🎓 Curso</span>}
+        {post.modo==="particular"&&<span style={{fontSize:12,color:TIPO_PUB.particular.accent,background:TIPO_PUB.particular.dim,borderRadius:4,padding:"3px 8px",border:`1px solid ${TIPO_PUB.particular.border}`}}>👤 Particular</span>}
         {post.modalidad==="virtual"&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>🌐 Virtual</span>}
         {post.modalidad==="presencial"&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>📍 Presencial</span>}
         {post.modalidad==="mixto"&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>↔ Mixto</span>}

@@ -399,8 +399,9 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const busquedasCursos=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="curso"||p.modo==="grupal"||!p.modo)).slice(0,8);
   const busquedasClases=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="particular"||!p.modo)).slice(0,8);
 
+  const seccionTint=seccion==="clases"?`${TIPO_PUB.particular.accent}07`:seccion==="pedidos"?`${TIPO_PUB.pedido.accent}07`:`${TIPO_PUB.curso.accent}07`;
   return(<>
-    <div style={{fontFamily:FONT,animation:"fadeUp .2s ease"}}>
+    <div style={{fontFamily:FONT,animation:"fadeUp .2s ease",background:seccionTint,minHeight:"100vh",transition:"background .4s ease"}}>
 
       {/* Drawer de filtros — siempre disponible */}
       {panelOpen&&(
@@ -627,7 +628,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 <div style={{display:"flex",gap:14}} className="cl-hscroll">
                   {data.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:p.tipo==="busqueda"?"#FFFBEB":C.surface,border:`1px solid ${p.tipo==="busqueda"?"#F59E0B44":C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${p.tipo==="busqueda"?"#F59E0B":getPubTipo(p).accent}`}}
+                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.bg:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${getPubTipo(p).accent}`}}
                       onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
                       onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
                       {/* Avatar + nombre */}
@@ -790,9 +791,9 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
 
             {/* Chips de tipo + modalidad + ordenamiento */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-              {[["all","Todo"],["oferta","Clases"],["busqueda","Búsquedas"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 14px",borderRadius:20,fontSize:12,fontWeight:filtroTipo===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroTipo===v?C.accent:"transparent",color:filtroTipo===v?"#fff":C.muted,border:`1px solid ${filtroTipo===v?C.accent:C.border}`,transition:"all .12s"}}>{l}</button>
-              ))}
+              {(()=>{const T=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;return[["all","Todo"],["oferta","Clases"],["busqueda","Pedidos"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 14px",borderRadius:20,fontSize:12,fontWeight:filtroTipo===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroTipo===v?T.accent:"transparent",color:filtroTipo===v?"#fff":C.muted,border:`1px solid ${filtroTipo===v?T.accent:C.border}`,transition:"all .12s"}}>{l}</button>
+              ));})()}
               <div style={{width:1,height:18,background:C.border,margin:"0 2px"}}/>
               {[["presencial","📍 Presencial"],["virtual","🌐 Virtual"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setFiltroModalidad(filtroModalidad===v?"all":v)} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:filtroModalidad===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroModalidad===v?C.accentDim:"transparent",color:filtroModalidad===v?C.accent:C.muted,border:`1px solid ${filtroModalidad===v?C.accent:C.border}`,transition:"all .12s"}}>{l}</button>

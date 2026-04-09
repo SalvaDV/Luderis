@@ -201,7 +201,7 @@ export const Avatar=({letra,size=38,img})=>{
   return<div title={typeof letra==='string'&&letra.length>1?letra:undefined} style={{width:size,height:size,borderRadius:"50%",background:`linear-gradient(135deg,${from},${to})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:size*0.38,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.15)",letterSpacing:"-.5px"}}>{(letra||"?").toUpperCase()}</div>;
 };
 
-export const Tag=({tipo})=>(<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:tipo==="oferta"?C.accentDim:"#F59E0B15",color:tipo==="oferta"?C.accent:"#92400E",border:`1px solid ${tipo==="oferta"?C.accent+"50":"#F59E0B60"}`,fontFamily:FONT,letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}>{tipo==="oferta"?<>🎓 Clase</>:<>🔍 Búsqueda</>}</span>);
+export const Tag=({tipo})=>(<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:tipo==="oferta"?C.accentDim:TIPO_PUB.pedido.dim,color:tipo==="oferta"?C.accent:TIPO_PUB.pedido.accent,border:`1px solid ${tipo==="oferta"?C.accent+"50":TIPO_PUB.pedido.border}`,fontFamily:FONT,letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}>{tipo==="oferta"?<>🎓 Clase</>:<>📣 Pedido</>}</span>);
 
 export const StatusBadge=({activo,finalizado,pendiente})=>{
   if(finalizado)return<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#4A5568",color:"#E2E8F0",letterSpacing:.2}}>Finalizado</span>;
