@@ -669,7 +669,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 </div>
               </div>
             </div>
-          ))}
+          )))}
 
           {/* Banner CTA: IA search — hidden in pedidos view */}
           {seccion!=="pedidos"&&(()=>{
