@@ -56,16 +56,21 @@ export const CATEGORIAS_DATA={
 export const TIPO_PUB={
   curso:{
     accent:"#1A6ED8",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",
-    dim:"#1A6ED810",border:"#1A6ED830",label:"Curso",emoji:"🎓",
-    bg:"#EEF6FF",
+    heroGrad:"linear-gradient(135deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%)",
+    dim:"#1A6ED810",border:"#1A6ED830",label:"Curso",emoji:"🎓",bg:"#EEF6FF",
   },
   particular:{
     accent:"#E8881A",grad:"linear-gradient(135deg,#E8881A,#F5C842)",
-    dim:"#E8881A10",border:"#E8881A30",label:"Clase particular",emoji:"👤",
-    bg:"#FEF6EE",
+    heroGrad:"linear-gradient(135deg,#3D1A00 0%,#C8660A 50%,#F5C842 100%)",
+    dim:"#E8881A10",border:"#E8881A30",label:"Clase particular",emoji:"👤",bg:"#FEF6EE",
+  },
+  pedido:{
+    accent:"#7B5CF0",grad:"linear-gradient(135deg,#7B5CF0,#E05C9A)",
+    heroGrad:"linear-gradient(135deg,#1A0A3D 0%,#7B5CF0 55%,#E05C9A 100%)",
+    dim:"#7B5CF010",border:"#7B5CF030",label:"Pedido",emoji:"📣",bg:"#F3F0FF",
   },
 };
-export const getPubTipo=(pub)=>(pub?.modo==="particular")?TIPO_PUB.particular:TIPO_PUB.curso;
+export const getPubTipo=(pub)=>pub?.tipo==="busqueda"?TIPO_PUB.pedido:(pub?.modo==="particular")?TIPO_PUB.particular:TIPO_PUB.curso;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 export const avatarColor=(l)=>["#F5C842","#4ECB71","#E05C5C","#5CA8E0","#C85CE0"][(l||"?").toUpperCase().charCodeAt(0)%5];

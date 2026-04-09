@@ -3,7 +3,7 @@ import * as sb from "./supabase";
 import {
   C, FONT, LUD, _themeKey,
   applyTheme, toast, ToastContainer,
-  MATERIAS, CATEGORIAS_DATA, getPubTipo,
+  MATERIAS, CATEGORIAS_DATA, getPubTipo, TIPO_PUB,
   avatarColor, fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   MONEDA_SYM, setLang, STRINGS, t,
   maskEmail, safeDisplayName, CONTACT_REGEX, sanitizeContactInfo,
@@ -92,7 +92,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const [iaExplanation,setIaExplanation]=useState("");
   const [iaLoading,setIaLoading]=useState(false);
   const [ordenamiento,setOrdenamiento]=useState("relevancia");
-  const [seccion,setSeccion]=useState("cursos");// "cursos" | "clases" — sección activa del explorador
+  const [seccion,setSeccion]=useState(()=>{try{const s=sessionStorage.getItem("cl_seccion_explore");if(s)return s;}catch{}return "cursos";});// "cursos" | "clases" | "pedidos"
 
   // Palabras clave de cercanía para el prompt IA
   const PALABRAS_CERCA=["cerca","cercanía","mi zona","mi barrio","mi ciudad","presencial cerca","local"];
@@ -315,17 +315,15 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   // Lista filtrada por IA (si hay) o todos los posts
   // Alumnos solo ven ofertas (clases/cursos), docentes ven todo
   const rolUsuario=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";
+  const esDocente=rolUsuario==="docente"||rolUsuario==="ambos";
   const postsPorRol=rolUsuario==="alumno"?posts.filter(p=>p.tipo==="oferta"||p.autor_email===session.user.email):posts;
+  const todosPedidos=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email);
   // Filtro por sección (cursos vs clases)
   const visiblePosts=postsPorRol.filter(p=>{
+    if(seccion==="pedidos") return p.tipo==="busqueda"&&p.autor_email!==session.user.email;
     if(p.tipo==="busqueda"){
-      // Propias: siempre visibles
       if(p.autor_email===session.user.email)return true;
-      // Ajenas: visibles a docentes, filtradas por sección
-      if(rolUsuario==="alumno")return false;
-      if(seccion==="cursos")return p.modo==="curso"||p.modo==="grupal"||!p.modo;
-      if(seccion==="clases")return p.modo==="particular"||!p.modo;
-      return true;
+      return false;// en sección cursos/clases, las busquedas ajenas se muestran aparte
     }
     if(seccion==="cursos")return p.modo==="curso"||p.modo==="grupal";
     if(seccion==="clases")return p.modo==="particular"||!p.modo;
@@ -462,49 +460,92 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
       {modoVista==="home"&&(
         <div>
           {/* Hero con búsqueda grande */}
-          <div style={{background:seccion==="cursos"?`linear-gradient(135deg,${LUD.dark} 0%,#7B3FBE 60%,${LUD.blue} 100%)`:`linear-gradient(135deg,${LUD.dark} 0%,${LUD.blue} 60%,${LUD.teal} 100%)`,borderRadius:16,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",transition:"background .4s"}}>
+          {(()=>{
+            const T=seccion==="cursos"?TIPO_PUB.curso:seccion==="clases"?TIPO_PUB.particular:TIPO_PUB.pedido;
+            const heroTitle=seccion==="cursos"?"Aprendé a tu ritmo":seccion==="clases"?"Encontrá tu profe ideal":"Pedidos de alumnos";
+            const heroSub=seccion==="cursos"?"Cursos estructurados con seguimiento real":seccion==="clases"?"Clases 1 a 1, a tu horario y ritmo":"Alumnos esperando que alguien como vos los contacte";
+            return(
+          <div style={{background:T.heroGrad,borderRadius:16,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",transition:"background .5s ease"}}>
             <div style={{position:"absolute",width:280,height:280,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-80,right:-60,pointerEvents:"none"}}/>
-            <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(46,196,160,.08)",bottom:-60,left:20,pointerEvents:"none"}}/>
+            <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,.06)",bottom:-60,left:20,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
-              {/* Tabs Cursos / Clases */}
+              {/* Tabs Cursos / Clases / Pedidos */}
               <div style={{display:"flex",gap:4,background:"rgba(255,255,255,.12)",borderRadius:12,padding:4,marginBottom:20,backdropFilter:"blur(8px)",width:"fit-content"}}>
                 {[
-                  {id:"cursos",icon:"📚",label:"Cursos"},
-                  {id:"clases",icon:"🎯",label:"Clases particulares"},
+                  {id:"cursos",icon:"🎓",label:"Cursos"},
+                  {id:"clases",icon:"👤",label:"Clases"},
+                  ...(esDocente?[{id:"pedidos",icon:"📣",label:"Pedidos"}]:[]),
                 ].map(tab=>(
-                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");try{sessionStorage.setItem("cl_seccion",tab.id);}catch{}}}
-                    style={{display:"flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
+                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
+                    style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
                       background:seccion===tab.id?"#fff":"transparent",
-                      color:seccion===tab.id?LUD.blue:"rgba(255,255,255,.75)",
+                      color:seccion===tab.id?(tab.id==="cursos"?LUD.blue:tab.id==="clases"?"#C8660A":"#7B5CF0"):"rgba(255,255,255,.8)",
                       boxShadow:seccion===tab.id?"0 2px 8px rgba(0,0,0,.15)":"none"}}>
-                    <span style={{fontSize:16}}>{tab.icon}</span>
+                    <span style={{fontSize:15}}>{tab.icon}</span>
                     {tab.label}
                   </button>
                 ))}
               </div>
-              <h1 style={{color:"#fff",fontSize:"clamp(18px,4vw,26px)",fontWeight:800,margin:"0 0 6px",letterSpacing:"-.5px"}}>
-                {seccion==="cursos"?"Aprendé a tu ritmo":"Encontrá tu profe ideal"}
-              </h1>
-              <p style={{color:"rgba(255,255,255,.75)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <h1 style={{color:"#fff",fontSize:"clamp(18px,4vw,26px)",fontWeight:800,margin:"0 0 4px",letterSpacing:"-.5px"}}>{heroTitle}</h1>
+              <p style={{color:"rgba(255,255,255,.8)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>📍 {userCity}</span>}
                 {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:
+                  seccion==="pedidos"?`${todosPedidos.length} pedido${todosPedidos.length!==1?"s":""} esperando respuesta`:
                   visiblePosts.filter(p=>p.tipo==="oferta").length>0
                     ?`${visiblePosts.filter(p=>p.tipo==="oferta").length} ${seccion==="cursos"?"cursos disponibles":"docentes disponibles"}`
-                    :seccion==="cursos"?"Encontrá el curso perfecto para vos":"Clases 1 a 1 o en grupo pequeño"}
+                    :heroSub}
               </p>
               <button onClick={()=>setShowBusquedaIA(true)}
                 style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.15)",border:"2px solid rgba(255,255,255,.25)",borderRadius:14,padding:"14px 20px",cursor:"pointer",fontFamily:FONT,textAlign:"left",backdropFilter:"blur(8px)",transition:"all .2s"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.22)";e.currentTarget.style.borderColor="rgba(255,255,255,.5)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.15)";e.currentTarget.style.borderColor="rgba(255,255,255,.25)";}}>
                 <span style={{fontSize:18,fontWeight:700,color:"rgba(255,255,255,.9)"}}>✦</span>
-                <span style={{color:"rgba(255,255,255,.65)",fontSize:15,flex:1}}>{seccion==="cursos"?"Describí qué querés aprender…":"Describí qué clase estás buscando…"}</span>
+                <span style={{color:"rgba(255,255,255,.65)",fontSize:15,flex:1}}>{seccion==="pedidos"?"Buscá pedidos por materia o tema…":seccion==="cursos"?"Describí qué querés aprender…":"Describí qué clase estás buscando…"}</span>
                 <span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:600,color:"rgba(255,255,255,.8)",flexShrink:0,whiteSpace:"nowrap"}}>Buscar con IA</span>
               </button>
             </div>
           </div>
+            );
+          })()}
+
+          {/* ── Vista especial: Pedidos ── */}
+          {seccion==="pedidos"&&(
+            <div style={{marginBottom:24}}>
+              <div style={{background:`linear-gradient(135deg,${TIPO_PUB.pedido.dim},#E05C9A10)`,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:28}}>📣</span>
+                <div>
+                  <div style={{fontWeight:700,color:TIPO_PUB.pedido.accent,fontSize:15}}>Alumnos buscando docentes</div>
+                  <div style={{fontSize:13,color:C.muted}}>Contactalos directamente y ofrecé tus servicios</div>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+                {todosPedidos.length===0
+                  ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"40px",color:C.muted,fontSize:14}}>No hay pedidos activos en este momento.</div>
+                  :todosPedidos.map(p=>(
+                    <div key={p.id} onClick={()=>onOpenDetail(p)}
+                      style={{background:TIPO_PUB.pedido.bg,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",borderTop:`3px solid ${TIPO_PUB.pedido.accent}`,transition:"all .18s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.dim}`;}}
+                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+                      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                        <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={30}/>
+                        <div style={{minWidth:0,flex:1}}>
+                          <div style={{fontSize:11,fontWeight:600,color:TIPO_PUB.pedido.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
+                          <div style={{fontSize:10,color:C.muted}}>{p.materia||"Sin materia"}</div>
+                        </div>
+                      </div>
+                      <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span style={{fontSize:10,fontWeight:700,color:TIPO_PUB.pedido.accent,background:TIPO_PUB.pedido.dim,borderRadius:20,padding:"2px 8px"}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</span>
+                        {p.expires_at&&(()=>{const d=Math.ceil((new Date(p.expires_at)-new Date())/86400000);return d>0&&d<=7?<span style={{fontSize:10,color:C.warn}}>⏱ {d}d</span>:null;})()}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Categorías — cards con foto visual */}
-          <div style={{marginBottom:28}}>
+          {seccion==="pedidos"?null:<div style={{marginBottom:28}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <div style={{fontWeight:700,color:C.text,fontSize:16}}>Explorar por categoría</div>
               <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todo →</button>
@@ -545,7 +586,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
           </div>
 
           {/* Accesos rápidos — distintos según sección */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
+          {seccion==="pedidos"?null:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
             {(seccion==="cursos"?[
               {icon:"⚡",title:"Sincrónicos",desc:"Con docente en vivo",onClick:()=>{setFiltroSinc("sinc");setModoVista("resultados");}},
               {icon:"🎬",title:"A tu ritmo",desc:"Grabados, cuando quieras",onClick:()=>{setFiltroSinc("asinc");setModoVista("resultados");}},
@@ -566,10 +607,10 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 <div style={{fontSize:11,color:C.muted}}>{item.desc}</div>
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* Publicaciones destacadas — scroll horizontal */}
-          {loading?<Spinner/>:(seccion==="cursos"?[
+          {seccion!=="pedidos"&&(loading?<Spinner/>:(seccion==="cursos"?[
             {label:"✨ Cursos recientes",data:cursos.slice(0,8)},
             {label:"⭐ Mejor valorados",data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
           ]:[
@@ -617,7 +658,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                       {/* Precio + inscriptos */}
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         {p.tipo==="busqueda"
-                          ?<div style={{fontSize:12,color:"#92400E",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>🔍 Busca docente</div>
+                          ?<div style={{fontSize:12,color:TIPO_PUB.pedido.accent,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</div>
                           :p.precio?<div style={{fontWeight:800,color:getPubTipo(p).accent,fontSize:15}}>{fmtPrice(p.precio,p.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}> /{p.precio_tipo||"hora"}</span></div>
                           :<div style={{fontWeight:600,color:C.success,fontSize:13}}>Gratis</div>}
                         {p.cantidad_inscriptos>0&&<span style={{fontSize:10,color:C.muted}}>👥{p.cantidad_inscriptos}</span>}
@@ -630,61 +671,29 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
             </div>
           ))}
 
-          {/* Banner CTA: crear búsqueda */}
-          <div style={{background:`linear-gradient(135deg,#7B3FBE15,#1A6ED815)`,border:"1px solid #7B3FBE25",borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{fontSize:36}}>{seccion==="cursos"?"📚":"🔍"}</div>
-            <div style={{flex:1,minWidth:200}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>
-                {seccion==="cursos"?"¿No encontrás el curso que buscás?":"¿No encontrás el docente ideal?"}
-              </div>
-              <div style={{fontSize:13,color:C.muted}}>
-                {seccion==="cursos"
-                  ?"Describí el tema y te mostramos lo más relevante con IA."
-                  :"Publicá qué necesitás y los docentes te contactan a vos."}
-              </div>
-            </div>
-            <button onClick={()=>setShowBusquedaIA(true)} style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(123,63,190,.3)",flexShrink:0,whiteSpace:"nowrap"}}>
-              Buscar con IA →
-            </button>
-          </div>
-
-          {/* Búsquedas de alumnos — solo visible a docentes */}
-          {rolUsuario!=="alumno"&&(()=>{
-            const busqs=seccion==="cursos"?busquedasCursos:busquedasClases;
-            if(!busqs.length)return null;
+          {/* Banner CTA: IA search — hidden in pedidos view */}
+          {seccion!=="pedidos"&&(()=>{
+            const T=seccion==="cursos"?TIPO_PUB.curso:TIPO_PUB.particular;
             return(
-              <div style={{marginBottom:24}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                  <div>
-                    <div style={{fontWeight:700,color:C.text,fontSize:15}}>🔍 Alumnos buscando {seccion==="cursos"?"un curso":"docente"}</div>
-                    <div style={{fontSize:11,color:C.muted,marginTop:2}}>Podés contactarlos y ofrecer tus servicios</div>
-                  </div>
-                  <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todas →</button>
+            <div style={{background:`linear-gradient(135deg,${T.dim},${T.border})`,border:`1px solid ${T.border}`,borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{fontSize:36}}>{seccion==="cursos"?"🎓":"👤"}</div>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>
+                  {seccion==="cursos"?"¿No encontrás el curso que buscás?":"¿No encontrás el docente ideal?"}
                 </div>
-                <div style={{display:"flex",gap:12,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8}}>
-                  {busqs.map(p=>(
-                    <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:"#FFFBEB",border:"1px solid #F59E0B44",borderRadius:12,padding:"14px",cursor:"pointer",flexShrink:0,width:"min(200px,68vw)",borderTop:"3px solid #F59E0B",transition:"all .18s"}}
-                      onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(245,158,11,.15)";e.currentTarget.style.transform="translateY(-2px)";}}
-                      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
-                      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                        <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={28}/>
-                        <div style={{minWidth:0,flex:1}}>
-                          <div style={{fontSize:11,fontWeight:600,color:"#92400E",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-                          <div style={{fontSize:10,color:"#B45309"}}>{p.materia||"Sin materia"}</div>
-                        </div>
-                      </div>
-                      <div style={{fontWeight:700,color:"#78350F",fontSize:12,marginBottom:6,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
-                      <div style={{display:"inline-flex",alignItems:"center",gap:4,background:"#F59E0B22",borderRadius:20,padding:"2px 8px"}}>
-                        <span style={{fontSize:9,fontWeight:700,color:"#B45309"}}>{p.modo==="curso"||p.modo==="grupal"?"BUSCA CURSO":"BUSCA CLASE"}</span>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{fontSize:13,color:C.muted}}>
+                  {seccion==="cursos"
+                    ?"Describí el tema y te mostramos lo más relevante con IA."
+                    :"Describí qué necesitás y encontramos el docente perfecto."}
                 </div>
               </div>
+              <button onClick={()=>setShowBusquedaIA(true)} style={{background:T.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:`0 4px 12px ${T.dim}`,flexShrink:0,whiteSpace:"nowrap"}}>
+                Buscar con IA →
+              </button>
+            </div>
             );
           })()}
-          {posts.length>3&&<DocentesDestacados posts={posts} onOpenPerfil={onOpenPerfil} session={session}/>}
+          {posts.length>3&&seccion!=="pedidos"&&<DocentesDestacados posts={posts} onOpenPerfil={onOpenPerfil} session={session}/>}
 
           {/* ── Footer estilo ML ── */}
           <div style={{marginTop:32,paddingTop:24,borderTop:`1px solid ${C.border}`}}>
@@ -719,13 +728,16 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                   </button>
                 </div>
               </div>
-              <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:24}}>💬</span>
+              {esDocente&&<div style={{border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:24}}>📣</span>
                 <div>
-                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Necesitás algo específico?</div>
-                  <div style={{color:C.muted,fontSize:12}}>Publicá una búsqueda y recibí ofertas de docentes</div>
+                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Querés ver pedidos de alumnos?</div>
+                  <button style={{background:"none",border:"none",color:TIPO_PUB.pedido.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:0,fontWeight:600}}
+                    onClick={()=>{setSeccion("pedidos");try{sessionStorage.setItem("cl_seccion_explore","pedidos");}catch{}}}>
+                    Ver pedidos activos →
+                  </button>
                 </div>
-              </div>
+              </div>}
             </div>
 
             {/* Pie */}
