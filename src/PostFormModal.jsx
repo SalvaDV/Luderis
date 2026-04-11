@@ -526,6 +526,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 ))}
               </div>
             </>}
+            </div>
             {/* Si es docente: elige curso o clase particular */}
             {tipo==="oferta"&&(
               <div>
