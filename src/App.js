@@ -2224,7 +2224,7 @@ export default function App(){
     if(!ogDesc){ogDesc=document.createElement("meta");ogDesc.setAttribute("property","og:description");document.head.appendChild(ogDesc);}
     ogDesc.content=meta.content;
   },[page]);// eslint-disable-line
-  const logout=()=>{sb.clearSession();setSession(null);try{sessionStorage.removeItem("cl_curso_id");}catch{}};
+  const logout=()=>{sb.clearSession();setSession(null);try{sessionStorage.removeItem("cl_curso_id");sessionStorage.removeItem("cl_page");}catch{};setPage("explore");};
   const openChat=(p)=>{chatPostRef.current=p;setChatPost(p);};
   const closeChat=()=>{chatPostRef.current=null;setChatPost(null);refreshUnread();setChatsKey(k=>k+1);};
   // Tema con estado React para re-render

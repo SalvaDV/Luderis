@@ -358,7 +358,7 @@ function JitsiModal({roomName,displayName,onClose}){
           </p>
           <a href={url} target="_blank" rel="noopener noreferrer"
             style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:12,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,textDecoration:"none",textAlign:"center",boxShadow:"0 4px 16px rgba(26,110,216,.4)",cursor:"pointer"}}
-            onClick={onClose}>
+            >
             📹 Abrir videollamada →
           </a>
           <button onClick={copiar}

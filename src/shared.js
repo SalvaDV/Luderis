@@ -67,7 +67,7 @@ export const TIPO_PUB={
   pedido:{
     accent:"#7B5CF0",grad:"linear-gradient(135deg,#7B5CF0,#E05C9A)",
     heroGrad:"linear-gradient(135deg,#1A0A3D 0%,#7B5CF0 55%,#E05C9A 100%)",
-    dim:"#7B5CF010",border:"#7B5CF030",label:"Pedido",emoji:"📣",bg:"#F3F0FF",
+    dim:"#7B5CF010",border:"#7B5CF030",label:"Pedido",emoji:"📣",bg:"#E8E2FF",
   },
 };
 export const getPubTipo=(pub)=>pub?.tipo==="busqueda"?TIPO_PUB.pedido:(pub?.modo==="particular")?TIPO_PUB.particular:TIPO_PUB.curso;
