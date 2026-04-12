@@ -995,7 +995,7 @@ Encontrá docentes verificados para clases particulares, cursos online y presenc
 
 👉 Registrate con mi link y arrancar a aprender hoy:
 ${refUrl}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`,"_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`,"_blank","noopener,noreferrer");
   };
 
   const completados=referidos.filter(r=>r.estado==="completado").length;

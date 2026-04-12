@@ -7,11 +7,14 @@ export default function OfertarBtn({post,session}){
   const [miOferta,setMiOferta]=useState(null);// null=cargando, obj=encontrada, false=no hay
   useEffect(()=>{
     if(post.tipo!=="busqueda"||post.autor_email===session.user.email)return;
+    let mounted=true;
     sb.getMisOfertas(session.user.email,session.access_token).then(ofertas=>{
+      if(!mounted)return;
       // Buscar la más reciente sobre esta búsqueda (cualquier estado)
       const mia=ofertas.filter(o=>o.busqueda_id===post.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
       setMiOferta(mia||false);
-    }).catch(()=>setMiOferta(false));
+    }).catch(()=>{if(mounted)setMiOferta(false);});
+    return()=>{mounted=false;};
   },[post.id,session.user.email,session.access_token]); // eslint-disable-line
   // Solo para búsquedas de clases particulares — cursos tienen precio fijo
   if(post.tipo!=="busqueda"||post.autor_email===session.user.email||post.activo===false||post.finalizado)return null;

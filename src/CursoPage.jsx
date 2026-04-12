@@ -602,7 +602,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
                       </div>
                     )}
                     <div style={{background:bgMsg,color:colorMsg,padding:imgSrc?"6px":undefined,borderRadius:esMiMsg?"13px 4px 13px 13px":"4px 13px 13px 13px",fontSize:13,lineHeight:1.5,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,.08)"}}>
-                      {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank")}/>}
+                      {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")}/>}
                       {(textoPosterImg||!isImg)&&(
                         <div style={{padding:"8px 12px",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
                           {sanitizeContactInfo(isImg?textoPosterImg:m.texto)}

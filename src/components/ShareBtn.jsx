@@ -22,7 +22,7 @@ export default function ShareBtn({post,style={}}){
   const url=`${window.location.origin}${window.location.pathname}?pub=${post.id}`;
   const txt=`${post.titulo} — Luderis`;
   const copiar=async(e)=>{e.stopPropagation();try{await navigator.clipboard.writeText(url);toast("Link copiado","success");}catch{toast("No se pudo copiar","error");}setMenu(false);};
-  const whatsapp=(e)=>{e.stopPropagation();window.open(`https://wa.me/?text=${encodeURIComponent(txt+" "+url)}`,"_blank");setMenu(false);};
+  const whatsapp=(e)=>{e.stopPropagation();window.open(`https://wa.me/?text=${encodeURIComponent(txt+" "+url)}`,"_blank","noopener,noreferrer");setMenu(false);};
   const email=(e)=>{e.stopPropagation();window.open(`mailto:?subject=${encodeURIComponent(txt)}&body=${encodeURIComponent(url)}`);setMenu(false);};
   const nativo=async(e)=>{e.stopPropagation();if(navigator.share)try{await navigator.share({title:txt,url});return;}catch{}copiar(e);};
   return(

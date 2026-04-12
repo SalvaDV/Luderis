@@ -11,16 +11,19 @@ export default function CertificadoPage({certId,onClose}){
 
   useEffect(()=>{
     if(!certId)return;
+    let mounted=true;
     fetch(`${SUPABASE_URL}/rest/v1/certificados?id=eq.${encodeURIComponent(certId)}&select=*`,{
       headers:{"apikey":ANON_KEY,"Authorization":`Bearer ${ANON_KEY}`}
     })
     .then(r=>r.json())
     .then(data=>{
+      if(!mounted)return;
       if(data?.[0])setCert(data[0]);
       else setError("Certificado no encontrado. Verificá el ID.");
     })
-    .catch(()=>setError("Error al verificar el certificado."))
-    .finally(()=>setLoading(false));
+    .catch(()=>{if(mounted)setError("Error al verificar el certificado.");})
+    .finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[certId]);
 
   const fecha=cert?new Date(cert.fecha_emision).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"}):null;

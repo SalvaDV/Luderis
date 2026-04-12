@@ -20,9 +20,11 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
     if(descripcionDebounced&&descripcionDebounced.length<20)return;
     setEstado("cargando");setRespuesta("");setPregunta("");setFeedback("");
     if(onEstadoChange)onEstadoChange("cargando");
+    let mounted=true;
     sb.verificarConIA(tituloDebounced,materia,descripcionDebounced||"","",token)
-      .then(r=>{setPregunta(r.pregunta||"Contá tu experiencia.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");})
-      .catch(()=>{setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");});
+      .then(r=>{if(!mounted)return;setPregunta(r.pregunta||"Contá tu experiencia.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");})
+      .catch(()=>{if(!mounted)return;setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");});
+    return()=>{mounted=false;};
   },[tituloDebounced,descripcionDebounced,materia]);// eslint-disable-line
   const evaluar=async()=>{if(!respuesta.trim())return;setEstado("evaluando");try{const r=await sb.verificarConIA(titulo,materia,descripcion||"",respuesta,token);
     setFeedback(r.feedback||"");
@@ -908,6 +910,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   useEffect(()=>{
     if(!autorEmail){setError("Email no disponible.");setLoading(false);return;}
     setLoading(true);setError(null);
+    let mounted=true;
     Promise.all([
       sb.getPublicaciones({autor:autorEmail},session.access_token).catch(()=>[]),
       // Query reseñas via publicaciones del docente (autor_pub_email es el campo correcto)
@@ -916,9 +919,11 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
       sb.getDocumentos(autorEmail,session.access_token).catch(()=>[]),
       sb.getUsuarioByEmail(autorEmail,session.access_token).catch(()=>null),
     ]).then(([p,r,d,u])=>{
+      if(!mounted)return;
       setPubs((p||[]).filter(x=>x.activo!==false));
       setReseñas(r||[]);setDocs(d||[]);if(u)setPerfilData(u);
-    }).catch(e=>setError(e.message)).finally(()=>setLoading(false));
+    }).catch(e=>{if(mounted)setError(e.message);}).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[autorEmail,session]);
 
   useEffect(()=>{

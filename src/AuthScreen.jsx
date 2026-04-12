@@ -27,8 +27,6 @@ function AuthScreen({onLogin}){
           try{
             const refCode=localStorage.getItem("cl_ref_code");
             if(refCode&&uid){
-              // Buscar al referidor por su código
-              const allUsers=await sb.db(`usuarios?select=id,email`,refCode,r.access_token).catch(()=>[]);
               // El código es btoa(user.id) — decodificamos
               let referidorId=null;
               try{referidorId=atob(refCode.padEnd(refCode.length+((4-refCode.length%4)%4),"="));}catch{}

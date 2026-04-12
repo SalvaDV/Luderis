@@ -7,10 +7,12 @@ export default function FavBtn({post,session,onFavChange,isFav,favId:favIdProp})
   const [loading,setLoading]=useState(isFav===undefined);
   useEffect(()=>{
     if(isFav!==undefined){setFavId(favIdProp||null);setLoading(false);return;}
+    let mounted=true;
     sb.getFavoritos(session.user.email,session.access_token)
-      .then(favs=>{const f=favs.find(f=>f.publicacion_id===post.id);setFavId(f?.id||null);})
+      .then(favs=>{if(mounted){const f=favs.find(f=>f.publicacion_id===post.id);setFavId(f?.id||null);}})
       .catch(()=>{})
-      .finally(()=>setLoading(false));
+      .finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[post.id,session.user.email,isFav,favIdProp]);// eslint-disable-line
   const toggle=async(e)=>{
     e.stopPropagation();if(loading)return;setLoading(true);

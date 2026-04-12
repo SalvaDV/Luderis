@@ -147,7 +147,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
               return(
                 <div key={i} style={{display:"flex",justifyContent:esPropio?"flex-end":"flex-start"}}>
                   <div style={{background:esPropio?C.accent:C.card,color:esPropio?"#fff":C.text,padding:imgSrc?"6px 6px":undefined,borderRadius:13,maxWidth:"78%",overflow:"hidden"}}>
-                    {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:220,borderRadius:9,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank")}/>}
+                    {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:220,borderRadius:9,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")}/>}
                     {(textoPosterImg||!isImg)&&<div style={{padding:"8px 12px",fontSize:13,lineHeight:1.5}}>{sanitizeContactInfo(isImg?textoPosterImg:m.texto)}</div>}
                   </div>
                 </div>

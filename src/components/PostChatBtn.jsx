@@ -8,26 +8,30 @@ export default function PostChatBtn({post,session,onOpenChat}){
   const miEmail=session.user.email;
   useEffect(()=>{
     if(post.autor_email===miEmail){setPermitido(false);return;}
+    let mounted=true;
     if(post.tipo==="busqueda"){
       sb.getMisOfertas(miEmail,session.access_token).then(ofertas=>{
+        if(!mounted)return;
         const mia=ofertas.find(o=>o.busqueda_id===post.id);
         if(!mia){setEstadoOferta(null);setPermitido(false);return;}
         setEstadoOferta(mia.estado);
         setPermitido(mia.estado==="aceptada");
-      }).catch(()=>setPermitido(false));
-      return;
+      }).catch(()=>{if(mounted)setPermitido(false);});
+      return()=>{mounted=false;};
     }
     // Permitir a inscriptos Y co-docentes (ayudantes) — sin traer todas las pubs
     Promise.all([
       sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
       sb.getPublicaciones({autor:post.autor_email},session.access_token).catch(()=>[]),
     ]).then(([ins,pubs])=>{
+      if(!mounted)return;
       const estaInscripto=ins.some(i=>i.publicacion_id===post.id);
       if(estaInscripto){setPermitido(true);return;}
       const pub=pubs.find(p=>p.id===post.id);
       const esAyud=(pub?.ayudantes||[]).includes(session.user.id);
       setPermitido(esAyud);
-    }).catch(()=>setPermitido(false));
+    }).catch(()=>{if(mounted)setPermitido(false);});
+    return()=>{mounted=false;};
   },[post.id,post.tipo,post.autor_email,miEmail,session.access_token]);
   if(permitido===null)return null;
   if(!permitido){

@@ -20,6 +20,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   useEffect(()=>{
     // Bloquear scroll del body mientras la página está abierta
     document.body.style.overflow="hidden";
+    let mounted=true;
     try{sb.incrementarVistas(post.id,session.access_token);}catch{}
     Promise.all([
       sb.getReseñas(post.id,session.access_token),
@@ -27,6 +28,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       sb.getMisInscripciones(session.user.email,session.access_token),
       post.tipo==="busqueda"&&!esMio?sb.getMisOfertas(session.user.email,session.access_token).catch(()=>[]):Promise.resolve([])
     ]).then(([pub,usr,ins,misOfertas])=>{
+      if(!mounted)return;
       setReseñas(pub);setReseñasUsuario(usr);
       const insc=ins.find(i=>i.publicacion_id===post.id)||null;
       setInscripcion(insc);
@@ -35,8 +37,8 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
         setMiOfertaPendiente(!!miOfertaEsta.find(o=>o.estado==="pendiente"));
         setPuedeChat(!!miOfertaEsta.find(o=>o.estado==="aceptada"));
       }else{setPuedeChat(!!insc);}
-    }).finally(()=>setLoading(false));
-    return()=>{document.body.style.overflow="";};
+    }).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;document.body.style.overflow="";};
   },[post.id,post.autor_email,post.tipo,session]);// eslint-disable-line
 
   const avgPub=calcAvg(reseñas);const avgUser=calcAvg(reseñasUsuario);

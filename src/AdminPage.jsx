@@ -86,11 +86,13 @@ export default function AdminPage({ session, onClose, onChatUser }) {
 
   React.useEffect(() => {
     if (session?.user?.email === FALLBACK_ADMIN) { setIsAdmin(true); setCheckingAdmin(false); return; }
+    let mounted=true;
     // Check rol in DB
     adminDb(`usuarios?email=eq.${encodeURIComponent(session.user.email)}&select=rol`, "GET", null, session.access_token)
-      .then(rows => setIsAdmin(rows?.[0]?.rol === "admin"))
-      .catch(() => setIsAdmin(false))
-      .finally(() => setCheckingAdmin(false));
+      .then(rows => { if(mounted)setIsAdmin(rows?.[0]?.rol === "admin"); })
+      .catch(() => { if(mounted)setIsAdmin(false); })
+      .finally(() => { if(mounted)setCheckingAdmin(false); });
+    return()=>{mounted=false;};
   }, [session]);
 
   if (checkingAdmin) return (

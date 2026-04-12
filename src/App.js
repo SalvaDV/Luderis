@@ -1256,9 +1256,12 @@ function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat,onRefreshOfert
 function FavoritosPage({session,onOpenDetail,onOpenChat,onOpenPerfil}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);const [filtroTipo,setFiltroTipo]=useState("all");
   useEffect(()=>{
+    let mounted=true;
     sb.getFavoritos(session.user.email,session.access_token).then(async fs=>{
-      if(fs.length>0){const all=await sb.getPublicaciones({},session.access_token);const ids=new Set(fs.map(f=>f.publicacion_id));setPosts(all.filter(p=>ids.has(p.id)));}
-    }).finally(()=>setLoading(false));
+      if(!mounted)return;
+      if(fs.length>0){const all=await sb.getPublicaciones({},session.access_token);if(mounted){const ids=new Set(fs.map(f=>f.publicacion_id));setPosts(all.filter(p=>ids.has(p.id)));}}
+    }).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[session]);
   const filtered=posts.filter(p=>filtroTipo==="all"||p.tipo===filtroTipo);
   return(
@@ -1286,6 +1289,7 @@ function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
   const [pubsNotifPend,setPubsNotifPend]=useState(new Set());
   useEffect(()=>{
     const miEmail2=session.user.email;const miUid2=session.user.id;
+    let mounted=true;
     Promise.all([
       sb.getMisInscripciones(miEmail2,session.access_token),
       sb.getPublicaciones({},session.access_token),
@@ -1293,6 +1297,7 @@ function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
       sb.getOfertasAceptadasRecibidas(miEmail2,session.access_token).catch(()=>[]),
       sb.getNotificaciones(miEmail2,session.access_token).catch(()=>[]),
     ]).then(([ins,todasPubs,misOfertas,ofertasRecibidas,notifs])=>{
+      if(!mounted)return;
       const insArr=ins||[];
       setInscripciones(insArr);
       const ids=[...new Set(insArr.map(i=>i.publicacion_id))];
@@ -1316,7 +1321,8 @@ function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
       (notifs||[]).filter(n=>n.tipo==="busqueda_acordada"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
       (notifs||[]).filter(n=>n.tipo==="nuevo_contenido"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
       setPubsNotifPend(pendSet);
-    }).finally(()=>setLoading(false));
+    }).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[session]);
 
   // Marca la notif de ayudante de una pub como leída
@@ -1533,7 +1539,23 @@ function ChatsPage({session,onOpenChat}){
     }).finally(()=>setLoading(false));
   };
 
-  useEffect(()=>{cargar();},[miEmail,session.access_token]);// eslint-disable-line
+  useEffect(()=>{
+    let active=true;
+    setLoading(true);
+    sb.getMisChats(miEmail,session.access_token).then(async msgs=>{
+      if(!active)return;
+      msgs=msgs.filter(m=>m.para_nombre!=="__grupo__"&&m.de_nombre!=="__grupo__");
+      const pubMap={};
+      msgs.forEach(m=>{const otro=m.de_nombre===miEmail?m.para_nombre:m.de_nombre;const pKey=m.publicacion_id||"sin-pub";if(!pubMap[pKey])pubMap[pKey]={pubId:m.publicacion_id,pubTitulo:m.pub_titulo||"",chats:{},lastTime:m.created_at};if(!pubMap[pKey].pubTitulo&&m.pub_titulo)pubMap[pKey].pubTitulo=m.pub_titulo;const cKey=otro;if(!pubMap[pKey].chats[cKey])pubMap[pKey].chats[cKey]={otro,ultimo:m,unread:0};else if(m.created_at>pubMap[pKey].chats[cKey].ultimo.created_at)pubMap[pKey].chats[cKey].ultimo=m;if(m.de_nombre!==miEmail&&!m.leido)pubMap[pKey].chats[cKey].unread++;if(m.created_at>pubMap[pKey].lastTime)pubMap[pKey].lastTime=m.created_at;});
+      const sinTitulo=Object.values(pubMap).filter(g=>g.pubId&&!g.pubTitulo);
+      if(sinTitulo.length>0){try{const allPubs=await sb.getPublicaciones({},session.access_token);const pubById={};allPubs.forEach(p=>{pubById[p.id]=p.titulo;});sinTitulo.forEach(g=>{if(pubById[g.pubId])g.pubTitulo=pubById[g.pubId];});}catch{}}
+      const otroEmails=[...new Set(Object.values(pubMap).flatMap(g=>Object.values(g.chats).map(c=>c.otro)))];
+      const nMap={};await Promise.all(otroEmails.map(async email=>{try{const u=await sb.getUsuarioByEmail(email,session.access_token);nMap[email]=u?.nombre||u?.display_name||email.split("@")[0];}catch{nMap[email]=email.split("@")[0];}}));
+      if(!active)return;
+      setNombresMap(nMap);setGrupos(Object.values(pubMap).sort((a,b)=>new Date(b.lastTime)-new Date(a.lastTime)));
+    }).finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;};
+  },[miEmail,session.access_token]);// eslint-disable-line
 
   const borrarChat=async(pubId,otroEmail,e)=>{
     e.stopPropagation();
@@ -1604,7 +1626,13 @@ function ChatsPage({session,onOpenChat}){
 
 function FinalizarClaseModal({post,session,onClose,onFinalizado}){
   const [inscripciones,setInscripciones]=useState([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(false);
-  useEffect(()=>{sb.getInscripciones(post.id,session.access_token).then(ins=>{setInscripciones(ins.filter(i=>!i.clase_finalizada));}).finally(()=>setLoading(false));},[post.id,session.access_token]);// eslint-disable-line
+  useEffect(()=>{
+    let mounted=true;
+    sb.getInscripciones(post.id,session.access_token)
+      .then(ins=>{if(mounted)setInscripciones(ins.filter(i=>!i.clase_finalizada));})
+      .finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
+  },[post.id,session.access_token]);// eslint-disable-line
   const finalizar=async()=>{setSaving(true);try{
     await sb.updatePublicacion(post.id,{finalizado:true},session.access_token);// no silenciar — si falla, no marcar inscripciones
     await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:new Date().toISOString()},session.access_token)));
@@ -1847,7 +1875,7 @@ function ChatBotWidget(){
       setMsgs(prev=>[...prev,{from:"bot",text:"Lo siento, no pude procesar tu consulta en este momento."},{from:"bot",text:"Podés hablar con un representante:",action:true}]);
     }finally{setLoading(false);}
   };
-  const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20ClasseLink","_blank");
+  const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20ClasseLink","_blank","noopener,noreferrer");
   return(
     <div style={{position:"fixed",bottom:22,right:22,zIndex:500,fontFamily:FONT}} className="cl-chatbot-fab">
       <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}}`}</style>
@@ -1926,7 +1954,9 @@ export default function App(){
   useEffect(()=>{
     if(!session?.user?.email)return;
     const email=session.user.email;
+    let mounted=true;
     sb.getUsuarioByEmail(email,session.access_token).then(u=>{
+      if(!mounted)return;
       if(!u)return;
       // Sincronizar localStorage con los datos reales de la DB
       try{
@@ -1942,9 +1972,11 @@ export default function App(){
         try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done){setOnboardingUpgrade(false);setShowOnboarding(true);}}catch{}
       }
     }).catch(()=>{
+      if(!mounted)return;
       // Fallback a localStorage si falla la DB
       try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done){setOnboardingUpgrade(false);setShowOnboarding(true);}}catch{}
     });
+    return()=>{mounted=false;};
   },[session?.user?.email]);// eslint-disable-line
   const [chatPost,setChatPost]=useState(null);const [detailPost,setDetailPost]=useState(null);
   const [cursoPost,setCursoPostRaw]=useState(null);
@@ -1954,11 +1986,14 @@ export default function App(){
     if(!session)return;
     const id=sessionStorage.getItem("cl_curso_id");
     if(!id)return;
+    let mounted=true;
     sb.getPublicacionesByIds([id],session.access_token).then(pubs=>{
+      if(!mounted)return;
       const pub=pubs?.[0];
       if(pub&&pub.tipo==="oferta")setCursoPostRaw(pub);
       else sessionStorage.removeItem("cl_curso_id");
     }).catch(()=>{});
+    return()=>{mounted=false;};
   },[session?.user?.email]);// eslint-disable-line
   // SEO: update title/meta when viewing a specific publication
   useEffect(()=>{
