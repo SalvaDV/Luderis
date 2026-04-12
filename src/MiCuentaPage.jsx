@@ -628,24 +628,10 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
       // Solo marcar la búsqueda original como pendiente
       // Crear clase con estado pendiente al aceptar oferta
       if(oferta.busqueda_id){
-        await sb.updatePublicacion(oferta.busqueda_id,{activo:false},session.access_token).catch(()=>{});
-        // Crear la oferta como publicación pendiente de validación
-        const claseData={
-          tipo:"oferta",modo:"particular",
-          titulo:oferta.busqueda_titulo||"Clase acordada",
-          descripcion:`Clase acordada a través de ClasseLink.`,
-          autor_id:session.user.id,
-          activo:false,
-          precio:oferta.precio||oferta.contraoferta_precio,
-          precio_tipo:oferta.precio_tipo||"hora",
-          moneda:oferta.moneda||"ARS",
-          materia:oferta.busqueda_materia||"General",
-        };
-        await sb.insertPublicacion(claseData,session.access_token).catch(()=>{});
+        await sb.updatePublicacion(oferta.busqueda_id,{activo:false},session.access_token).catch(e=>console.warn("No se pudo desactivar busqueda:",e.message));
       }
       sb.insertNotificacion({usuario_id:null,alumno_email:oferta.busqueda_autor_email,tipo:"oferta_aceptada",publicacion_id:oferta.busqueda_id,pub_titulo:oferta.busqueda_titulo,leida:false},session.access_token).catch(()=>{});
       sb.insertNotificacion({usuario_id:null,alumno_email:oferta.busqueda_autor_email,tipo:"busqueda_acordada",publicacion_id:oferta.busqueda_id,pub_titulo:oferta.busqueda_titulo,leida:false},session.access_token).catch(()=>{});
-      await sb.updatePublicacion(oferta.busqueda_id,{activo:false},session.access_token).catch(()=>{});
       cerrar();onActualizado();
     }catch(e){alert(e.message);}finally{setSaving(false);}
   };

@@ -398,8 +398,11 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       const esCursoNuevo=tipo==="oferta"&&modo==="curso"&&!editing;
       const esParticularNuevo=tipo==="oferta"&&modo==="particular"&&!editing;
       // Cursos y clases particulares nuevas nacen con activo:false hasta validar
+      // Al editar, NO tocar activo para no reactivar posts desactivados
       const activoInicial=editing?undefined:(esCursoNuevo||esParticularNuevo)?false:true;
-      const data={tipo,materia,titulo,descripcion,autor_id:session.user.id,activo:activoInicial??true,verificado,modo:modoDb,modalidad:modalidadForm||null,moneda:moneda||"ARS"};
+      const data={tipo,materia,titulo,descripcion,verificado,modo:modoDb,modalidad:modalidadForm||null,moneda:moneda||"ARS"};
+      if(!editing)data.autor_id=session.user.id;// solo en insert, no sobreescribir en update
+      if(activoInicial!==undefined)data.activo=activoInicial;
       data.nivel=nivel||null;
       data.modalidad=modalidadForm||null;
       if(requisitos)data.requisitos=requisitos;
@@ -444,7 +447,8 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       if(savedPub){savedPub.autor_email=session.user.email;savedPub.autor_id=session.user.id;}
       onSave(savedPub,{esCursoNuevo,esParticularNuevo});
       onClose();
-    }catch(e){setSaving(false);setErr("Error: "+e.message);}
+    }catch(e){setErr("Error: "+e.message);}
+    finally{setSaving(false);}
   };
   // ── Wizard state ──────────────────────────────────────────────────────────
   const [paso,setPaso]=useState(editing?2:1);

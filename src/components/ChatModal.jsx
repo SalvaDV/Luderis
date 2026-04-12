@@ -84,7 +84,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
         }catch{}
       };
       ws.onerror=()=>{
-        // Fallback a polling si WebSocket falla
+        ws.close();
         const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};
       };
     }catch{

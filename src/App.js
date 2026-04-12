@@ -1104,7 +1104,7 @@ function OfertasRecibidasModal({post,session,onClose,onContactar}){
     try{
       await sb.updateOfertaBusq(o.id,{estado,leida:true},session.access_token);
       if(estado==="aceptada"){
-        await sb.updatePublicacion(post.id,{activo:false},session.access_token).catch(()=>{});
+        await sb.updatePublicacion(post.id,{activo:false},session.access_token).catch(e=>console.warn("No se pudo desactivar busqueda:",e.message));
         sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_aceptada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
         // Email al docente cuya oferta fue aceptada
         sb.sendEmail("oferta_aceptada",o.ofertante_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]},session.access_token).catch(()=>{});
@@ -1604,8 +1604,13 @@ function ChatsPage({session,onOpenChat}){
 
 function FinalizarClaseModal({post,session,onClose,onFinalizado}){
   const [inscripciones,setInscripciones]=useState([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(false);
-  useEffect(()=>{sb.getInscripciones(post.id,session.access_token).then(ins=>{setInscripciones(ins.filter(i=>!i.clase_finalizada));}).finally(()=>setLoading(false));},[post.id,session]);
-  const finalizar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{finalizado:true},session.access_token).catch(()=>{});await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:new Date().toISOString()},session.access_token)));await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"valorar_curso",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));onFinalizado();onClose();}finally{setSaving(false);}};
+  useEffect(()=>{sb.getInscripciones(post.id,session.access_token).then(ins=>{setInscripciones(ins.filter(i=>!i.clase_finalizada));}).finally(()=>setLoading(false));},[post.id,session.access_token]);// eslint-disable-line
+  const finalizar=async()=>{setSaving(true);try{
+    await sb.updatePublicacion(post.id,{finalizado:true},session.access_token);// no silenciar — si falla, no marcar inscripciones
+    await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:new Date().toISOString()},session.access_token)));
+    await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"valorar_curso",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));
+    onFinalizado();onClose();
+  }catch(e){alert("Error al finalizar: "+e.message);}finally{setSaving(false);}};
   return(
     <Modal onClose={onClose} width="min(420px,95vw)">
       <div style={{padding:"20px 22px"}}>

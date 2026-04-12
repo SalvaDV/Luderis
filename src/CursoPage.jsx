@@ -434,7 +434,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
       ws.onmessage=(e)=>{
         try{const msg=JSON.parse(e.data);if(msg.event==="INSERT"||msg.payload?.type==="INSERT")cargar();}catch{}
       };
-      ws.onerror=()=>{const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};};
+      ws.onerror=()=>{ws.close();const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};};
     }catch{const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};}
     return()=>{try{canal?.close?.();}catch{}};
   },[cargar]);
@@ -679,7 +679,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
 // ─── CERRAR INSCRIPCIONES MODAL ───────────────────────────────────────────────
 function CerrarInscModal({post,session,onClose,onCerrado}){
   const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
-  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}finally{setSaving(false);}};
+  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}catch(e){alert("Error: "+e.message);}finally{setSaving(false);}};
   return(<Modal onClose={onClose} width="min(400px,95vw)">
     <div style={{padding:"20px 22px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
@@ -4325,9 +4325,14 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       }catch{}
     }
     setInscLoading(true);
-    try{const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);setInscripcion(r[0]);sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
-      // Si el curso tiene diagnóstico inicial, ir al tab notas automáticamente
+    try{
+      const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);
+      setInscripcion(r[0]);
+      sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       if(post.modo==="grupal"||post.modo==="curso")setTimeout(()=>setTab("aprender"),400);
+    }catch(e){
+      if(e.message?.includes("uq_inscripcion"))toast("Ya estás inscripto a esta clase.","info");
+      else toast("Error al inscribirse: "+e.message,"error");
     }finally{setInscLoading(false);}
   };
   const [desinscMsg,setDesinscMsg]=useState(false);
@@ -4341,6 +4346,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       setInscripcion(null);
       setDesinscMsg(true);
       setTimeout(()=>onClose(),2200);
+    }catch(e){
+      toast("Error al desinscribirse: "+e.message,"error");
     }finally{setInscLoading(false);}
   };
   const addContenido=async()=>{
