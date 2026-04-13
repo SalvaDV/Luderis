@@ -802,38 +802,44 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 {iaQuery&&<span onClick={e=>{e.stopPropagation();setIaQuery("");setIaResults(null);setIaExplanation("");setPagina(1);}} style={{color:C.muted,fontSize:16,lineHeight:1,flexShrink:0}}>×</span>}
               </button>
               <button onClick={()=>setPanelOpen(v=>!v)}
-                style={{display:"flex",alignItems:"center",gap:6,background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 14px",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:600,flexShrink:0,whiteSpace:"nowrap"}}>
-                ≡ Filtros{activeFilters.length>0&&<span style={{background:C.accent,color:"#fff",borderRadius:"50%",width:18,height:18,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,marginLeft:2}}>{activeFilters.length}</span>}
+                style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 13px",cursor:"pointer",flexShrink:0}}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                {activeFilters.length>0&&<span style={{position:"absolute",top:-5,right:-5,background:C.accent,color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{activeFilters.length}</span>}
               </button>
             </div>
 
-            {/* Chips de tipo */}
+            {/* Chips de sección: Cursos / Clases / Pedidos */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-              {(()=>{const T=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;return[["all","Todo"],["oferta","Clases"],["busqueda","Pedidos"]].map(([v,l])=>{
-                const active=filtroTipo===v;
-                return(<button key={v} onClick={()=>{setFiltroTipo(v);if(v==="oferta")setSeccion("clases");else if(v==="busqueda")setSeccion("pedidos");}}
-                  style={{padding:"6px 16px",borderRadius:20,fontSize:13,fontWeight:active?700:400,cursor:"pointer",fontFamily:FONT,
+              {[
+                {id:"cursos",label:"Cursos",T:TIPO_PUB.curso},
+                {id:"clases",label:"Clases",T:TIPO_PUB.particular},
+                ...(esDocente?[{id:"pedidos",label:"Pedidos",T:TIPO_PUB.pedido}]:[]),
+              ].map(({id,label,T})=>{
+                const active=seccion===id;
+                return(<button key={id}
+                  onClick={()=>{setSeccion(id);setFiltroTipo("all");setFiltroModo("all");try{sessionStorage.setItem("cl_seccion_explore",id);}catch{}}}
+                  style={{padding:"6px 18px",borderRadius:20,fontSize:13,fontWeight:active?700:400,cursor:"pointer",fontFamily:FONT,
                     background:active?T.accent:"transparent",
                     color:active?"#fff":C.muted,
                     border:`1.5px solid ${active?T.accent:C.border}`,
                     boxShadow:active?"0 2px 8px rgba(0,0,0,.12)":"none",
-                    transition:"all .15s"}}>{l}</button>);
-              });})()}
+                    transition:"all .15s"}}>{label}</button>);
+              })}
             </div>
-            {/* Ordenar + resultados + vista */}
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:13,color:C.muted,whiteSpace:"nowrap"}}>Ordenar:</span>
+            {/* Ordenar + resultados + vista — una sola fila compacta */}
+            <div style={{display:"flex",alignItems:"center",gap:6,overflow:"hidden"}}>
+              <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",flexShrink:0}}>Ordenar</span>
               <select value={ordenamiento} onChange={e=>{setOrdenamiento(e.target.value);setPagina(1);}}
-                style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"5px 8px",color:C.text,fontSize:13,outline:"none",cursor:"pointer",fontFamily:FONT,colorScheme:localStorage.getItem("cl_theme")||"light"}}>
-                <option value="relevancia">Más relevantes</option>
-                <option value="recientes">Más recientes</option>
-                <option value="rating">Mejor calificados</option>
-                <option value="precio_asc">Precio: menor a mayor</option>
-                <option value="precio_desc">Precio: mayor a menor</option>
-                <option value="vistas">Más vistos</option>
-                <option value="cercania">Más cercanos</option>
+                style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 6px",color:C.text,fontSize:13,outline:"none",cursor:"pointer",fontFamily:FONT,colorScheme:localStorage.getItem("cl_theme")||"light",minWidth:0,flex:1,maxWidth:160}}>
+                <option value="relevancia">Relevancia</option>
+                <option value="recientes">Recientes</option>
+                <option value="rating">Calificados</option>
+                <option value="precio_asc">Precio ↑</option>
+                <option value="precio_desc">Precio ↓</option>
+                <option value="vistas">Populares</option>
+                <option value="cercania">Cercanos</option>
               </select>
-              <span style={{fontSize:13,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto"}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
+              <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
               <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",flexShrink:0}}>
                 {[["cards","▦"],["lista","≡"],["ranking","🏆"]].map(([m,icon])=>(
                   <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
