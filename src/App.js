@@ -35,9 +35,21 @@ import Sidebar from "./components/Sidebar";
 import CertificadoPage from "./components/CertificadoPage";
 import ChatModal from "./components/ChatModal";
 
-function BusquedaIA({onBuscar,iaLoading,onClose}){
+function BusquedaIA({onBuscar,iaLoading,onClose,seccion}){
   const [q,setQ]=React.useState("");
   const submit=()=>{if(q.trim()){onBuscar(q.trim());onClose();}};
+  const esPedidos=seccion==="pedidos";
+  const esClases=seccion==="clases";
+  const iaDesc=esPedidos
+    ?"Describí qué sabés enseñar. La IA va a encontrar los pedidos de alumnos más afines a vos."
+    :esClases
+    ?"Describí qué querés aprender. La IA va a buscar los mejores docentes disponibles."
+    :"Describí qué querés aprender. La IA va a buscar los cursos más relevantes.";
+  const iaPlaceholder=esPedidos
+    ?"Ej: quiero dar clases de inglés a adultos principiantes en CABA…"
+    :esClases
+    ?"Ej: clases de guitarra para principiantes, presencial en Palermo…"
+    :"Ej: Python para principiantes con seguimiento y ejercicios prácticos…";
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}}>
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(480px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}}>
@@ -46,10 +58,10 @@ function BusquedaIA({onBuscar,iaLoading,onClose}){
           <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer"}}>×</button>
         </div>
         <div style={{padding:"12px 20px 20px"}}>
-          <p style={{fontSize:12,color:C.muted,margin:"0 0 12px"}}>Describí lo que querés aprender o encontrar. La IA va a buscar los cursos más relevantes.</p>
+          <p style={{fontSize:13,color:C.muted,margin:"0 0 12px"}}>{iaDesc}</p>
           <textarea value={q} onChange={e=>setQ(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}}}
-            placeholder="Ej: clases de guitarra para principiantes…"
+            placeholder={iaPlaceholder}
             autoFocus rows={3}
             style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",boxSizing:"border-box",marginBottom:10}}/>
           <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
@@ -785,7 +797,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 onMouseLeave={e=>e.currentTarget.style.borderColor=iaQuery?C.accent:C.border}>
                 <span style={{fontSize:15,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>✦</span>
                 <span style={{color:iaQuery?C.text:C.muted,fontSize:14,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {iaQuery?iaQuery:"Describí lo que querés aprender…"}
+                  {iaQuery?iaQuery:seccion==="pedidos"?"Describí qué sabés enseñar…":"Describí lo que querés aprender…"}
                 </span>
                 {iaQuery&&<span onClick={e=>{e.stopPropagation();setIaQuery("");setIaResults(null);setIaExplanation("");setPagina(1);}} style={{color:C.muted,fontSize:16,lineHeight:1,flexShrink:0}}>×</span>}
               </button>
@@ -795,34 +807,37 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
               </button>
             </div>
 
-            {/* Chips de tipo + modalidad + ordenamiento */}
+            {/* Chips de tipo */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-              {(()=>{const T=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;return[["all","Todo"],["oferta","Clases"],["busqueda","Pedidos"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 14px",borderRadius:20,fontSize:12,fontWeight:filtroTipo===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroTipo===v?T.accent:"transparent",color:filtroTipo===v?"#fff":C.muted,border:`1px solid ${filtroTipo===v?T.accent:C.border}`,transition:"all .12s"}}>{l}</button>
-              ));})()}
-              <div style={{width:1,height:18,background:C.border,margin:"0 2px"}}/>
-              {[["presencial","📍 Presencial"],["virtual","🌐 Virtual"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setFiltroModalidad(filtroModalidad===v?"all":v)} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:filtroModalidad===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroModalidad===v?C.accentDim:"transparent",color:filtroModalidad===v?C.accent:C.muted,border:`1px solid ${filtroModalidad===v?C.accent:C.border}`,transition:"all .12s"}}>{l}</button>
-              ))}
-              {/* Selector de ordenamiento */}
-              <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Ordenar:</span>
-                <select value={ordenamiento} onChange={e=>{setOrdenamiento(e.target.value);setPagina(1);}}
-                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 8px",color:C.text,fontSize:12,outline:"none",cursor:"pointer",fontFamily:FONT,colorScheme:localStorage.getItem("cl_theme")||"light"}}>
-                  <option value="relevancia">Más relevantes</option>
-                  <option value="recientes">Más recientes</option>
-                  <option value="rating">Mejor calificados</option>
-                  <option value="precio_asc">Precio: menor a mayor</option>
-                  <option value="precio_desc">Precio: mayor a menor</option>
-                  <option value="vistas">Más vistos</option>
-                  <option value="cercania">Más cercanos</option>
-                </select>
-                <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap"}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
-                <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden"}}>
-                  {[["cards","▦"],["lista","≡"],["ranking","🏆"]].map(([m,icon])=>(
-                    <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:30,height:28,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
-                  ))}
-                </div>
+              {(()=>{const T=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;return[["all","Todo"],["oferta","Clases"],["busqueda","Pedidos"]].map(([v,l])=>{
+                const active=filtroTipo===v;
+                return(<button key={v} onClick={()=>{setFiltroTipo(v);if(v==="oferta")setSeccion("clases");else if(v==="busqueda")setSeccion("pedidos");}}
+                  style={{padding:"6px 16px",borderRadius:20,fontSize:13,fontWeight:active?700:400,cursor:"pointer",fontFamily:FONT,
+                    background:active?T.accent:"transparent",
+                    color:active?"#fff":C.muted,
+                    border:`1.5px solid ${active?T.accent:C.border}`,
+                    boxShadow:active?"0 2px 8px rgba(0,0,0,.12)":"none",
+                    transition:"all .15s"}}>{l}</button>);
+              });})()}
+            </div>
+            {/* Ordenar + resultados + vista */}
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:13,color:C.muted,whiteSpace:"nowrap"}}>Ordenar:</span>
+              <select value={ordenamiento} onChange={e=>{setOrdenamiento(e.target.value);setPagina(1);}}
+                style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"5px 8px",color:C.text,fontSize:13,outline:"none",cursor:"pointer",fontFamily:FONT,colorScheme:localStorage.getItem("cl_theme")||"light"}}>
+                <option value="relevancia">Más relevantes</option>
+                <option value="recientes">Más recientes</option>
+                <option value="rating">Mejor calificados</option>
+                <option value="precio_asc">Precio: menor a mayor</option>
+                <option value="precio_desc">Precio: mayor a menor</option>
+                <option value="vistas">Más vistos</option>
+                <option value="cercania">Más cercanos</option>
+              </select>
+              <span style={{fontSize:13,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto"}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
+              <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",flexShrink:0}}>
+                {[["cards","▦"],["lista","≡"],["ranking","🏆"]].map(([m,icon])=>(
+                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
+                ))}
               </div>
             </div>
             {activeFilters.length>0&&(
@@ -930,7 +945,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
       )}
 
     </div>
-    {showBusquedaIA&&<BusquedaIA onBuscar={buscarConIA} iaLoading={iaLoading} onClose={()=>setShowBusquedaIA(false)}/>}
+    {showBusquedaIA&&<BusquedaIA onBuscar={buscarConIA} iaLoading={iaLoading} onClose={()=>setShowBusquedaIA(false)} seccion={seccion}/>}
   </>);
 }
 function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,toggling,ofertasPendientes,inscriptos}){
@@ -2291,8 +2306,8 @@ export default function App(){
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {/* Campana notificaciones */}
-              <button onClick={()=>setNotifPanelOpen(v=>!v)} style={{position:"relative",background:"none",border:"none",cursor:"pointer",padding:"6px",borderRadius:"50%",fontSize:18,lineHeight:1,color:notifCount>0?C.accent:C.muted}}>
-                🔔
+              <button onClick={()=>setNotifPanelOpen(v=>!v)} style={{position:"relative",background:"none",border:"none",cursor:"pointer",padding:"6px",borderRadius:"50%",lineHeight:1,color:notifCount>0?C.accent:C.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 {notifCount>0&&<span style={{position:"absolute",top:2,right:2,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4,minWidth:14,textAlign:"center"}}>{notifCount>9?"9+":notifCount}</span>}
               </button>
               <Btn onClick={()=>{setEditPost(null);setShowForm(true);}} style={{padding:"6px 14px",fontSize:12,borderRadius:16}}>{t("newPost")}</Btn>
