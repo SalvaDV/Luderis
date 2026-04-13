@@ -1764,7 +1764,10 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
 
       {/* ── TABS DE NAVEGACIÓN ── */}
       <div style={{position:"relative",marginBottom:16}}>
-      <style>{`.cl-tabs-fade::after{content:'';position:absolute;right:0;top:0;bottom:2px;width:40px;background:linear-gradient(to right,transparent,${C.surface});pointer-events:none;z-index:1}`}</style>
+      <style>{`
+        .cl-tabs-fade::after{content:'';position:absolute;right:0;top:0;bottom:2px;width:24px;background:linear-gradient(to right,transparent,${C.surface});pointer-events:none;z-index:1}
+        @media(max-width:768px){.cl-tab-btn{padding:9px 11px!important;font-size:12px!important}}
+      `}</style>
       <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
         {[
           {id:"publicaciones",label:"Publicaciones",count:pubs.length},
@@ -1779,7 +1782,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         ].map(tab=>{
           const active=tabCuenta===tab.id;
           return(
-            <button key={tab.id} onClick={()=>setTabCuenta(tab.id)}
+            <button key={tab.id} onClick={()=>setTabCuenta(tab.id)} className="cl-tab-btn"
               style={{padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:active?600:400,
                 color:active?C.accent:C.muted,borderBottom:`2px solid ${active?C.accent:"transparent"}`,marginBottom:-2,transition:"all .15s",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
               {tab.label}
