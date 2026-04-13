@@ -840,7 +840,7 @@ function PubsTab({ session }) {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: 1, minWidth: 200 }}><SearchInput value={search} onChange={setSearch} placeholder="Buscar por título, materia, autor…" /></div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {["todas", "activas", "pausadas", "ofertas", "busquedas"].map(f => <Pill key={f} label={f.charAt(0).toUpperCase() + f.slice(1)} active={filtro === f} onClick={() => setFiltro(f)} />)}
+          {[["todas","Todas"],["activas","Activas"],["pausadas","Pausadas"],["ofertas","Clases"],["busquedas","Pedidos"]].map(([f,l]) => <Pill key={f} label={l} active={filtro === f} onClick={() => setFiltro(f)} />)}
         </div>
       </div>
 
@@ -854,7 +854,7 @@ function PubsTab({ session }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
                     <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{p.titulo}</span>
-                    <Badge color={p.tipo === "oferta" ? C.accent : "#F59E0B"}>{p.tipo === "oferta" ? "Clase" : "Búsqueda"}</Badge>
+                    <Badge color={p.tipo === "oferta" ? C.accent : "#F59E0B"}>{p.tipo === "oferta" ? "Clase" : "Pedido"}</Badge>
                     {p.activo ? <Badge color={C.success}>Activa</Badge> : <Badge color={C.muted}>Pausada</Badge>}
                   </div>
                   <div style={{ fontSize: 12, color: C.muted }}>{p.autor_email} · {p.materia} · {fmt(p.created_at)}</div>

@@ -672,7 +672,7 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
               <button onClick={cerrar} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer"}}>×</button>
             </div>
             <div style={{background:C.card,borderRadius:10,padding:"10px 13px",marginBottom:14}}>
-              <div style={{fontSize:12,color:C.muted,marginBottom:2}}>{oferta.busqueda_titulo||"Búsqueda"}</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:2}}>{oferta.busqueda_titulo||"Pedido"}</div>
               {oferta.contraoferta_precio
                 ?<div style={{fontSize:16,color:C.accent,fontWeight:700}}>{fmtPrice(oferta.contraoferta_precio)} <span style={{fontSize:12,fontWeight:400,color:C.muted}}>/{oferta.contraoferta_tipo||oferta.precio_tipo}</span></div>
                 :<div style={{fontSize:12,color:C.muted}}>Tu oferta: <span style={{color:C.accent,fontWeight:600}}>{oferta.precio?`${fmtPrice(oferta.precio)} /${oferta.precio_tipo}`:"sin precio definido"}</span></div>}
@@ -1339,7 +1339,7 @@ function AlertasTab({session}){
           <div style={{marginBottom:12}}>
             <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:6}}>¿Qué tipo de publicaciones querés monitorear?</div>
             <div style={{display:"flex",gap:6}}>
-              {[["ambos","📢 Ambas"],["oferta","🎓 Clases/Cursos"],["busqueda","🔍 Búsquedas"]].map(([v,l])=>(
+              {[["ambos","📢 Ambas"],["oferta","🎓 Clases/Cursos"],["busqueda","🔍 Pedidos"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setTipoAlerta(v)}
                   style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,
                     background:tipoAlerta===v?(v==="oferta"?C.accent:v==="busqueda"?"#F59E0B":LUD.grad):C.bg,
@@ -1394,7 +1394,7 @@ function AlertasTab({session}){
                   </div>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
                     {criterios.materia&&<span style={{fontSize:11,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 9px",fontWeight:600}}>{criterios.materia}</span>}
-                    {criterios.tipo&&criterios.tipo!=="cualquiera"&&<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{criterios.tipo==="oferta"?"Clases":"Búsquedas"}</span>}
+                    {criterios.tipo&&criterios.tipo!=="cualquiera"&&<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{criterios.tipo==="oferta"?"Clases":"Pedidos"}</span>}
                     {criterios.modalidad&&criterios.modalidad!=="cualquiera"&&<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{criterios.modalidad==="virtual"?"🌐 Virtual":"📍 Presencial"}</span>}
                     {(criterios.palabras_clave||[]).slice(0,3).map(p=>(
                       <span key={p} style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{p}</span>
@@ -1770,7 +1770,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         .cl-tabs-fade::after{content:'';position:absolute;right:0;top:0;bottom:2px;width:24px;background:linear-gradient(to right,transparent,${C.surface});pointer-events:none;z-index:1}
         @media(max-width:768px){.cl-tab-btn{padding:9px 11px!important;font-size:12px!important}}
       `}</style>
-      <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+      <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",touchAction:"pan-x"}}>
         {[
           {id:"publicaciones",label:"Publicaciones",count:pubs.length},
           {id:"estadisticas",label:"Estadísticas",count:null},
@@ -1784,7 +1784,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         ].map(tab=>{
           const active=tabCuenta===tab.id;
           return(
-            <button key={tab.id} onClick={()=>setTabCuenta(tab.id)} className="cl-tab-btn"
+            <button key={tab.id} onClick={()=>{setTabCuenta(tab.id);if(tab.id==="ofertas"&&typeof window._resetCuentaBadge==="function")window._resetCuentaBadge();}} className="cl-tab-btn"
               style={{padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:active?600:400,
                 color:active?C.accent:C.muted,borderBottom:`2px solid ${active?C.accent:"transparent"}`,marginBottom:-2,transition:"all .15s",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
               {tab.label}
@@ -1818,24 +1818,33 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             return null;
           })()}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-            <div style={{display:"flex",gap:5}}>
-              {[["all","Todo"],["oferta","Clases"],["busqueda","Búsquedas"]].map(([v,l])=>(
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+              {[
+                {v:"all",l:"Todo",cnt:pubs.length},
+                {v:"curso",l:"Cursos",cnt:pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")).length},
+                {v:"clase",l:"Clases",cnt:pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="particular"||!p.modo)).length},
+                {v:"busqueda",l:"Pedidos",cnt:pubs.filter(p=>p.tipo==="busqueda").length},
+              ].map(({v,l,cnt})=>(
                 <button key={v} onClick={()=>setFiltroPubsTipo(v)}
-                  style={{padding:"5px 14px",borderRadius:20,fontSize:12,fontWeight:filtroPubsTipo===v?600:400,cursor:"pointer",fontFamily:FONT,
+                  style={{padding:"5px 13px",borderRadius:20,fontSize:12,fontWeight:filtroPubsTipo===v?600:400,cursor:"pointer",fontFamily:FONT,
                     background:filtroPubsTipo===v?C.accent:"transparent",color:filtroPubsTipo===v?"#fff":C.muted,
-                    border:`1px solid ${filtroPubsTipo===v?C.accent:C.border}`,transition:"all .12s"}}>{l}
-                  {v==="oferta"&&<span style={{marginLeft:4,opacity:.7}}>{pubs.filter(p=>p.tipo==="oferta").length}</span>}
-                  {v==="busqueda"&&<span style={{marginLeft:4,opacity:.7}}>{pubs.filter(p=>p.tipo==="busqueda").length}</span>}
+                    border:`1px solid ${filtroPubsTipo===v?C.accent:C.border}`,transition:"all .12s",display:"flex",alignItems:"center",gap:4}}>{l}
+                  {cnt>0&&<span style={{opacity:.7}}>{cnt}</span>}
                 </button>
               ))}
             </div>
             <Btn onClick={onNew} style={{padding:"7px 18px",fontSize:13,borderRadius:20}}>+ Nueva publicación</Btn>
           </div>
-          {loading?<Spinner/>:(()=>{const pubsFiltradas=filtroPubsTipo==="all"?pubs:pubs.filter(p=>p.tipo===filtroPubsTipo);return pubsFiltradas.length===0?(
+          {loading?<Spinner/>:(()=>{const pubsFiltradas=
+            filtroPubsTipo==="all"?pubs:
+            filtroPubsTipo==="curso"?pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")):
+            filtroPubsTipo==="clase"?pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="particular"||!p.modo)):
+            pubs.filter(p=>p.tipo===filtroPubsTipo);
+          return pubsFiltradas.length===0?(
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"40px 24px",textAlign:"center"}}>
               <div style={{fontSize:32,marginBottom:12}}>📋</div>
               <div style={{color:C.text,fontWeight:600,fontSize:15,marginBottom:8}}>Todavía no publicaste nada</div>
-              <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Creá tu primera clase o búsqueda para conectar con alumnos o docentes.</div>
+              <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Creá tu primera clase o pedido para conectar con alumnos o docentes.</div>
               <Btn onClick={onNew} style={{borderRadius:20}}>Crear primera publicación</Btn>
             </div>
           ):(

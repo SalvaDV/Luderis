@@ -342,7 +342,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   });
 
   const activeFilters=[
-    filtroTipo!=="all"&&(filtroTipo==="oferta"?"Clases":"Búsquedas"),
+    filtroTipo!=="all"&&(filtroTipo==="oferta"?"Clases":"Pedidos"),
     filtroModo!=="all"&&(filtroModo==="curso"?"Cursos":"Particulares"),
     filtroModalidad!=="all"&&(filtroModalidad==="presencial"?"Presencial":filtroModalidad==="virtual"?"Virtual":"Mixto"),
     filtroSinc!=="all"&&(filtroSinc==="sinc"?"Sincrónico":"Asincrónico"),
@@ -2064,6 +2064,10 @@ export default function App(){
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Exponer función global para que el sidebar pueda abrir el panel
   useEffect(()=>{window._openNotifPanel=()=>setNotifPanelOpen(v=>!v);return()=>{window._openNotifPanel=null;};},[]);// eslint-disable-line
+  // Badge reset: MiCuentaPage llama esto cuando abre la tab Actividad
+  useEffect(()=>{window._resetCuentaBadge=()=>{setOfertasAceptadasNuevas(0);setOfertasCount(0);};return()=>{window._resetCuentaBadge=null;};},[]);// eslint-disable-line
+  // Badge reset: se llama cuando el usuario navega a Inscripciones
+  useEffect(()=>{if(page==="inscripciones")setNotifCount(0);},[page]);// eslint-disable-line
   // Exponer apertura del formulario de nueva publicación (usado por banners)
   useEffect(()=>{window._openNewPost=()=>{setEditPost(null);setShowForm(true);};return()=>{window._openNewPost=null;};},[]);// eslint-disable-line
   // Exponer navegación a publicación (para notification click)
