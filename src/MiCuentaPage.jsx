@@ -1553,7 +1553,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
     <div style={{fontFamily:FONT}}>
 
       {/* ── HEADER PERFIL LINKEDIN-STYLE ── */}
-      <div className="cl-edge-card" style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
         {/* Banner */}
         <div style={{height:80,background:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`}}/>
         <div style={{padding:"0 24px 20px",position:"relative"}}>
@@ -1763,13 +1763,10 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       )}
 
       {/* ── TABS DE NAVEGACIÓN ── */}
-      <div className="cl-edge-card" style={{position:"relative",marginBottom:16,background:C.surface,border:`1px solid ${C.border}`,borderRadius:12}}>
+      <div style={{position:"relative",marginBottom:16}}>
       <style>{`
         .cl-tabs-fade::after{content:'';position:absolute;right:0;top:0;bottom:2px;width:24px;background:linear-gradient(to right,transparent,${C.surface});pointer-events:none;z-index:1}
-        @media(max-width:768px){
-          .cl-tab-btn{padding:9px 11px!important;font-size:12px!important}
-          .cl-edge-card{border-radius:0!important;border-left:none!important;border-right:none!important;margin-left:-8px!important;margin-right:-8px!important;box-shadow:none!important;}
-        }
+        @media(max-width:768px){.cl-tab-btn{padding:9px 11px!important;font-size:12px!important}}
       `}</style>
       <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
         {[
