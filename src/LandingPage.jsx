@@ -6,6 +6,7 @@ function LandingPage({onEnter}){
   const [seccion,setSeccion]=useState("inicio");// inicio | nosotros | contacto
   const [contactForm,setContactForm]=useState({nombre:"",email:"",msg:""});
   const [contactOk,setContactOk]=useState(false);
+  const [mobileMenu,setMobileMenu]=useState(false);
 
   const scrollTo=(id)=>{document.getElementById(id)?.scrollIntoView({behavior:"smooth"});};
 
@@ -34,30 +35,68 @@ function LandingPage({onEnter}){
         .ld-orb1{animation:floatY 6s 0s ease-in-out infinite}
         .ld-orb2{animation:floatY 6s 1.5s ease-in-out infinite}
         .ld-orb3{animation:floatY 6s 3s ease-in-out infinite}
-        @media(max-width:768px){.ld-hide-mobile{display:none!important}.ld-hero-flex{flex-direction:column!important;text-align:center}.ld-hero-btns{justify-content:center!important}}
+        @media(max-width:768px){
+          .ld-hide-mobile{display:none!important}
+          .ld-hero-flex{flex-direction:column!important;text-align:center}
+          .ld-hero-btns{justify-content:center!important}
+          .ld-dos-grid{grid-template-columns:1fr!important}
+          .ld-nosotros-vals{grid-template-columns:1fr 1fr!important}
+          .ld-section-pad{padding-left:20px!important;padding-right:20px!important}
+          .ld-hero-cta-grid{grid-template-columns:1fr!important}
+          .ld-cta-final{margin-left:16px!important;margin-right:16px!important;padding:48px 24px!important}
+          .ld-hamburger{display:flex!important}
+          .ld-mobile-nav{display:flex!important}
+          .ld-nav-inner{padding:0 20px!important}
+        }
+        @media(max-width:480px){
+          .ld-nosotros-vals{grid-template-columns:1fr!important}
+          .ld-hero-cta-grid{grid-template-columns:1fr!important}
+        }
       `}</style>
 
       {/* ══ NAV ══ */}
-      <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(246,249,255,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(26,110,216,.08)",padding:"0 32px",height:66,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 1px 20px rgba(26,110,216,.05)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/logo.png" alt="Luderis" style={{width:36,height:36,objectFit:"contain"}} className="ld-logo-float"/>
-          <span style={{fontWeight:800,fontSize:21,background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.4px"}}>Luderis</span>
+      <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(246,249,255,.96)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(26,110,216,.08)",boxShadow:"0 1px 20px rgba(26,110,216,.05)"}}>
+        <div className="ld-nav-inner" style={{padding:"0 32px",height:66,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src="/logo.png" alt="Luderis" style={{width:36,height:36,objectFit:"contain"}} className="ld-logo-float"/>
+            <span style={{fontWeight:800,fontSize:21,background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.4px"}}>Luderis</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:4}} className="ld-hide-mobile">
+            {[["inicio","Inicio"],["features","Funciones"],["como","¿Cómo funciona?"],["nosotros","Sobre nosotros"],["contacto","Contacto"]].map(([id,label])=>(
+              <button key={id} className="ld-nav-link" onClick={()=>scrollTo(id)}>{label}</button>
+            ))}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <button onClick={onEnter}
+              style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"9px 22px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)",transition:"box-shadow .2s"}}
+              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 6px 20px rgba(26,110,216,.45)"}
+              onMouseLeave={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.3)"}>
+              Ingresar →
+            </button>
+            {/* Hamburger */}
+            <button className="ld-hamburger" onClick={()=>setMobileMenu(m=>!m)}
+              style={{display:"none",flexDirection:"column",gap:5,background:"none",border:"none",cursor:"pointer",padding:6,borderRadius:8}}>
+              <span style={{width:22,height:2,background:"#4A5568",borderRadius:2,display:"block",transition:"all .2s",transform:mobileMenu?"rotate(45deg) translate(5px,5px)":"none"}}/>
+              <span style={{width:22,height:2,background:"#4A5568",borderRadius:2,display:"block",transition:"all .2s",opacity:mobileMenu?0:1}}/>
+              <span style={{width:22,height:2,background:"#4A5568",borderRadius:2,display:"block",transition:"all .2s",transform:mobileMenu?"rotate(-45deg) translate(5px,-5px)":"none"}}/>
+            </button>
+          </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:4}} className="ld-hide-mobile">
-          {[["inicio","Inicio"],["features","Funciones"],["como","¿Cómo funciona?"],["nosotros","Sobre nosotros"],["contacto","Contacto"]].map(([id,label])=>(
-            <button key={id} className="ld-nav-link" onClick={()=>scrollTo(id)}>{label}</button>
-          ))}
-        </div>
-        <button onClick={onEnter}
-          style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"9px 22px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)",transition:"box-shadow .2s"}}
-          onMouseEnter={e=>e.currentTarget.style.boxShadow="0 6px 20px rgba(26,110,216,.45)"}
-          onMouseLeave={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.3)"}>
-          Ingresar →
-        </button>
+        {/* Mobile menu dropdown */}
+        {mobileMenu&&(
+          <div style={{display:"flex",flexDirection:"column",background:"rgba(246,249,255,.98)",borderTop:"1px solid rgba(26,110,216,.08)",padding:"12px 20px 16px",gap:4}}>
+            {[["inicio","Inicio"],["features","Funciones"],["como","¿Cómo funciona?"],["nosotros","Sobre nosotros"],["contacto","Contacto"]].map(([id,label])=>(
+              <button key={id} className="ld-nav-link" style={{textAlign:"left",padding:"10px 12px",fontSize:15}}
+                onClick={()=>{scrollTo(id);setMobileMenu(false);}}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* ══ HERO ══ */}
-      <section id="inicio" style={{maxWidth:1100,margin:"0 auto",padding:"88px 32px 72px",display:"flex",alignItems:"center",gap:60,flexWrap:"wrap"}} className="ld-hero-flex">
+      <section id="inicio" style={{maxWidth:1100,margin:"0 auto",padding:"88px 32px 72px",display:"flex",alignItems:"center",gap:60,flexWrap:"wrap"}} className="ld-hero-flex ld-section-pad">
         <div style={{flex:"1 1 420px",minWidth:0}}>
           <div className="ld-hero" style={{display:"inline-flex",alignItems:"center",gap:7,background:"rgba(26,110,216,.08)",border:"1px solid rgba(26,110,216,.18)",borderRadius:20,padding:"5px 16px",marginBottom:26}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:LUD.teal,display:"inline-block",animation:"pulse 2s infinite"}}/>
@@ -74,7 +113,7 @@ function LandingPage({onEnter}){
             Vos decidís qué, cuándo y cómo. No hay un catálogo fijo que te limite.
           </p>
           {/* Dos caminos — el diferencial visual */}
-          <div className="ld-hero3" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:28,maxWidth:480}}>
+          <div className="ld-hero3 ld-hero-cta-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:28,maxWidth:480}}>
             <button onClick={onEnter}
               style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:16,color:"#fff",padding:"16px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 6px 20px rgba(26,110,216,.35)",transition:"all .2s",textAlign:"left"}}
               onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 10px 28px rgba(26,110,216,.45)";}}
@@ -129,13 +168,13 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ DOS MUNDOS ══ */}
-      <section style={{background:"#fff",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF",padding:"64px 32px"}}>
+      <section style={{background:"#fff",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF",padding:"64px 32px"}} className="ld-section-pad">
         <div style={{maxWidth:1000,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:48}}>
             <h2 style={{fontSize:30,fontWeight:800,color:"#0D1F3C",margin:"0 0 10px",letterSpacing:"-.5px"}}>Una app. Dos experiencias.</h2>
             <p style={{color:"#718096",fontSize:15,margin:0}}>Cada modo tiene su identidad, su flujo y su propósito</p>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+          <div className="ld-dos-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
             {/* Cursos */}
             <div style={{background:"linear-gradient(135deg,#EEF6FF,#E8F8F5)",border:"1px solid #1A6ED820",borderRadius:20,padding:"32px 28px",position:"relative",overflow:"hidden"}}>
               <div style={{position:"absolute",top:-30,right:-30,width:100,height:100,borderRadius:"50%",background:"rgba(26,110,216,.06)"}}/>
@@ -177,7 +216,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ FEATURES ══ */}
-      <section id="features" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}}>
+      <section id="features" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{textAlign:"center",marginBottom:52}}>
           <div style={{display:"inline-block",background:"rgba(26,110,216,.08)",border:"1px solid rgba(26,110,216,.15)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:LUD.blue,marginBottom:14}}>Funciones</div>
           <h2 style={{fontSize:34,fontWeight:800,color:"#0D1F3C",margin:"0 0 12px",letterSpacing:"-.6px"}}>Todo lo que necesitás</h2>
@@ -203,7 +242,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CÓMO FUNCIONA ══ */}
-      <section id="como" style={{background:"#fff",padding:"80px 32px",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF"}}>
+      <section id="como" style={{background:"#fff",padding:"80px 32px",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF"}} className="ld-section-pad">
         <div style={{maxWidth:900,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:52}}>
             <div style={{display:"inline-block",background:"rgba(46,196,160,.1)",border:"1px solid rgba(46,196,160,.25)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:LUD.teal,marginBottom:14}}>¿Cómo funciona?</div>
@@ -231,7 +270,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ SOBRE NOSOTROS ══ */}
-      <section id="nosotros" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}}>
+      <section id="nosotros" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{display:"flex",gap:60,alignItems:"center",flexWrap:"wrap"}}>
           <div style={{flex:"1 1 340px"}}>
             <div style={{display:"inline-block",background:"rgba(123,92,240,.08)",border:"1px solid rgba(123,92,240,.2)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:"#7B5CF0",marginBottom:18}}>Sobre nosotros</div>
@@ -251,7 +290,7 @@ function LandingPage({onEnter}){
               ))}
             </div>
           </div>
-          <div style={{flex:"1 1 320px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="ld-nosotros-vals" style={{flex:"1 1 320px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             {[
               {icon:"🎓",title:"Misión",desc:"Democratizar el acceso al conocimiento conectando personas que quieren aprender con quienes quieren enseñar."},
               {icon:"🔭",title:"Visión",desc:"Ser la plataforma de referencia en Argentina para el intercambio de conocimiento entre personas."},
@@ -269,7 +308,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ TESTIMONIOS ══ */}
-      <section style={{background:"linear-gradient(135deg,#0A2A5E,#1A6ED8)",padding:"80px 32px"}}>
+      <section style={{background:"linear-gradient(135deg,#0A2A5E,#1A6ED8)",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{maxWidth:1000,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:48}}>
             <h2 style={{fontSize:"clamp(26px,3.5vw,38px)",fontWeight:800,color:"#fff",margin:"0 0 12px",letterSpacing:"-.5px"}}>
@@ -306,7 +345,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CTA FINAL ══ */}
-      <section style={{background:"#F6F9FF",padding:"80px 32px",textAlign:"center"}}>
+      <section style={{background:"#F6F9FF",padding:"80px 32px",textAlign:"center"}} className="ld-section-pad">
         <div style={{maxWidth:640,margin:"0 auto"}}>
           <div style={{fontSize:40,marginBottom:16}}>🚀</div>
           <h2 style={{fontSize:"clamp(28px,4vw,44px)",fontWeight:800,color:"#0D1F3C",margin:"0 0 16px",letterSpacing:"-.5px"}}>
@@ -333,7 +372,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CONTACTO ══ */}
-      <section id="contacto" style={{maxWidth:900,margin:"0 auto",padding:"80px 32px"}}>
+      <section id="contacto" style={{maxWidth:900,margin:"0 auto",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{display:"flex",gap:56,alignItems:"flex-start",flexWrap:"wrap"}}>
           <div style={{flex:"1 1 280px"}}>
             <div style={{display:"inline-block",background:"rgba(26,110,216,.08)",border:"1px solid rgba(26,110,216,.15)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:LUD.blue,marginBottom:18}}>Contacto</div>
@@ -379,7 +418,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CTA FINAL ══ */}
-      <section style={{margin:"0 24px 80px",borderRadius:24,background:LUD.gradDark,padding:"64px 40px",textAlign:"center",position:"relative",overflow:"hidden",maxWidth:1052,marginLeft:"auto",marginRight:"auto"}}>
+      <section className="ld-cta-final" style={{margin:"0 24px 80px",borderRadius:24,background:LUD.gradDark,padding:"64px 40px",textAlign:"center",position:"relative",overflow:"hidden",maxWidth:1052,marginLeft:"auto",marginRight:"auto"}}>
         <div style={{position:"absolute",width:320,height:320,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-90,right:-90,pointerEvents:"none"}}/>
         <div style={{position:"absolute",width:220,height:220,borderRadius:"50%",background:"rgba(46,196,160,.08)",bottom:-70,left:-50,pointerEvents:"none"}}/>
         <div style={{position:"relative",zIndex:1}}>
@@ -398,7 +437,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer style={{borderTop:"1px solid #EEF2FF",padding:"32px 32px",background:"#fff"}}>
+      <footer style={{borderTop:"1px solid #EEF2FF",padding:"32px 32px",background:"#fff"}} className="ld-section-pad">
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:20}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <img src="/logo.png" alt="Luderis" style={{width:28,height:28,objectFit:"contain"}}/>
