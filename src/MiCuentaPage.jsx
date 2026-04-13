@@ -60,7 +60,9 @@ function MiniBarChart({data,color,height=50,width=0,showValues=true}){
 function MiActividadCard({session}){
   const [insc,setInsc]=useState(null);
   useEffect(()=>{
-    sb.getMisInscripciones(session.user.email,session.access_token).then(r=>setInsc(r||[])).catch(()=>setInsc([]));
+    let mounted=true;
+    sb.getMisInscripciones(session.user.email,session.access_token).then(r=>{if(mounted)setInsc(r||[]);}).catch(()=>{if(mounted)setInsc([]);});
+    return()=>{mounted=false;};
   },[session.user.email,session.access_token]);
   if(insc===null)return null;
   const activos=insc.filter(i=>!i.clase_finalizada).length;
