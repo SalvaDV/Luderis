@@ -19,13 +19,14 @@ function AuthScreen({onLogin}){
         const r=await sb.signUp(email,pass);
         if(r.access_token){
           const uid=r.user?.id;
-          if(uid){try{await sb.insertUsuario({id:uid,email,nombre:email.split("@")[0]},r.access_token);}catch{}}
+          const nombre=email.split("@")[0];
+          if(uid){try{await sb.insertUsuario({id:uid,email,nombre},r.access_token);}catch{}}
+          // Email de bienvenida (fire & forget)
+          sb.sendEmail("bienvenida",email,{nombre,email},r.access_token).catch(()=>{});
           // Registrar referido si hay código guardado
           try{
             const refCode=localStorage.getItem("cl_ref_code");
             if(refCode&&uid){
-              // Buscar al referidor por su código
-              const allUsers=await sb.db(`usuarios?select=id,email`,refCode,r.access_token).catch(()=>[]);
               // El código es btoa(user.id) — decodificamos
               let referidorId=null;
               try{referidorId=atob(refCode.padEnd(refCode.length+((4-refCode.length%4)%4),"="));}catch{}

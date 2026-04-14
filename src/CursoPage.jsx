@@ -5,13 +5,74 @@ import {
   Avatar, Spinner, Btn, Input, Modal, Label, ErrMsg, Chip,
   MiniStars, StarRating, StatusBadge, VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
-  safeDisplayName, sanitizeContactInfo,
+  safeDisplayName, sanitizeContactInfo, useConfirm,
   CalendarioCurso,
   LUD,
   CATEGORIAS_DATA,
+  getPubTipo,
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal, ContraofertaModal } from "./App";
+
+// Sanitiza URLs para evitar javascript: protocol XSS
+const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
+
+// ─── CALENDAR SYNC HELPERS ────────────────────────────────────────────────────
+const BYDAY_MAP={Lunes:"MO",Martes:"TU","Miércoles":"WE",Jueves:"TH",Viernes:"FR",Sábado:"SA",Domingo:"SU"};
+function nextWeekday(dayName,from){
+  const target=Object.keys(BYDAY_MAP).indexOf(dayName);// 0=Lun…6=Dom
+  const date=new Date(from);
+  const cur=(date.getDay()+6)%7;// lunes=0
+  const diff=(target-cur+7)%7||7;
+  date.setDate(date.getDate()+diff);
+  return date;
+}
+function toGCalDate(d,timeStr){
+  // Returns YYYYMMDDTHHMMSS (local)
+  const [h,m]=timeStr.split(":").map(Number);
+  const out=new Date(d);out.setHours(h,m,0,0);
+  return out.toISOString().replace(/[-:]/g,"").slice(0,15);
+}
+function buildGCalUrl(titulo,descripcion,dia,horaI,horaF,fechaInicio,fechaFin){
+  const from=fechaInicio?new Date(fechaInicio):new Date();
+  const start=nextWeekday(dia,from);
+  const startStr=toGCalDate(start,horaI);
+  const endStr=toGCalDate(start,horaF);
+  const byDay=BYDAY_MAP[dia]||"MO";
+  let recur=`RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
+  if(fechaFin){const until=new Date(fechaFin).toISOString().replace(/[-:]/g,"").slice(0,8)+"T235959Z";recur+=`;UNTIL=${until}`;}
+  const params=new URLSearchParams({
+    action:"TEMPLATE",
+    text:titulo,
+    details:descripcion||"",
+    dates:`${startStr}/${endStr}`,
+    recur,
+    sf:"true",
+    output:"xml",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+function generarICS(titulo,descripcion,clases,fechaInicio,fechaFin){
+  const from=fechaInicio?new Date(fechaInicio):new Date();
+  let eventos="";
+  clases.forEach((c,idx)=>{
+    const start=nextWeekday(c.dia,from);
+    const [h1,m1]=c.hora_inicio.split(":").map(Number);const [h2,m2]=c.hora_fin.split(":").map(Number);
+    const dtStart=new Date(start);dtStart.setHours(h1,m1,0,0);
+    const dtEnd=new Date(start);dtEnd.setHours(h2,m2,0,0);
+    const fmt=d=>d.toISOString().replace(/[-:]/g,"").slice(0,15);
+    const byDay=BYDAY_MAP[c.dia]||"MO";
+    let rrule=`FREQ=WEEKLY;BYDAY=${byDay}`;
+    if(fechaFin){const until=new Date(fechaFin).toISOString().replace(/[-:]/g,"").slice(0,8)+"T235959Z";rrule+=`;UNTIL=${until}`;}
+    eventos+=`BEGIN:VEVENT\r\nUID:luderis-${idx}-${Date.now()}\r\nDTSTART:${fmt(dtStart)}\r\nDTEND:${fmt(dtEnd)}\r\nRRULE:${rrule}\r\nSUMMARY:${titulo}\r\nDESCRIPTION:${descripcion||""}\r\nEND:VEVENT\r\n`;
+  });
+  return`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Luderis//ES\r\nCALSCALE:GREGORIAN\r\n${eventos}END:VCALENDAR`;
+}
+function descargarICS(content,nombre){
+  const blob=new Blob([content],{type:"text/calendar;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre+".ics";a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}
 
 function InscritosCount({pubId,session}){
   const [count,setCount]=useState(null);
@@ -45,12 +106,25 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
   const [texto,setTexto]=useState("");
   const [catScores,setCatScores]=useState({});// {conocimiento:4, didactica:5, ...}
   const [saving,setSaving]=useState(false);const [err,setErr]=useState("");
+  const [claseVerificada,setClaseVerificada]=useState(null);// {id} de la clase confirmada si existe
   const finalizado=!!post.finalizado||(inscripcion?.clase_finalizada);
   const cargar=()=>sb.getReseñas(post.id,session.access_token).then(r=>setReseñas(r)).finally(()=>setLoading(false));
   useEffect(()=>{cargar();},[post.id]); // eslint-disable-line
-  const puedeResena=!esMio&&(inscripcion?.clase_finalizada||post.finalizado);
+  // Buscar clase verificada del usuario con este docente
+  useEffect(()=>{
+    if(esMio||!session.user.email||!post.autor_email)return;
+    sb.getClasesRealizadas(session.user.email,session.access_token)
+      .then(cs=>{
+        const confirmada=(cs||[]).find(c=>
+          c.confirmado_docente&&c.confirmado_alumno&&
+          (c.docente_email===post.autor_email||c.alumno_email===post.autor_email)
+        );
+        setClaseVerificada(confirmada||null);
+      }).catch(()=>{});
+  },[session.user.email,post.autor_email,esMio]);// eslint-disable-line
+  const puedeResena=!esMio&&(inscripcion?.clase_finalizada||post.finalizado||!!claseVerificada);
 
-  if(!finalizado&&reseñas.length===0&&!loading)return(
+  if(!finalizado&&!claseVerificada&&reseñas.length===0&&!loading)return(
     <div style={{color:C.muted,fontSize:12,fontStyle:"italic",textAlign:"center",padding:"18px 0"}}>
       Las reseñas se habilitarán cuando el docente finalice las clases.
     </div>
@@ -65,16 +139,16 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
     const promedio=calcPromedioResena(catScores);
     setSaving(true);setErr("");
     try{
-      await sb.insertReseña({
+      const resenaData={
         publicacion_id:post.id,
         autor_id:session.user.id,
         autor_nombre:sb.getDisplayName(session.user.email),
         autor_pub_email:post.autor_email,
         texto:texto.trim(),
-        estrellas:Math.round(promedio),// compatibilidad con campo estrellas existente
-        // metadata extra guardada en texto si no hay columna dedicada
-        // TODO: agregar columna categorias_json a la tabla reseñas
-      },session.access_token);
+        estrellas:Math.round(promedio),
+      };
+      if(claseVerificada){resenaData.verificada=true;resenaData.clase_realizada_id=claseVerificada.id;}
+      await sb.insertReseña(resenaData,session.access_token);
       if(inscripcion?.clase_finalizada)await sb.updateInscripcion(inscripcion.id,{valorado:true},session.access_token).catch(()=>{});
       await cargar();setTexto("");setCatScores({});
     }catch(e){setErr("Error: "+e.message);}finally{setSaving(false);}
@@ -95,7 +169,10 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
         <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
           <Avatar letra={r.autor_nombre?.[0]||"?"} size={28}/>
           <div style={{flex:1}}>
-            <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
+              {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+            </div>
             <div style={{fontSize:12,color:"#B45309",marginTop:1}}>{"★".repeat(r.estrellas||0)}{"☆".repeat(5-(r.estrellas||0))} <span style={{color:C.muted}}>({r.estrellas?.toFixed?r.estrellas.toFixed(1):r.estrellas}/5)</span></div>
           </div>
           <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
@@ -253,96 +330,360 @@ function AyudanteBuscador({post,session,ayudantesActuales,onUpdate}){
     </div>
   );
 }
-// ─── CHAT CURSO — chat grupal para inscriptos + dueño + ayudantes ─────────────
-function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages}){
-  const [msgs,setMsgs]=useState([]);const [input,setInput]=useState("");const [loading,setLoading]=useState(true);
+// ─── JITSI MODAL ─────────────────────────────────────────────────────────────
+function JitsiModal({roomName,displayName,onClose}){
+  const room=roomName.replace(/[^a-zA-Z0-9]/g,"").slice(0,32)||"luderisclase";
+  const url=`https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(displayName)}"`;
+  const [copied,setCopied]=useState(false);
+  const copiar=()=>{try{navigator.clipboard.writeText(url);}catch{} setCopied(true);setTimeout(()=>setCopied(false),2000);};
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}}>
+      <div style={{background:"#12122a",borderRadius:20,width:"min(480px,96vw)",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,.6)"}}>
+        {/* Header */}
+        <div style={{background:"linear-gradient(135deg,#0F3F7A,#1A6ED8)",padding:"24px 28px",position:"relative"}}>
+          <button onClick={onClose} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(255,255,255,.6)",fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:36}}>📹</span>
+            <div>
+              <div style={{color:"#fff",fontWeight:800,fontSize:18}}>Videollamada grupal</div>
+              <div style={{color:"rgba(255,255,255,.6)",fontSize:12}}>Sala privada de Luderis</div>
+            </div>
+          </div>
+        </div>
+        {/* Body */}
+        <div style={{padding:"24px 28px",display:"flex",flexDirection:"column",gap:16}}>
+          <div style={{background:"#1e1e3a",borderRadius:12,padding:"14px 16px",border:"1px solid rgba(255,255,255,.1)"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.5,marginBottom:6}}>NOMBRE DE LA SALA</div>
+            <div style={{color:"#fff",fontSize:14,fontFamily:"monospace",wordBreak:"break-all"}}>{room}</div>
+          </div>
+          <p style={{color:"rgba(255,255,255,.55)",fontSize:13,margin:0,lineHeight:1.6}}>
+            La videollamada se abre en una nueva pestaña. Podés compartir el link con los participantes.
+          </p>
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:12,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,textDecoration:"none",textAlign:"center",boxShadow:"0 4px 16px rgba(26,110,216,.4)",cursor:"pointer"}}
+            >
+            📹 Abrir videollamada →
+          </a>
+          <button onClick={copiar}
+            style={{background:"none",border:"1px solid rgba(255,255,255,.15)",borderRadius:10,color:copied?"#2EC4A0":"rgba(255,255,255,.5)",padding:"10px",fontSize:13,cursor:"pointer",fontFamily:FONT,transition:"all .15s"}}>
+            {copied?"✓ Link copiado":"Copiar link para compartir"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CHAT CURSO — chat grupal estilo WhatsApp ────────────────────────────────
+const SUPABASE_URL_CHAT=process.env.REACT_APP_SUPABASE_URL||"https://hptdyehzqfpgtrpuydny.supabase.co";
+const ANON_KEY_CHAT=process.env.REACT_APP_SUPABASE_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
+
+function fmtMsgTime(ts){
+  if(!ts)return"";
+  const d=new Date(ts);
+  return d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
+}
+function fmtMsgDate(ts){
+  if(!ts)return"";
+  const d=new Date(ts);
+  const hoy=new Date();
+  const ayer=new Date(hoy);ayer.setDate(ayer.getDate()-1);
+  if(d.toDateString()===hoy.toDateString())return"Hoy";
+  if(d.toDateString()===ayer.toDateString())return"Ayer";
+  return d.toLocaleDateString("es-AR",{day:"numeric",month:"long"});
+}
+
+function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,esMio,esAyudante:soyAyudante}){
+  const [msgs,setMsgs]=useState([]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(true);
+  const [escribiendo,setEscribiendo]=useState([]);// emails escribiendo
+  const [imagenPrevia,setImagenPrevia]=useState(null);
+  const [showJitsi,setShowJitsi]=useState(false);
+  const [resumen,setResumen]=useState(null);const [loadingResumen,setLoadingResumen]=useState(false);
   const miEmail=session.user.email;
-  const bottomRef=useRef(null);const listRef=useRef(null);const didScrollRef=useRef(false);
-  const lastSeenRef=useRef(0);
+  const bottomRef=useRef(null);
+  const didScrollRef=useRef(false);
+  const escribiendoTimer=useRef(null);
+  const fileInputRef=useRef(null);
+
+  const scrollBottom=(smooth=true)=>setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:smooth?"smooth":"auto"}),60);
+
   const cargar=useCallback(async()=>{
     try{
       const grupal=await sb.getMensajesGrupo(post.id,session.access_token).catch(()=>[]);
       const withNames=grupal.map(m=>({...m,de_nombre_display:sb.getDisplayName(m.de_nombre)}));
       setMsgs(prev=>{
-        // Detectar mensajes nuevos vs última vez que se vio el chat
         if(prev.length>0&&withNames.length>prev.length&&onNewMessages){
-          const nuevos=withNames.length-prev.length;
-          onNewMessages(nuevos);
+          onNewMessages(withNames.length-prev.length);
         }
         return withNames;
       });
-      if(!didScrollRef.current&&withNames.length>0){didScrollRef.current=true;setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:"smooth"}),60);}
+      if(!didScrollRef.current&&withNames.length>0){didScrollRef.current=true;scrollBottom(false);}
     }finally{setLoading(false);}
-  },[post.id,session.access_token]);
-  useEffect(()=>{cargar();const t=setInterval(cargar,6000);return()=>clearInterval(t);},[cargar]);
-  const QUICK_ACTIONS=[
-    {label:"¿Cómo me inscribo?",q:"¿Cómo me inscribo a un curso?"},
-    {label:"¿Cómo publico?",q:"¿Cómo publico una clase?"},
-    {label:"¿Cómo verifico mi perfil?",q:"¿Cómo verifico mi perfil?"},
-    {label:"¿Cómo funciona el quiz?",q:"¿Cómo funciona el sistema de exámenes/quizzes?"},
-    {label:"¿Cómo contacto al docente?",q:"¿Cómo contacto a un docente?"},
-    {label:"¿Cómo cambio mi nombre?",q:"¿Cómo cambio mi nombre visible?"},
-  ];
-  const handleQuick=(quickQ)=>{setInput(quickQ);setTimeout(()=>sendMsg(quickQ),50);};
-  const sendMsg=async()=>{if(!input.trim())return;const txt=input.trim();setInput("");
-    const displayNombre=session.user.user_metadata?.display_name||miEmail.split("@")[0];
+  },[post.id,session.access_token,onNewMessages]);
+
+  // Realtime WebSocket + fallback polling
+  useEffect(()=>{
+    cargar();
+    let canal=null;
     try{
-      await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:"__grupo__",texto:txt,leido:true,pub_titulo:post.titulo},session.access_token);
-      // Notificar a todos los inscriptos (excepto al que manda)
+      const ws=new WebSocket(`${SUPABASE_URL_CHAT.replace("https","wss")}/realtime/v1/websocket?apikey=${ANON_KEY_CHAT}&vsn=1.0.0`);
+      canal=ws;
+      ws.onopen=()=>{
+        ws.send(JSON.stringify({topic:`realtime:mensajes_grupo_${post.id}`,event:"phx_join",payload:{},ref:"1"}));
+        ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
+      };
+      ws.onmessage=(e)=>{
+        try{const msg=JSON.parse(e.data);if(msg.event==="INSERT"||msg.payload?.type==="INSERT")cargar();}catch{}
+      };
+      ws.onerror=()=>{ws.close();const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};};
+    }catch{const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};}
+    return()=>{try{canal?.close?.();}catch{}};
+  },[cargar]);
+
+  // Detectar quién está escribiendo via localStorage
+  useEffect(()=>{
+    const check=()=>{
+      try{
+        const key=`cl_typing_grupo_${post.id}`;
+        const data=JSON.parse(localStorage.getItem(key)||"{}");
+        const ahora=Date.now();
+        const activos=Object.entries(data)
+          .filter(([email,ts])=>email!==miEmail&&ahora-ts<3000)
+          .map(([email])=>sb.getDisplayName(email)||email.split("@")[0]);
+        setEscribiendo(activos);
+      }catch{}
+    };
+    const t=setInterval(check,500);
+    return()=>clearInterval(t);
+  },[post.id,miEmail]);
+
+  const emitirEscribiendo=()=>{
+    try{
+      const key=`cl_typing_grupo_${post.id}`;
+      const data=JSON.parse(localStorage.getItem(key)||"{}");
+      data[miEmail]=Date.now();
+      localStorage.setItem(key,JSON.stringify(data));
+    }catch{}
+    clearTimeout(escribiendoTimer.current);
+    escribiendoTimer.current=setTimeout(()=>{
+      try{
+        const key=`cl_typing_grupo_${post.id}`;
+        const data=JSON.parse(localStorage.getItem(key)||"{}");
+        delete data[miEmail];
+        localStorage.setItem(key,JSON.stringify(data));
+      }catch{}
+    },2500);
+  };
+
+  const handleImageSelect=(e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){alert("Solo se permiten imágenes (JPG, PNG, WebP, GIF)");e.target.value="";return;}
+    if(file.size>4*1024*1024){alert("La imagen no puede superar 4MB");return;}
+    const reader=new FileReader();
+    reader.onload=(ev)=>setImagenPrevia(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value="";
+  };
+
+  const sendMsg=async()=>{
+    const txt=input.trim();
+    if(!txt&&!imagenPrevia)return;
+    const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
+    setInput("");setImagenPrevia(null);
+    try{
+      localStorage.removeItem(`cl_typing_grupo_${post.id}`);
+    }catch{}
+    try{
+      await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:"__grupo__",texto:mensajeTexto,leido:true,pub_titulo:post.titulo},session.access_token);
       const inscriptos=await sb.getInscripciones(post.id,session.access_token).catch(()=>[]);
       const todos=[...inscriptos.map(i=>i.alumno_email),post.autor_email].filter(e=>e!==miEmail);
       await Promise.all(todos.map(e=>sb.insertNotificacion({usuario_id:null,alumno_email:e,tipo:"chat_grupal",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));
-      await cargar();setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:"smooth"}),60);
+      await cargar();scrollBottom();
     }catch(e){alert("Error al enviar: "+e.message);}
   };
+
   const esOwner=(email)=>email===post.autor_email;
-  // ayudantes es uuid[] pero los mensajes tienen email — no podemos comparar directo.
-  // Usamos la prop ayudanteEmails (array de emails resueltos) si está disponible,
-  // o caemos a comparar con UUIDs (siempre falso, pero no rompe nada).
   const esAyudante=(email)=>ayudanteEmails.includes(email)||ayudantes.includes(email);
   const getDisplayName=(m)=>m.de_nombre_display||m.de_nombre.split("@")[0];
+
+  // Agrupar mensajes por fecha para separadores
+  const msgsConFecha=msgs.map((m,i)=>{
+    const prev=msgs[i-1];
+    const mismaFecha=prev&&new Date(m.created_at).toDateString()===new Date(prev.created_at).toDateString();
+    return{...m,showDate:!mismaFecha};
+  });
+
+  const jitsiRoom=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
+  const miDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];
+
   return(
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
-      <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
-        <span style={{fontWeight:700,color:C.text,fontSize:14}}>Chat grupal</span>
+    <>
+    {showJitsi&&<JitsiModal roomName={jitsiRoom} displayName={miDisplayName} onClose={()=>setShowJitsi(false)}/>}
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+      {/* Header */}
+      <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,background:C.surface}}>
+        <span style={{fontSize:18}}>💬</span>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,color:C.text,fontSize:14}}>Chat grupal</div>
+          <div style={{fontSize:11,color:C.muted}}>{msgs.length} mensaje{msgs.length!==1?"s":""}</div>
+        </div>
+        {/* Botón resumen IA */}
+        {msgs.length>=5&&<button onClick={async()=>{
+          setLoadingResumen(true);setResumen(null);
+          try{
+            const txt=msgs.slice(-60).filter(m=>!m.texto?.startsWith("[img]")).map(m=>`${m.de_nombre_display||m.de_nombre.split("@")[0]}: ${m.texto}`).join("\n");
+            const r=await sb.callIA("Sos un asistente educativo. Resumí de forma clara y concisa los puntos más importantes de esta conversación grupal de un curso, en español rioplatense. Usá viñetas (•). Máximo 5 puntos.",txt,400,session.access_token);
+            setResumen(r);
+          }catch(e){setResumen("No se pudo generar el resumen: "+e.message);}
+          finally{setLoadingResumen(false);}
+        }} style={{background:"#7B3FBE18",border:"1px solid #7B3FBE33",borderRadius:9,padding:"6px 11px",cursor:"pointer",color:"#7B3FBE",fontSize:11,fontWeight:700,fontFamily:FONT,flexShrink:0}}>
+          {loadingResumen?"…":"✨ Resumir"}
+        </button>}
+        {/* Botón videollamada — solo docente/ayudante */}
+        {(esMio||soyAyudante)&&<button onClick={()=>setShowJitsi(true)}
+          title="Iniciar videollamada grupal"
+          style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:9,padding:"6px 12px",cursor:"pointer",color:"#fff",fontSize:12,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:5,flexShrink:0,transition:"opacity .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
+          onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+          📹 <span>Videollamada</span>
+        </button>}
+        {/* Leyenda de roles */}
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <span style={{fontSize:10,background:"#C85CE015",color:"#C85CE0",borderRadius:20,padding:"2px 7px",border:"1px solid #C85CE030",fontWeight:600}}>Docente</span>
+          <span style={{fontSize:10,background:"#5CA8E015",color:"#5CA8E0",borderRadius:20,padding:"2px 7px",border:"1px solid #5CA8E030",fontWeight:600}}>Ayudante</span>
+        </div>
       </div>
-      <div ref={listRef} style={{height:340,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
-        {loading?<Spinner/>:msgs.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"24px 0"}}>Iniciá la conversación del grupo 👋</div>
-          :msgs.map((m,i)=>{
+
+      {/* Mensajes */}
+      <div style={{height:420,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:2,background:`linear-gradient(${C.bg},${C.bg})`}}>
+        {loading?<div style={{display:"flex",justifyContent:"center",padding:"32px 0"}}><Spinner/></div>
+          :msgs.length===0
+            ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"32px 0",display:"flex",flexDirection:"column",gap:6,alignItems:"center"}}>
+              <span style={{fontSize:32}}>👋</span>
+              ¡Sé el primero en escribir en el grupo!
+            </div>
+          :msgsConFecha.map((m,i)=>{
             const esMiMsg=m.de_nombre===miEmail;
-            const isOwner=esOwner(m.de_nombre);const isAyud=esAyudante(m.de_nombre);
-            const isSpec=isOwner||isAyud;
-            const bgMsg=esMiMsg?C.accent:isOwner?"#C85CE033":isAyud?"#5CA8E033":C.surface;
-            const borderMsg=esMiMsg?"transparent":isOwner?"#C85CE055":isAyud?"#5CA8E055":C.border;
-            const colorMsg=esMiMsg?"#fff":C.text;
-            const nameColor=isOwner?C.purple:isAyud?C.info:C.muted;
-            const roleLabel=isOwner?" · docente":isAyud?" · ayudante":"";
-            return(<div key={i} style={{display:"flex",justifyContent:esMiMsg?"flex-end":"flex-start",gap:6,alignItems:"flex-end"}}>
-              {!esMiMsg&&<Avatar letra={(m.de_nombre||"?")[0]} size={24}/>}
-              <div style={{maxWidth:"75%"}}>
-                {!esMiMsg&&<div style={{fontSize:10,color:nameColor,fontWeight:isSpec?700:500,marginBottom:3}}>
-                  {getDisplayName(m)}{roleLabel}
-                </div>}
-                <div style={{background:bgMsg,color:colorMsg,padding:"8px 12px",borderRadius:esMiMsg?"13px 13px 4px 13px":"13px 13px 13px 4px",fontSize:12,lineHeight:1.5,border:`1px solid ${borderMsg}`}}>
-                  {sanitizeContactInfo(m.texto)}
+            const isOwner=esOwner(m.de_nombre);
+            const isAyud=esAyudante(m.de_nombre);
+            const bgMsg=esMiMsg?"#1A6ED8":isOwner?"#2d1b4e":isAyud?"#1a3a4e":C.surface;
+            const colorMsg=esMiMsg||isOwner||isAyud?"#fff":C.text;
+            const nameColor=isOwner?"#C85CE0":isAyud?"#5CA8E0":C.accent;
+            const roleLabel=isOwner?" · Docente":isAyud?" · Ayudante":"";
+            const isImg=m.texto?.startsWith("[img]");
+            const imgSrc=isImg?m.texto.match(/\[img\]([\s\S]*?)\[\/img\]/)?.[1]:null;
+            const textoPosterImg=isImg?m.texto.replace(/\[img\][\s\S]*?\[\/img\]/,"").trim():"";
+            const prevMsg=i>0?msgsConFecha[i-1]:null;
+            const mismaSerie=prevMsg&&prevMsg.de_nombre===m.de_nombre&&!m.showDate;
+            return(
+              <React.Fragment key={m.id||i}>
+                {/* Separador de fecha */}
+                {m.showDate&&(
+                  <div style={{display:"flex",alignItems:"center",gap:10,margin:"10px 0 6px"}}>
+                    <div style={{flex:1,height:1,background:C.border}}/>
+                    <span style={{fontSize:11,color:C.muted,background:C.card,padding:"2px 10px",borderRadius:20,border:`1px solid ${C.border}`,whiteSpace:"nowrap"}}>{fmtMsgDate(m.created_at)}</span>
+                    <div style={{flex:1,height:1,background:C.border}}/>
+                  </div>
+                )}
+                <div style={{display:"flex",justifyContent:esMiMsg?"flex-end":"flex-start",gap:6,alignItems:"flex-end",marginTop:mismaSerie?2:8}}>
+                  {!esMiMsg&&(
+                    <div style={{width:28,flexShrink:0}}>
+                      {!mismaSerie&&<Avatar letra={(m.de_nombre||"?")[0]} size={28}/>}
+                    </div>
+                  )}
+                  <div style={{maxWidth:"72%"}}>
+                    {!esMiMsg&&!mismaSerie&&(
+                      <div style={{fontSize:11,fontWeight:700,marginBottom:3,display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{color:nameColor}}>{getDisplayName(m)}</span>
+                        {(isOwner||isAyud)&&(
+                          <span style={{fontSize:9,background:isOwner?"#C85CE015":"#5CA8E015",color:isOwner?"#C85CE0":"#5CA8E0",borderRadius:20,padding:"1px 6px",border:`1px solid ${isOwner?"#C85CE030":"#5CA8E030"}`,fontWeight:700}}>
+                            {roleLabel.trim()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div style={{background:bgMsg,color:colorMsg,padding:imgSrc?"6px":undefined,borderRadius:esMiMsg?"13px 4px 13px 13px":"4px 13px 13px 13px",fontSize:13,lineHeight:1.5,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,.08)"}}>
+                      {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")}/>}
+                      {(textoPosterImg||!isImg)&&(
+                        <div style={{padding:"8px 12px",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                          {sanitizeContactInfo(isImg?textoPosterImg:m.texto)}
+                        </div>
+                      )}
+                      {/* Timestamp */}
+                      <div style={{padding:imgSrc?"0 8px 4px":"0 12px 4px",textAlign:"right",fontSize:10,opacity:.65,lineHeight:1}}>
+                        {fmtMsgTime(m.created_at)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>);
+              </React.Fragment>
+            );
           })}
+        {/* Indicador escribiendo */}
+        {escribiendo.length>0&&(
+          <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0 0 34px",fontSize:11,color:C.muted}}>
+            <div style={{display:"flex",gap:3,alignItems:"center"}}>
+              {[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:C.muted,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}
+            </div>
+            {escribiendo.length===1?`${escribiendo[0]} está escribiendo…`:`${escribiendo.join(" y ")} están escribiendo…`}
+          </div>
+        )}
         <div ref={bottomRef}/>
       </div>
-      <div style={{padding:"10px 13px",borderTop:`1px solid ${C.border}`,display:"flex",gap:7}}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}} placeholder="Escribí al grupo..." style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 13px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
-        <button onClick={sendMsg} disabled={!input.trim()} style={{background:input.trim()?C.accent:C.surface,border:`1px solid ${input.trim()?C.accent:C.border}`,borderRadius:"50%",width:34,height:34,cursor:input.trim()?"pointer":"default",fontSize:15,flexShrink:0,transition:"all .15s"}}>↑</button>
+
+      {/* Panel resumen IA */}
+      {(resumen||loadingResumen)&&(
+        <div style={{margin:"0 14px 8px",background:"linear-gradient(135deg,#7B3FBE12,#1A6ED812)",border:"1px solid #7B3FBE33",borderRadius:12,padding:"12px 14px",fontSize:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontWeight:700,color:"#7B3FBE",fontSize:12}}>✨ Resumen IA</span>
+            <button onClick={()=>setResumen(null)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14,lineHeight:1}}>×</button>
+          </div>
+          {loadingResumen?<div style={{color:C.muted,fontSize:12}}>Generando resumen…</div>
+            :<div style={{color:C.text,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{resumen}</div>}
+        </div>
+      )}
+      {/* Preview imagen */}
+      {imagenPrevia&&(
+        <div style={{padding:"6px 13px",display:"flex",alignItems:"center",gap:8,background:C.bg,borderTop:`1px solid ${C.border}`}}>
+          <img src={imagenPrevia} alt="preview" style={{height:48,width:48,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}}/>
+          <div style={{flex:1,fontSize:12,color:C.muted}}>Imagen lista para enviar</div>
+          <button onClick={()=>setImagenPrevia(null)} style={{background:"none",border:"none",color:C.danger,fontSize:18,cursor:"pointer"}}>×</button>
+        </div>
+      )}
+
+      {/* Input */}
+      <div style={{padding:"10px 13px",borderTop:`1px solid ${C.border}`,display:"flex",gap:7,alignItems:"flex-end",background:C.surface}}>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImageSelect}/>
+        <button onClick={()=>fileInputRef.current?.click()}
+          style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 10px",cursor:"pointer",color:C.muted,fontSize:15,flexShrink:0,lineHeight:1,transition:"all .15s"}}
+          title="Enviar imagen"
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
+          📎
+        </button>
+        <textarea
+          value={input}
+          onChange={e=>{setInput(e.target.value);emitirEscribiendo();}}
+          onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
+          placeholder="Escribí al grupo… (Shift+Enter para nueva línea)"
+          rows={1}
+          style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 14px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:100,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
+          onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}
+        />
+        <button onClick={sendMsg} disabled={!input.trim()&&!imagenPrevia}
+          style={{background:C.accent,border:"none",borderRadius:"50%",width:36,height:36,cursor:(input.trim()||imagenPrevia)?"pointer":"default",fontSize:16,flexShrink:0,opacity:(input.trim()||imagenPrevia)?1:0.4,transition:"all .15s",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>↑</button>
       </div>
     </div>
+    </>
   );
 }
 
 // ─── CERRAR INSCRIPCIONES MODAL ───────────────────────────────────────────────
 function CerrarInscModal({post,session,onClose,onCerrado}){
   const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
-  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}finally{setSaving(false);}};
+  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}catch(e){alert("Error: "+e.message);}finally{setSaving(false);}};
   return(<Modal onClose={onClose} width="min(400px,95vw)">
     <div style={{padding:"20px 22px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
@@ -692,18 +1033,11 @@ function EntregaTexto({texto}){
 
 // ─── QUIZ VIEWER (para alumnos y docentes) ─────────────────────────────────────
 function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
-  if(!item?.id)return<div style={{fontSize:12,color:C.muted,padding:"8px 0"}}>⚠ Quiz guardado — recargá la página para verlo.</div>;
+  // Parsear datos del quiz (antes de hooks para inicializar estado)
   let quizData={};
-  try{quizData=JSON.parse(item.texto||"{}"); }catch{}
+  try{quizData=JSON.parse(item?.texto||"{}"); }catch{}
   const {tipo_quiz,preguntas:_pregs,consigna,fecha_inicio,fecha_cierre}=quizData;
   const preguntas=Array.isArray(_pregs)?_pregs:[];
-
-  const ahora=new Date();
-  const inicio=fecha_inicio?new Date(fecha_inicio):null;
-  const cierre=fecha_cierre?new Date(fecha_cierre):null;
-  const noEmpezado=inicio&&ahora<inicio;
-  const cerrado=cierre&&ahora>cierre;
-  const abierto=!noEmpezado&&!cerrado;
 
   // Hooks siempre primero — sin returns condicionales antes de ellos
   const [miEntrega,setMiEntrega]=useState(null);
@@ -719,6 +1053,7 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
   const [savingNota,setSavingNota]=useState(null);
 
   useEffect(()=>{
+    if(!item?.id)return;
     if(esMio||esAyudante){
       setLoadingEntregas(true);
       sb.getQuizEntregas(item.id,session.access_token)
@@ -737,7 +1072,17 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
         .catch(()=>setMiEntrega(null))
         .finally(()=>setLoadingEntrega(false));
     }
-  },[item.id,session.user.email,esMio,esAyudante]);// eslint-disable-line
+  },[item?.id,session.user.email,esMio,esAyudante]);// eslint-disable-line
+
+  // Early return después de hooks
+  if(!item?.id)return<div style={{fontSize:12,color:C.muted,padding:"8px 0"}}>⚠ Quiz guardado — recargá la página para verlo.</div>;
+
+  const ahora=new Date();
+  const inicio=fecha_inicio?new Date(fecha_inicio):null;
+  const cierre=fecha_cierre?new Date(fecha_cierre):null;
+  const noEmpezado=inicio&&ahora<inicio;
+  const cerrado=cierre&&ahora>cierre;
+  const abierto=!noEmpezado&&!cerrado;
 
   const enviarMultiple=async()=>{
     if(respuestas.some(r=>r===null))return;
@@ -753,7 +1098,9 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
     }catch(e){alert(e.message);}finally{setEnviando(false);}
   };
 
+  const ALLOWED_ENTREGA_TYPES=["application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","text/plain","image/jpeg","image/png","application/zip","application/x-zip-compressed"];
   const leerArchivo=(file)=>new Promise((res,rej)=>{
+    if(!ALLOWED_ENTREGA_TYPES.includes(file.type)){rej(new Error("Tipo de archivo no permitido. Usá PDF, DOC, TXT, imagen o ZIP."));return;}
     if(file.size>5*1024*1024){rej(new Error("El archivo no puede superar 5MB"));return;}
     const r=new FileReader();r.onload=e=>res({name:file.name,size:file.size,base64:e.target.result});r.onerror=rej;r.readAsDataURL(file);
   });
@@ -1373,17 +1720,538 @@ function AgendaPage({session,onOpenCurso}){
   );
 }
 
-// ─── FORO DEL CURSO ───────────────────────────────────────────────────────────
+// ─── NOTAS PRIVADAS ──────────────────────────────────────────────────────────
+// ─── PANEL DE PROGRESO DOCENTE ───────────────────────────────────────────────
+function ProgresoCurso({post,session}){
+  const [inscriptos,setInscriptos]=useState([]);
+  const [quizEntregas,setQuizEntregas]=useState([]);// flat list
+  const [evalEntregas,setEvalEntregas]=useState([]);
+  const [contenido,setContenido]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [busqueda,setBusqueda]=useState("");
+  const [ordenar,setOrdenar]=useState("nombre");// "nombre"|"quiz"|"eval"|"fecha"
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const [ins,cont,evals]=await Promise.all([
+          sb.getInscripciones(post.id,session.access_token),
+          sb.getContenido(post.id,session.access_token),
+          sb.getEvaluaciones(post.id,session.access_token),
+        ]);
+        setInscriptos(ins||[]);
+        setContenido(cont||[]);
+        // Obtener quizzes (items de contenido tipo quiz) y todas sus entregas
+        const quizItems=(cont||[]).filter(c=>c.tipo==="quiz");
+        const evalIds=(evals||[]).map(e=>e.id);
+        const [qEntregas,evEntregas]=await Promise.all([
+          Promise.all(quizItems.map(q=>sb.getQuizEntregas(q.id,session.access_token).then(r=>r||[]))).then(rs=>rs.flat()),
+          Promise.all(evalIds.map(eid=>sb.getEvaluacionEntregas(eid,session.access_token).then(r=>r||[]))).then(rs=>rs.flat()),
+        ]);
+        setQuizEntregas(qEntregas);
+        setEvalEntregas(evEntregas);
+      }catch(e){console.error(e);}
+      setLoading(false);
+    })();
+  },[post.id,session.access_token]);
+
+  if(loading)return <div style={{padding:"40px",textAlign:"center"}}><Spinner/></div>;
+
+  // Construir mapa por alumno
+  const totalQuizzes=contenido.filter(c=>c.tipo==="quiz").length;
+  const alumnosData=inscriptos.map(ins=>{
+    const email=ins.alumno_email;
+    const nombre=ins.alumno_nombre||email.split("@")[0];
+    const qHechos=quizEntregas.filter(q=>q.alumno_email===email);
+    const qPct=totalQuizzes>0?Math.round((qHechos.length/totalQuizzes)*100):null;
+    const qPromedio=qHechos.length>0?Math.round(qHechos.reduce((s,q)=>s+(q.puntaje||0),0)/qHechos.length):null;
+    const eHechas=evalEntregas.filter(e=>e.alumno_email===email);
+    const eCalif=eHechas.filter(e=>e.calificacion!=null);
+    const ePromedio=eCalif.length>0?Math.round(eCalif.reduce((s,e)=>s+(e.calificacion||0),0)/eCalif.length):null;
+    const ultimaFecha=ins.created_at?new Date(ins.created_at):null;
+    return{email,nombre,qHechos:qHechos.length,qPct,qPromedio,eHechas:eHechas.length,eCalif:eCalif.length,ePromedio,ultimaFecha,inscripcion:ins};
+  });
+
+  const filtrados=alumnosData
+    .filter(a=>!busqueda||a.nombre.toLowerCase().includes(busqueda.toLowerCase())||a.email.toLowerCase().includes(busqueda.toLowerCase()))
+    .sort((a,b)=>{
+      if(ordenar==="nombre")return a.nombre.localeCompare(b.nombre);
+      if(ordenar==="quiz")return(b.qPct||0)-(a.qPct||0);
+      if(ordenar==="eval")return(b.ePromedio||0)-(a.ePromedio||0);
+      if(ordenar==="fecha")return(b.ultimaFecha||0)-(a.ultimaFecha||0);
+      return 0;
+    });
+
+  const totalQuizzesTotal=totalQuizzes;
+  const avgQuizPct=alumnosData.length>0&&totalQuizzesTotal>0?Math.round(alumnosData.reduce((s,a)=>s+(a.qPct||0),0)/alumnosData.length):null;
+
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
+      {/* Header */}
+      <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,background:C.surface}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <span style={{fontSize:20}}>📊</span>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,color:C.text,fontSize:14}}>Panel de progreso</div>
+            <div style={{fontSize:11,color:C.muted}}>{inscriptos.length} alumnos inscriptos</div>
+          </div>
+        </div>
+        {/* Stats resumen */}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+          {[
+            {label:"Inscriptos",value:inscriptos.length,icon:"👥"},
+            {label:"Quizzes totales",value:totalQuizzesTotal,icon:"📝"},
+            {label:"Promedio quiz",value:avgQuizPct!=null?`${avgQuizPct}%`:"—",icon:"📈"},
+          ].map(s=>(
+            <div key={s.label} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 13px",flex:1,minWidth:90}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:2}}>{s.icon} {s.label}</div>
+              <div style={{fontWeight:700,color:C.text,fontSize:16}}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+        {/* Buscar + ordenar */}
+        <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar alumno…"
+            style={{flex:1,minWidth:120,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 11px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none"}}/>
+          <select value={ordenar} onChange={e=>setOrdenar(e.target.value)}
+            style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none",cursor:"pointer"}}>
+            <option value="nombre">Ordenar: Nombre</option>
+            <option value="quiz">Ordenar: % Quiz</option>
+            <option value="eval">Ordenar: Nota eval</option>
+            <option value="fecha">Ordenar: Inscripción</option>
+          </select>
+        </div>
+      </div>
+      {/* Lista alumnos */}
+      <div style={{maxHeight:480,overflowY:"auto"}}>
+        {filtrados.length===0?(
+          <div style={{padding:"32px",textAlign:"center",color:C.muted,fontSize:13}}>{inscriptos.length===0?"Nadie inscripto aún.":"No hay resultados."}</div>
+        ):filtrados.map((a,i)=>(
+          <div key={a.email} style={{padding:"12px 18px",borderBottom:i<filtrados.length-1?`1px solid ${C.border}`:"none",display:"flex",gap:12,alignItems:"center"}}>
+            <Avatar letra={a.nombre[0]} size={34}/>
+            <div style={{flex:1,overflow:"hidden",minWidth:0}}>
+              <div style={{fontWeight:600,color:C.text,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.nombre}</div>
+              <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.email}</div>
+            </div>
+            {/* Métricas */}
+            <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center",overflowX:"auto"}}>
+              {totalQuizzesTotal>0&&(
+                <div style={{textAlign:"center",minWidth:54}}>
+                  <div style={{fontSize:10,color:C.muted,marginBottom:2}}>Quiz</div>
+                  <div style={{fontWeight:700,color:a.qPct>=70?C.success:a.qPct>=40?C.accent:C.muted,fontSize:13}}>{a.qPct!=null?`${a.qPct}%`:"—"}</div>
+                  {totalQuizzesTotal>0&&<div style={{width:50,height:3,background:C.border,borderRadius:2,marginTop:2}}><div style={{height:"100%",width:`${a.qPct||0}%`,background:a.qPct>=70?C.success:C.accent,borderRadius:2}}/></div>}
+                </div>
+              )}
+              {a.eHechas>0&&(
+                <div style={{textAlign:"center",minWidth:54}}>
+                  <div style={{fontSize:10,color:C.muted,marginBottom:2}}>Nota</div>
+                  <div style={{fontWeight:700,color:a.ePromedio>=6?C.success:C.danger,fontSize:13}}>{a.ePromedio!=null?a.ePromedio:"Pend."}</div>
+                </div>
+              )}
+              <div style={{textAlign:"center",minWidth:40}}>
+                <div style={{fontSize:10,color:C.muted,marginBottom:2}}>Insc.</div>
+                <div style={{fontSize:11,color:C.muted}}>{a.ultimaFecha?fmtRel(a.ultimaFecha):"—"}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── FLASHCARDS CON IA ───────────────────────────────────────────────────────
+
+// Shared deck key in contenido_curso: tipo="flashcards", texto=JSON
+const FC_PRIV_KEY=(postId,email)=>`cl_fc_priv_${postId}_${email}`;
+
+function FlashcardsDeck({cards,onDelete,titulo}){
+  const [idx,setIdx]=useState(0);const [flipped,setFlipped]=useState(false);const [done,setDone]=useState([]);
+  if(!cards||cards.length===0)return null;
+  const remaining=cards.filter((_,i)=>!done.includes(i));
+  if(remaining.length===0)return(
+    <div style={{textAlign:"center",padding:"32px 0"}}>
+      <div style={{fontSize:40,marginBottom:10}}>🎉</div>
+      <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:6}}>¡Completaste todas!</div>
+      <button onClick={()=>{setDone([]);setIdx(0);setFlipped(false);}} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 22px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT}}>Volver a empezar</button>
+    </div>
+  );
+  const realIdx=cards.indexOf(remaining[idx%remaining.length]);
+  const card=cards[realIdx];
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,padding:"10px 0"}}>
+      <style>{`
+        .fc-scene{width:100%;max-width:min(460px,100%);height:clamp(160px,45vw,210px);perspective:900px;cursor:pointer;}
+        .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);}
+        .fc-card.flipped{transform:rotateY(180deg);}
+        .fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;text-align:center;box-shadow:0 4px 22px rgba(0,0,0,.08);}
+        .fc-front{background:var(--fc-surface);border:2px solid var(--fc-border);}
+        .fc-back{background:var(--fc-accent-dim);border:2px solid var(--fc-accent);transform:rotateY(180deg);}
+      `}</style>
+      <div style={{"--fc-surface":C.surface,"--fc-border":C.border,"--fc-accent-dim":C.accentDim,"--fc-accent":C.accent}} className="fc-scene" onClick={()=>setFlipped(f=>!f)}>
+        <div className={`fc-card${flipped?" flipped":""}`}>
+          <div className="fc-face fc-front">
+            <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.8,marginBottom:10,textTransform:"uppercase"}}>Pregunta · tap para voltear</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,lineHeight:1.6}}>{card.pregunta}</div>
+          </div>
+          <div className="fc-face fc-back">
+            <div style={{fontSize:10,color:C.accent,fontWeight:700,letterSpacing:.8,marginBottom:10,textTransform:"uppercase"}}>Respuesta</div>
+            <div style={{fontSize:14,color:C.text,fontWeight:400,lineHeight:1.65}}>{card.respuesta}</div>
+          </div>
+        </div>
+      </div>
+      {/* Progreso */}
+      <div style={{fontSize:11,color:C.muted}}>{done.length}/{cards.length} completadas · {remaining.length} restantes</div>
+      <div style={{width:"100%",maxWidth:460,height:4,background:C.border,borderRadius:2}}>
+        <div style={{height:"100%",width:`${(done.length/cards.length)*100}%`,background:C.accent,borderRadius:2,transition:"width .5s"}}/>
+      </div>
+      {/* Botones */}
+      {flipped&&(
+        <div style={{display:"flex",gap:10,marginTop:4}}>
+          <button onClick={()=>{setDone(d=>[...d,realIdx]);setFlipped(false);if(idx>=remaining.length-1)setIdx(0);else setIdx(i=>i);}}
+            style={{background:"#2EC4A018",border:"1px solid #2EC4A055",borderRadius:10,color:"#0F6E56",padding:"9px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✓ La sabía</button>
+          <button onClick={()=>{setFlipped(false);setTimeout(()=>setIdx(i=>(i+1)%remaining.length),200);}}
+            style={{background:"#E53E3E12",border:"1px solid #E53E3E44",borderRadius:10,color:C.danger,padding:"9px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✗ Repasar</button>
+        </div>
+      )}
+      {!flipped&&(
+        <button onClick={()=>{setFlipped(false);setTimeout(()=>setIdx(i=>(i+1)%remaining.length),200);}}
+          style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"9px 20px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Saltear →</button>
+      )}
+      {onDelete&&<button onClick={()=>onDelete(realIdx)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,marginTop:-4,fontFamily:FONT}}>🗑 Eliminar esta tarjeta</button>}
+    </div>
+  );
+}
+
+// ─── EDITOR DE MAZO (para crear/editar antes de guardar) ─────────────────────
+function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,post,isShared}){
+  const [titulo,setTitulo]=useState(tituloProp||"");
+  const [cards,setCards]=useState(cardsProp||[{pregunta:"",respuesta:""}]);
+  const [generando,setGenerando]=useState(false);
+  const [tema,setTema]=useState("");
+  const [guardando,setGuardando]=useState(false);
+
+  const updateCard=(i,field,val)=>{const c=[...cards];c[i]={...c[i],[field]:val};setCards(c);};
+  const addCard=()=>setCards(c=>[...c,{pregunta:"",respuesta:""}]);
+  const removeCard=(i)=>{if(cards.length===1)return;const c=[...cards];c.splice(i,1);setCards(c);};
+
+  const generarConIA=async()=>{
+    const contexto=tema.trim()||post.titulo;
+    setGenerando(true);
+    try{
+      const prompt=`Generá exactamente 8 flashcards de estudio sobre "${contexto}" para el curso "${post.titulo}". Devolvé SOLO un array JSON con objetos {pregunta,respuesta}. Sin texto extra. Máximo 120 chars por campo. Español rioplatense.`;
+      const r=await sb.callIA("Sos un experto en flashcards educativas.",prompt,600,session.access_token);
+      const match=r.match(/\[[\s\S]*\]/);
+      if(!match)throw new Error("IA no devolvió JSON válido");
+      const nuevas=JSON.parse(match[0]);
+      if(!Array.isArray(nuevas)||!nuevas[0]?.pregunta)throw new Error("Formato incorrecto");
+      // NO guardar automáticamente — mostrar para editar
+      setCards(prev=>{const base=prev.filter(c=>c.pregunta.trim()||c.respuesta.trim());return[...base,...nuevas.slice(0,8)];});
+      setTema("");
+      toast(`✨ ${nuevas.length} tarjetas generadas — revisalas antes de guardar`,"info",4000);
+    }catch(e){toast("Error IA: "+e.message,"error");}
+    setGenerando(false);
+  };
+
+  const handleSave=async()=>{
+    const validas=cards.filter(c=>c.pregunta.trim()&&c.respuesta.trim());
+    if(!validas.length){toast("Agregá al menos una tarjeta completa","error");return;}
+    if(!titulo.trim()){toast("Ponele un nombre al mazo","error");return;}
+    setGuardando(true);
+    await onSave(titulo.trim(),validas);
+    setGuardando(false);
+  };
+
+  const iS={background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none",boxSizing:"border-box"};
+
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
+      <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:18}}>{isShared?"📢":"🃏"}</span>
+        <div style={{flex:1,fontWeight:700,color:C.text,fontSize:14}}>{isShared?"Crear mazo compartido":"Crear mazo personal"}</div>
+        <button onClick={onCancel} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer"}}>×</button>
+      </div>
+      <div style={{padding:"16px 18px",display:"flex",flexDirection:"column",gap:14}}>
+        {/* Nombre del mazo */}
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:5}}>NOMBRE DEL MAZO</div>
+          <input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Ej: Derivadas, Revolución Francesa…"
+            style={{...iS,width:"100%"}}/>
+        </div>
+
+        {/* Generar con IA */}
+        <div style={{background:"#7B3FBE0A",border:"1px solid #7B3FBE25",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{fontWeight:700,color:"#7B3FBE",fontSize:12,marginBottom:8}}>✨ Generar con IA (podés editar después)</div>
+          <div style={{display:"flex",gap:7}}>
+            <input value={tema} onChange={e=>setTema(e.target.value)} placeholder={`Tema (ej: "fotosíntesis")`}
+              style={{...iS,flex:1}}
+              onKeyDown={e=>e.key==="Enter"&&!generando&&generarConIA()}/>
+            <button onClick={generarConIA} disabled={generando}
+              style={{background:"#7B3FBE",border:"none",borderRadius:8,color:"#fff",padding:"7px 14px",cursor:"pointer",fontWeight:700,fontSize:11,fontFamily:FONT,opacity:generando?.6:1,flexShrink:0}}>
+              {generando?"…":"✨ Generar"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tarjetas */}
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>TARJETAS ({cards.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:360,overflowY:"auto"}}>
+            {cards.map((c,i)=>(
+              <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",display:"flex",gap:8,alignItems:"flex-start"}}>
+                <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
+                  <input value={c.pregunta} onChange={e=>updateCard(i,"pregunta",e.target.value)}
+                    placeholder="Pregunta" style={{...iS,width:"100%",borderColor:c.pregunta.trim()?"":C.danger+"66"}}/>
+                  <input value={c.respuesta} onChange={e=>updateCard(i,"respuesta",e.target.value)}
+                    placeholder="Respuesta" style={{...iS,width:"100%",borderColor:c.respuesta.trim()?"":C.danger+"66"}}/>
+                </div>
+                <button onClick={()=>removeCard(i)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,flexShrink:0,paddingTop:2}} title="Eliminar">×</button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addCard} style={{marginTop:8,background:"none",border:`1px dashed ${C.border}`,borderRadius:9,color:C.muted,padding:"7px",cursor:"pointer",fontSize:12,fontFamily:FONT,width:"100%"}}>+ Agregar tarjeta</button>
+        </div>
+
+        {/* Guardar */}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={handleSave} disabled={guardando}
+            style={{flex:1,background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"10px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT,opacity:guardando?.6:1}}>
+            {guardando?"Guardando…":"💾 Guardar mazo"}
+          </button>
+          <button onClick={onCancel} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"10px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Flashcards({post,session,esMio,esAyudante}){
+  const esStaff=esMio||esAyudante;
+  const miEmail=session.user.email;
+  const {confirm:confirmFC,confirmEl:confirmElFC}=useConfirm();
+  const privKey=FC_PRIV_KEY(post.id,miEmail);
+
+  // Mazo privado (localStorage)
+  const [privCards,setPrivCards]=useState(()=>{try{return JSON.parse(localStorage.getItem(privKey)||"[]");}catch{return[];}});
+  const savePriv=(c)=>{setPrivCards(c);try{localStorage.setItem(privKey,JSON.stringify(c));}catch{}};
+
+  // Mazos compartidos (contenido_curso con tipo="flashcards")
+  const [sharedDecks,setSharedDecks]=useState([]);
+  const [loadingDecks,setLoadingDecks]=useState(true);
+
+  // Vista activa: "lista"|"practica-priv"|"practica-shared-{id}"|"crear-priv"|"crear-shared"|"editar-shared-{id}"
+  const [vista,setVista]=useState("lista");
+  const [editingDeck,setEditingDeck]=useState(null);// {id,titulo,cards}
+
+  useEffect(()=>{
+    sb.getContenido(post.id,session.access_token)
+      .then(items=>{
+        const fc=(items||[]).filter(x=>x.tipo==="flashcards");
+        setSharedDecks(fc.map(x=>({id:x.id,titulo:x.titulo,cards:JSON.parse(x.texto||"[]")})));
+      })
+      .catch(()=>{})
+      .finally(()=>setLoadingDecks(false));
+  },[post.id,session.access_token]);
+
+  const guardarPriv=(titulo,cards)=>{
+    savePriv(cards);// título no aplica para el mazo privado único
+    setVista("lista");toast("Mazo personal guardado ✓","success");
+  };
+
+  const guardarShared=async(titulo,cards)=>{
+    if(editingDeck){
+      // Editar existente
+      await sb.updateContenido(editingDeck.id,{titulo,texto:JSON.stringify(cards)},session.access_token);
+      setSharedDecks(prev=>prev.map(d=>d.id===editingDeck.id?{...d,titulo,cards}:d));
+      toast("Mazo actualizado ✓","success");
+    }else{
+      // Crear nuevo
+      const r=await sb.insertContenido({publicacion_id:post.id,tipo:"flashcards",titulo,texto:JSON.stringify(cards),orden:999},session.access_token);
+      const nuevo=r?.[0];if(nuevo)setSharedDecks(prev=>[...prev,{id:nuevo.id,titulo,cards}]);
+      toast("Mazo compartido creado ✓","success");
+    }
+    setEditingDeck(null);setVista("lista");
+  };
+
+  const eliminarShared=async(id)=>{
+    if(!await confirmFC({msg:"¿Eliminar este mazo compartido?",confirmLabel:"Eliminar",danger:true}))return;
+    await sb.deleteContenido(id,session.access_token).catch(()=>{});
+    setSharedDecks(prev=>prev.filter(d=>d.id!==id));
+  };
+
+  // ── Práctica privada
+  if(vista==="practica-priv")return(
+    <div>
+      <button onClick={()=>setVista("lista")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,marginBottom:10,fontWeight:700}}>← Volver</button>
+      <FlashcardsDeck cards={privCards} titulo="Mi mazo personal" onDelete={i=>{const c=[...privCards];c.splice(i,1);savePriv(c);}}/>
+    </div>
+  );
+
+  // ── Práctica de mazo compartido
+  if(vista.startsWith("practica-shared-")){
+    const id=vista.replace("practica-shared-","");
+    const deck=sharedDecks.find(d=>d.id===id);
+    if(!deck)return null;
+    return(
+      <div>
+        <button onClick={()=>setVista("lista")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,marginBottom:10,fontWeight:700}}>← Volver</button>
+        <FlashcardsDeck cards={deck.cards} titulo={deck.titulo}/>
+      </div>
+    );
+  }
+
+  // ── Crear mazo privado
+  if(vista==="crear-priv")return(
+    <DeckEditor titulo="Mi mazo personal" cards={privCards.length?privCards:[{pregunta:"",respuesta:""}]}
+      onSave={guardarPriv} onCancel={()=>setVista("lista")} session={session} post={post} isShared={false}/>
+  );
+
+  // ── Crear/editar mazo compartido
+  if(vista==="crear-shared"||vista==="editar-shared")return(
+    <DeckEditor titulo={editingDeck?.titulo||""} cards={editingDeck?.cards||[{pregunta:"",respuesta:""}]}
+      onSave={guardarShared} onCancel={()=>{setEditingDeck(null);setVista("lista");}} session={session} post={post} isShared={true}/>
+  );
+
+  // ── Lista de mazos
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {confirmElFC}
+      {/* Mazos del docente */}
+      {loadingDecks?<Spinner small/>:(sharedDecks.length>0||esStaff)&&(
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.muted}}>📢 MAZOS DEL DOCENTE</div>
+            {esStaff&&<button onClick={()=>{setEditingDeck(null);setVista("crear-shared");}}
+              style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>
+              + Crear mazo
+            </button>}
+          </div>
+          {sharedDecks.length===0?(
+            <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
+              Todavía no hay mazos compartidos.{esStaff?" Creá uno para la clase.":""}
+            </div>
+          ):sharedDecks.map(deck=>(
+            <div key={deck.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+              <span style={{fontSize:20}}>🃏</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:13}}>{deck.titulo}</div>
+                <div style={{fontSize:11,color:C.muted}}>{deck.cards.length} tarjetas</div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>setVista(`practica-shared-${deck.id}`)}
+                  style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 13px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>
+                  ▶ Practicar
+                </button>
+                {esStaff&&<>
+                  <button onClick={()=>{setEditingDeck(deck);setVista("editar-shared");}}
+                    style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>✏</button>
+                  <button onClick={()=>eliminarShared(deck.id)}
+                    style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.danger,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>🗑</button>
+                </>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mazo privado del alumno */}
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted}}>🔒 MI MAZO PERSONAL</div>
+          <button onClick={()=>setVista("crear-priv")}
+            style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
+            {privCards.length?"✏ Editar":"+ Crear"}
+          </button>
+        </div>
+        {privCards.length===0?(
+          <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
+            Creá tu propio mazo privado para repasar.
+          </div>
+        ):(
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:20}}>🔒</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,color:C.text,fontSize:13}}>Mi mazo personal</div>
+              <div style={{fontSize:11,color:C.muted}}>{privCards.length} tarjetas · solo vos lo ves</div>
+            </div>
+            <button onClick={()=>setVista("practica-priv")}
+              style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 13px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>
+              ▶ Practicar
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NotasPrivadas({storageKey,session,post}){
+  const [nota,setNota]=useState(()=>{try{return localStorage.getItem(storageKey)||"";}catch{return"";}});
+  const [saved,setSaved]=useState(true);
+  const [expandiendoIA,setExpandiendoIA]=useState(false);
+  const timerRef=useRef(null);
+
+  const onChange=(v)=>{
+    setNota(v);setSaved(false);
+    clearTimeout(timerRef.current);
+    timerRef.current=setTimeout(()=>{
+      try{localStorage.setItem(storageKey,v);setSaved(true);}catch{}
+    },800);
+  };
+
+  const expandirConIA=async()=>{
+    if(!nota.trim())return;
+    setExpandiendoIA(true);
+    try{
+      const r=await sb.callIA(
+        `Sos un asistente educativo. El alumno tomó las siguientes notas del curso "${post.titulo}". Expandilas, completalas y organizalas mejor manteniendo el estilo personal. Conservá el contenido original y agregá contexto útil. Usá español rioplatense.`,
+        nota,600,session.access_token
+      );
+      onChange(nota+"\n\n---\n✨ Expansión IA:\n"+r);
+    }catch(e){alert("Error IA: "+e.message);}finally{setExpandiendoIA(false);}
+  };
+
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
+      <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:18}}>📝</span>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,color:C.text,fontSize:14}}>Mis notas</div>
+          <div style={{fontSize:11,color:C.muted}}>Privadas · solo vos las ves</div>
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <span style={{fontSize:10,color:saved?C.success:C.muted}}>{saved?"✓ Guardado":"Guardando…"}</span>
+          <button onClick={expandirConIA} disabled={expandiendoIA||!nota.trim()}
+            style={{background:"#7B3FBE18",border:"1px solid #7B3FBE33",borderRadius:8,color:"#7B3FBE",padding:"5px 10px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT,opacity:!nota.trim()?.5:1}}>
+            {expandiendoIA?"…":"✨ Expandir con IA"}
+          </button>
+        </div>
+      </div>
+      <textarea
+        value={nota}
+        onChange={e=>onChange(e.target.value)}
+        placeholder={`Tomá notas sobre "${post.titulo}"…\n\nSolo vos podés verlas. Guardado automático.`}
+        style={{width:"100%",minHeight:380,background:C.bg,border:"none",padding:"16px 18px",color:C.text,fontSize:13,fontFamily:FONT,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.7}}
+      />
+    </div>
+  );
+}
+
+// ─── FORO DEL CURSO (incluye Q&A) ────────────────────────────────────────────
 function ForoCurso({post,session,esMio,esAyudante}){
   const [posts,setPosts]=useState([]);
   const [loading,setLoading]=useState(true);
   const [texto,setTexto]=useState("");
+  const [tipoNuevo,setTipoNuevo]=useState("disc");// "disc"|"qa"
+  const [filtro,setFiltro]=useState("todos");// "todos"|"qa"|"disc"
   const [enviando,setEnviando]=useState(false);
   const [expandedPost,setExpandedPost]=useState(null);
-  const [respuestas,setRespuestas]=useState({});// {postId: [...]}
-  const [respuestaTexto,setRespuestaTexto]=useState({});// {postId: texto}
+  const [respuestas,setRespuestas]=useState({});
+  const [respuestaTexto,setRespuestaTexto]=useState({});
+  const [generandoIA,setGenerandoIA]=useState(null);
   const miEmail=session.user.email;
-  const miNombre=session.user.user_metadata?.display_name||miEmail.split("@")[0];
+  const miNombre=sb.getDisplayName(miEmail)||miEmail.split("@")[0];
+  const esStaff=esMio||esAyudante;
 
   useEffect(()=>{
     sb.getForoPosts(post.id,session.access_token)
@@ -1395,24 +2263,18 @@ function ForoCurso({post,session,esMio,esAyudante}){
   const enviarPost=async()=>{
     if(!texto.trim())return;
     setEnviando(true);
+    const prefijo=tipoNuevo==="qa"?"[qa] ":"";
     try{
-      const r=await sb.insertForoPost({
-        publicacion_id:post.id,
-        autor_email:miEmail,
-        autor_nombre:miNombre,
-        texto:texto.trim(),
-      },session.access_token);
+      const r=await sb.insertForoPost({publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:prefijo+texto.trim()},session.access_token);
       setPosts(prev=>[...prev,...(r||[])]);
       setTexto("");
-    }catch(e){
-      // Fallback local si tabla no existe
-      const fakePost={id:"local_"+Date.now(),publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:texto.trim(),created_at:new Date().toISOString()};
-      setPosts(prev=>[...prev,fakePost]);
-      setTexto("");
+    }catch{
+      const fake={id:"local_"+Date.now(),publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:prefijo+texto.trim(),created_at:new Date().toISOString()};
+      setPosts(prev=>[...prev,fake]);setTexto("");
     }finally{setEnviando(false);}
   };
 
-  const cargarRespuestas=async(postId)=>{
+  const cargarResps=async(postId)=>{
     if(respuestas[postId])return;
     const r=await sb.getForoRespuestas(postId,session.access_token).catch(()=>[]);
     setRespuestas(prev=>({...prev,[postId]:r||[]}));
@@ -1420,76 +2282,114 @@ function ForoCurso({post,session,esMio,esAyudante}){
 
   const togglePost=async(postId)=>{
     if(expandedPost===postId){setExpandedPost(null);return;}
-    setExpandedPost(postId);
-    await cargarRespuestas(postId);
+    setExpandedPost(postId);await cargarResps(postId);
   };
 
   const enviarRespuesta=async(postId)=>{
-    const txt=(respuestaTexto[postId]||"").trim();
-    if(!txt)return;
+    const txt=(respuestaTexto[postId]||"").trim();if(!txt)return;
     try{
-      const r=await sb.insertForoRespuesta({
-        foro_post_id:postId,
-        publicacion_id:post.id,
-        autor_email:miEmail,
-        autor_nombre:miNombre,
-        texto:txt,
-      },session.access_token);
+      const r=await sb.insertForoRespuesta({foro_post_id:postId,publicacion_id:post.id,autor_email:miEmail,autor_nombre:miNombre,texto:txt},session.access_token);
       setRespuestas(prev=>({...prev,[postId]:[...(prev[postId]||[]),...(r||[{id:"local_"+Date.now(),autor_email:miEmail,autor_nombre:miNombre,texto:txt,created_at:new Date().toISOString()}])]}));
       setRespuestaTexto(prev=>({...prev,[postId]:""}));
     }catch{
-      const fake={id:"local_"+Date.now(),autor_email:miEmail,autor_nombre:miNombre,texto:txt,created_at:new Date().toISOString()};
-      setRespuestas(prev=>({...prev,[postId]:[...(prev[postId]||[]),fake]}));
+      setRespuestas(prev=>({...prev,[postId]:[...(prev[postId]||[]),{id:"local_"+Date.now(),autor_email:miEmail,autor_nombre:miNombre,texto:txt,created_at:new Date().toISOString()}]}));
       setRespuestaTexto(prev=>({...prev,[postId]:""}));
     }
   };
+
+  const sugerirConIA=async(postId,textoPregunta)=>{
+    setGenerandoIA(postId);
+    try{
+      const r=await sb.callIA(
+        `Sos docente del curso "${post.titulo}". Respondé la siguiente pregunta de un alumno de forma clara, concisa y educativa. Usá español rioplatense.`,
+        textoPregunta,400,session.access_token
+      );
+      setRespuestaTexto(prev=>({...prev,[postId]:r}));
+    }catch(e){toast("Error IA: "+e.message,"error");}
+    setGenerandoIA(null);
+  };
+
+  const postsFiltrados=posts.filter(p=>{
+    if(filtro==="qa")return p.texto?.startsWith("[qa]");
+    if(filtro==="disc")return!p.texto?.startsWith("[qa]");
+    return true;
+  });
+  const totalQA=posts.filter(p=>p.texto?.startsWith("[qa]")).length;
+  const totalDisc=posts.filter(p=>!p.texto?.startsWith("[qa]")).length;
 
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT};
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {/* Formulario nueva pregunta */}
+      {/* Nuevo post */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>💬 Hacer una pregunta</div>
+        {/* Tipo selector */}
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          {[{id:"disc",label:"💬 Discusión"},{id:"qa",label:"❓ Pregunta"}].map(t=>(
+            <button key={t.id} onClick={()=>setTipoNuevo(t.id)}
+              style={{padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:FONT,
+                background:tipoNuevo===t.id?C.accent:C.surface,
+                color:tipoNuevo===t.id?"#fff":C.muted,
+                border:`1px solid ${tipoNuevo===t.id?"transparent":C.border}`}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
         <textarea value={texto} onChange={e=>setTexto(e.target.value.slice(0,500))}
-          placeholder="Escribí tu pregunta o comentario para el grupo..."
-          style={{...iS,minHeight:72,resize:"vertical",marginBottom:8}}/>
+          placeholder={tipoNuevo==="qa"?"Escribí tu pregunta al docente o al grupo…":"Escribí tu comentario o aporte…"}
+          style={{...iS,minHeight:68,resize:"vertical",marginBottom:8}}/>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:10,color:C.muted}}>{texto.length}/500</span>
           <button onClick={enviarPost} disabled={enviando||!texto.trim()}
-            style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"7px 16px",
-              fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,
-              opacity:!texto.trim()?0.5:1}}>
-            {enviando?"Enviando...":"Publicar →"}
+            style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"7px 16px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,opacity:!texto.trim()?0.5:1}}>
+            {enviando?"Enviando…":"Publicar →"}
           </button>
         </div>
       </div>
 
-      {/* Lista de posts */}
-      {loading?<Spinner small/>:posts.length===0?(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
-          Sin preguntas aún. ¡Sé el primero en preguntar!
+      {/* Filtros */}
+      {posts.length>0&&(
+        <div style={{display:"flex",gap:4}}>
+          {[{id:"todos",label:`Todo (${posts.length})`},{id:"qa",label:`❓ Preguntas (${totalQA})`},{id:"disc",label:`💬 Debates (${totalDisc})`}].map(f=>(
+            <button key={f.id} onClick={()=>setFiltro(f.id)}
+              style={{padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:filtro===f.id?700:400,cursor:"pointer",fontFamily:FONT,
+                background:filtro===f.id?C.accentDim:"transparent",
+                color:filtro===f.id?C.accent:C.muted,
+                border:`1px solid ${filtro===f.id?C.accent+"55":C.border}`}}>
+              {f.label}
+            </button>
+          ))}
         </div>
-      ):posts.map(p=>{
+      )}
+
+      {/* Lista */}
+      {loading?<Spinner small/>:postsFiltrados.length===0?(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
+          {filtro==="qa"?"Sin preguntas aún.":filtro==="disc"?"Sin debates aún.":"¡Sé el primero en participar!"}
+        </div>
+      ):postsFiltrados.map(p=>{
+        const isQA=p.texto?.startsWith("[qa]");
+        const textoVisible=isQA?p.texto.replace("[qa]","").trim():p.texto;
         const isExpanded=expandedPost===p.id;
         const resps=respuestas[p.id]||[];
         const esMiPost=p.autor_email===miEmail;
+        const esDocPost=(p.autor_email===post.autor_email)||(post.ayudantes||[]).includes(p.autor_email);
         return(
-          <div key={p.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
-            {/* Header del post */}
+          <div key={p.id} style={{background:C.card,border:`1px solid ${isQA?"#F59E0B44":C.border}`,borderRadius:12,overflow:"hidden"}}>
             <div style={{padding:"12px 14px"}}>
               <div style={{display:"flex",gap:9,alignItems:"flex-start"}}>
                 <Avatar letra={(p.autor_nombre||"?")[0]} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                     <span style={{fontWeight:600,color:C.text,fontSize:12}}>
-                      {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}
-                      {(p.autor_email===post.autor_email)||(post.ayudantes||[]).includes(p.autor_email)?
-                        <span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 6px",marginLeft:6,border:`1px solid ${C.accent}33`}}>Docente</span>:null}
+                      {p.autor_nombre||safeDisplayName(null,p.autor_email)}
+                      {esDocPost&&<span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 6px",marginLeft:6,border:`1px solid ${C.accent}33`}}>Docente</span>}
+                      {isQA&&<span style={{fontSize:9,background:"#F59E0B15",color:"#B45309",borderRadius:20,padding:"1px 6px",marginLeft:4,border:"1px solid #F59E0B33"}}>❓ Pregunta</span>}
                     </span>
                     <span style={{fontSize:10,color:C.muted}}>{fmtRel(p.created_at)}</span>
                   </div>
-                  <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{p.texto}</p>
+                  {p.id?.startsWith("local_")&&<div style={{fontSize:10,color:"#B45309",background:"#F59E0B12",border:"1px solid #F59E0B33",borderRadius:6,padding:"2px 8px",marginBottom:4,display:"inline-block"}}>⚠ No guardado — error de conexión</div>}
+                  <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{textoVisible}</p>
                 </div>
               </div>
               <div style={{display:"flex",gap:10,marginTop:8,paddingLeft:37}}>
@@ -1498,47 +2398,52 @@ function ForoCurso({post,session,esMio,esAyudante}){
                   💬 {p.respuestas?.[0]?.count||resps.length||0} respuesta{(p.respuestas?.[0]?.count||resps.length)!==1?"s":""}  {isExpanded?"▴":"▾"}
                 </button>
                 {(esMiPost||esMio||esAyudante)&&!p.id?.startsWith("local_")&&(
-                  <button onClick={async()=>{
-                    await sb.deleteForoPost(p.id,session.access_token).catch(()=>{});
-                    setPosts(prev=>prev.filter(x=>x.id!==p.id));
-                  }} style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:0}}>Eliminar</button>
+                  <button onClick={async()=>{await sb.deleteForoPost(p.id,session.access_token).catch(()=>{});setPosts(prev=>prev.filter(x=>x.id!==p.id));}}
+                    style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:0}}>Eliminar</button>
                 )}
               </div>
             </div>
 
-            {/* Respuestas expandidas */}
             {isExpanded&&(
               <div style={{borderTop:`1px solid ${C.border}`,background:C.surface,padding:"10px 14px"}}>
                 {resps.length>0&&(
                   <div style={{marginBottom:10,display:"flex",flexDirection:"column",gap:8}}>
-                    {resps.map(r=>(
-                      <div key={r.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                        <Avatar letra={(r.autor_nombre||"?")[0]} size={22}/>
-                        <div style={{flex:1,background:C.card,borderRadius:8,padding:"7px 10px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                            <span style={{fontWeight:600,color:C.text,fontSize:11}}>
-                              {r.autor_nombre||safeDisplayName(r.autor_nombre,r.autor_email)}
-                              {r.autor_email===post.autor_email?<span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 5px",marginLeft:5}}>Docente</span>:null}
-                            </span>
-                            <span style={{fontSize:9,color:C.muted}}>{fmtRel(r.created_at)}</span>
+                    {resps.map(r=>{
+                      const esDocR=r.autor_email===post.autor_email;
+                      return(
+                        <div key={r.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                          <Avatar letra={(r.autor_nombre||"?")[0]} size={22}/>
+                          <div style={{flex:1,background:esDocR?"#2EC4A010":C.card,border:`1px solid ${esDocR?"#2EC4A033":C.border}`,borderRadius:8,padding:"7px 10px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                              <span style={{fontWeight:600,color:C.text,fontSize:11}}>
+                                {r.autor_nombre||safeDisplayName(null,r.autor_email)}
+                                {esDocR&&<span style={{fontSize:9,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 5px",marginLeft:5}}>Docente</span>}
+                              </span>
+                              <span style={{fontSize:9,color:C.muted}}>{fmtRel(r.created_at)}</span>
+                            </div>
+                            <p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.4}}>{r.texto}</p>
                           </div>
-                          <p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.4}}>{r.texto}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
-                {/* Responder */}
-                <div style={{display:"flex",gap:7,alignItems:"flex-end"}}>
-                  <textarea value={respuestaTexto[p.id]||""} onChange={e=>setRespuestaTexto(prev=>({...prev,[p.id]:e.target.value.slice(0,300)}))}
-                    placeholder="Escribí una respuesta..."
-                    style={{...iS,minHeight:50,resize:"none",flex:1}}/>
-                  <button onClick={()=>enviarRespuesta(p.id)} disabled={!(respuestaTexto[p.id]||"").trim()}
-                    style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"9px 14px",
-                      fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,
-                      opacity:!(respuestaTexto[p.id]||"").trim()?0.5:1,flexShrink:0}}>
-                    ↑
-                  </button>
+                <div style={{display:"flex",gap:7,alignItems:"flex-end",flexDirection:"column"}}>
+                  {esStaff&&isQA&&(
+                    <button onClick={()=>sugerirConIA(p.id,textoVisible)} disabled={!!generandoIA}
+                      style={{background:"#7B3FBE15",border:"1px solid #7B3FBE33",borderRadius:8,color:"#7B3FBE",padding:"5px 10px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT,alignSelf:"flex-end",opacity:generandoIA?0.6:1}}>
+                      {generandoIA===p.id?"…":"✨ Sugerir respuesta con IA"}
+                    </button>
+                  )}
+                  <div style={{display:"flex",gap:7,alignItems:"flex-end",width:"100%"}}>
+                    <textarea value={respuestaTexto[p.id]||""} onChange={e=>setRespuestaTexto(prev=>({...prev,[p.id]:e.target.value.slice(0,300)}))}
+                      placeholder="Escribí una respuesta…"
+                      style={{...iS,minHeight:50,resize:"none",flex:1}}/>
+                    <button onClick={()=>enviarRespuesta(p.id)} disabled={!(respuestaTexto[p.id]||"").trim()}
+                      style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"9px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,opacity:!(respuestaTexto[p.id]||"").trim()?0.5:1,flexShrink:0}}>
+                      ↑
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1904,9 +2809,21 @@ function SkillManager({post,session,onSkillsChange}){
 function SkillProgressViewer({post,session,esMio,esAyudante}){
   const pubId=post.id;
   const miEmail=session.user.email;
-  const skills=getSkills(pubId);
+  const token=session.access_token;
+  const [skills,setSkills]=useState(()=>getSkills(pubId));
   const [progress,setProgress]=useState(()=>getSkillProgress(pubId,miEmail));
   const [editing,setEditing]=useState(false);
+
+  useEffect(()=>{
+    sb.getSkillsDB(pubId,token).then(d=>{if(d?.length)setSkills(d);}).catch(()=>{});
+    sb.getMySkillLevels(miEmail,pubId,token).then(rows=>{
+      if(!rows?.length)return;
+      const prog={};
+      rows.forEach(r=>{prog[r.skill_id]=r.nivel_actual;prog["initial_"+r.skill_id]=r.nivel_inicial;});
+      setProgress(prog);
+      saveSkillProgress(pubId,miEmail,prog);
+    }).catch(()=>{});
+  },[pubId,miEmail]);// eslint-disable-line
 
   if(!skills.length)return null;
 
@@ -1914,6 +2831,13 @@ function SkillProgressViewer({post,session,esMio,esAyudante}){
     const updated={...progress,[skillId]:level};
     setProgress(updated);
     saveSkillProgress(pubId,miEmail,updated);
+    sb.upsertSkillLevel({
+      usuario_email:miEmail,
+      skill_id:skillId,
+      nivel_inicial:progress["initial_"+skillId]??level,
+      nivel_actual:level,
+      source:"manual"
+    },token).catch(()=>{});
   };
 
   // Calcular progreso
@@ -1999,28 +2923,39 @@ function SkillProgressViewer({post,session,esMio,esAyudante}){
 // ─── SKILL OVERVIEW DOCENTE — resumen de todos los alumnos ────────────────────
 function SkillOverview({post,session,inscripciones}){
   const pubId=post.id;
-  const skills=getSkills(pubId);
+  const [skills,setSkills]=useState(()=>getSkills(pubId));
+  const [allLevels,setAllLevels]=useState([]);
+
+  useEffect(()=>{
+    sb.getSkillsDB(pubId,session.access_token).then(d=>{if(d?.length)setSkills(d);}).catch(()=>{});
+    sb.getSkillLevelsByPub(pubId,session.access_token).then(rows=>{if(rows)setAllLevels(rows);}).catch(()=>{});
+  },[pubId]);// eslint-disable-line
+
   if(!skills.length||!inscripciones.length)return null;
 
-  // Promediar niveles por skill entre todos los alumnos
   const avgBySkill=skills.map(s=>{
-    const vals=inscripciones.map(ins=>getSkillProgress(pubId,ins.alumno_email)[s.id]||0);
-    const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-    return{skill:s,avg:Math.round(avg*10)/10};
+    const rows=allLevels.filter(r=>r.skill_id===s.id);
+    if(!rows.length)return{skill:s,avg:0,count:0};
+    const avg=rows.reduce((a,r)=>a+r.nivel_actual,0)/rows.length;
+    return{skill:s,avg:Math.round(avg*10)/10,count:rows.length};
   });
+
+  if(!avgBySkill.some(x=>x.count>0))return null;
 
   return(
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:14}}>
       <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>Promedio de habilidades del grupo</div>
-      {avgBySkill.map(({skill,avg})=>(
+      {avgBySkill.map(({skill,avg,count})=>(
         <div key={skill.id} style={{marginBottom:10}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
             <span style={{fontSize:12,color:C.text}}>{skill.nombre}</span>
-            <span style={{fontSize:11,color:SKILL_COLORS[Math.round(avg)],fontWeight:700}}>{avg.toFixed(1)} — {SKILL_LEVELS[Math.round(avg)]}</span>
+            <span style={{fontSize:11,color:SKILL_COLORS[Math.round(avg)],fontWeight:700}}>
+              {count>0?`${avg.toFixed(1)} — ${SKILL_LEVELS[Math.round(avg)]}`:"Sin datos"}
+            </span>
           </div>
-          <div style={{height:7,background:C.border,borderRadius:4,overflow:"hidden"}}>
+          {count>0&&<div style={{height:7,background:C.border,borderRadius:4,overflow:"hidden"}}>
             <div style={{height:"100%",background:SKILL_COLORS[Math.round(avg)]||C.border,borderRadius:4,width:`${(avg/5)*100}%`,transition:"width .5s"}}/>
-          </div>
+          </div>}
         </div>
       ))}
     </div>
@@ -2407,6 +3342,7 @@ JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
           if(insc.alumno_email&&insc.alumno_email!==session.user.email){
             sb.sendEmail("nueva_evaluacion",insc.alumno_email,{
               pub_titulo:evalTitulo,
+              pub_id:post.id,
               tipo_eval:evalTipo,
               curso_titulo:evalTitulo,
             },session.access_token).catch(()=>{});
@@ -2906,7 +3842,7 @@ function DiagnosticoInicial({post,session,skills}){
   const skill=skills[step];
   const completar=()=>{
     if(step<skills.length-1){setStep(s=>s+1);return;}
-    // Guardar como niveles iniciales en skill progress
+    // Guardar como niveles iniciales en skill progress (localStorage cache)
     const spKey=`cl_sp_${post.id}_${session.user.email}`;
     try{
       const prev=JSON.parse(localStorage.getItem(spKey)||"{}");
@@ -2914,12 +3850,25 @@ function DiagnosticoInicial({post,session,skills}){
       skills.forEach(s=>{
         const n=niveles[s.id]??0;
         updated["initial_"+s.id]=n;
-        if(!prev[s.id])updated[s.id]=n;// también setear nivel actual si no existe
+        if(!prev[s.id])updated[s.id]=n;
       });
       localStorage.setItem(spKey,JSON.stringify(updated));
       localStorage.setItem(KEY,JSON.stringify({completado:new Date().toISOString(),niveles}));
       setEstado({completado:new Date().toISOString(),niveles});
     }catch{}
+    // También persistir en Supabase (fire & forget)
+    const isUUID=/^[0-9a-f]{8}-[0-9a-f]{4}-/i;
+    skills.forEach(s=>{
+      if(!isUUID.test(String(s.id)))return;
+      const n=niveles[s.id]??0;
+      sb.upsertSkillLevel({
+        usuario_email:session.user.email,
+        skill_id:s.id,
+        nivel_inicial:n,
+        nivel_actual:n,
+        source:"diagnostico"
+      },session.access_token).catch(()=>{});
+    });
   };
   const NIVELES_LABEL=["No lo vi nunca","Algo escuché","Entiendo lo básico","Puedo aplicarlo","Lo manejo bien","Lo domino"];
   return(
@@ -3111,6 +4060,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           if(insc.alumno_email&&insc.alumno_email!==session.user.email){
             sb.sendEmail("nueva_evaluacion",insc.alumno_email,{
               pub_titulo:evalTitulo,
+              pub_id:post.id,
               tipo_eval:evalTipo,
               curso_titulo:evalTitulo,
             },session.access_token).catch(()=>{});
@@ -3298,10 +4248,41 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [mensajesNuevos,setMensajesNuevos]=useState(0);
   const [showDiagnostico,setShowDiagnostico]=useState(false);
   const [showExamenFinal,setShowExamenFinal]=useState(()=>false);
-  const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"evaluaciones";try{return sessionStorage.getItem("curso_tab_"+post.id)||"contenido";}catch{return "contenido";}});
-  const setTab=(t)=>{try{sessionStorage.setItem("curso_tab_"+post.id,t);}catch{}if(t==="chat"){setMensajesNuevos(0);try{sessionStorage.setItem("chat_seen_"+post.id,Date.now());}catch{}}setTabActivo(t);};const [nuevoTipo,setNuevoTipo]=useState("video");const [nuevoTitulo,setNuevoTitulo]=useState("");const [nuevoUrl,setNuevoUrl]=useState("");const [nuevoTexto,setNuevoTexto]=useState("");const [savingC,setSavingC]=useState(false);
-  const [calExpanded,setCalExpanded]=useState(false);const [showEditCal,setShowEditCal]=useState(false);const [showFinalizar,setShowFinalizar]=useState(false);const [showDenuncia,setShowDenuncia]=useState(false);const [showCerrarInsc,setShowCerrarInsc]=useState(false);const [localFinalizado,setLocalFinalizado]=useState(!!post.finalizado);const [localCerrado,setLocalCerrado]=useState(!!post.inscripciones_cerradas);const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
+  const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"aprender";try{const t=sessionStorage.getItem("curso_tab_"+post.id);return["contenido","aprender","agenda","comunidad"].includes(t)?t:"contenido";}catch{return "contenido";}});
+  const setTab=(t)=>{try{sessionStorage.setItem("curso_tab_"+post.id,t);}catch{}if(t==="chat"||t==="comunidad"){setMensajesNuevos(0);try{sessionStorage.setItem("chat_seen_"+post.id,Date.now());}catch{}}setTabActivo(t);};const [nuevoTipo,setNuevoTipo]=useState("video");const [nuevoTitulo,setNuevoTitulo]=useState("");const [nuevoUrl,setNuevoUrl]=useState("");const [nuevoTexto,setNuevoTexto]=useState("");const [savingC,setSavingC]=useState(false);
+  const [calExpanded,setCalExpanded]=useState(false);const [showEditCal,setShowEditCal]=useState(false);const [showFinalizar,setShowFinalizar]=useState(false);const [showDenuncia,setShowDenuncia]=useState(false);const [showCerrarInsc,setShowCerrarInsc]=useState(false);const [localFinalizado,setLocalFinalizado]=useState(!!post.finalizado);const [localCerrado,setLocalCerrado]=useState(!!post.inscripciones_cerradas);
+  const [claseActiva,setClaseActiva]=useState(false);const [iniciandoClase,setIniciandoClase]=useState(false);
+  const [showJitsiCurso,setShowJitsiCurso]=useState(false);
+  const jitsiRoomCurso=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
+  const {confirm:confirmCP,confirmEl:confirmElCP}=useConfirm();
   const esMio=post.autor_email===session.user.email||post.autor_id===session.user.id;const miEmail=session.user.email;const miUid=session.user.id;
+  const docenteDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
+  const iniciarClase=async()=>{
+    setIniciandoClase(true);
+    try{
+      const inscs=await sb.getInscripciones(post.id,session.access_token).catch(()=>[]);
+      const jitsiUrl=`https://meet.jit.si/${jitsiRoomCurso}`;
+      let enviados=0;
+      // Notificaciones in-app + emails a todos los inscriptos
+      for(const ins of inscs){
+        const email=ins.alumno_email;if(!email)continue;
+        try{
+          await sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:email,tipo:"clase_iniciada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token);
+          await sb.sendEmail("clase_iniciada",email,{pub_titulo:post.titulo,docente_nombre:docenteDisplayName,jitsi_url:jitsiUrl},session.access_token);
+          enviados++;
+        }catch(e){console.warn("Error notif a",email,e.message);}
+      }
+      const emails=inscs.map(i=>i.alumno_email).filter(Boolean);
+      setClaseActiva(true);
+      setShowJitsiCurso(true);
+      if(emails.length===0){
+        toast("Clase iniciada. No hay alumnos inscriptos todavía.","info",4000);
+      } else {
+        toast(`Clase iniciada · ${enviados}/${emails.length} alumno${emails.length!==1?"s":""} notificado${enviados!==1?"s":""}. ✓`,"success",5000);
+      }
+    }catch(e){alert("Error al iniciar la clase: "+e.message);}
+    finally{setIniciandoClase(false);}
+  };
   const [needsValoracion,setNeedsValoracion]=useState(false);
   // ayudantes es uuid[] — comparar con el UUID del usuario actual
   const esAyudante=(post.ayudantes||[]).includes(miUid);
@@ -3343,16 +4324,21 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             });});
           });
           if(choques.length>0){
-            const ok=window.confirm("⚠️ Esta clase se pisa con:\n"+choques.slice(0,3).join("\n")+"\n\n¿Querés inscribirte igual?");
+            const ok=await confirmCP({msg:"⚠️ Esta clase se pisa con:\n"+choques.slice(0,3).join("\n")+"\n\n¿Querés inscribirte igual?",confirmLabel:"Inscribirme igual",cancelLabel:"Cancelar"});
             if(!ok)return;
           }
         }
       }catch{}
     }
     setInscLoading(true);
-    try{const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);setInscripcion(r[0]);sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
-      // Si el curso tiene diagnóstico inicial, ir al tab notas automáticamente
-      if(post.modo==="grupal"||post.modo==="curso")setTimeout(()=>setTab("notas"),400);
+    try{
+      const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);
+      setInscripcion(r[0]);
+      sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+      if(post.modo==="grupal"||post.modo==="curso")setTimeout(()=>setTab("aprender"),400);
+    }catch(e){
+      if(e.message?.includes("uq_inscripcion"))toast("Ya estás inscripto a esta clase.","info");
+      else toast("Error al inscribirse: "+e.message,"error");
     }finally{setInscLoading(false);}
   };
   const [desinscMsg,setDesinscMsg]=useState(false);
@@ -3366,6 +4352,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       setInscripcion(null);
       setDesinscMsg(true);
       setTimeout(()=>onClose(),2200);
+    }catch(e){
+      toast("Error al desinscribirse: "+e.message,"error");
     }finally{setInscLoading(false);}
   };
   const addContenido=async()=>{
@@ -3410,12 +4398,35 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
   return(
     <div  ref={pageRef} style={{position:"fixed",inset:0,background:C.bg,zIndex:300,overflowY:"auto",fontFamily:FONT}}>
-      <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+      {confirmElCP}
+      {showJitsiCurso&&<JitsiModal roomName={jitsiRoomCurso} displayName={docenteDisplayName} onClose={()=>{setShowJitsiCurso(false);if(esMio){setClaseActiva(false);}else{setTab("contenido");}}}/>}
+      {/* Banner "Clase en vivo" para alumnos */}
+      {claseActiva&&!esMio&&(
+        <div style={{background:"linear-gradient(135deg,#C8000015,#E0000022)",borderBottom:"1px solid #C8000033",padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+            <span style={{width:8,height:8,borderRadius:"50%",background:"#E05C5C",display:"inline-block",animation:"pulse 1s infinite"}}/>
+            <span style={{fontWeight:700,color:"#C80000",fontSize:13}}>Clase en vivo ahora</span>
+            <span style={{color:"#C80000",fontSize:12,opacity:.8}}>{docenteDisplayName||post.autor_nombre} está esperándote</span>
+          </div>
+          <button onClick={()=>setShowJitsiCurso(true)} style={{background:"#C80000",border:"none",borderRadius:9,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:6}}>📹 Unirme ahora</button>
+        </div>
+      )}
+      <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`2px solid ${getPubTipo(post).accent}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
         <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>← Volver</button>
-        <div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:C.text,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div><div style={{fontSize:11,color:C.muted}}>{post.materia} · {post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)}</div></div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:1}}>
+            <span style={{fontSize:10,fontWeight:700,color:getPubTipo(post).accent,background:getPubTipo(post).dim,borderRadius:20,padding:"2px 8px",flexShrink:0}}>{getPubTipo(post).emoji} {getPubTipo(post).label}</span>
+          </div>
+          <div style={{fontWeight:700,color:C.text,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
+          <div style={{fontSize:11,color:C.muted}}>{post.materia} · {post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)}</div>
+        </div>
         <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
           {esMio&&!localFinalizado&&!localCerrado&&<button onClick={()=>setShowCerrarInsc(true)} style={{background:"#E0955C15",border:"1px solid #E0955C33",borderRadius:9,color:C.warn,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Cerrar inscripciones</button>}
           {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){alert("Error: "+e.message);}}} style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:9,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Reabrir inscripciones</button>}
+          {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
+            style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:9,color:claseActiva?"#C80000":"#fff",padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+            {claseActiva?<><span style={{width:6,height:6,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>Clase en vivo</>:iniciandoClase?"Iniciando…":"▶ Iniciar clase"}
+          </button>}
           {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:9,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Finalizar clase</button>}
           {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:12,color:C.info,fontWeight:600}}>Clase finalizada</span>}
           {!esMio&&inscripcion&&<button onClick={()=>setShowDenuncia(true)} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:9,color:C.danger,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Denunciar</button>}
@@ -3467,7 +4478,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             {inscripciones.length===0?<div style={{color:C.muted,fontSize:12}}>Nadie inscripto aún.</div>:(
               <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {inscripciones.map(ins=>{
-                  const isAyud=(post.ayudantes||[]).includes(ins.alumno_email);
+                  // ayudantes[] stores UUIDs — compare with alumno_id
+                  const isAyud=(post.ayudantes||[]).includes(ins.alumno_id);
                   return(<div key={ins.id} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
                     <Avatar letra={ins.alumno_email[0]} size={26}/>
                     <div style={{flex:1,minWidth:0}}>
@@ -3478,12 +4490,13 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                     {ins.clase_finalizada&&<span style={{fontSize:10,background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.success,padding:"1px 7px"}}>✓</span>}
                     <button onClick={async()=>{
                       const ayuds=post.ayudantes||[];
-                      const newAyuds=isAyud?ayuds.filter(e=>e!==ins.alumno_email):[...ayuds,ins.alumno_email];
+                      // store UUID, not email
+                      const newAyuds=isAyud?ayuds.filter(id=>id!==ins.alumno_id):[...ayuds,ins.alumno_id];
                       await sb.updatePublicacion(post.id,{ayudantes:newAyuds},session.access_token);
                       post.ayudantes=newAyuds;setInscripciones([...inscripciones]);
                       // Notificar al nuevo ayudante
                       if(!isAyud){
-                        sb.insertNotificacion({usuario_id:null,alumno_email:ins.alumno_email,tipo:"nuevo_ayudante",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+                        sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"nuevo_ayudante",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
                       }
                     }} style={{background:isAyud?"#C85CE022":"#5CA8E015",border:`1px solid ${isAyud?"#C85CE044":"#5CA8E033"}`,borderRadius:7,color:isAyud?C.purple:C.info,padding:"3px 9px",cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:FONT,flexShrink:0}}>
                       {isAyud?"Quitar ayudante":"+ Ayudante"}
@@ -3495,21 +4508,31 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             <AyudanteBuscador post={post} session={session} ayudantesActuales={post.ayudantes||[]} onUpdate={ayuds=>{post.ayudantes=ayuds;setInscripciones([...inscripciones]);}}/>
           </div>)}
           {!esMio&&(<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"12px 16px",marginBottom:18}}><InscritosCount pubId={post.id} session={session}/></div>)}
+          {esMio&&<div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+            {[
+              {icon:"👥",label:"Inscriptos",value:inscripciones.length},
+              {icon:"⭐",label:"Rating",value:parseFloat(post.calificacion_promedio||0)>0?parseFloat(post.calificacion_promedio).toFixed(1)+"★":"—"},
+              {icon:"📝",label:"Contenido",value:contenido.length},
+            ].map(s=>(
+              <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"8px 13px",flex:1,minWidth:80}}>
+                <div style={{fontSize:10,color:C.muted}}>{s.icon} {s.label}</div>
+                <div style={{fontWeight:700,color:C.text,fontSize:16,marginTop:1}}>{s.value}</div>
+              </div>
+            ))}
+          </div>}
           {/* ── TABS ── */}
-          <div style={{display:"flex",gap:2,marginBottom:14,background:C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`}}>
+          <style>{`.curso-tabs::-webkit-scrollbar{display:none}`}</style>
+          <div className="curso-tabs" style={{display:"flex",gap:2,marginBottom:14,background:C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`}}>
             {[
               {id:"contenido",label:"📁 Contenido"},
-              ...(post.tipo==="oferta"&&(esMio||esAyudante)?[
-                {id:"evaluaciones",label:"🎓 Evaluaciones",pendiente:esPendienteValidacion},
-                {id:"notas",label:"📊 Notas"},
-              ]:[]),
-              ...(hasCal?[{id:"calendario",label:"📅 Calendario"}]:[]),
-              {id:"foro",label:"🗣 Foro"},
-              {id:"chat",label:mensajesNuevos>0?`💬 Chat (${mensajesNuevos})`:"💬 Chat"},
+              {id:"aprender",label:"🎓 Aprender",pendiente:esPendienteValidacion},
+              ...(hasCal||esMio?[{id:"agenda",label:"📅 Agenda"}]:[]),
+              {id:"comunidad",label:mensajesNuevos>0?`💬 Comunidad (${mensajesNuevos})`:"💬 Comunidad"},
             ].map(tab=>(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
-                style={{flex:1,padding:"7px 4px",borderRadius:9,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
-                  fontWeight:tabActivo===tab.id?700:400,fontSize:11,cursor:"pointer",fontFamily:FONT,
+                style={{flex:1,padding:"8px 4px",borderRadius:9,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
+                  fontWeight:tabActivo===tab.id?700:400,fontSize:12,cursor:"pointer",fontFamily:FONT,
+                  textAlign:"center",
                   background:tabActivo===tab.id?C.accent:tab.pendiente?"#F5C84212":"transparent",
                   color:tabActivo===tab.id?"#fff":tab.pendiente?C.accent:C.muted,
                   transition:"all .15s",
@@ -3555,7 +4578,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                           {c.tipo==="texto"&&c.texto&&tieneAcceso&&<p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.5}}>{c.texto}</p>}
                           {c.tipo==="aviso"&&c.texto&&<p style={{color:C.accent,fontSize:12,margin:0,background:C.accentDim,borderRadius:7,padding:"6px 9px"}}>{c.texto}</p>}
                           {c.tipo==="tarea"&&c.texto&&tieneAcceso&&<p style={{color:C.purple,fontSize:12,margin:0,background:"#C85CE015",borderRadius:7,padding:"6px 9px"}}>{c.texto}</p>}
-                          {(c.tipo==="video"||c.tipo==="archivo"||c.tipo==="link")&&c.url&&tieneAcceso&&<a href={c.url} target="_blank" rel="noreferrer" style={{color:C.info,fontSize:12,textDecoration:"none"}}>{c.tipo==="video"?"▶ Ver video":c.tipo==="archivo"?"📥 Abrir":"→ Link"}</a>}
+                          {(c.tipo==="video"||c.tipo==="archivo"||c.tipo==="link")&&safeUrl(c.url)&&tieneAcceso&&<a href={safeUrl(c.url)} target="_blank" rel="noopener noreferrer" style={{color:C.info,fontSize:12,textDecoration:"none"}}>{c.tipo==="video"?"▶ Ver video":c.tipo==="archivo"?"📥 Abrir":"→ Link"}</a>}
                           {!tieneAcceso&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>Inscribite para ver</div>}
                           {(esMio||esAyudante)&&editingContenidoId===c.id&&(
                             <InlineContenidoEditor item={c} session={session} onSaved={(updated)=>{setContenido(prev=>prev.map(x=>x.id===c.id?{...x,...updated}:x));setEditingContenidoId(null);}} onCancel={()=>setEditingContenidoId(null)}/>
@@ -3575,82 +4598,111 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           </>
 }
 
-          {/* ── TAB: Evaluaciones (fusionado: validación + formales + quizzes) ── */}
-          {tabActivo==="evaluaciones"&&<div style={{marginBottom:18}}>
-            {/* Wizard si pendiente validación */}
-            {esPendienteValidacion&&(
-              <div style={{marginBottom:18}}>
-                <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{fontSize:20}}>⏳</span>
-                  <div><div style={{fontWeight:700,color:C.accent,fontSize:13}}>Validación pendiente</div><div style={{color:C.muted,fontSize:12}}>Completá el proceso para activar tu publicación.</div></div>
-                </div>
-                <ValidacionWizard post={post} session={session} onValidado={()=>{if(onUpdatePost)onUpdatePost({...post,activo:true,estado_validacion:"validado"});dispararAlertasIA({...post,activo:true},session).catch(()=>{});}}/>
-              </div>
-            )}
-            {/* Evaluaciones formales + quizzes */}
-            {!esPendienteValidacion&&(
-              <EvaluacionesFormalesConQuizzes
-                post={post} session={session} esMio={esMio} esAyudante={esAyudante}
-                inscripcion={inscripcion} inscripciones={inscripciones}
-                contenido={contenido} setContenido={setContenido}
-                expandedQuizzes={expandedQuizzes} setExpandedQuizzes={setExpandedQuizzes}
-                editingQuiz={editingQuiz} setEditingQuiz={setEditingQuiz}
-                tieneAcceso={tieneAcceso}
-              />
-            )}
-          </div>}
-
-          {/* ── TAB: Notas ── */}
-          {tabActivo==="notas"&&<div style={{marginBottom:18}}>
+          {/* ── TAB: Aprender ── */}
+          {tabActivo==="aprender"&&<div style={{marginBottom:18}}>
             {(esMio||esAyudante)?(
-              contenido.some(c=>c.tipo==="quiz")&&inscripciones.length>0
-                ?<><SafeWrapper><TablaNotas contenido={contenido} inscripciones={inscripciones} session={session} publicacionId={post.id}/></SafeWrapper>
-                <SkillOverview post={post} session={session} inscripciones={inscripciones}/></>
-                :<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
-                    {!contenido.some(c=>c.tipo==="quiz")?"Todavía no hay exámenes cargados.":"Todavía no hay alumnos inscriptos."}
+              <>
+                {/* Validación pendiente */}
+                {esPendienteValidacion&&(
+                  <div style={{marginBottom:18}}>
+                    <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:20}}>⏳</span>
+                      <div><div style={{fontWeight:700,color:C.accent,fontSize:13}}>Validación pendiente</div><div style={{color:C.muted,fontSize:12}}>Completá el proceso para activar tu publicación.</div></div>
+                    </div>
+                    <ValidacionWizard post={post} session={session} onValidado={()=>{if(onUpdatePost)onUpdatePost({...post,activo:true,estado_validacion:"validado"});dispararAlertasIA({...post,activo:true},session).catch(()=>{});}}/>
                   </div>
+                )}
+                {/* Evaluaciones + quizzes */}
+                {!esPendienteValidacion&&(
+                  <EvaluacionesFormalesConQuizzes
+                    post={post} session={session} esMio={esMio} esAyudante={esAyudante}
+                    inscripcion={inscripcion} inscripciones={inscripciones}
+                    contenido={contenido} setContenido={setContenido}
+                    expandedQuizzes={expandedQuizzes} setExpandedQuizzes={setExpandedQuizzes}
+                    editingQuiz={editingQuiz} setEditingQuiz={setEditingQuiz}
+                    tieneAcceso={tieneAcceso}
+                  />
+                )}
+                {/* Tabla de notas + skills */}
+                {contenido.some(c=>c.tipo==="quiz")&&inscripciones.length>0&&(
+                  <><SafeWrapper><TablaNotas contenido={contenido} inscripciones={inscripciones} session={session} publicacionId={post.id}/></SafeWrapper>
+                  <SkillOverview post={post} session={session} inscripciones={inscripciones}/></>
+                )}
+                {/* Progreso del curso */}
+                <ProgresoCurso post={post} session={session}/>
+              </>
             ):(
-              /* Vista alumno: solo sus propias notas */
+              /* Vista alumno */
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
-                <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Mis notas</div>
-                {loading?<Spinner small/>:contenido.filter(c=>c.tipo==="quiz").length===0
-                  ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"20px 0"}}>No hay exámenes en este curso.</div>
-                  :<>
-                  <SafeWrapper><NotasAlumno contenido={contenido} session={session} publicacionId={post.id}/></SafeWrapper>
-                  <NotasPad publicacionId={post.id} session={session}/>
-                  <CertificadoBtn post={post} session={session} inscripcion={inscripcion}/>
-                  <DiagnosticoInicial post={post} session={session} skills={getSkills(post.id)}/>
-                  <SkillProgressViewer post={post} session={session}/>
-                </>
-                }
+                <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Mi aprendizaje</div>
+                <DiagnosticoInicial post={post} session={session} skills={getSkills(post.id)}/>
+                <SkillProgressViewer post={post} session={session}/>
+                {loading?<Spinner small/>:contenido.filter(c=>c.tipo==="quiz").length>0&&(
+                  <>
+                    <SafeWrapper><NotasAlumno contenido={contenido} session={session} publicacionId={post.id}/></SafeWrapper>
+                    <NotasPad publicacionId={post.id} session={session}/>
+                    <CertificadoBtn post={post} session={session} inscripcion={inscripcion}/>
+                  </>
+                )}
+                <NotasPrivadas storageKey={`cl_nota_${post.id}_${miEmail}`} session={session} post={post}/>
               </div>
             )}
           </div>}
 
-          {/* ── TAB: Calendario ── */}
-          {tabActivo==="calendario"&&<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"20px",marginBottom:18}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:15}}>Calendario de clases</div>
-              {esMio&&<button onClick={()=>setShowEditCal(true)} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:8,color:C.accent,padding:"5px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Editar horarios</button>}
+          {/* ── TAB: Agenda ── */}
+          {tabActivo==="agenda"&&(()=>{
+            const clasesSinc=(()=>{try{return post.clases_sinc?JSON.parse(post.clases_sinc):[];}catch{return[];}})();
+            const descripcion=`Curso en Luderis: ${post.titulo}`;
+            return(
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"20px",marginBottom:18}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:15}}>Calendario de clases</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {hasCal&&clasesSinc.length>0&&(
+                    <>
+                      {clasesSinc.map((c,i)=>(
+                        <a key={i} href={buildGCalUrl(post.titulo,descripcion,c.dia,c.hora_inicio,c.hora_fin,post.fecha_inicio,post.fecha_fin)}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{background:"#EA433515",border:"1px solid #EA433544",borderRadius:8,color:"#EA4335",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,transition:"opacity .15s"}}
+                          onMouseEnter={e=>e.currentTarget.style.opacity=".75"}
+                          onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                          📅 Google Cal · {c.dia}
+                        </a>
+                      ))}
+                      <button onClick={()=>descargarICS(generarICS(post.titulo,descripcion,clasesSinc,post.fecha_inicio,post.fecha_fin),post.titulo.slice(0,30))}
+                        style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:8,color:C.accent,padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600}}>
+                        ⬇ Descargar .ics
+                      </button>
+                    </>
+                  )}
+                  {esMio&&<button onClick={()=>setShowEditCal(true)} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600}}>✏ Editar</button>}
+                </div>
+              </div>
+              {hasCal?<CalendarioCurso post={post} compact={false}/>:<div style={{textAlign:"center",padding:"40px 0",color:C.muted,fontSize:13}}>{esMio?"No cargaste horarios aún. Hacé click en Editar para empezar.":"Este curso no tiene horarios definidos."}</div>}
             </div>
-            {hasCal?<CalendarioCurso post={post} compact={false}/>:<div style={{textAlign:"center",padding:"40px 0",color:C.muted,fontSize:13}}>{esMio?"No cargaste horarios aún. Hacé click en Editar horarios para empezar.":"Este curso no tiene horarios definidos."}</div>}
+            );
+          })()}
+
+          {/* ── TAB: Comunidad (Foro + Chat) ── */}
+          {tabActivo==="comunidad"&&<div style={{marginBottom:18}}>
+            {tieneAcceso?(
+              <>
+                <ForoCurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>
+                <div style={{marginTop:14}}>
+                  <ChatCurso post={post} session={session} ayudantes={post.ayudantes||[]} ayudanteEmails={ayudanteEmails} esMio={esMio} esAyudante={esAyudante} onNewMessages={(n)=>{if(tabActivo!=="comunidad")setMensajesNuevos(prev=>prev+n);}}/>
+                </div>
+              </>
+            ):(
+              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>Inscribite para participar en el foro y el chat.</div>
+            )}
           </div>}
 
-          {/* ── TAB: Foro ── */}
-          {tabActivo==="foro"&&<div style={{marginBottom:18}}>
-            {tieneAcceso
-              ?<ForoCurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>
-              :<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>Inscribite para participar en el foro.</div>
-            }
-          </div>}
-
-          {/* ── TAB: Chat ── */}
-          {tabActivo==="chat"&&<div style={{marginBottom:18}}>
-            {tieneAcceso
-              ?<ChatCurso post={post} session={session} ayudantes={post.ayudantes||[]} ayudanteEmails={ayudanteEmails} onNewMessages={(n)=>{if(tabActivo!=="chat")setMensajesNuevos(prev=>prev+n);}}/>
-              :<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>Inscribite para acceder al chat grupal.</div>
-            }
-          </div>}
+          {/* ── TAB: Contenido — Flashcards al final ── */}
+          {tabActivo==="contenido"&&tieneAcceso&&(
+            <div style={{marginBottom:18}}>
+              <Flashcards post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>
+            </div>
+          )}
 
           <div id="resenas" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
             <ReseñasSeccion post={post} session={session} inscripcion={inscripcion} esMio={esMio}/>
@@ -3674,7 +4726,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
 
 // ─── INSCRIBIRSE BTN — botón rápido desde el DetailModal ──────────────────────
 // ─── MERCADO PAGO CHECKOUT BTN ────────────────────────────────────────────────
-function MPCheckoutBtn({post,session,onInscripcionOk,precioOverride=null,cantidadOverride=1,paqueteNombre=null}){
+function MPCheckoutBtn({post,session,onInscripcionOk,precioOverride=null,cantidadOverride=1,paqueteNombre=null,tipoPago=null,clasesQty=null}){
   const [estado,setEstado]=useState("idle");
   const pagar=async()=>{
     if(estado==="loading")return;
@@ -3683,14 +4735,17 @@ function MPCheckoutBtn({post,session,onInscripcionOk,precioOverride=null,cantida
       const nombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       const precioFinal=precioOverride||Number(post.precio);
       const tituloFinal=paqueteNombre?`${post.titulo} — ${paqueteNombre}`:post.titulo;
+      const esPaquete=tipoPago==="paquete_clase"||!!clasesQty;
       const result=await sb.createMPCheckout({
         publicacion_id:post.id,titulo:tituloFinal,
         descripcion:(post.descripcion||"").slice(0,100),
         precio:precioFinal,modo:post.modo||"particular",
         cantidad:cantidadOverride,alumno_email:session.user.email,
         alumno_nombre:nombre,docente_email:post.autor_email,
+        tipo:esPaquete?"paquete_clase":"clase",
+        clases_cantidad:clasesQty||null,
       },session.access_token);
-      if(result.disabled){toast("El pago online estará disponible pronto. Coordiná directamente con el docente 🤝","info",5000);setEstado("idle");return;}
+      if(result.disabled){toast("El pago online no está disponible en este momento. Intentá más tarde.","info",5000);setEstado("idle");return;}
       try{localStorage.setItem("mp_pending",JSON.stringify({pub_id:post.id,preference_id:result.preference_id}));}catch{}
       window.location.href=result.checkout_url;
     }catch(err){toast("No se pudo iniciar el pago: "+err.message,"error",4000);setEstado("idle");}
@@ -3780,7 +4835,7 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
       await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:session.user.email,metodo_pago:"stripe",stripe_payment_intent:paymentIntentId},session.access_token);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
-      sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
+      sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
       toast("¡Pago exitoso! Ya tenés acceso","success",4000);
       setEstado("done");
       setTimeout(()=>{onClose();onDone();},800);
@@ -3859,7 +4914,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:session.user.email},session.access_token);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
-      sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
+      sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
       // Info del mail según lo que eligió
       const esPruebaLocal=metodoElegido==="prueba";
       const paqueteInfo=paqueteElegido&&!esPruebaLocal?`${paqueteElegido.nombre||paqueteElegido.clases+" clases"}`:null;
@@ -3868,6 +4923,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       // Email al alumno
       sb.sendEmail("comprobante_inscripcion",session.user.email,{
         pub_titulo:post.titulo,
+        pub_id:post.id,
         docente_nombre:post.autor_nombre||post.autor_email.split("@")[0],
         modalidad:post.modalidad||"",
         precio:precioMail,
@@ -3878,6 +4934,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       // Email al docente
       sb.sendEmail("nueva_inscripcion",post.autor_email,{
         pub_titulo:post.titulo,
+        pub_id:post.id,
         alumno_nombre:session.user.email.split("@")[0],
         precio:precioMail,
         moneda:post.moneda||"ARS",
@@ -3947,21 +5004,26 @@ function InscripcionModal({post,session,onClose,onDone}){
     if(gratis){
       inscribirDirecto(esPrueba?"prueba":"gratis");
     }else{
+      // Para monedas sin Stripe (ARS), auto-seleccionar MP y saltar la elección de método
+      const tieneStripe=post.moneda==="USD"||post.moneda==="EUR";
+      if(!tieneStripe) setMetodo("mp");
       setPaso(2);
     }
   };
 
-  // Si no hay paquetes ni prueba, skip paso 1
+  // Si no hay paquetes ni prueba, skip paso 1 y auto-seleccionar MP para ARS
   React.useEffect(()=>{
     if(paquetesDisp.length===0&&!post.tiene_prueba){
       setOpcion("clase");
+      const tieneStripe=post.moneda==="USD"||post.moneda==="EUR";
+      if(!tieneStripe) setMetodo("mp");
       setPaso(2);
     }
-  },[paquetesDisp,post.tiene_prueba]);
+  },[paquetesDisp,post.tiene_prueba,post.moneda]);
 
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",fontFamily:FONT}} onClick={onClose}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(420px,98vw)",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",fontFamily:FONT}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(420px,98vw)",maxHeight:"90vh",overflowY:"auto"}}>
 
         {/* Header */}
         <div style={{padding:"20px 22px 16px",borderBottom:`1px solid ${C.border}`}}>
@@ -4085,17 +5147,9 @@ function InscripcionModal({post,session,onClose,onDone}){
                       </div>
                     </button>
                   )}
-                  <button onClick={()=>inscribirDirecto("coordinar")}
-                    style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,color:C.text,padding:"14px 18px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",gap:12,textAlign:"left"}}>
-                    <span style={{fontSize:22}}>🤝</span>
-                    <div>
-                      <div>Coordinar con el docente</div>
-                      <div style={{fontWeight:400,fontSize:11,color:C.muted}}>Sin pago online · El docente te contactará</div>
-                    </div>
-                  </button>
                 </>
               )}
-              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} clases`:esPrueba?"Clase de prueba":null}/>}
+              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} clases`:esPrueba?"Clase de prueba":null} tipoPago={paqueteElegido?"paquete_clase":esPrueba?"clase":"clase"} clasesQty={paqueteElegido?paqueteElegido.clases:null}/>}
               {metodo==="stripe"&&<StripeCheckoutBtn post={post} session={session} onDone={onDone} onClose={onClose}/>}
               {loadingInsc&&<div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center",padding:"8px",color:C.muted,fontSize:13}}><Spinner small/>Procesando…</div>}
               {errInsc&&<div style={{color:C.danger,fontSize:12,padding:"8px 12px",background:C.danger+"10",borderRadius:8,textAlign:"center"}}>{errInsc}</div>}
@@ -4104,7 +5158,7 @@ function InscripcionModal({post,session,onClose,onDone}){
 
         </div>
         <div style={{textAlign:"center",fontSize:11,color:C.muted,padding:"0 22px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-          <span>🔒</span> Sin comisión Luderis
+          <span>🔒</span> Pago protegido por Luderis
         </div>
       </div>
     </div>

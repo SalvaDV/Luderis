@@ -9,7 +9,7 @@ export const THEMES={
 export let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{return "light";}};
 export const C={...THEMES[_themeKey()]};
 export function applyTheme(key){Object.assign(C,THEMES[key]||THEMES.dark);try{localStorage.setItem("cl_theme",key);}catch{}}
-export const FONT="-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif";
+export const FONT="'Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
 
 // ─── TOAST GLOBAL ─────────────────────────────────────────────────────────────
 let _toastCb=null;
@@ -51,6 +51,26 @@ export const CATEGORIAS_DATA={
   "Viajes y Cultura":     {emoji:"✈️",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"},
   "Otros":                {emoji:"✨",grad:"linear-gradient(135deg,#666,#999)",bg:"#666"},
 };
+
+// ─── TIPO DE PUBLICACIÓN — identidad visual ────────────────────────────────────
+export const TIPO_PUB={
+  curso:{
+    accent:"#1A6ED8",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",
+    heroGrad:"linear-gradient(135deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%)",
+    dim:"#1A6ED810",border:"#1A6ED830",label:"Curso",emoji:"🎓",bg:"#EEF6FF",
+  },
+  particular:{
+    accent:"#E8881A",grad:"linear-gradient(135deg,#E8881A,#F5C842)",
+    heroGrad:"linear-gradient(135deg,#7A3500 0%,#D4700A 55%,#F5C842 100%)",
+    dim:"#E8881A10",border:"#E8881A30",label:"Clase particular",emoji:"👤",bg:"#FEF6EE",
+  },
+  pedido:{
+    accent:"#7B5CF0",grad:"linear-gradient(135deg,#7B5CF0,#E05C9A)",
+    heroGrad:"linear-gradient(135deg,#1A0A3D 0%,#7B5CF0 55%,#E05C9A 100%)",
+    dim:"#7B5CF010",border:"#7B5CF030",label:"Pedido",emoji:"📣",bg:"#E8E2FF",
+  },
+};
+export const getPubTipo=(pub)=>pub?.tipo==="busqueda"?TIPO_PUB.pedido:(pub?.modo==="particular")?TIPO_PUB.particular:TIPO_PUB.curso;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 export const avatarColor=(l)=>["#F5C842","#4ECB71","#E05C5C","#5CA8E0","#C85CE0"][(l||"?").toUpperCase().charCodeAt(0)%5];
@@ -181,20 +201,20 @@ export const Avatar=({letra,size=38,img})=>{
   return<div title={typeof letra==='string'&&letra.length>1?letra:undefined} style={{width:size,height:size,borderRadius:"50%",background:`linear-gradient(135deg,${from},${to})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:size*0.38,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.15)",letterSpacing:"-.5px"}}>{(letra||"?").toUpperCase()}</div>;
 };
 
-export const Tag=({tipo})=>(<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:tipo==="oferta"?C.accentDim:"#F59E0B15",color:tipo==="oferta"?C.accent:"#92400E",border:`1px solid ${tipo==="oferta"?C.accent+"50":"#F59E0B60"}`,fontFamily:FONT,letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}>{tipo==="oferta"?<>🎓 Clase</>:<>🔍 Búsqueda</>}</span>);
+export const Tag=({tipo})=>(<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:tipo==="oferta"?C.accentDim:TIPO_PUB.pedido.dim,color:tipo==="oferta"?C.accent:TIPO_PUB.pedido.accent,border:`1px solid ${tipo==="oferta"?C.accent+"50":TIPO_PUB.pedido.border}`,fontFamily:FONT,letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}>{tipo==="oferta"?<>🎓 Clase</>:<>📣 Pedido</>}</span>);
 
 export const StatusBadge=({activo,finalizado,pendiente})=>{
-  if(finalizado)return<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#4A5568",color:"#E2E8F0",letterSpacing:.2}}>Finalizado</span>;
-  if(pendiente)return<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#F59E0B15",color:"#B45309",border:"1px solid #F59E0B40",letterSpacing:.2}}>⏳ Pendiente</span>;
-  if(activo)return<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#2EC4A015",color:"#2EC4A0",border:"1px solid #2EC4A040",letterSpacing:.2}}>● Activa</span>;
-  return<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#71809615",color:"#718096",border:"1px solid #71809640",letterSpacing:.2}}>Pausada</span>;
+  if(finalizado)return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#4A5568",color:"#E2E8F0",letterSpacing:.2}}>Finalizado</span>;
+  if(pendiente)return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#F59E0B15",color:"#B45309",border:"1px solid #F59E0B40",letterSpacing:.2}}>⏳ Pendiente</span>;
+  if(activo)return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#2EC4A015",color:"#2EC4A0",border:"1px solid #2EC4A040",letterSpacing:.2}}>● Activa</span>;
+  return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#71809615",color:"#718096",border:"1px solid #71809640",letterSpacing:.2}}>Pausada</span>;
 };
 
-export const VerifiedBadge=()=>(<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:20,background:"linear-gradient(135deg,#1A6ED812,#2EC4A012)",color:C.info,border:`1px solid ${C.info}40`,fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:3}}><span style={{fontSize:10}}>✓</span> Verificado</span>);
+export const VerifiedBadge=()=>(<span style={{fontSize:12,fontWeight:700,padding:"3px 9px",borderRadius:20,background:"linear-gradient(135deg,#1A6ED812,#2EC4A012)",color:C.info,border:`1px solid ${C.info}40`,fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:3}}><span style={{fontSize:11}}>✓</span> Verificado</span>);
 
-export const StarRating=({val,count,small})=>{if(!count&&!val)return <span style={{color:C.muted,fontSize:small?11:12,fontStyle:"italic"}}>Sin valoraciones</span>;const v=parseFloat(val)||0;const full=Math.round(v);return<span style={{display:"inline-flex",alignItems:"center",gap:3}}><span style={{color:"#F59E0B",fontSize:small?13:14,letterSpacing:1}}>{"★".repeat(full)}<span style={{color:C.border}}>{"★".repeat(5-full)}</span></span><span style={{color:"#B45309",fontWeight:700,fontSize:small?11:13,marginLeft:2}}>{v.toFixed(1)}</span>{count!==undefined&&<span style={{color:C.muted,fontSize:small?10:11}}>({count})</span>}</span>;};
+export const StarRating=({val,count,small})=>{if(!count&&!val)return <span style={{color:C.muted,fontSize:small?12:13,fontStyle:"italic"}}>Sin valoraciones</span>;const v=parseFloat(val)||0;const full=Math.round(v);return<span style={{display:"inline-flex",alignItems:"center",gap:3}}><span style={{color:"#F59E0B",fontSize:small?13:15,letterSpacing:1}}>{"★".repeat(full)}<span style={{color:C.border}}>{"★".repeat(5-full)}</span></span><span style={{color:"#B45309",fontWeight:700,fontSize:small?12:13,marginLeft:2}}>{v.toFixed(1)}</span>{count!==undefined&&<span style={{color:C.muted,fontSize:small?11:12}}>({count})</span>}</span>;};
 
-export const Input=({style={},...props})=>(<input style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"10px 13px",color:C.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:FONT,transition:"border-color .15s",...style}}
+export const Input=({style={},...props})=>(<input style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"10px 13px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:FONT,transition:"border-color .15s",...style}}
   onFocus={e=>{e.target.style.borderColor=C.accent;e.target.style.boxShadow=`0 0 0 1px ${C.accent}`;}}
   onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}
   {...props}/>);
@@ -210,7 +230,7 @@ export const Btn=({children,variant="primary",style={},...props})=>{
     outline:{bg:"transparent",color:C.accent,border:`1px solid ${C.accent}`},
   };
   const s=styles[variant]||styles.primary;
-  return(<button style={{background:s.bg,color:s.color,border:s.border,borderRadius:20,padding:"8px 20px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,transition:"all .15s",...style}}
+  return(<button style={{background:s.bg,color:s.color,border:s.border,borderRadius:20,padding:"9px 22px",fontWeight:600,fontSize:15,cursor:"pointer",fontFamily:FONT,transition:"all .15s",...style}}
     onMouseEnter={e=>{e.currentTarget.style.opacity=".88";e.currentTarget.style.transform="scale(1.01)";}}
     onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="scale(1)";}}
     {...props}>{children}</button>);
@@ -274,9 +294,95 @@ export function SearchableSelect({value,onChange,options,placeholder="Todas",sty
   );
 }
 
-export const ErrMsg=({msg})=>msg?<div style={{color:C.danger,fontSize:12,margin:"5px 0",fontFamily:FONT,display:"flex",alignItems:"center",gap:5}}><span>⚠</span>{msg}</div>:null;
-export const Label=({children})=><div style={{color:C.muted,fontSize:12,fontWeight:600,letterSpacing:.3,marginBottom:6}}>{children}</div>;
-export const Modal=({children,onClose,width="min(600px,97vw)"})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}} onClick={onClose}><div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch"}} onClick={e=>e.stopPropagation()}>{children}</div></div>);
+export const ErrMsg=({msg})=>msg?<div style={{color:C.danger,fontSize:13,margin:"5px 0",fontFamily:FONT,display:"flex",alignItems:"center",gap:5}}><span>⚠</span>{msg}</div>:null;
+export const Label=({children})=><div style={{color:C.muted,fontSize:13,fontWeight:600,letterSpacing:.3,marginBottom:6}}>{children}</div>;
+export const Modal=({children,onClose,width="min(600px,97vw)"})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}}><div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch"}}>{children}</div></div>);
+
+// ─── LEGAL MODAL (T&C + Privacidad) ──────────────────────────────────────────
+const LEGAL_SECTIONS=[
+  {title:"1. Aceptación",body:"Al registrarte en Luderis aceptás estos Términos y Condiciones. Si no estás de acuerdo, no uses la plataforma."},
+  {title:"2. Descripción del servicio",body:"Luderis es una plataforma que conecta docentes y estudiantes en Argentina. Facilitamos el encuentro entre partes pero no somos empleadores, agencias de colocación ni intermediarios educativos oficiales. Las relaciones contractuales se establecen directamente entre docentes y alumnos."},
+  {title:"3. Registro y cuenta",body:"Debés tener al menos 18 años o contar con autorización expresa de un tutor legal. Sos responsable de mantener la confidencialidad de tu contraseña y de toda actividad que ocurra en tu cuenta. Notificá inmediatamente cualquier uso no autorizado a contacto@luderis.com."},
+  {title:"4. Uso aceptable",body:"Está prohibido publicar contenido falso, ofensivo, discriminatorio o ilegal. No podés usar la plataforma para acosar, engañar o perjudicar a otros usuarios. No podés eludir los mecanismos de pago de la plataforma para acordar transacciones fuera de Luderis."},
+  {title:"5. Contenido del usuario",body:"Al publicar contenido en Luderis (descripciones, materiales, reseñas) otorgás a Luderis una licencia no exclusiva, gratuita y mundial para mostrarlo en la plataforma. Sos el único responsable del contenido que publicás y garantizás que tenés los derechos necesarios para hacerlo."},
+  {title:"6. Pagos y comisiones",body:"Los pagos procesados a través de MercadoPago están sujetos a los términos de dicho servicio. Luderis cobra una comisión del 10% sobre transacciones realizadas dentro de la plataforma. Los precios publicados son en la moneda indicada por el docente."},
+  {title:"7. Limitación de responsabilidad",body:"Luderis no garantiza la calidad, idoneidad ni veracidad de los servicios ofrecidos por los docentes. No somos responsables por disputas, daños o pérdidas que surjan de las relaciones entre usuarios. En ningún caso nuestra responsabilidad superará el monto pagado en la plataforma en los últimos 3 meses."},
+  {title:"8. Modificaciones",body:"Podemos actualizar estos términos con previo aviso de 30 días por email. El uso continuado de la plataforma implica la aceptación de los nuevos términos."},
+  {title:"9. Ley aplicable",body:"Estos términos se rigen por las leyes de la República Argentina. Cualquier disputa será resuelta ante los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires."},
+  {title:"10. Contacto",body:"Ante dudas, reclamos o solicitudes escribinos a contacto@luderis.com"},
+];
+const PRIVACY_SECTIONS=[
+  {title:"Responsable del tratamiento",body:"Luderis (contacto@luderis.com) es responsable del tratamiento de tus datos personales conforme a la Ley 25.326 de Protección de Datos Personales de la República Argentina."},
+  {title:"Datos que recopilamos",body:"• Email y contraseña (para autenticación)\n• Nombre visible, foto de perfil y biografía (opcionales, proporcionados por vos)\n• Ciudad y ubicación aproximada (opcional)\n• Información de perfil docente: DNI, fecha de nacimiento, situación fiscal (solo para verificación KYC)\n• Historial de interacciones: mensajes, inscripciones, reseñas y pagos"},
+  {title:"Finalidad del tratamiento",body:"Usamos tus datos para:\n• Proveer y mejorar el servicio\n• Verificar tu identidad como docente\n• Procesar pagos y emitir comprobantes\n• Enviarte notificaciones del servicio\n• Prevenir fraudes y usos indebidos"},
+  {title:"Base legal",body:"El tratamiento se basa en: (a) la ejecución del contrato de servicio que aceptás al registrarte, (b) tu consentimiento explícito para datos sensibles (KYC), y (c) el interés legítimo de Luderis en prevenir fraudes."},
+  {title:"Compartición de datos",body:"No vendemos tus datos a terceros. Podemos compartirlos con:\n• MercadoPago (procesamiento de pagos)\n• Resend (envío de emails transaccionales)\n• Supabase (almacenamiento e infraestructura)\nTodos bajo acuerdos de confidencialidad y conforme a la normativa aplicable."},
+  {title:"Retención de datos",body:"Conservamos tus datos mientras tu cuenta esté activa. Al solicitar la eliminación de tu cuenta, borraremos tus datos personales en un plazo máximo de 30 días, excepto los que debamos conservar por obligaciones legales (ej. registros de pagos por 5 años según normativa fiscal)."},
+  {title:"Tus derechos",body:"Conforme a la Ley 25.326 tenés derecho a: acceder a tus datos, rectificarlos, suprimirlos, y oponerte a su tratamiento. Para ejercer estos derechos escribinos a contacto@luderis.com. Podés revocar tu consentimiento en cualquier momento sin que ello afecte la licitud del tratamiento anterior."},
+  {title:"Seguridad",body:"Implementamos medidas técnicas y organizativas para proteger tus datos: cifrado en tránsito (HTTPS/TLS), acceso con credenciales únicas, y políticas de acceso mínimo necesario (Row Level Security en base de datos)."},
+  {title:"Cookies",body:"Usamos almacenamiento local (localStorage) para mantener tu sesión y preferencias. No usamos cookies de seguimiento publicitario."},
+];
+export function LegalModal({tab="tc",onClose}){
+  const [activeTab,setActiveTab]=React.useState(tab);
+  const sections=activeTab==="tc"?LEGAL_SECTIONS:PRIVACY_SECTIONS;
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9990,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(640px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"18px 20px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontWeight:800,fontSize:16,color:C.text}}>Luderis — Legal</div>
+            <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            {[["tc","Términos y Condiciones"],["priv","Política de Privacidad"]].map(([id,label])=>(
+              <button key={id} onClick={()=>setActiveTab(id)}
+                style={{padding:"7px 14px",borderRadius:"8px 8px 0 0",border:"none",fontSize:12,fontWeight:activeTab===id?700:400,cursor:"pointer",fontFamily:FONT,background:activeTab===id?C.bg:"transparent",color:activeTab===id?C.accent:C.muted,borderBottom:activeTab===id?`2px solid ${C.accent}`:"2px solid transparent"}}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{overflowY:"auto",padding:"20px",flex:1,WebkitOverflowScrolling:"touch"}}>
+          {sections.map(({title,body})=>(
+            <div key={title} style={{marginBottom:18,paddingBottom:18,borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>{title}</div>
+              <p style={{color:C.muted,fontSize:12,lineHeight:1.7,margin:0,whiteSpace:"pre-line"}}>{body}</p>
+            </div>
+          ))}
+          <p style={{color:C.muted,fontSize:11,textAlign:"center",marginTop:8}}>Última actualización: {new Date().toLocaleDateString("es-AR",{month:"long",year:"numeric"})}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Reemplaza window.confirm() con un modal accesible.
+ * Uso: const {confirmEl,confirm}=useConfirm();
+ *   await confirm({msg:"¿Borrar?",confirmLabel:"Borrar",danger:true}) → true/false
+ *   Renderizar {confirmEl} en el componente.
+ */
+export function useConfirm(){
+  const [state,setState]=React.useState(null);// {msg,confirmLabel,cancelLabel,danger,resolve}
+  const confirm=React.useCallback((opts)=>new Promise(resolve=>{
+    setState({msg:opts.msg||"¿Confirmar?",confirmLabel:opts.confirmLabel||"Confirmar",cancelLabel:opts.cancelLabel||"Cancelar",danger:!!opts.danger,resolve});
+  }),[]);
+  const close=(val)=>{if(state){state.resolve(val);setState(null);}};
+  const confirmEl=state?(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={()=>close(false)}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"min(360px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"20px 20px 16px"}}>
+          <div style={{fontSize:14,color:C.text,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{state.msg}</div>
+        </div>
+        <div style={{display:"flex",gap:8,padding:"0 16px 16px",justifyContent:"flex-end"}}>
+          <button onClick={()=>close(false)} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>{state.cancelLabel}</button>
+          <button onClick={()=>close(true)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:state.danger?C.danger:C.accent,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FONT}}>{state.confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  ):null;
+  return{confirm,confirmEl};
+}
 export const Chip=({label,val})=>val?(<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px"}}><div style={{color:C.muted,fontSize:11,marginBottom:2}}>{label}</div><div style={{color:C.text,fontWeight:600,fontSize:13}}>{val}</div></div>):null;
 export const MiniStars=({val,count})=>{if(!val)return null;const v=parseFloat(val);return(<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"linear-gradient(135deg,#F59E0B12,#F5C84212)",border:"1px solid #F59E0B35",borderRadius:20,padding:"3px 9px"}}><span style={{color:"#B45309",fontSize:12}}>★</span><span style={{color:"#B45309",fontSize:12,fontWeight:700}}>{v.toFixed(1)}</span>{count>0&&<span style={{color:C.muted,fontSize:11}}>({count})</span>}</span>);};
 
@@ -336,15 +442,28 @@ export function useMPRetorno(onSuccess){
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const mp=params.get("mp");
+    const pubId=params.get("pub");
     if(!mp)return;
+    // Limpiar params de la URL inmediatamente
     const url=new URL(window.location.href);
     url.searchParams.delete("mp");
     url.searchParams.delete("pub");
     window.history.replaceState({},"",url.toString());
+
     if(mp==="success"){
-      toast("¡Pago aprobado! Ya tenés acceso a la clase 🎉","success",6000);
-      try{const p=JSON.parse(localStorage.getItem("mp_pending")||"{}");if(p.pub_id)onSuccess(p.pub_id);}catch{}
+      // NO inscribir aquí — el webhook de MercadoPago es quien inscribe y acredita.
+      // Solo notificamos al usuario y le avisamos que en segundos va a ver el acceso.
+      toast("¡Pago recibido! Confirmando acceso…","success",4000);
+      // Sondear cada 3s hasta que aparezca la inscripción (máx 30s)
       try{localStorage.removeItem("mp_pending");}catch{}
+      if(pubId&&onSuccess){
+        let intentos=0;
+        const t=setInterval(()=>{
+          intentos++;
+          onSuccess(pubId,false);// false = solo refrescar, no navegar
+          if(intentos>=10)clearInterval(t);
+        },3000);
+      }
     }else if(mp==="pending"){
       toast("El pago está siendo procesado. Te avisaremos cuando se confirme.","info",6000);
     }else if(mp==="failure"){

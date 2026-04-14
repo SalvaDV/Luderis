@@ -5,7 +5,7 @@ import {
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, CATEGORIAS_DATA, CalendarioCurso,
-  LUD,
+  LUD, getPubTipo,
 } from "./shared";
 import { FavBtn, OfertarBtn, ShareBtn } from "./App";
 import { DescExpandible, InscribirseBtn, RelacionadasSection, ReseñasSeccion } from "./CursoPage";
@@ -20,6 +20,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   useEffect(()=>{
     // Bloquear scroll del body mientras la página está abierta
     document.body.style.overflow="hidden";
+    let mounted=true;
     try{sb.incrementarVistas(post.id,session.access_token);}catch{}
     Promise.all([
       sb.getReseñas(post.id,session.access_token),
@@ -27,6 +28,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       sb.getMisInscripciones(session.user.email,session.access_token),
       post.tipo==="busqueda"&&!esMio?sb.getMisOfertas(session.user.email,session.access_token).catch(()=>[]):Promise.resolve([])
     ]).then(([pub,usr,ins,misOfertas])=>{
+      if(!mounted)return;
       setReseñas(pub);setReseñasUsuario(usr);
       const insc=ins.find(i=>i.publicacion_id===post.id)||null;
       setInscripcion(insc);
@@ -35,40 +37,52 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
         setMiOfertaPendiente(!!miOfertaEsta.find(o=>o.estado==="pendiente"));
         setPuedeChat(!!miOfertaEsta.find(o=>o.estado==="aceptada"));
       }else{setPuedeChat(!!insc);}
-    }).finally(()=>setLoading(false));
-    return()=>{document.body.style.overflow="";};
+    }).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;document.body.style.overflow="";};
   },[post.id,post.autor_email,post.tipo,session]);// eslint-disable-line
 
   const avgPub=calcAvg(reseñas);const avgUser=calcAvg(reseñasUsuario);
 
   return(
     <div style={{position:"fixed",inset:0,zIndex:200,background:C.bg,display:"flex",flexDirection:"column",fontFamily:FONT,overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"fadeIn .18s ease"}}>
+      <style>{`
+        @media(max-width:600px){
+          .dm-topbar{padding:0 14px!important}
+          .dm-banner{padding:0 16px!important;height:110px!important}
+          .dm-banner-emoji{font-size:44px!important}
+          .dm-body-pad{padding:0 12px!important}
+          .dm-main-layout{gap:16px!important}
+          .dm-sidebar{flex:1 1 100%!important;min-width:0!important}
+        }
+      `}</style>
 
       {/* ── Barra superior ── */}
-      <div style={{position:"sticky",top:0,zIndex:10,background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"0 20px",height:60,display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 8px rgba(0,0,0,.06)"}}>
+      {(()=>{const T=getPubTipo(post);return(
+      <div className="dm-topbar" style={{position:"sticky",top:0,zIndex:10,background:C.surface,borderBottom:`2px solid ${T.accent}`,padding:"0 28px",height:64,display:"flex",alignItems:"center",gap:14,boxShadow:"0 1px 8px rgba(0,0,0,.06)"}}>
         <button onClick={onClose}
-          style={{width:38,height:38,borderRadius:"50%",background:C.bg,border:`1px solid ${C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.text,flexShrink:0,transition:"background .15s",marginRight:4}}
-          onMouseEnter={e=>e.currentTarget.style.background=C.border}
-          onMouseLeave={e=>e.currentTarget.style.background=C.bg}>←</button>
+          style={{width:36,height:36,borderRadius:"50%",background:T.dim,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:T.accent,flexShrink:0,transition:"background .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.background=T.border}
+          onMouseLeave={e=>e.currentTarget.style.background=T.dim}>←</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:700,color:C.text,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
-          <div style={{fontSize:12,color:C.muted}}>{post.materia}{post.tipo==="busqueda"?" · Búsqueda":""}</div>
+          <div style={{fontSize:12,color:C.muted,display:"flex",alignItems:"center",gap:5}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600}}>· 📣 Pedido</span>}</div>
         </div>
         <div style={{display:"flex",gap:8,flexShrink:0}}>
           <ShareBtn post={post} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"6px 12px",fontSize:12}}/>
           <FavBtn post={post} session={session} onFavChange={()=>{}}/>
         </div>
       </div>
+      );})()}
 
       {/* ── Cuerpo ── */}
       <div style={{flex:1,maxWidth:900,margin:"0 auto",width:"100%",padding:"0 0 100px"}}>
 
         {/* ── Banner visual de categoría ── */}
         {(()=>{const catData=CATEGORIAS_DATA[post.materia]||{emoji:"📚",grad:`linear-gradient(135deg,${LUD.dark},${LUD.blue})`};return(
-          <div style={{height:140,background:catData.grad,display:"flex",alignItems:"center",padding:"0 28px",gap:20,position:"relative",overflow:"hidden",marginBottom:0}}>
+          <div className="dm-banner" style={{height:140,background:catData.grad,display:"flex",alignItems:"center",padding:"0 28px",gap:20,position:"relative",overflow:"hidden",marginBottom:0}}>
             <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",background:"rgba(255,255,255,.06)",top:-60,right:-40,pointerEvents:"none"}}/>
             <div style={{position:"absolute",width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,.04)",bottom:-40,left:60,pointerEvents:"none"}}/>
-            <span style={{fontSize:64,filter:"drop-shadow(0 4px 12px rgba(0,0,0,.25))",position:"relative",zIndex:1,lineHeight:1}}>{catData.emoji}</span>
+            <span className="dm-banner-emoji" style={{fontSize:64,filter:"drop-shadow(0 4px 12px rgba(0,0,0,.25))",position:"relative",zIndex:1,lineHeight:1}}>{catData.emoji}</span>
             <div style={{position:"relative",zIndex:1,flex:1,minWidth:0}}>
               <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,.7)",letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>{post.materia}</div>
               <h1 style={{color:"#fff",fontSize:"clamp(18px,3.5vw,26px)",fontWeight:800,margin:0,lineHeight:1.2,letterSpacing:"-.3px",textShadow:"0 2px 8px rgba(0,0,0,.2)",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{post.titulo}</h1>
@@ -89,7 +103,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
         </div>
 
         {/* ── Layout principal: contenido izquierdo + caja flotante derecha ── */}
-        <div style={{display:"flex",gap:32,alignItems:"flex-start",padding:"0 20px",flexWrap:"wrap"}}>
+        <div className="dm-main-layout dm-body-pad" style={{display:"flex",gap:32,alignItems:"flex-start",padding:"0 20px",flexWrap:"wrap"}}>
 
           {/* ─ Columna izquierda ─ */}
           <div style={{flex:"1 1 340px",minWidth:0}}>
@@ -163,7 +177,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           </div>
 
           {/* ─ Caja flotante derecha ─ */}
-          <div style={{flex:"0 0 300px",minWidth:260}}>
+          <div className="dm-sidebar" style={{flex:"0 0 300px",minWidth:260}}>
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px",boxShadow:"0 4px 24px rgba(0,0,0,.08)"}}>
 
               {/* Precio */}

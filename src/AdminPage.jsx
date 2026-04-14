@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
-import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn } from "./shared";
+import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm } from "./shared";
 
 // ─── ADMIN EMAILS — solo estos pueden acceder ─────────────────────────────────
 const FALLBACK_ADMIN = "salvadordevedia@gmail.com";
@@ -70,6 +70,7 @@ const SearchInput = ({ value, onChange, placeholder }) => (
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: "overview", label: "📊 Resumen", },
+  { id: "docentes", label: "🎓 Docentes" },
   { id: "users", label: "👥 Usuarios" },
   { id: "pubs", label: "📋 Publicaciones" },
   { id: "reports", label: "🚨 Denuncias" },
@@ -85,11 +86,13 @@ export default function AdminPage({ session, onClose, onChatUser }) {
 
   React.useEffect(() => {
     if (session?.user?.email === FALLBACK_ADMIN) { setIsAdmin(true); setCheckingAdmin(false); return; }
+    let mounted=true;
     // Check rol in DB
     adminDb(`usuarios?email=eq.${encodeURIComponent(session.user.email)}&select=rol`, "GET", null, session.access_token)
-      .then(rows => setIsAdmin(rows?.[0]?.rol === "admin"))
-      .catch(() => setIsAdmin(false))
-      .finally(() => setCheckingAdmin(false));
+      .then(rows => { if(mounted)setIsAdmin(rows?.[0]?.rol === "admin"); })
+      .catch(() => { if(mounted)setIsAdmin(false); })
+      .finally(() => { if(mounted)setCheckingAdmin(false); });
+    return()=>{mounted=false;};
   }, [session]);
 
   if (checkingAdmin) return (
@@ -112,7 +115,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, overflowY: "auto", fontFamily: FONT }}>
       {/* Header */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "12px 14px", display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10 }}>
         <button onClick={onClose} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: FONT }}>← Salir</button>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -125,10 +128,10 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       </div>
 
       {/* Tab bar */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 24px", display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none" }}>
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 8px", display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 14px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s" }}>
+            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 10px", fontSize: 12, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s" }}>
             {t.label}
           </button>
         ))}
@@ -137,6 +140,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       {/* Content */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px" }}>
         {tab === "overview" && <OverviewTab session={session} />}
+        {tab === "docentes" && <DocentesTab session={session} />}
         {tab === "users" && <UsersTab session={session} onChatUser={onChatUser} />}
         {tab === "pubs" && <PubsTab session={session} />}
         {tab === "reports" && <ReportsTab session={session} />}
@@ -155,13 +159,16 @@ function OverviewTab({ session }) {
   const [actividad, setActividad] = useState([]);
 
   useEffect(() => {
+    let mounted=true;
     Promise.all([
-      adminDb("usuarios?select=id,created_at,email", "GET", null, session.access_token).catch(() => []),
-      adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda", "GET", null, session.access_token).catch(() => []),
-      adminDb("inscripciones?select=id,created_at", "GET", null, session.access_token).catch(() => []),
+      adminDb("usuarios?select=id,created_at,email,rol,bloqueado", "GET", null, session.access_token).catch(() => []),
+      adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda,materia,autor_email,autor_nombre", "GET", null, session.access_token).catch(() => []),
+      adminDb("inscripciones?select=id,created_at,publicacion_id", "GET", null, session.access_token).catch(() => []),
       adminDb("pagos?select=id,monto,estado,created_at", "GET", null, session.access_token).catch(() => []),
       adminDb("denuncias?select=id,created_at,revisada", "GET", null, session.access_token).catch(() => []),
-    ]).then(([users, pubs, insc, pagos, denuncias]) => {
+      adminDb("rese%C3%B1as?select=id,estrellas,created_at", "GET", null, session.access_token).catch(() => []),
+    ]).then(([users, pubs, insc, pagos, denuncias, resenas]) => {
+      if(!mounted)return;
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       const semana = new Date(hoy); semana.setDate(semana.getDate() - 7);
       const mes = new Date(hoy); mes.setDate(mes.getDate() - 30);
@@ -188,18 +195,50 @@ function OverviewTab({ session }) {
       // KPIs de denuncias
       const motivoCount = {};
       denuncias.forEach(d => { if(d.motivo) motivoCount[d.motivo] = (motivoCount[d.motivo]||0)+1; });
-      const topMotivos = Object.entries(motivoCount).sort((a,b)=>b[1]-a[1]).slice(0,4);
       const denResueltas = denuncias.filter(d => d.revisada).length;
-      const tasaResolucion = denuncias.length > 0 ? Math.round((denResueltas/denuncias.length)*100) : 0;
       const accionesMap = {};
       denuncias.filter(d=>d.accion_tomada).forEach(d=>{accionesMap[d.accion_tomada]=(accionesMap[d.accion_tomada]||0)+1;});
+
+      // Métricas adicionales
+      const pubsInactivas = pubs.filter(p => p.activo === false).length;
+      const pubsActivas = pubs.filter(p => p.activo !== false).length;
+      const usuariosBloqueados = users.filter(u => u.bloqueado).length;
+      const usuariosPorRol = users.reduce((acc, u) => { const r = u.rol || "alumno"; acc[r] = (acc[r]||0)+1; return acc; }, {});
+      const ratingPromedio = resenas.length > 0 ? (resenas.reduce((a,r)=>a+(Number(r.estrellas)||0),0)/resenas.length).toFixed(1) : null;
+      const nuevosUltimoMes = users.filter(u => new Date(u.created_at) >= mes).length;
+
+      // Cohort: últimos 7 días — nuevos usuarios y nuevas inscripciones por día
+      const cohortUsuarios = Array.from({length:7},(_,i)=>{
+        const d = new Date(hoy); d.setDate(d.getDate() - (6-i));
+        const next = new Date(d); next.setDate(next.getDate()+1);
+        return { dia: d.toLocaleDateString("es-AR",{weekday:"short"}), count: users.filter(u=>{ const t=new Date(u.created_at); return t>=d&&t<next; }).length };
+      });
+      const cohortInscripciones = Array.from({length:7},(_,i)=>{
+        const d = new Date(hoy); d.setDate(d.getDate() - (6-i));
+        const next = new Date(d); next.setDate(next.getDate()+1);
+        return { dia: d.toLocaleDateString("es-AR",{weekday:"short"}), count: insc.filter(x=>{ const t=new Date(x.created_at); return t>=d&&t<next; }).length };
+      });
+
+      // Top docentes por inscripciones
+      const pubIdToAutor = {};
+      pubs.forEach(p => { pubIdToAutor[p.id] = { email: p.autor_email, nombre: p.autor_nombre }; });
+      const inscPorAutor = {};
+      insc.forEach(i => {
+        const autor = pubIdToAutor[i.publicacion_id];
+        if (!autor?.email) return;
+        if (!inscPorAutor[autor.email]) inscPorAutor[autor.email] = { nombre: autor.nombre, count: 0 };
+        inscPorAutor[autor.email].count++;
+      });
+      const topDocentes = Object.entries(inscPorAutor).map(([email, d]) => ({ email, nombre: d.nombre, count: d.count })).sort((a,b)=>b.count-a.count).slice(0,5);
 
       setStats({
         totalUsuarios: users.length,
         nuevosHoy: users.filter(u => new Date(u.created_at) >= hoy).length,
         nuevosSemana: users.filter(u => new Date(u.created_at) >= semana).length,
+        nuevosUltimoMes,
         totalPubs: pubs.length,
-        pubsActivas: pubs.filter(p => p.activo).length,
+        pubsActivas,
+        pubsInactivas,
         totalInscripciones: insc.length,
         inscSemana: insc.filter(i => new Date(i.created_at) >= semana).length,
         totalPagos: pagosAprobados.length,
@@ -207,12 +246,22 @@ function OverviewTab({ session }) {
         denunciasPendientes: denuncias.filter(d => !d.revisada).length,
         ingresosPorTipo,
         topMaterias,
+        topDocentes,
         comisionPct,
+        usuariosBloqueados,
+        usuariosPorRol,
+        ratingPromedio,
+        cohortUsuarios,
+        cohortInscripciones,
+        inscPorPub: pubsActivas > 0 ? (insc.length / pubsActivas).toFixed(1) : "—",
+        tasaResolucion: denuncias.length > 0 ? Math.round((denResueltas/denuncias.length)*100) : 0,
+        denResueltas,
+        accionesMap,
         kpiDenuncias: {
           total: denuncias.length,
           pendientes: denuncias.filter(d => !d.revisada).length,
           tasaResolucion: denuncias.length > 0 ? Math.round((denuncias.filter(d => d.revisada).length / denuncias.length) * 100) : 0,
-          bloqueados: users.filter(u => u.bloqueado).length,
+          bloqueados: usuariosBloqueados,
           topMotivos: Object.entries(
             denuncias.reduce((acc, d) => { const m = d.motivo || "Sin especificar"; acc[m] = (acc[m]||0)+1; return acc; }, {})
           ).sort((a,b)=>b[1]-a[1]).slice(0,5),
@@ -227,7 +276,8 @@ function OverviewTab({ session }) {
         ...denuncias.filter(d => !d.revisada).slice(-3).map(d => ({ tipo: "denuncia", texto: "⚠ Nueva denuncia pendiente", time: d.created_at })),
       ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 15);
       setActividad(items);
-    }).finally(() => setLoading(false));
+    }).finally(() => { if(mounted)setLoading(false); });
+    return()=>{mounted=false;};
   }, [session]);
 
   if (loading) return <div style={{ padding: 40 }}><Spinner /></div>;
@@ -249,7 +299,7 @@ function OverviewTab({ session }) {
       )}
 
       {/* KPIs principales */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 14 }}>
         <StatBox icon="👥" label="Usuarios totales" value={stats.totalUsuarios} sub={`+${stats.nuevosHoy} hoy · +${stats.nuevosSemana} esta semana`} color={C.info} />
         <StatBox icon="📋" label="Publicaciones" value={stats.totalPubs} sub={`${stats.pubsActivas} activas`} color={C.accent} />
         <StatBox icon="🎓" label="Inscripciones" value={stats.totalInscripciones} sub={`+${stats.inscSemana} esta semana`} color={C.success} />
@@ -262,7 +312,7 @@ function OverviewTab({ session }) {
 
       {/* KPIs de denuncias */}
       {stats.topMotivos !== undefined && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
           <Card>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🚨 Motivos más frecuentes</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -302,7 +352,7 @@ function OverviewTab({ session }) {
 
       {/* KPIs por categoría */}
       {stats.ingresosPorTipo && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
           <Card>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>💰 Ingresos por tipo de clase</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -341,7 +391,7 @@ function OverviewTab({ session }) {
 
       {/* KPIs de denuncias */}
       {stats.kpiDenuncias && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
           <Card>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🚨 Métricas de denuncias</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -381,6 +431,101 @@ function OverviewTab({ session }) {
         </div>
       )}
 
+      {/* Tendencia 7 días */}
+      <Card>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>📈 Tendencia 7 días</div>
+        {[
+          { label: "Nuevos usuarios", data: stats.cohortUsuarios, color: C.info },
+          { label: "Nuevas inscripciones", data: stats.cohortInscripciones, color: C.success },
+        ].map(({ label, data, color }) => {
+          const maxVal = Math.max(...data.map(d => d.count), 1);
+          return (
+            <div key={label} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 6, fontWeight: 600 }}>{label}</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 44 }}>
+                {data.map((d, i) => (
+                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <div style={{ fontSize: 9, color: C.muted }}>{d.count > 0 ? d.count : ""}</div>
+                    <div style={{ width: "100%", background: color, borderRadius: "3px 3px 0 0", height: Math.max(3, (d.count / maxVal) * 34), opacity: d.count > 0 ? 0.85 : 0.15 }} />
+                    <div style={{ fontSize: 9, color: C.muted }}>{d.dia}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </Card>
+
+      {/* Top docentes + Funnel conversión */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
+        <Card>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🏆 Top docentes</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {stats.topDocentes.length === 0 ? <div style={{ color: C.muted, fontSize: 13 }}>Sin datos aún</div> :
+              stats.topDocentes.map((d, i) => (
+                <div key={d.email} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, color: C.muted, fontWeight: 700, minWidth: 16 }}>#{i+1}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre || d.email.split("@")[0]}</div>
+                    <div style={{ fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.email}</div>
+                  </div>
+                  <span style={{ fontSize: 12, color: C.info, fontWeight: 700, flexShrink: 0 }}>{d.count} insc.</span>
+                </div>
+              ))}
+          </div>
+        </Card>
+        <Card>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🎯 Funnel de conversión</div>
+          {[
+            { label: "Usuarios registrados", value: stats.totalUsuarios, pct: 100, color: C.info },
+            { label: "Inscripciones totales", value: stats.totalInscripciones, pct: stats.totalUsuarios > 0 ? Math.round((stats.totalInscripciones / stats.totalUsuarios) * 100) : 0, color: C.success },
+            { label: "Pagos aprobados", value: stats.totalPagos, pct: stats.totalInscripciones > 0 ? Math.round((stats.totalPagos / stats.totalInscripciones) * 100) : 0, color: "#F59E0B" },
+          ].map(({ label, value, pct, color }) => (
+            <div key={label} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: C.text }}>{label}</span>
+                <span style={{ fontSize: 12, color, fontWeight: 700 }}>{value} <span style={{ color: C.muted, fontWeight: 400 }}>({pct}%)</span></span>
+              </div>
+              <div style={{ height: 6, background: C.border, borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", background: color, borderRadius: 4, width: `${pct}%`, transition: "width .4s" }} />
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: 8, fontSize: 12, color: C.muted }}>Insc. por usuario: <span style={{ color: C.text, fontWeight: 700 }}>{stats.inscPorPub}</span></div>
+        </Card>
+      </div>
+
+      {/* Plataforma en números */}
+      <Card>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>💤 Plataforma en números</div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.danger }}>{stats.usuariosBloqueados}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Bloqueados</div>
+          </div>
+          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.warn }}>{stats.pubsInactivas}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Pubs. inactivas</div>
+          </div>
+          {stats.ratingPromedio && (
+            <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#F59E0B" }}>★ {stats.ratingPromedio}</div>
+              <div style={{ fontSize: 11, color: C.muted }}>Rating promedio</div>
+            </div>
+          )}
+          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.info }}>{stats.nuevosUltimoMes}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Nuevos (30d)</div>
+          </div>
+          {Object.entries(stats.usuariosPorRol).map(([rol, count]) => (
+            <div key={rol} style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 90 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: C.accent }}>{count}</div>
+              <div style={{ fontSize: 11, color: C.muted }}>{rol === "admin" ? "Admins" : rol === "docente" ? "Docentes" : "Alumnos"}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       <Card>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Actividad reciente</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -398,6 +543,116 @@ function OverviewTab({ session }) {
   );
 }
 
+// ─── TAB: DOCENTES ────────────────────────────────────────────────────────────
+function DocentesTab({ session }) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState("inscripciones");
+  const [expanded, setExpanded] = useState(null);
+
+  useEffect(() => {
+    let mounted=true;
+    Promise.all([
+      adminDb("publicaciones?select=id,titulo,autor_email,autor_nombre,activo,tipo,precio&tipo=eq.oferta", "GET", null, session.access_token).catch(() => []),
+      adminDb("rese%C3%B1as?select=estrellas,publicacion_id", "GET", null, session.access_token).catch(() => []),
+      adminDb("inscripciones?select=id,publicacion_id", "GET", null, session.access_token).catch(() => []),
+    ]).then(([pubs, resenas, insc]) => {
+      if(!mounted)return;
+      // Build per-docente stats
+      const docenteMap = {};
+      pubs.forEach(p => {
+        if (!p.autor_email) return;
+        if (!docenteMap[p.autor_email]) docenteMap[p.autor_email] = { email: p.autor_email, nombre: p.autor_nombre, pubs: [], inscCount: 0, ratings: [] };
+        docenteMap[p.autor_email].pubs.push(p);
+      });
+      const pubIdToAutor = {};
+      pubs.forEach(p => { pubIdToAutor[p.id] = p.autor_email; });
+      insc.forEach(i => {
+        const ae = pubIdToAutor[i.publicacion_id];
+        if (ae && docenteMap[ae]) docenteMap[ae].inscCount++;
+      });
+      resenas.forEach(r => {
+        const ae = pubIdToAutor[r.publicacion_id];
+        if (ae && docenteMap[ae]) docenteMap[ae].ratings.push(Number(r.estrellas)||0);
+      });
+      const result = Object.values(docenteMap).map(d => ({
+        ...d,
+        pubCount: d.pubs.length,
+        ratingAvg: d.ratings.length > 0 ? (d.ratings.reduce((a,b)=>a+b,0)/d.ratings.length).toFixed(1) : null,
+      }));
+      setData(result);
+    }).finally(() => { if(mounted)setLoading(false); });
+    return()=>{mounted=false;};
+  }, [session]);
+
+  if (loading) return <div style={{ padding: 40 }}><Spinner /></div>;
+
+  const sorted = [...data].sort((a, b) => sortBy === "rating" ? (b.ratingAvg||0) - (a.ratingAvg||0) : b.inscCount - a.inscCount);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>🎓 Docentes ({data.length})</div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          {[["inscripciones","Por inscripciones"],["rating","Por rating"]].map(([v,l]) => (
+            <button key={v} onClick={() => setSortBy(v)}
+              style={{ background: sortBy===v ? C.accent : "transparent", color: sortBy===v ? "#fff" : C.muted, border: `1px solid ${sortBy===v ? C.accent : C.border}`, borderRadius: 20, padding: "5px 13px", fontSize: 12, cursor: "pointer", fontFamily: FONT }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowX: "auto" }}>
+        {sorted.length === 0 && <div style={{ color: C.muted, fontSize: 13 }}>Sin docentes aún.</div>}
+        {sorted.map(d => (
+          <div key={d.email} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+            <div onClick={() => setExpanded(expanded === d.email ? null : d.email)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.accent + "22", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.accent, fontSize: 15, flexShrink: 0 }}>
+                {(d.nombre || d.email)[0].toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{d.nombre || d.email.split("@")[0]}</div>
+                <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.email}</div>
+              </div>
+              <div style={{ display: "flex", gap: 14, alignItems: "center", flexShrink: 0 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.info }}>{d.inscCount}</div>
+                  <div style={{ fontSize: 10, color: C.muted }}>Inscriptos</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.accent }}>{d.pubCount}</div>
+                  <div style={{ fontSize: 10, color: C.muted }}>Cursos</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#F59E0B" }}>{d.ratingAvg ? `★ ${d.ratingAvg}` : "—"}</div>
+                  <div style={{ fontSize: 10, color: C.muted }}>Rating</div>
+                </div>
+                <span style={{ fontSize: 13, color: C.muted }}>{expanded === d.email ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            {expanded === d.email && (
+              <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px 16px", background: C.bg }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 8 }}>PUBLICACIONES</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {d.pubs.map(p => (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: p.activo ? C.success : C.muted, flexShrink: 0 }} />
+                      <div style={{ flex: 1, fontSize: 12, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.titulo}</div>
+                      {p.precio && <span style={{ fontSize: 11, color: C.muted }}>${Number(p.precio).toLocaleString("es-AR")}</span>}
+                      <span style={{ fontSize: 10, color: p.activo ? C.success : C.muted }}>{p.activo ? "activa" : "inactiva"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── TAB: USUARIOS ────────────────────────────────────────────────────────────
 function UsersTab({ session, onChatUser }) {
   const [users, setUsers] = useState([]);
@@ -406,6 +661,7 @@ function UsersTab({ session, onChatUser }) {
   const [filtro, setFiltro] = useState("todos");
   const [selected, setSelected] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const {confirm:confirmU,confirmEl:confirmElU}=useConfirm();
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -427,6 +683,7 @@ function UsersTab({ session, onChatUser }) {
   });
 
   const bloquear = async (u) => {
+    if(actionLoading)return;
     setActionLoading(true);
     try {
       await adminAction("toggle_bloqueo", { user_id: u.id, bloqueado: !u.bloqueado }, session.access_token);
@@ -437,7 +694,8 @@ function UsersTab({ session, onChatUser }) {
   };
 
   const eliminar = async (u) => {
-    if (!window.confirm(`¿Eliminar el usuario ${u.email}? Esta acción no se puede deshacer.`)) return;
+    if (!await confirmU({msg:`¿Eliminar el usuario ${u.email}? Esta acción no se puede deshacer.`,confirmLabel:"Eliminar",danger:true})) return;
+    if(actionLoading)return;
     setActionLoading(true);
     try {
       await adminAction("eliminar_usuario", { user_id: u.id, user_email: u.email }, session.access_token);
@@ -448,6 +706,7 @@ function UsersTab({ session, onChatUser }) {
   };
 
   const cambiarRol = async (u, rol) => {
+    if(actionLoading)return;
     setActionLoading(true);
     try {
       await adminAction("cambiar_rol", { user_id: u.id, rol }, session.access_token);
@@ -461,6 +720,7 @@ function UsersTab({ session, onChatUser }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {confirmElU}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: 1, minWidth: 200 }}><SearchInput value={search} onChange={setSearch} placeholder="Buscar por email o nombre…" /></div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -535,6 +795,7 @@ function PubsTab({ session }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filtro, setFiltro] = useState("todas");
+  const {confirm:confirmP,confirmEl:confirmElP}=useConfirm();
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -554,7 +815,7 @@ function PubsTab({ session }) {
   };
 
   const eliminar = async (pub) => {
-    if (!window.confirm("¿Eliminar esta publicación?")) return;
+    if (!await confirmP({msg:"¿Eliminar esta publicación?",confirmLabel:"Eliminar",danger:true})) return;
     try {
       await adminAction("eliminar_pub", { pub_id: pub.id }, session.access_token);
       setPubs(prev => prev.filter(p => p.id !== pub.id));
@@ -575,10 +836,11 @@ function PubsTab({ session }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {confirmElP}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: 1, minWidth: 200 }}><SearchInput value={search} onChange={setSearch} placeholder="Buscar por título, materia, autor…" /></div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {["todas", "activas", "pausadas", "ofertas", "busquedas"].map(f => <Pill key={f} label={f.charAt(0).toUpperCase() + f.slice(1)} active={filtro === f} onClick={() => setFiltro(f)} />)}
+          {[["todas","Todas"],["activas","Activas"],["pausadas","Pausadas"],["ofertas","Clases"],["busquedas","Pedidos"]].map(([f,l]) => <Pill key={f} label={l} active={filtro === f} onClick={() => setFiltro(f)} />)}
         </div>
       </div>
 
@@ -592,7 +854,7 @@ function PubsTab({ session }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
                     <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{p.titulo}</span>
-                    <Badge color={p.tipo === "oferta" ? C.accent : "#F59E0B"}>{p.tipo === "oferta" ? "Clase" : "Búsqueda"}</Badge>
+                    <Badge color={p.tipo === "oferta" ? C.accent : "#F59E0B"}>{p.tipo === "oferta" ? "Clase" : "Pedido"}</Badge>
                     {p.activo ? <Badge color={C.success}>Activa</Badge> : <Badge color={C.muted}>Pausada</Badge>}
                   </div>
                   <div style={{ fontSize: 12, color: C.muted }}>{p.autor_email} · {p.materia} · {fmt(p.created_at)}</div>

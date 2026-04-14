@@ -42,23 +42,11 @@ Deno.serve(async (req) => {
       publicacion_id === "00000000-0000-0000-0000-000000000001";
 
     if (!ES_RECARGA) {
-      // Usar la vista publicaciones_con_autor que une con usuarios y expone autor_email
       const { data: pub, error: pubErr } = await supabase
-        .from("publicaciones_con_autor")
+        .from("publicaciones")
         .select("precio, autor_email, activo")
         .eq("id", publicacion_id)
         .single();
-
-      // Verificar error de DB ANTES de verificar si pub es null
-      // (un error de DB también hace que pub sea null, enmascarando el error real)
-      if (pubErr && pubErr.code !== "PGRST116") {
-        // PGRST116 = "no rows returned" — eso sí es "no encontrada"
-        console.error("mp-checkout: DB error:", JSON.stringify(pubErr));
-        return new Response(
-          JSON.stringify({ error: "Error al validar publicación: " + pubErr.message }),
-          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
-        );
-      }
 
       if (!pub) {
         return new Response(
@@ -66,9 +54,14 @@ Deno.serve(async (req) => {
           { status: 404, headers: { ...CORS, "Content-Type": "application/json" } }
         );
       }
+      if (pubErr) {
+        return new Response(
+          JSON.stringify({ error: "Error al validar publicación: " + pubErr.message }),
+          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
 
-      // activo===false explícito — null significa "sin definir" (activa por defecto)
-      if (pub.activo === false) {
+      if (!pub.activo) {
         return new Response(
           JSON.stringify({ error: "Esta publicación no está activa" }),
           { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
@@ -79,13 +72,12 @@ Deno.serve(async (req) => {
       // Para paquetes: precio enviado es el total del paquete (ya calculado en frontend)
       const precioReal = parseFloat(pub.precio);
       const esPaquete = tipo === "paquete_clase" && clases_cantidad;
-      // Paquetes: validar que precio/clase esté dentro de rango razonable del precio base
       const precioCliente = esPaquete
         ? parseFloat(precio) // precio total del paquete ya calculado
         : parseFloat(precio) * Number(cantidad);
       const precioEsperado = esPaquete ? precioReal * Number(clases_cantidad) : precioReal * Number(cantidad);
-      // Tolerancia para paquetes con descuento: máx 30% del precio base
-      const tolerancia = esPaquete ? precioEsperado * 0.30 : 1;
+      // Tolerancia mayor para paquetes (descuentos aplicados)
+      const tolerancia = esPaquete ? precioEsperado * 0.5 : 1; // hasta 50% de descuento permitido
       if (precioCliente > precioEsperado + 1 || precioCliente < precioEsperado - tolerancia) {
         return new Response(
           JSON.stringify({ error: "El precio no coincide", precio_real: precioReal }),

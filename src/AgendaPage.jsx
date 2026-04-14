@@ -69,18 +69,23 @@ function AgendaPage({session,onOpenCurso}){
   const miEmail=session.user.email;
 
   useEffect(()=>{
+    let mounted=true;
     Promise.all([
       sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
     ]).then(([ins])=>{
+      if(!mounted)return;
       setInscripciones(ins||[]);
       // Cargar datos de las publicaciones inscriptas que tienen calendario
       const ids=[...new Set((ins||[]).map(i=>i.publicacion_id))];
       if(!ids.length){setLoading(false);return;}
       sb.getPublicacionesByIds(ids,session.access_token).then(results=>{
-        const allPosts=(results||[]).filter(Boolean);
+        if(!mounted)return;
+        // Filtrar cursos finalizados — no mostrar en agenda
+        const allPosts=(results||[]).filter(Boolean).filter(p=>!p.finalizado);
         setPosts(allPosts);
-      }).finally(()=>setLoading(false));
+      }).finally(()=>{if(mounted)setLoading(false);});
     });
+    return()=>{mounted=false;};
   },[miEmail]);// eslint-disable-line
 
   // Calcular clases del mes

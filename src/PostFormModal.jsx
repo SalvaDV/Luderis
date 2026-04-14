@@ -4,7 +4,7 @@ import {
   C, FONT, useDebounce, t, LUD,
   Avatar, Spinner, Btn, Label, ErrMsg, Chip, Modal,
   StarRating, Tag, VerifiedBadge, SearchableSelect,
-  fmt, fmtPrice, calcAvg, calcDuracion,
+  fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, avatarColor, MATERIAS,
 } from "./shared";
 
@@ -20,9 +20,11 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
     if(descripcionDebounced&&descripcionDebounced.length<20)return;
     setEstado("cargando");setRespuesta("");setPregunta("");setFeedback("");
     if(onEstadoChange)onEstadoChange("cargando");
+    let mounted=true;
     sb.verificarConIA(tituloDebounced,materia,descripcionDebounced||"","",token)
-      .then(r=>{setPregunta(r.pregunta||"Contá tu experiencia.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");})
-      .catch(()=>{setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");});
+      .then(r=>{if(!mounted)return;setPregunta(r.pregunta||"Contá tu experiencia.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");})
+      .catch(()=>{if(!mounted)return;setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");});
+    return()=>{mounted=false;};
   },[tituloDebounced,descripcionDebounced,materia]);// eslint-disable-line
   const evaluar=async()=>{if(!respuesta.trim())return;setEstado("evaluando");try{const r=await sb.verificarConIA(titulo,materia,descripcion||"",respuesta,token);
     setFeedback(r.feedback||"");
@@ -100,8 +102,8 @@ function StreakBadge({session}){
 
       {/* Modal de detalle del streak */}
       {showModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}} onClick={()=>setShowModal(false)}>
-          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(360px,95vw)",padding:"28px 24px"}} onClick={e=>e.stopPropagation()}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}}>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(360px,95vw)",padding:"28px 24px"}}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:48,marginBottom:8}}>{streak>=100?"👑":streak>=30?"🏆":streak>=14?"⚡":streak>=7?"🔥":"🌱"}</div>
               <div style={{fontSize:28,fontWeight:800,color:C.text}}>{streak} día{streak!==1?"s":" "} seguido{streak!==1?"s":""}</div>
@@ -355,10 +357,12 @@ async function dispararAlertasIA(pub, session){
   }catch{}
 }
 
-function PostFormModal({session,postToEdit,onClose,onSave}){
+function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const editing=!!postToEdit;
-  const [tipo,setTipo]=useState(postToEdit?.tipo||"busqueda");const [materia,setMateria]=useState(postToEdit?.materia||"");const [titulo,setTitulo]=useState(postToEdit?.titulo||"");const [descripcion,setDescripcion]=useState(postToEdit?.descripcion||"");
-  const [modo,setModo]=useState((postToEdit?.modo==="grupal"?"curso":postToEdit?.modo)||"particular");const [precio,setPrecio]=useState(postToEdit?.precio||"");const [precioTipo,setPrecioTipo]=useState(postToEdit?.precio_tipo||"hora");
+  const rolUsuario=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";
+  const soloAlumno=rolUsuario==="alumno";
+  const [tipo,setTipo]=useState(postToEdit?.tipo||(soloAlumno?"busqueda":"oferta"));const [materia,setMateria]=useState(postToEdit?.materia||"");const [titulo,setTitulo]=useState(postToEdit?.titulo||"");const [descripcion,setDescripcion]=useState(postToEdit?.descripcion||"");
+  const [modo,setModo]=useState((postToEdit?.modo==="grupal"?"curso":postToEdit?.modo)||(modoInicial==="clases"?"particular":"curso"));const [precio,setPrecio]=useState(postToEdit?.precio||"");const [precioTipo,setPrecioTipo]=useState(postToEdit?.precio_tipo||"hora");
   const [tienePrueba,setTienePrueba]=useState(postToEdit?.tiene_prueba||false);const [precioPrueba,setPrecioPrueba]=useState(postToEdit?.precio_prueba||"");
   const [paquetes,setPaquetes]=useState(()=>{try{return JSON.parse(postToEdit?.paquetes||"[]");}catch{return [];}});
   const [sinc,setSinc]=useState(postToEdit?.sinc||"sinc");const [fechaInicio,setFechaInicio]=useState(postToEdit?.fecha_inicio||"");const [fechaFin,setFechaFin]=useState(postToEdit?.fecha_fin||"");
@@ -396,8 +400,11 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
       const esCursoNuevo=tipo==="oferta"&&modo==="curso"&&!editing;
       const esParticularNuevo=tipo==="oferta"&&modo==="particular"&&!editing;
       // Cursos y clases particulares nuevas nacen con activo:false hasta validar
+      // Al editar, NO tocar activo para no reactivar posts desactivados
       const activoInicial=editing?undefined:(esCursoNuevo||esParticularNuevo)?false:true;
-      const data={tipo,materia,titulo,descripcion,autor_id:session.user.id,activo:activoInicial??true,verificado,modo:modoDb,modalidad:modalidadForm||null,moneda:moneda||"ARS"};
+      const data={tipo,materia,titulo,descripcion,verificado,modo:modoDb,modalidad:modalidadForm||null,moneda:moneda||"ARS"};
+      if(!editing)data.autor_id=session.user.id;// solo en insert, no sobreescribir en update
+      if(activoInicial!==undefined)data.activo=activoInicial;
       data.nivel=nivel||null;
       data.modalidad=modalidadForm||null;
       if(requisitos)data.requisitos=requisitos;
@@ -442,7 +449,8 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
       if(savedPub){savedPub.autor_email=session.user.email;savedPub.autor_id=session.user.id;}
       onSave(savedPub,{esCursoNuevo,esParticularNuevo});
       onClose();
-    }catch(e){setSaving(false);setErr("Error: "+e.message);}
+    }catch(e){setErr("Error: "+e.message);}
+    finally{setSaving(false);}
   };
   // ── Wizard state ──────────────────────────────────────────────────────────
   const [paso,setPaso]=useState(editing?2:1);
@@ -477,7 +485,7 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div>
             <h3 style={{color:C.text,margin:0,fontSize:16,fontWeight:700}}>
-              {editing?"Editar publicación":paso===1?"¿Qué querés publicar?":paso===2?"Contanos más":paso===3?"Detalles de la clase":"Precio y condiciones"}
+              {editing?"Editar publicación":paso===1?"Nueva publicación":paso===2?"Contanos más":paso===3?`Detalles ${modo==="curso"?"del curso":"de la clase"}`:"Precio y condiciones"}
             </h3>
             <div style={{fontSize:11,color:C.muted,marginTop:2}}>Paso {paso} de {totalPasos}</div>
           </div>
@@ -504,30 +512,57 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
 
         {/* ── PASO 1: Tipo + Formato ── */}
         {paso===1&&(
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <div>
-              <Label>¿Buscás o ofrecés?</Label>
-              <div style={{display:"flex",gap:8}}>
-                {[{v:"busqueda",icon:"🔍",label:"Busco clases",sub:"Encontrá un docente"},{v:"oferta",icon:"🎓",label:"Ofrezco clases",sub:"Publicá tus clases"}].map(({v,icon,label,sub})=>(
-                  <button key={v} onClick={()=>setTipo(v)}
-                    style={{flex:1,padding:"14px 10px",borderRadius:14,border:`2px solid ${tipo===v?C.accent:C.border}`,background:tipo===v?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"center",transition:"all .15s"}}>
-                    <div style={{fontSize:26,marginBottom:6}}>{icon}</div>
-                    <div style={{fontSize:13,fontWeight:700,color:tipo===v?C.accent:C.text}}>{label}</div>
-                    <div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>
-                  </button>
-                ))}
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {/* Rol selector — solo para docentes/ambos */}
+            {!soloAlumno&&(
+              <div>
+                <Label>¿Sos docente o alumno?</Label>
+                <div style={{display:"flex",gap:8}}>
+                  {[{v:"oferta",icon:"🎓",label:"Soy docente",sub:"Quiero publicar"},{v:"busqueda",icon:"🔍",label:"Soy alumno",sub:"Busco docente o curso"}].map(({v,icon,label,sub})=>(
+                    <button key={v} onClick={()=>setTipo(v)}
+                      style={{flex:1,padding:"14px 10px",borderRadius:14,border:`2px solid ${tipo===v?C.accent:C.border}`,background:tipo===v?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"center",transition:"all .15s"}}>
+                      <div style={{fontSize:28,marginBottom:6}}>{icon}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:tipo===v?C.accent:C.text}}>{label}</div>
+                      <div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+            {/* Tipo de publicación — cards para alumno (busqueda) o docente ofertando */}
+            {tipo==="busqueda"&&(
+              <div>
+                <Label>¿Qué estás buscando?</Label>
+                <div style={{display:"flex",gap:10}}>
+                  {[
+                    {v:"curso",icon:"📚",label:"Un curso",sub:"Contenido estructurado con múltiples clases",color:"#7B3FBE"},
+                    {v:"particular",icon:"🎯",label:"Clases particulares",sub:"Clases 1 a 1 o en grupo pequeño",color:"#7B5CF0"},
+                  ].map(({v,icon,label,sub,color})=>(
+                    <button key={v} onClick={()=>setModo(v)}
+                      style={{flex:1,padding:"16px 12px",borderRadius:16,border:`2px solid ${modo===v?color:C.border}`,background:modo===v?color+"15":C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s",position:"relative"}}>
+                      {modo===v&&<div style={{position:"absolute",top:10,right:10,width:18,height:18,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900}}>✓</div>}
+                      <div style={{fontSize:32,marginBottom:8}}>{icon}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:modo===v?color:C.text,marginBottom:4}}>{label}</div>
+                      <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{sub}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {tipo==="oferta"&&(
               <div>
-                <Label>¿Qué formato?</Label>
-                <div style={{display:"flex",gap:8}}>
-                  {[{v:"particular",icon:"👤",label:"Clase particular",sub:"1 a 1, a tu ritmo"},{v:"curso",icon:"📚",label:"Curso",sub:"Varios alumnos, programa fijo"}].map(({v,icon,label,sub})=>(
+                <Label>¿Qué querés publicar?</Label>
+                <div style={{display:"flex",gap:10}}>
+                  {[
+                    {v:"curso",icon:"📚",label:"Curso",sub:"Contenido estructurado, múltiples alumnos, precio fijo",color:"#7B3FBE"},
+                    {v:"particular",icon:"🎯",label:"Clase particular",sub:"1 a 1 o grupo pequeño, horario flexible",color:C.blue||"#1A6ED8"},
+                  ].map(({v,icon,label,sub,color})=>(
                     <button key={v} onClick={()=>setModo(v)}
-                      style={{flex:1,padding:"14px 10px",borderRadius:14,border:`2px solid ${modo===v?C.accent:C.border}`,background:modo===v?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"center",transition:"all .15s"}}>
-                      <div style={{fontSize:26,marginBottom:6}}>{icon}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:modo===v?C.accent:C.text}}>{label}</div>
-                      <div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>
+                      style={{flex:1,padding:"16px 12px",borderRadius:16,border:`2px solid ${modo===v?color:C.border}`,background:modo===v?color+"15":C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s",position:"relative"}}>
+                      {modo===v&&<div style={{position:"absolute",top:10,right:10,width:18,height:18,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900}}>✓</div>}
+                      <div style={{fontSize:32,marginBottom:8}}>{icon}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:modo===v?color:C.text,marginBottom:4}}>{label}</div>
+                      <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{sub}</div>
                     </button>
                   ))}
                 </div>
@@ -565,7 +600,7 @@ function PostFormModal({session,postToEdit,onClose,onSave}){
         {/* ── PASO 3: Detalles (solo ofertas) ── */}
         {paso===3&&tipo==="oferta"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:9}}>
               <div>
                 <Label>Modalidad <span style={{color:C.danger,fontSize:11}}>*</span></Label>
                 <select value={modalidadForm} onChange={e=>setModalidadForm(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>
@@ -875,6 +910,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   useEffect(()=>{
     if(!autorEmail){setError("Email no disponible.");setLoading(false);return;}
     setLoading(true);setError(null);
+    let mounted=true;
     Promise.all([
       sb.getPublicaciones({autor:autorEmail},session.access_token).catch(()=>[]),
       // Query reseñas via publicaciones del docente (autor_pub_email es el campo correcto)
@@ -883,9 +919,11 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
       sb.getDocumentos(autorEmail,session.access_token).catch(()=>[]),
       sb.getUsuarioByEmail(autorEmail,session.access_token).catch(()=>null),
     ]).then(([p,r,d,u])=>{
+      if(!mounted)return;
       setPubs((p||[]).filter(x=>x.activo!==false));
       setReseñas(r||[]);setDocs(d||[]);if(u)setPerfilData(u);
-    }).catch(e=>setError(e.message)).finally(()=>setLoading(false));
+    }).catch(e=>{if(mounted)setError(e.message);}).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[autorEmail,session]);
 
   useEffect(()=>{
@@ -945,7 +983,15 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               {displayNombre[0].toUpperCase()}
             </div>
             <div style={{paddingBottom:24,flex:1,minWidth:0}}>
-              <h1 style={{color:"#fff",fontSize:22,fontWeight:800,margin:"0 0 4px",textShadow:"0 1px 4px rgba(0,0,0,.2)"}}>{displayNombre}</h1>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <h1 style={{color:"#fff",fontSize:22,fontWeight:800,margin:"0 0 4px",textShadow:"0 1px 4px rgba(0,0,0,.2)"}}>{displayNombre}</h1>
+                {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
+                  <span style={{fontSize:11,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"3px 10px",boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>🟢 Disponible hoy</span>
+                )}
+              </div>
+              {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&perfilData?.disponible_mensaje&&(
+                <div style={{color:"rgba(255,255,255,.9)",fontSize:12,marginBottom:2,fontStyle:"italic"}}>"{perfilData.disponible_mensaje}"</div>
+              )}
               {perfilData?.ubicacion&&<div style={{color:"rgba(255,255,255,.85)",fontSize:13}}>📍 {perfilData.ubicacion}</div>}
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
                 {materias.slice(0,4).map(m=><span key={m} style={{fontSize:11,background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:20,padding:"2px 10px",fontWeight:600}}>{m}</span>)}
@@ -971,11 +1017,43 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
             ))}
           </div>
 
-          {/* Bio */}
-          {perfilData?.bio&&(
+          {/* Bio + enriched docente info */}
+          {(perfilData?.bio||perfilData?.titulo_profesional||perfilData?.metodologia)&&(
             <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>Sobre mí</div>
-              <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0}}>{perfilData.bio}</p>
+              {perfilData?.titulo_profesional&&(
+                <div style={{fontSize:13,color:C.accent,fontWeight:700,marginBottom:6}}>{perfilData.titulo_profesional}</div>
+              )}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:perfilData?.bio||perfilData?.metodologia?10:0}}>
+                {perfilData?.anios_experiencia!=null&&perfilData.anios_experiencia>0&&(
+                  <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"2px 10px",fontWeight:700}}>{perfilData.anios_experiencia} {perfilData.anios_experiencia===1?"año":"años"} de experiencia</span>
+                )}
+                {perfilData?.franja_horaria&&(
+                  <span style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 10px"}}>🕐 {perfilData.franja_horaria}</span>
+                )}
+              </div>
+              {perfilData?.bio&&(
+                <>
+                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>Sobre mí</div>
+                  <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0,marginBottom:perfilData?.metodologia?10:0}}>{perfilData.bio}</p>
+                </>
+              )}
+              {perfilData?.metodologia&&(
+                <>
+                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6,marginTop:perfilData?.bio?10:0}}>Metodología</div>
+                  <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0}}>{perfilData.metodologia}</p>
+                </>
+              )}
+              {perfilData?.idiomas&&perfilData.idiomas.length>0&&(
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+                  {perfilData.idiomas.map(id=><span key={id} style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 9px"}}>🌐 {id}</span>)}
+                </div>
+              )}
+              {(perfilData?.linkedin_url||perfilData?.sitio_web)&&(
+                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:10}}>
+                  {perfilData.linkedin_url&&<a href={perfilData.linkedin_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>🔗 LinkedIn</a>}
+                  {perfilData.sitio_web&&<a href={perfilData.sitio_web} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>🌐 Sitio web</a>}
+                </div>
+              )}
             </div>
           )}
 
@@ -1060,13 +1138,16 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
                 {reseñas.map((r,i)=>(
                   <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                      <div style={{display:"flex",gap:2}}>
-                        {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
+                      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                        <div style={{display:"flex",gap:2}}>
+                          {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
+                        </div>
+                        {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
                       </div>
                       <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
                     </div>
                     {r.comentario&&<p style={{color:C.text,fontSize:13,margin:"0 0 6px",lineHeight:1.5}}>{r.comentario}</p>}
-                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_email?.split("@")[0]}</div>
+                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_nombre||safeDisplayName(null,r.alumno_email)}</div>
                   </div>
                 ))}
               </div>

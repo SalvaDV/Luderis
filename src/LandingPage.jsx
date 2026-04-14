@@ -6,6 +6,7 @@ function LandingPage({onEnter}){
   const [seccion,setSeccion]=useState("inicio");// inicio | nosotros | contacto
   const [contactForm,setContactForm]=useState({nombre:"",email:"",msg:""});
   const [contactOk,setContactOk]=useState(false);
+  const [mobileMenu,setMobileMenu]=useState(false);
 
   const scrollTo=(id)=>{document.getElementById(id)?.scrollIntoView({behavior:"smooth"});};
 
@@ -34,101 +35,188 @@ function LandingPage({onEnter}){
         .ld-orb1{animation:floatY 6s 0s ease-in-out infinite}
         .ld-orb2{animation:floatY 6s 1.5s ease-in-out infinite}
         .ld-orb3{animation:floatY 6s 3s ease-in-out infinite}
-        @media(max-width:768px){.ld-hide-mobile{display:none!important}.ld-hero-flex{flex-direction:column!important;text-align:center}.ld-hero-btns{justify-content:center!important}}
+        @media(max-width:768px){
+          .ld-hide-mobile{display:none!important}
+          .ld-hero-flex{flex-direction:column!important;text-align:center}
+          .ld-hero-btns{justify-content:center!important}
+          .ld-dos-grid{grid-template-columns:1fr!important}
+          .ld-nosotros-vals{grid-template-columns:1fr 1fr!important}
+          .ld-section-pad{padding-left:20px!important;padding-right:20px!important}
+          .ld-hero-cta-grid{grid-template-columns:1fr!important}
+          .ld-cta-final{margin-left:16px!important;margin-right:16px!important;padding:48px 24px!important}
+          .ld-hamburger{display:flex!important}
+          .ld-mobile-nav{display:flex!important}
+          .ld-nav-inner{padding:0 20px!important}
+        }
+        @media(max-width:480px){
+          .ld-nosotros-vals{grid-template-columns:1fr!important}
+          .ld-hero-cta-grid{grid-template-columns:1fr!important}
+        }
       `}</style>
 
       {/* ══ NAV ══ */}
-      <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(246,249,255,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(26,110,216,.08)",padding:"0 32px",height:66,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 1px 20px rgba(26,110,216,.05)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/logo.png" alt="Luderis" style={{width:36,height:36,objectFit:"contain"}} className="ld-logo-float"/>
-          <span style={{fontWeight:800,fontSize:21,background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.4px"}}>Luderis</span>
+      <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(246,249,255,.96)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(26,110,216,.08)",boxShadow:"0 1px 20px rgba(26,110,216,.05)"}}>
+        <div className="ld-nav-inner" style={{padding:"0 32px",height:66,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src="/logo.png" alt="Luderis" style={{width:36,height:36,objectFit:"contain"}} className="ld-logo-float"/>
+            <span style={{fontWeight:800,fontSize:21,background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.4px"}}>Luderis</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:4}} className="ld-hide-mobile">
+            {[["inicio","Inicio"],["features","Funciones"],["como","¿Cómo funciona?"],["nosotros","Sobre nosotros"],["contacto","Contacto"]].map(([id,label])=>(
+              <button key={id} className="ld-nav-link" onClick={()=>scrollTo(id)}>{label}</button>
+            ))}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <button onClick={onEnter}
+              style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"9px 22px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)",transition:"box-shadow .2s"}}
+              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 6px 20px rgba(26,110,216,.45)"}
+              onMouseLeave={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.3)"}>
+              Ingresar →
+            </button>
+            {/* Hamburger */}
+            <button className="ld-hamburger" onClick={()=>setMobileMenu(m=>!m)}
+              style={{display:"none",flexDirection:"column",gap:5,background:"none",border:"none",cursor:"pointer",padding:6,borderRadius:8}}>
+              <span style={{width:22,height:2,background:"#4A5568",borderRadius:2,display:"block",transition:"all .2s",transform:mobileMenu?"rotate(45deg) translate(5px,5px)":"none"}}/>
+              <span style={{width:22,height:2,background:"#4A5568",borderRadius:2,display:"block",transition:"all .2s",opacity:mobileMenu?0:1}}/>
+              <span style={{width:22,height:2,background:"#4A5568",borderRadius:2,display:"block",transition:"all .2s",transform:mobileMenu?"rotate(-45deg) translate(5px,-5px)":"none"}}/>
+            </button>
+          </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:4}} className="ld-hide-mobile">
-          {[["inicio","Inicio"],["features","Funciones"],["como","¿Cómo funciona?"],["nosotros","Sobre nosotros"],["contacto","Contacto"]].map(([id,label])=>(
-            <button key={id} className="ld-nav-link" onClick={()=>scrollTo(id)}>{label}</button>
-          ))}
-        </div>
-        <button onClick={onEnter}
-          style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"9px 22px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)",transition:"box-shadow .2s"}}
-          onMouseEnter={e=>e.currentTarget.style.boxShadow="0 6px 20px rgba(26,110,216,.45)"}
-          onMouseLeave={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.3)"}>
-          Ingresar →
-        </button>
+        {/* Mobile menu dropdown */}
+        {mobileMenu&&(
+          <div style={{display:"flex",flexDirection:"column",background:"rgba(246,249,255,.98)",borderTop:"1px solid rgba(26,110,216,.08)",padding:"12px 20px 16px",gap:4}}>
+            {[["inicio","Inicio"],["features","Funciones"],["como","¿Cómo funciona?"],["nosotros","Sobre nosotros"],["contacto","Contacto"]].map(([id,label])=>(
+              <button key={id} className="ld-nav-link" style={{textAlign:"left",padding:"10px 12px",fontSize:15}}
+                onClick={()=>{scrollTo(id);setMobileMenu(false);}}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* ══ HERO ══ */}
-      <section id="inicio" style={{maxWidth:1100,margin:"0 auto",padding:"88px 32px 64px",display:"flex",alignItems:"center",gap:60,flexWrap:"wrap"}} className="ld-hero-flex">
+      <section id="inicio" style={{maxWidth:1100,margin:"0 auto",padding:"88px 32px 72px",display:"flex",alignItems:"center",gap:60,flexWrap:"wrap"}} className="ld-hero-flex ld-section-pad">
         <div style={{flex:"1 1 420px",minWidth:0}}>
           <div className="ld-hero" style={{display:"inline-flex",alignItems:"center",gap:7,background:"rgba(26,110,216,.08)",border:"1px solid rgba(26,110,216,.18)",borderRadius:20,padding:"5px 16px",marginBottom:26}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:LUD.teal,display:"inline-block",animation:"pulse 2s infinite"}}/>
-            <span style={{fontSize:12,fontWeight:600,color:LUD.blue}}>Plataforma educativa argentina</span>
+            <span style={{fontSize:12,fontWeight:600,color:LUD.blue}}>Plataforma educativa argentina · 100% gratis</span>
           </div>
-          <h1 className="ld-hero" style={{fontSize:"clamp(34px,4.5vw,56px)",fontWeight:800,lineHeight:1.1,color:"#0D1F3C",margin:"0 0 22px",letterSpacing:"-1px"}}>
-            Aprendé lo que<br/>
-            <span style={{background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>quieras, enseñá</span><br/>lo que sabés.
+          <h1 className="ld-hero" style={{fontSize:"clamp(32px,4.2vw,54px)",fontWeight:800,lineHeight:1.1,color:"#0D1F3C",margin:"0 0 20px",letterSpacing:"-1px"}}>
+            Aprendé exactamente<br/>
+            <span style={{background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>lo que querés.</span>
           </h1>
-          <p className="ld-hero2" style={{fontSize:17,color:"#4A5568",lineHeight:1.75,margin:"0 0 16px",maxWidth:460}}>
-            Conectamos personas para compartir conocimiento. Sin intermediarios, sin comisiones.
+          <p className="ld-hero2" style={{fontSize:17,color:"#4A5568",lineHeight:1.75,margin:"0 0 8px",maxWidth:480}}>
+            Siempre hay alguien dispuesto a enseñar lo que otro quiere aprender.
           </p>
-          <div className="ld-hero3 ld-hero-btns" style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:32}}>
+          <p className="ld-hero2" style={{fontSize:15,color:"#718096",lineHeight:1.7,margin:"0 0 32px",maxWidth:460}}>
+            Vos decidís qué, cuándo y cómo. No hay un catálogo fijo que te limite.
+          </p>
+          {/* Dos caminos — el diferencial visual */}
+          <div className="ld-hero3 ld-hero-cta-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:28,maxWidth:480}}>
             <button onClick={onEnter}
-              onMouseEnter={()=>setHovBtn(true)} onMouseLeave={()=>setHovBtn(false)}
-              style={{background:LUD.grad,border:"none",borderRadius:24,color:"#fff",padding:"14px 32px",fontWeight:700,fontSize:16,cursor:"pointer",fontFamily:FONT,
-                boxShadow:hovBtn?"0 10px 32px rgba(26,110,216,.5)":"0 4px 18px rgba(26,110,216,.3)",
-                transform:hovBtn?"translateY(-2px)":"none",transition:"all .2s"}}>
-              Empezar gratis →
+              style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:16,color:"#fff",padding:"16px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 6px 20px rgba(26,110,216,.35)",transition:"all .2s",textAlign:"left"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 10px 28px rgba(26,110,216,.45)";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 6px 20px rgba(26,110,216,.35)";}}>
+              <div style={{fontSize:22,marginBottom:6}}>🎓</div>
+              <div style={{fontWeight:800,fontSize:15,marginBottom:3}}>Quiero aprender</div>
+              <div style={{fontSize:12,opacity:.85,fontWeight:400}}>Encontrá cursos y docentes</div>
             </button>
-            <button onClick={()=>scrollTo("features")}
-              style={{background:"transparent",border:"2px solid rgba(26,110,216,.22)",borderRadius:24,color:LUD.blue,padding:"14px 24px",fontWeight:600,fontSize:15,cursor:"pointer",fontFamily:FONT,transition:"all .2s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor=LUD.blue;e.currentTarget.style.background="rgba(26,110,216,.05)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(26,110,216,.22)";e.currentTarget.style.background="transparent";}}>
-              Ver funciones
+            <button onClick={onEnter}
+              style={{background:"linear-gradient(135deg,#E8881A,#F5C842)",border:"none",borderRadius:16,color:"#fff",padding:"16px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 6px 20px rgba(232,136,26,.35)",transition:"all .2s",textAlign:"left"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 10px 28px rgba(232,136,26,.45)";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 6px 20px rgba(232,136,26,.35)";}}>
+              <div style={{fontSize:22,marginBottom:6}}>👤</div>
+              <div style={{fontWeight:800,fontSize:15,marginBottom:3}}>Quiero enseñar</div>
+              <div style={{fontSize:12,opacity:.85,fontWeight:400}}>Publicá tus clases gratis</div>
             </button>
           </div>
-          {/* Stats rápidos */}
           <div className="ld-hero4" style={{display:"flex",gap:20,flexWrap:"wrap"}}>
-            {[["100%","Gratuito"],["IA","Búsqueda inteligente"],["🔒","Datos protegidos"]].map(([n,l])=>(
-              <div key={l} style={{display:"flex",alignItems:"center",gap:7}}>
-                <span style={{fontWeight:800,fontSize:16,background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</span>
-                <span style={{fontSize:13,color:"#718096"}}>{l}</span>
-              </div>
+            {["✓ Sin costo de registro","✓ Sin comisiones ocultas","✓ Búsqueda con IA"].map(f=>(
+              <span key={f} style={{fontSize:13,color:"#718096"}}>{f}</span>
             ))}
           </div>
         </div>
-        {/* Ilustración */}
-        <div style={{flex:"0 0 320px",position:"relative",height:340,display:"flex",alignItems:"center",justifyContent:"center"}} className="ld-hide-mobile">
+        {/* Visual */}
+        <div style={{flex:"0 0 320px",position:"relative",height:360,display:"flex",alignItems:"center",justifyContent:"center"}} className="ld-hide-mobile">
           <div className="ld-orb1" style={{position:"absolute",width:220,height:220,borderRadius:"50%",background:"rgba(26,110,216,.05)",top:10,left:10}}/>
-          <div className="ld-orb2" style={{position:"absolute",width:150,height:150,borderRadius:"50%",background:"rgba(46,196,160,.07)",bottom:20,right:0}}/>
-          <div className="ld-orb3" style={{position:"absolute",width:90,height:90,borderRadius:"50%",background:"rgba(26,110,216,.09)",top:0,right:30}}/>
-          <div style={{position:"relative",zIndex:1,width:155,height:155,background:"#fff",borderRadius:32,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 24px 64px rgba(26,110,216,.18)",animation:"floatY 4s ease-in-out infinite"}}>
-            <img src="/logo.png" alt="Luderis" style={{width:106,height:106,objectFit:"contain"}}/>
-          </div>
-          {[
-            {label:"✓ Clases verificadas",top:18,left:-30,delay:"0s"},
-            {label:"★ 4.9 promedio",bottom:44,right:-38,delay:".8s"},
-            {label:"🤖 Búsqueda IA",top:64,right:-44,delay:"1.4s"},
-          ].map(c=>(
-            <div key={c.label} style={{position:"absolute",top:c.top,bottom:c.bottom,left:c.left,right:c.right,background:"#fff",borderRadius:20,padding:"8px 14px",fontSize:12,fontWeight:600,color:"#0D1F3C",boxShadow:"0 6px 22px rgba(0,0,0,.09)",whiteSpace:"nowrap",animation:`floatY 4s ${c.delay} ease-in-out infinite`}}>
-              {c.label}
+          <div className="ld-orb2" style={{position:"absolute",width:150,height:150,borderRadius:"50%",background:"rgba(232,136,26,.06)",bottom:20,right:0}}/>
+          <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:12,width:"100%",padding:"0 16px"}}>
+            {/* Card ejemplo curso */}
+            <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",boxShadow:"0 8px 28px rgba(26,110,216,.12)",borderLeft:"3px solid #1A6ED8",animation:"floatY 4s ease-in-out infinite"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#1A6ED8",marginBottom:6}}>🎓 CURSO · Python desde cero</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:12,color:"#4A5568"}}>8 semanas · Online</div>
+                <div style={{fontWeight:800,color:"#1A6ED8",fontSize:14}}>$8.500/mes</div>
+              </div>
             </div>
-          ))}
+            {/* Card ejemplo clase */}
+            <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",boxShadow:"0 8px 28px rgba(232,136,26,.12)",borderLeft:"3px solid #E8881A",animation:"floatY 4s .8s ease-in-out infinite"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#E8881A",marginBottom:6}}>👤 CLASE · Guitarra flamenca</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:12,color:"#4A5568"}}>1 hora · Presencial</div>
+                <div style={{fontWeight:800,color:"#E8881A",fontSize:14}}>$4.000/hora</div>
+              </div>
+            </div>
+            {/* Card IA */}
+            <div style={{background:"linear-gradient(135deg,#7B5CF005,#1A6ED808)",borderRadius:14,padding:"12px 16px",boxShadow:"0 4px 16px rgba(0,0,0,.06)",border:"1px solid #EEF2FF",animation:"floatY 4s 1.4s ease-in-out infinite"}}>
+              <div style={{fontSize:11,color:"#7B5CF0",fontWeight:700,marginBottom:4}}>✨ Búsqueda con IA</div>
+              <div style={{fontSize:12,color:"#4A5568"}}>"Quiero aprender fotografía de retrato nocturno"</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ══ MÉTRICAS ══ */}
-      <section style={{background:"#fff",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF",padding:"32px 32px"}}>
-        <div style={{maxWidth:900,margin:"0 auto",display:"flex",justifyContent:"space-around",flexWrap:"wrap",gap:24}}>
-          {[["Gratuito siempre","Para docentes y alumnos"],["IA integrada","Búsqueda inteligente de clases"],["100% argentino","Pensado para el mercado local"],["Privacidad","Tus datos, tus reglas"]].map(([n,d])=>(
-            <div key={n} style={{textAlign:"center"}}>
-              <div style={{fontWeight:800,fontSize:20,background:LUD.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:4}}>{n}</div>
-              <div style={{fontSize:13,color:"#718096"}}>{d}</div>
+      {/* ══ DOS MUNDOS ══ */}
+      <section style={{background:"#fff",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF",padding:"64px 32px"}} className="ld-section-pad">
+        <div style={{maxWidth:1000,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:48}}>
+            <h2 style={{fontSize:30,fontWeight:800,color:"#0D1F3C",margin:"0 0 10px",letterSpacing:"-.5px"}}>Una app. Dos experiencias.</h2>
+            <p style={{color:"#718096",fontSize:15,margin:0}}>Cada modo tiene su identidad, su flujo y su propósito</p>
+          </div>
+          <div className="ld-dos-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+            {/* Cursos */}
+            <div style={{background:"linear-gradient(135deg,#EEF6FF,#E8F8F5)",border:"1px solid #1A6ED820",borderRadius:20,padding:"32px 28px",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-30,right:-30,width:100,height:100,borderRadius:"50%",background:"rgba(26,110,216,.06)"}}/>
+              <div style={{fontSize:36,marginBottom:16}}>🎓</div>
+              <h3 style={{fontWeight:800,color:"#0D1F3C",fontSize:22,margin:"0 0 10px",letterSpacing:"-.4px"}}>Cursos</h3>
+              <p style={{color:"#4A5568",fontSize:14,lineHeight:1.7,margin:"0 0 20px"}}>
+                Experiencias de aprendizaje estructuradas. Con contenido, evaluaciones, seguimiento de progreso y certificados.
+              </p>
+              {["Contenido organizado por clases","Evaluaciones y certificados","Chat grupal + foro","Seguimiento de habilidades"].map(f=>(
+                <div key={f} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <span style={{width:18,height:18,borderRadius:"50%",background:"#1A6ED815",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#1A6ED8",fontWeight:700,flexShrink:0}}>✓</span>
+                  <span style={{fontSize:13,color:"#4A5568"}}>{f}</span>
+                </div>
+              ))}
+              <div style={{marginTop:20,display:"inline-block",background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",borderRadius:20,padding:"8px 20px",color:"#fff",fontSize:13,fontWeight:700}}>
+                Explorar cursos →
+              </div>
             </div>
-          ))}
+            {/* Clases particulares */}
+            <div style={{background:"linear-gradient(135deg,#FEF6EE,#FFFBEB)",border:"1px solid #E8881A20",borderRadius:20,padding:"32px 28px",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-30,right:-30,width:100,height:100,borderRadius:"50%",background:"rgba(232,136,26,.06)"}}/>
+              <div style={{fontSize:36,marginBottom:16}}>👤</div>
+              <h3 style={{fontWeight:800,color:"#0D1F3C",fontSize:22,margin:"0 0 10px",letterSpacing:"-.4px"}}>Clases particulares</h3>
+              <p style={{color:"#4A5568",fontSize:14,lineHeight:1.7,margin:"0 0 20px"}}>
+                Conexión directa con un docente. A tu ritmo, en tu horario, sobre lo que vos necesitás exactamente.
+              </p>
+              {["Horarios a tu medida","Comunicación directa","Sin intermediarios","Precio acordado entre vos"].map(f=>(
+                <div key={f} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <span style={{width:18,height:18,borderRadius:"50%",background:"#E8881A15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#E8881A",fontWeight:700,flexShrink:0}}>✓</span>
+                  <span style={{fontSize:13,color:"#4A5568"}}>{f}</span>
+                </div>
+              ))}
+              <div style={{marginTop:20,display:"inline-block",background:"linear-gradient(135deg,#E8881A,#F5C842)",borderRadius:20,padding:"8px 20px",color:"#fff",fontSize:13,fontWeight:700}}>
+                Encontrar docente →
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ══ FEATURES ══ */}
-      <section id="features" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}}>
+      <section id="features" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{textAlign:"center",marginBottom:52}}>
           <div style={{display:"inline-block",background:"rgba(26,110,216,.08)",border:"1px solid rgba(26,110,216,.15)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:LUD.blue,marginBottom:14}}>Funciones</div>
           <h2 style={{fontSize:34,fontWeight:800,color:"#0D1F3C",margin:"0 0 12px",letterSpacing:"-.6px"}}>Todo lo que necesitás</h2>
@@ -154,7 +242,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CÓMO FUNCIONA ══ */}
-      <section id="como" style={{background:"#fff",padding:"80px 32px",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF"}}>
+      <section id="como" style={{background:"#fff",padding:"80px 32px",borderTop:"1px solid #EEF2FF",borderBottom:"1px solid #EEF2FF"}} className="ld-section-pad">
         <div style={{maxWidth:900,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:52}}>
             <div style={{display:"inline-block",background:"rgba(46,196,160,.1)",border:"1px solid rgba(46,196,160,.25)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:LUD.teal,marginBottom:14}}>¿Cómo funciona?</div>
@@ -182,7 +270,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ SOBRE NOSOTROS ══ */}
-      <section id="nosotros" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}}>
+      <section id="nosotros" style={{maxWidth:1100,margin:"0 auto",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{display:"flex",gap:60,alignItems:"center",flexWrap:"wrap"}}>
           <div style={{flex:"1 1 340px"}}>
             <div style={{display:"inline-block",background:"rgba(123,92,240,.08)",border:"1px solid rgba(123,92,240,.2)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:"#7B5CF0",marginBottom:18}}>Sobre nosotros</div>
@@ -202,7 +290,7 @@ function LandingPage({onEnter}){
               ))}
             </div>
           </div>
-          <div style={{flex:"1 1 320px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="ld-nosotros-vals" style={{flex:"1 1 320px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             {[
               {icon:"🎓",title:"Misión",desc:"Democratizar el acceso al conocimiento conectando personas que quieren aprender con quienes quieren enseñar."},
               {icon:"🔭",title:"Visión",desc:"Ser la plataforma de referencia en Argentina para el intercambio de conocimiento entre personas."},
@@ -220,36 +308,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ TESTIMONIOS ══ */}
-      <section style={{background:"linear-gradient(135deg,#F0F4FF 0%,#F0FBF8 100%)",padding:"80px 32px",borderTop:"1px solid #EEF2FF"}}>
-        <div style={{maxWidth:1000,margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:48}}>
-            <h2 style={{fontSize:32,fontWeight:800,color:"#0D1F3C",margin:"0 0 10px",letterSpacing:"-.5px"}}>Lo que dicen nuestros usuarios</h2>
-            <p style={{color:"#718096",fontSize:15,margin:0}}>Historias reales de docentes y estudiantes</p>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20}}>
-            {[
-              {nombre:"Valentina R.",rol:"Estudiante de inglés",texto:"Encontré a mi profesora en minutos. La búsqueda con IA me sugirió exactamente lo que necesitaba. Empecé en dos días.",stars:5},
-              {nombre:"Lucas M.",rol:"Docente de matemáticas",texto:"Publiqué mis clases y en la primera semana ya tenía alumnos. La plataforma es increíblemente fácil de usar.",stars:5},
-              {nombre:"Sofía B.",rol:"Estudiante de programación",texto:"Me gustó que el docente y yo pudimos charlar primero sin dar datos personales. Muy seguro y cómodo.",stars:5},
-            ].map(t=>(
-              <div key={t.nombre} className="ld-card" style={{background:"#fff",borderRadius:16,padding:"24px 22px",boxShadow:"0 2px 16px rgba(26,110,216,.07)",border:"1px solid rgba(26,110,216,.08)"}}>
-                <div style={{color:"#F5A623",fontSize:16,marginBottom:12}}>{"★".repeat(t.stars)}</div>
-                <p style={{color:"#2D3748",fontSize:14,lineHeight:1.7,margin:"0 0 16px",fontStyle:"italic"}}>"{t.texto}"</p>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:36,height:36,borderRadius:"50%",background:LUD.grad,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:15}}>{t.nombre[0]}</div>
-                  <div>
-                    <div style={{fontWeight:700,color:"#0D1F3C",fontSize:13}}>{t.nombre}</div>
-                    <div style={{color:"#718096",fontSize:12}}>{t.rol}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ TESTIMONIOS ══ */}
-      <section style={{background:"linear-gradient(135deg,#0A2A5E,#1A6ED8)",padding:"80px 32px"}}>
+      <section style={{background:"linear-gradient(135deg,#0A2A5E,#1A6ED8)",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{maxWidth:1000,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:48}}>
             <h2 style={{fontSize:"clamp(26px,3.5vw,38px)",fontWeight:800,color:"#fff",margin:"0 0 12px",letterSpacing:"-.5px"}}>
@@ -286,7 +345,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CTA FINAL ══ */}
-      <section style={{background:"#F6F9FF",padding:"80px 32px",textAlign:"center"}}>
+      <section style={{background:"#F6F9FF",padding:"80px 32px",textAlign:"center"}} className="ld-section-pad">
         <div style={{maxWidth:640,margin:"0 auto"}}>
           <div style={{fontSize:40,marginBottom:16}}>🚀</div>
           <h2 style={{fontSize:"clamp(28px,4vw,44px)",fontWeight:800,color:"#0D1F3C",margin:"0 0 16px",letterSpacing:"-.5px"}}>
@@ -313,7 +372,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CONTACTO ══ */}
-      <section id="contacto" style={{maxWidth:900,margin:"0 auto",padding:"80px 32px"}}>
+      <section id="contacto" style={{maxWidth:900,margin:"0 auto",padding:"80px 32px"}} className="ld-section-pad">
         <div style={{display:"flex",gap:56,alignItems:"flex-start",flexWrap:"wrap"}}>
           <div style={{flex:"1 1 280px"}}>
             <div style={{display:"inline-block",background:"rgba(26,110,216,.08)",border:"1px solid rgba(26,110,216,.15)",borderRadius:20,padding:"4px 16px",fontSize:12,fontWeight:600,color:LUD.blue,marginBottom:18}}>Contacto</div>
@@ -359,7 +418,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ CTA FINAL ══ */}
-      <section style={{margin:"0 24px 80px",borderRadius:24,background:LUD.gradDark,padding:"64px 40px",textAlign:"center",position:"relative",overflow:"hidden",maxWidth:1052,marginLeft:"auto",marginRight:"auto"}}>
+      <section className="ld-cta-final" style={{margin:"0 24px 80px",borderRadius:24,background:LUD.gradDark,padding:"64px 40px",textAlign:"center",position:"relative",overflow:"hidden",maxWidth:1052,marginLeft:"auto",marginRight:"auto"}}>
         <div style={{position:"absolute",width:320,height:320,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-90,right:-90,pointerEvents:"none"}}/>
         <div style={{position:"absolute",width:220,height:220,borderRadius:"50%",background:"rgba(46,196,160,.08)",bottom:-70,left:-50,pointerEvents:"none"}}/>
         <div style={{position:"relative",zIndex:1}}>
@@ -378,7 +437,7 @@ function LandingPage({onEnter}){
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer style={{borderTop:"1px solid #EEF2FF",padding:"32px 32px",background:"#fff"}}>
+      <footer style={{borderTop:"1px solid #EEF2FF",padding:"32px 32px",background:"#fff"}} className="ld-section-pad">
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:20}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <img src="/logo.png" alt="Luderis" style={{width:28,height:28,objectFit:"contain"}}/>

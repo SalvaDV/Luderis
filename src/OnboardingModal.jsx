@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as sb from "./supabase";
 import { C, FONT, LUD, MATERIAS, CATEGORIAS_DATA } from "./shared";
 
-function OnboardingModal({session,onClose}){
+function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const [step,setStep]=useState(0);
   const [rol,setRol]=useState("");// "alumno" | "docente" | "ambos"
   const [materias,setMaterias]=useState([]);
@@ -29,14 +29,14 @@ function OnboardingModal({session,onClose}){
   // ── Pasos base ──────────────────────────────────────────────────────────────
   const PASOS_BASE=[
     // Paso 0: Bienvenida + rol
-    {id:"bienvenida",title:"¡Bienvenido/a a Luderis!",sub:"La plataforma educativa argentina. Contanos un poco sobre vos.",
+    {id:"bienvenida",title:upgradeMode?"Convertirte en docente":"¡Bienvenido/a a Luderis!",sub:upgradeMode?"Elegí cómo querés usar Luderis de ahora en adelante.":"La plataforma educativa argentina. Contanos un poco sobre vos.",
      canNext:!!rol,
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
-        <p style={{color:C.muted,fontSize:13,lineHeight:1.7,margin:0}}>Aprendé lo que quieras, enseñá lo que sabés. ¿Cómo vas a usar Luderis?</p>
+        <p style={{color:C.muted,fontSize:13,lineHeight:1.7,margin:0}}>{upgradeMode?"Completá tu verificación para empezar a enseñar en Luderis.":"Aprendé lo que quieras, enseñá lo que sabés. ¿Cómo vas a usar Luderis?"}</p>
         <div style={{display:"grid",gap:10,marginTop:4}}>
           {[
-            {v:"alumno",icon:"🎓",title:"Quiero aprender",sub:"Busco clases, cursos y docentes"},
+            ...(!upgradeMode?[{v:"alumno",icon:"🎓",title:"Quiero aprender",sub:"Busco clases, cursos y docentes"}]:[]),
             {v:"docente",icon:"📚",title:"Quiero enseñar",sub:"Voy a publicar clases y cursos"},
             {v:"ambos",icon:"⚡",title:"Ambas cosas",sub:"Aprendo y enseño según lo que necesite"},
           ].map(({v,icon,title,sub:s})=>(
@@ -276,9 +276,19 @@ function OnboardingModal({session,onClose}){
         </div>
         <p style={{color:C.muted,fontSize:13,lineHeight:1.8,margin:"0 0 16px"}}>
           {esDocente
-            ?"Tu verificación fue enviada. Una vez aprobada, podrás publicar tus clases y cursos."
+            ?"Tu verificación fue enviada. Ya podés empezar a publicar — una vez aprobada, tus clases quedarán visibles para todos."
             :"Explorá publicaciones, inscribite en cursos, y cuando quieras podés completar la verificación para enseñar también."}
         </p>
+        {esDocente&&onPublicar&&(
+          <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 20px",marginBottom:16,textAlign:"left"}}>
+            <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>🚀 Siguiente paso recomendado</div>
+            <p style={{color:C.muted,fontSize:12,margin:"0 0 12px",lineHeight:1.5}}>Publicá tu primera clase ahora. Solo tarda 2 minutos y empezás a aparecer en los resultados.</p>
+            <button onClick={()=>finish(onPublicar)} disabled={saving}
+              style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(26,110,216,.3)"}}>
+              {saving?"Guardando…":"Publicar mi primera clase →"}
+            </button>
+          </div>
+        )}
         {materias.length>0&&(
           <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginTop:8}}>
             {materias.slice(0,5).map(m=>{
@@ -323,7 +333,7 @@ function OnboardingModal({session,onClose}){
   const cur=allSteps[step];
   const isLast=step===allSteps.length-1;
 
-  const finish=async()=>{
+  const finish=async(postAction)=>{
     setSaving(true);
     try{
       // Guardar preferencias en tabla usuarios
@@ -393,11 +403,12 @@ Respondé SOLO JSON.`,
         if(presupuesto)localStorage.setItem("cl_presupuesto_"+session.user.email,presupuesto);
       }catch{}
       onClose();
+      if(postAction)postAction();
     }catch(e){
       console.error("Onboarding error:",e);
-      // Fallback: guardar solo en localStorage
       try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}
       onClose();
+      if(postAction)postAction();
     }finally{setSaving(false);}
   };
 
@@ -421,7 +432,10 @@ Respondé SOLO JSON.`,
               <h2 style={{color:C.text,fontSize:19,fontWeight:800,margin:"0 0 4px",letterSpacing:"-.3px"}}>{cur.title}</h2>
               <p style={{color:C.muted,fontSize:12,margin:0}}>{cur.sub}</p>
             </div>
-            <span style={{fontSize:11,color:C.muted,flexShrink:0,marginTop:4}}>{step+1} / {allSteps.length}</span>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginTop:2}}>
+              <span style={{fontSize:11,color:C.muted}}>{step+1} / {allSteps.length}</span>
+              <button onClick={onClose} title="Cerrar" style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 2px"}}>×</button>
+            </div>
           </div>
           {/* Breadcrumb visual */}
           <div style={{display:"flex",gap:4,marginTop:12}}>
@@ -447,12 +461,6 @@ Respondé SOLO JSON.`,
             )}
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            {!isLast&&cur.id!=="kyc_identidad"&&cur.id!=="kyc_terminos"&&(
-              <button onClick={()=>setStep(s=>s+1)}
-                style={{background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:"0 4px"}}>
-                Saltar
-              </button>
-            )}
             <button onClick={handleNext} disabled={!cur.canNext||saving}
               style={{background:isLast?LUD.grad:(cur.canNext?LUD.grad:C.border),border:"none",borderRadius:20,color:"#fff",padding:"10px 28px",fontWeight:700,fontSize:14,cursor:cur.canNext&&!saving?"pointer":"default",fontFamily:FONT,boxShadow:cur.canNext?"0 4px 12px rgba(26,110,216,.3)":"none",transition:"all .2s",opacity:cur.canNext?1:0.5}}>
               {saving?"Guardando…":isLast?"Empezar →":"Continuar →"}

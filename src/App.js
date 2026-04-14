@@ -3,7 +3,7 @@ import * as sb from "./supabase";
 import {
   C, FONT, LUD, _themeKey,
   applyTheme, toast, ToastContainer,
-  MATERIAS, CATEGORIAS_DATA,
+  MATERIAS, CATEGORIAS_DATA, getPubTipo, TIPO_PUB,
   avatarColor, fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   MONEDA_SYM, setLang, STRINGS, t,
   maskEmail, safeDisplayName, CONTACT_REGEX, sanitizeContactInfo,
@@ -11,7 +11,7 @@ import {
   Spinner, SkeletonCard, SkeletonList,
   Avatar, Tag, StatusBadge, VerifiedBadge, StarRating,
   Input, Btn, SearchableSelect,
-  ErrMsg, Label, Modal, Chip, MiniStars,
+  ErrMsg, Label, Modal, Chip, MiniStars, useConfirm,
   CalendarioCurso,
   useMPRetorno,
   useDebounce,
@@ -21,815 +21,90 @@ import LandingPage from "./LandingPage";
 import AuthScreen from "./AuthScreen";
 import { PriceSlider } from "./PostFormModal";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
+import AgendaPage, { DocentesDestacados } from "./AgendaPage";
+import AdminPage from "./AdminPage";
+import FavBtn from "./components/FavBtn";
+import DocBadge from "./components/DocBadge";
+import DenunciaModal from "./components/DenunciaModal";
+import PostChatBtn from "./components/PostChatBtn";
+import ShareBtn, { useShareToast } from "./components/ShareBtn";
+import OfertarBtn from "./components/OfertarBtn";
+import PostCard from "./components/PostCard";
+import LeaderboardView from "./components/LeaderboardView";
+import Sidebar from "./components/Sidebar";
+import CertificadoPage from "./components/CertificadoPage";
+import ChatModal from "./components/ChatModal";
 
-
-function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin}){
-  const nombre=sb.getDisplayName(session.user.email);
-  const nav=[
-    {id:"explore",icon:"🔍",label:t("explore")},
-    {id:"agenda",icon:"📅",label:t("agenda")},
-    {id:"chats",icon:"💬",label:t("chats"),badge:unreadCount},
-    {id:"favoritos",icon:"★",label:t("favorites")},
-    {id:"inscripciones",icon:"🎓",label:t("classes"),badge:notifCount},
-    {id:"cuenta",icon:"👤",label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
-  ];
-  const inner=(
-    <div style={{width:224,height:"100%",background:C.surface,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",fontFamily:FONT}}>
-      {/* Logo */}
-      <div style={{padding:"16px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <img src="/logo.png" alt="Luderis" style={{width:32,height:32,objectFit:"contain"}}/>
-            <span style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:"-.3px",whiteSpace:"nowrap"}}>Luderis</span>
-          </div>
-          {mobile&&<button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer",padding:2}}>×</button>}
+function BusquedaIA({onBuscar,iaLoading,onClose,seccion}){
+  const [q,setQ]=React.useState("");
+  const submit=()=>{if(q.trim()){onBuscar(q.trim());onClose();}};
+  const esPedidos=seccion==="pedidos";
+  const esClases=seccion==="clases";
+  const iaDesc=esPedidos
+    ?"Describí qué sabés enseñar. La IA va a encontrar los pedidos de alumnos más afines a vos."
+    :esClases
+    ?"Describí qué querés aprender. La IA va a buscar los mejores docentes disponibles."
+    :"Describí qué querés aprender. La IA va a buscar los cursos más relevantes.";
+  const iaPlaceholder=esPedidos
+    ?"Ej: quiero dar clases de inglés a adultos principiantes en CABA…"
+    :esClases
+    ?"Ej: clases de guitarra para principiantes, presencial en Palermo…"
+    :"Ej: Python para principiantes con seguimiento y ejercicios prácticos…";
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(480px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}}>
+        <div style={{padding:"20px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>✨ Buscar con IA</div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer"}}>×</button>
         </div>
-      </div>
-
-      {/* Barra progreso perfil */}
-      {(()=>{
-        const emailBase=session.user.email;
-        const criterios=[
-          {ok:nombre&&nombre!==emailBase.split("@")[0],label:"Nombre"},
-          {ok:!!localStorage.getItem("cl_avatar_"+emailBase),label:"Foto"},
-          {ok:!!localStorage.getItem("cl_bio_"+emailBase)||false,label:"Bio"},
-          {ok:!!localStorage.getItem("cl_user_city"),label:"Ciudad"},
-          {ok:localStorage.getItem("cl_onboarding_done_"+emailBase)==="1",label:"Onboarding"},
-        ];
-        const done=criterios.filter(x=>x.ok).length;
-        const pct=Math.round((done/criterios.length)*100);
-        const siguiente=criterios.find(x=>!x.ok);
-        return pct<100?(
-          <div style={{padding:"8px 16px",borderBottom:`1px solid ${C.border}`,background:C.accentDim,cursor:"pointer"}} onClick={()=>{}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-              <span style={{fontSize:10,fontWeight:700,color:C.accent,letterSpacing:.3}}>PERFIL {pct}% COMPLETO</span>
-              {siguiente&&<span style={{fontSize:10,color:C.muted}}>Falta: {siguiente.label}</span>}
-            </div>
-            <div style={{height:4,background:C.border,borderRadius:2}}>
-              <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.success:LUD.grad,borderRadius:2,transition:"width .5s ease"}}/>
-            </div>
-          </div>
-        ):null;
-      })()}
-      {/* User card */}
-      <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,background:`linear-gradient(135deg,${C.accentDim},${C.bg})`}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          {(()=>{const av=_avatarCache[session.user.email]||localStorage.getItem("cl_avatar_"+session.user.email)||null;return av&&av.startsWith("http")?<div style={{width:40,height:40,borderRadius:"50%",overflow:"hidden",flexShrink:0,border:`2px solid ${C.accent}40`}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={nombre[0]} size={40}/>;})()}
-          <div style={{overflow:"hidden",flex:1}}>
-            <div style={{color:C.text,fontSize:13,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nombre}</div>
-            <div style={{color:C.muted,fontSize:11,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:1}}>{session.user.email}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav style={{padding:"8px 8px",flex:1,overflowY:"auto"}}>
-        {nav.map(item=>{
-          const active=page===item.id;
-          return(<button key={item.id} onClick={()=>{setPage(item.id);if(mobile)onClose();}}
-            style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",
-              background:active?C.accentDim:"transparent",
-              color:active?C.accent:C.text,
-              fontWeight:active?600:400,fontSize:13,cursor:"pointer",marginBottom:1,fontFamily:FONT,textAlign:"left",
-              transition:"background .12s,color .12s"}}
-            onMouseEnter={e=>{if(!active){e.currentTarget.style.background=C.bg;}}}
-            onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";}}}>
-            <span style={{fontSize:16,lineHeight:1}}>{item.icon}</span>
-            <span style={{flex:1}}>{item.label}</span>
-            {item.badge>0&&<span style={{background:C.danger,color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px",minWidth:18,textAlign:"center"}}>{item.badge>9?"9+":item.badge}</span>}
-            {active&&<span style={{width:3,height:22,borderRadius:2,background:LUD.grad,flexShrink:0}}/>}
-          </button>);
-        })}
-        <div style={{margin:"10px 8px",height:1,background:C.border}}/>
-        {esAdmin&&(
-          <button onClick={()=>{if(mobile)onClose();window.__openAdmin&&window.__openAdmin();}}
-            style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#7B3FBE20,#1A6ED820)",color:"#7B3FBE",fontWeight:600,fontSize:13,cursor:"pointer",marginBottom:4,fontFamily:FONT,textAlign:"left",transition:"background .12s"}}
-            onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#7B3FBE30,#1A6ED830)"}
-            onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg,#7B3FBE20,#1A6ED820)"}>
-            <span style={{fontSize:16}}>⚙️</span>
-            <span>Panel Admin</span>
-          </button>
-        )}
-        <button onClick={()=>{onNewPost();if(mobile)onClose();}}
-          style={{width:"100%",padding:"9px 12px",borderRadius:20,border:"none",background:LUD.grad,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:"0 4px 12px rgba(26,110,216,.3)",transition:"opacity .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
-          onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-          + Publicar
-        </button>
-      </nav>
-
-      {/* Footer */}
-      <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
-        {/* Campana notificaciones */}
-        <button onClick={()=>{if(typeof window._openNotifPanel==="function")window._openNotifPanel();}}
-          style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,border:`1px solid ${(unreadCount+ofertasCount+notifCount)>0?C.accent+"40":C.border}`,background:(unreadCount+ofertasCount+notifCount)>0?C.accentDim:"none",cursor:"pointer",fontFamily:FONT,fontSize:12,color:(unreadCount+ofertasCount+notifCount)>0?C.accent:C.muted,width:"100%",transition:"all .15s"}}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=(unreadCount+ofertasCount+notifCount)>0?C.accent+"40":C.border;e.currentTarget.style.color=(unreadCount+ofertasCount+notifCount)>0?C.accent:C.muted;}}>
-          <span style={{fontSize:15}}>🔔</span>
-          <span style={{flex:1}}>Notificaciones</span>
-          {(unreadCount+ofertasCount+notifCount)>0&&<span style={{background:C.danger,color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px"}}>{Math.min(unreadCount+ofertasCount+notifCount,99)}</span>}
-        </button>
-        <div style={{display:"flex",gap:6}}>
-          <button onClick={onToggleTheme}
-            style={{flex:1,background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            {theme==="light"?t("dark"):t("light")}
-          </button>
-          <button onClick={onLogout}
-            style={{flex:1,background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            ↩ {t("logout")}
-          </button>
-        </div>
-        {/* Selector de idioma */}
-        <div style={{display:"flex",gap:6}}>
-          {[["es",t("langEs")],["en",t("langEn")]].map(([key,label])=>(
-            <button key={key}
-              onClick={()=>{setLang(key);if(onForceRender)onForceRender();else{onToggleTheme();setTimeout(onToggleTheme,10);}}}
-              style={{flex:1,background:(localStorage.getItem("cl_lang")||"es")===key?C.accentDim:"none",
-                border:`1px solid ${(localStorage.getItem("cl_lang")||"es")===key?C.accent:C.border}`,
-                borderRadius:8,color:(localStorage.getItem("cl_lang")||"es")===key?C.accent:C.muted,
-                padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,
-                display:"flex",alignItems:"center",justifyContent:"center",gap:4,transition:"all .15s"}}>
-              {label}
+        <div style={{padding:"12px 20px 20px"}}>
+          <p style={{fontSize:13,color:C.muted,margin:"0 0 12px"}}>{iaDesc}</p>
+          <textarea value={q} onChange={e=>setQ(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}}}
+            placeholder={iaPlaceholder}
+            autoFocus rows={3}
+            style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",boxSizing:"border-box",marginBottom:10}}/>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+            <button onClick={onClose} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>Cancelar</button>
+            <button onClick={submit} disabled={!q.trim()||iaLoading}
+              style={{padding:"8px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FONT,opacity:(!q.trim()||iaLoading)?.5:1}}>
+              {iaLoading?"Buscando…":"Buscar →"}
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Mini dropdown custom (reemplaza <select> nativo que no se puede estilizar) ──
+function MiniDropdown({value,onChange,options,fontSize=12}){
+  const [open,setOpen]=React.useState(false);
+  const ref=React.useRef(null);
+  React.useEffect(()=>{
+    if(!open)return;
+    const handler=(e)=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false);};
+    document.addEventListener("mousedown",handler);
+    return()=>document.removeEventListener("mousedown",handler);
+  },[open]);
+  const current=options.find(o=>o.value===value)||options[0];
+  return(
+    <div ref={ref} style={{position:"relative",flexShrink:0}}>
+      <button onClick={()=>setOpen(v=>!v)}
+        style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,fontSize,color:C.text,padding:"2px 0",whiteSpace:"nowrap"}}>
+        <span style={{fontWeight:500}}>{current?.label}</span>
+        <span style={{fontSize:fontSize-2,color:C.muted,lineHeight:1}}>{open?"▲":"▼"}</span>
+      </button>
+      {open&&(
+        <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 4px 16px rgba(0,0,0,.12)",zIndex:200,minWidth:140,overflow:"hidden",animation:"fadeUp .12s ease"}}>
+          {options.map(o=>(
+            <button key={o.value} onClick={()=>{onChange(o.value);setOpen(false);}}
+              style={{display:"block",width:"100%",textAlign:"left",background:o.value===value?C.accentDim:"none",border:"none",padding:"9px 14px",fontFamily:FONT,fontSize,cursor:"pointer",color:o.value===value?C.accent:C.text,fontWeight:o.value===value?600:400,transition:"background .1s"}}
+              onMouseEnter={e=>{if(o.value!==value)e.currentTarget.style.background=C.bg;}}
+              onMouseLeave={e=>{if(o.value!==value)e.currentTarget.style.background="none";}}>{o.label}</button>
           ))}
         </div>
-      </div>
-    </div>
-  );
-  if(mobile)return(<>{open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:89}}/>}<div style={{position:"fixed",left:0,top:0,height:"100vh",zIndex:90,transform:open?"translateX(0)":"translateX(-100%)",transition:"transform .25s",boxShadow:"4px 0 20px rgba(0,0,0,.1)"}}>{inner}</div></>);
-  return <div style={{position:"fixed",left:0,top:0,height:"100vh",zIndex:40}}>{inner}</div>;
-}
-
-// ─── FAV BUTTON ───────────────────────────────────────────────────────────────
-function FavBtn({post,session,onFavChange,isFav,favId:favIdProp}){
-  const [favId,setFavId]=useState(favIdProp||null);
-  const [loading,setLoading]=useState(isFav===undefined);
-  useEffect(()=>{
-    if(isFav!==undefined){setFavId(favIdProp||null);setLoading(false);return;}
-    sb.getFavoritos(session.user.email,session.access_token)
-      .then(favs=>{const f=favs.find(f=>f.publicacion_id===post.id);setFavId(f?.id||null);})
-      .catch(()=>{})
-      .finally(()=>setLoading(false));
-  },[post.id,session.user.email,isFav,favIdProp]);// eslint-disable-line
-  const toggle=async(e)=>{
-    e.stopPropagation();if(loading)return;setLoading(true);
-    try{
-      if(favId){await sb.deleteFavorito(favId,session.access_token);setFavId(null);}
-      else{const r=await sb.insertFavorito({publicacion_id:post.id,usuario_email:session.user.email,usuario_id:session.user.id},session.access_token);setFavId(r?.[0]?.id||null);}
-      if(onFavChange)onFavChange();
-    }catch{}finally{setLoading(false);}
-  };
-  const active=!!favId;
-  return(
-    <button onClick={toggle} title={active?"Quitar favorito":"Agregar a favoritos"}
-      style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:active?C.accent:"#aaa",transition:"color .15s",padding:"0 3px",lineHeight:1,opacity:loading?0.5:1}}
-      onMouseEnter={e=>{if(!active)e.currentTarget.style.color=C.accent;}}
-      onMouseLeave={e=>{if(!active)e.currentTarget.style.color="#aaa";}}>
-      {active?"★":"☆"}
-    </button>
-  );
-}
-
-// ─── OFERTAR BTN — solo se muestra en el modal de detalle, NO en la card ──────
-function OfertarBtn({post,session}){
-  const [open,setOpen]=useState(false);const [precio,setPrecio]=useState("");const [tipo,setTipo]=useState("hora");const [msg,setMsg]=useState("");const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
-  const [miOferta,setMiOferta]=useState(null);// null=cargando, obj=encontrada, false=no hay
-  useEffect(()=>{
-    if(post.tipo!=="busqueda"||post.autor_email===session.user.email)return;
-    sb.getMisOfertas(session.user.email,session.access_token).then(ofertas=>{
-      // Buscar la más reciente sobre esta búsqueda (cualquier estado)
-      const mia=ofertas.filter(o=>o.busqueda_id===post.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
-      setMiOferta(mia||false);
-    }).catch(()=>setMiOferta(false));
-  },[post.id,session.user.email,session.access_token]); // eslint-disable-line
-  if(post.tipo!=="busqueda"||post.autor_email===session.user.email||post.activo===false||post.finalizado)return null;
-  if(miOferta===null)return null;// cargando
-  if(miOferta&&miOferta.estado==="pendiente"){
-    const diasEspera=miOferta.created_at?Math.floor((Date.now()-new Date(miOferta.created_at))/86400000):null;
-    return(
-      <div style={{display:"flex",flexDirection:"column",gap:3,alignSelf:"center"}}>
-        <span style={{fontSize:12,color:C.warn,fontStyle:"italic"}}>Tu oferta está pendiente de respuesta</span>
-        {diasEspera!==null&&<span style={{fontSize:10,color:C.muted}}>Enviada {diasEspera===0?"hoy":diasEspera===1?"hace 1 día":`hace ${diasEspera} días`}</span>}
-      </div>
-    );
-  }
-  if(miOferta&&miOferta.estado==="rechazada"){
-    return<span style={{fontSize:12,color:C.danger,fontStyle:"italic",alignSelf:"center"}}>Tu oferta fue rechazada</span>;
-  }
-  const cerrar=()=>setOpen(false);
-  const enviar=async()=>{
-    if(!msg.trim())return;setSaving(true);
-    try{
-      const payload={busqueda_id:post.id,busqueda_autor_email:post.autor_email,busqueda_titulo:post.titulo,busqueda_materia:post.materia||null,ofertante_id:session.user.id,ofertante_email:session.user.email,ofertante_nombre:sb.getDisplayName(session.user.email),precio:precio?parseFloat(precio):null,precio_tipo:tipo,mensaje:msg,leida:false};
-      await sb.insertOfertaBusq(payload,session.access_token);
-      // Notificar al dueño de la búsqueda que recibió una nueva oferta
-      sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_oferta",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
-      // Email al dueño de la búsqueda
-      sb.sendEmail("oferta_recibida",post.autor_email,{pub_titulo:post.titulo,docente_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0],mensaje:msg},session.access_token).catch(()=>{});
-      setOk(true);
-      // Actualizar estado local y cerrar el popup
-      setMiOferta({busqueda_id:post.id,estado:"pendiente",created_at:new Date().toISOString()});
-      cerrar();
-    }catch(e){
-      const msg2=e.message||"";
-      if(msg2.includes("estado"))alert("Error de esquema: la columna 'estado' no existe. Pedí al admin que ejecute el SQL de actualización.");
-      else alert("Error: "+msg2);
-    }finally{setSaving(false);}
-  };
-  const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:9};
-  return(
-    <>
-      <button onClick={e=>{e.stopPropagation();setOpen(true);}} style={{background:"#5CA8E022",border:"1px solid #5CA8E044",borderRadius:10,color:C.info,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT}}>Ofertar mis clases</button>
-      {open&&(
-        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT,boxSizing:"border-box"}} onClick={cerrar}>
-          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(430px,92vw)",padding:"24px"}} onClick={e=>e.stopPropagation()}>
-            {ok?(<div style={{textAlign:"center",padding:"24px 0"}}><div style={{fontSize:38,marginBottom:10}}>✓</div><div style={{color:C.success,fontWeight:700,fontSize:15}}>¡Oferta enviada!</div><div style={{color:C.muted,fontSize:12,marginTop:6}}>El estudiante verá tu propuesta.</div></div>):(<>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><h3 style={{color:C.text,margin:0,fontSize:16,fontWeight:700}}>Ofertá tus clases</h3><button onClick={cerrar} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer",fontFamily:FONT}}>×</button></div>
-              <div style={{background:C.card,borderRadius:9,padding:"9px 12px",marginBottom:13,fontSize:12,color:C.muted}}>Para: <span style={{color:C.text,fontWeight:600}}>{post.titulo}</span></div>
-              <Label>Precio (opcional)</Label>
-              <div style={{display:"flex",gap:7,marginBottom:9}}><input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:2}}/><select value={tipo} onChange={e=>setTipo(e.target.value)} style={{...iS,margin:0,flex:1,cursor:"pointer"}}><option value="hora">/ hora</option><option value="clase">/ clase</option><option value="mes">/ mes</option></select></div>
-              <Label>Mensaje al estudiante</Label>
-              <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Contale tu experiencia, disponibilidad..." style={{...iS,minHeight:85,resize:"vertical"}}/>
-              <Btn onClick={enviar} disabled={saving||!msg.trim()} style={{width:"100%",padding:"10px"}}>{saving?"Enviando...":"Enviar oferta →"}</Btn>
-            </>)}
-          </div>
-        </div>
       )}
-    </>
-  );
-}
-
-// ─── DENUNCIA MODAL ───────────────────────────────────────────────────────────
-function DenunciaModal({post,session,onClose}){
-  const [motivo,setMotivo]=useState("");const [detalle,setDetalle]=useState("");const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
-  const MOTIVOS=["El profesor no se presentó","No hay contenido publicado","El contenido es incorrecto o engañoso","Comportamiento inapropiado","Publicación falsa o fraudulenta","Otro"];
-  const enviar=async()=>{if(!motivo)return;setSaving(true);try{await sb.insertDenuncia({publicacion_id:post.id,denunciante_id:session.user.id,denunciante_email:session.user.email,motivo,detalle,autor_email:post.autor_email},session.access_token);setOk(true);}catch{setOk(true);}finally{setSaving(false);}};
-  return(
-    <Modal onClose={onClose} width="min(440px,95vw)">
-      <div style={{padding:"20px 22px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><h3 style={{color:C.danger,margin:0,fontSize:16,fontWeight:700}}>⚑ Denunciar publicación</h3><button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"8px 12px",margin:"-8px -8px -8px 0",borderRadius:8,lineHeight:1,minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>
-        {ok?(<div style={{textAlign:"center",padding:"24px 0"}}><div style={{color:C.success,fontWeight:700,fontSize:15,marginBottom:8}}>Denuncia enviada</div><div style={{color:C.muted,fontSize:13}}>Revisaremos tu reporte.</div><Btn onClick={onClose} style={{marginTop:16}}>Cerrar</Btn></div>):(
-          <><div style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:10,padding:"10px 13px",marginBottom:14,fontSize:12,color:C.muted}}>Publicación: <span style={{color:C.text,fontWeight:600}}>{post.titulo}</span></div>
-          <Label>Motivo</Label>
-          <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:12}}>{MOTIVOS.map(m=>(<button key={m} onClick={()=>setMotivo(m)} style={{background:motivo===m?"#E05C5C22":C.card,border:`1px solid ${motivo===m?C.danger:C.border}`,borderRadius:9,padding:"9px 12px",color:motivo===m?C.danger:C.muted,fontSize:12,cursor:"pointer",fontFamily:FONT,textAlign:"left"}}>{m}</button>))}</div>
-          <Label>Detalles (opcional)</Label>
-          <textarea value={detalle} onChange={e=>setDetalle(e.target.value)} placeholder="Describí lo que ocurrió..." style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",resize:"vertical",minHeight:65,boxSizing:"border-box",fontFamily:FONT,marginBottom:12}}/>
-          <Btn onClick={enviar} disabled={saving||!motivo} variant="danger" style={{width:"100%",padding:"10px"}}>{saving?"Enviando...":"Enviar denuncia"}</Btn></>
-        )}
-      </div>
-    </Modal>
-  );
-}
-
-// ─── POST CHAT BTN — solo permite chat si está inscripto o tiene oferta aceptada
-function PostChatBtn({post,session,onOpenChat}){
-  const [permitido,setPermitido]=useState(null);
-  const [estadoOferta,setEstadoOferta]=useState(null);// null | "pendiente" | "rechazada" | "aceptada"
-  const miEmail=session.user.email;
-  useEffect(()=>{
-    if(post.autor_email===miEmail){setPermitido(false);return;}
-    if(post.tipo==="busqueda"){
-      sb.getMisOfertas(miEmail,session.access_token).then(ofertas=>{
-        const mia=ofertas.find(o=>o.busqueda_id===post.id);
-        if(!mia){setEstadoOferta(null);setPermitido(false);return;}
-        setEstadoOferta(mia.estado);
-        setPermitido(mia.estado==="aceptada");
-      }).catch(()=>setPermitido(false));
-      return;
-    }
-    // Permitir a inscriptos Y co-docentes (ayudantes) — sin traer todas las pubs
-    Promise.all([
-      sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
-      sb.getPublicaciones({autor:post.autor_email},session.access_token).catch(()=>[]),
-    ]).then(([ins,pubs])=>{
-      const estaInscripto=ins.some(i=>i.publicacion_id===post.id);
-      if(estaInscripto){setPermitido(true);return;}
-      const pub=pubs.find(p=>p.id===post.id);
-      const esAyud=(pub?.ayudantes||[]).includes(session.user.id);
-      setPermitido(esAyud);
-    }).catch(()=>setPermitido(false));
-  },[post.id,post.tipo,post.autor_email,miEmail,session.access_token]);
-  if(permitido===null)return null;
-  if(!permitido){
-    if(post.tipo==="busqueda"){
-      if(estadoOferta==="pendiente")return<span style={{fontSize:11,color:C.warn,fontStyle:"italic"}}>⏳ Pendiente de respuesta</span>;
-      if(estadoOferta==="rechazada")return<span style={{fontSize:11,color:C.danger,fontStyle:"italic"}}>✗ Oferta rechazada</span>;
-      return<span style={{fontSize:11,color:C.muted,fontStyle:"italic"}}>Ofertá para chatear</span>;
-    }
-    return<span style={{fontSize:11,color:C.muted,fontStyle:"italic"}}>Inscribite para chatear</span>;
-  }
-  return <button onClick={e=>{e.stopPropagation();onOpenChat(post);}} style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"5px 12px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT}}>Contactar</button>;
-}
-
-// ─── SHARE TOAST ─────────────────────────────────────────────────────────────
-function ShareToast({msg,onDone}){
-  useEffect(()=>{const t=setTimeout(onDone,2200);return()=>clearTimeout(t);},[onDone]);
-  return(
-    <div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"10px 20px",fontSize:12,color:C.text,zIndex:9999,whiteSpace:"nowrap",boxShadow:"0 4px 20px #0008",fontFamily:FONT,display:"flex",alignItems:"center",gap:8}}>
-      <span style={{color:C.success}}>✓</span>{msg}
-    </div>
-  );
-}
-function useShareToast(){
-  const [toast,setToast]=useState(null);
-  const show=(msg)=>setToast(msg);
-  const el=toast?<ShareToast msg={toast} onDone={()=>setToast(null)}/>:null;
-  return [show,el];
-}
-function ShareBtn({post,style={}}){
-  const [menu,setMenu]=useState(false);
-  const url=`${window.location.origin}${window.location.pathname}?pub=${post.id}`;
-  const txt=`${post.titulo} — Luderis`;
-  const copiar=async(e)=>{e.stopPropagation();try{await navigator.clipboard.writeText(url);toast("Link copiado","success");}catch{toast("No se pudo copiar","error");}setMenu(false);};
-  const whatsapp=(e)=>{e.stopPropagation();window.open(`https://wa.me/?text=${encodeURIComponent(txt+" "+url)}`,"_blank");setMenu(false);};
-  const email=(e)=>{e.stopPropagation();window.open(`mailto:?subject=${encodeURIComponent(txt)}&body=${encodeURIComponent(url)}`);setMenu(false);};
-  const nativo=async(e)=>{e.stopPropagation();if(navigator.share)try{await navigator.share({title:txt,url});return;}catch{}copiar(e);};
-  return(
-    <div style={{position:"relative",display:"inline-block"}} onClick={e=>e.stopPropagation()}>
-      <button onClick={e=>{e.stopPropagation();if(navigator.share){nativo(e);}else setMenu(v=>!v);}}
-        title="Compartir" style={{background:"none",border:`1px solid ${C.border}`,fontSize:13,cursor:"pointer",color:C.muted,padding:"5px 10px",lineHeight:1,borderRadius:8,...style,display:"flex",alignItems:"center",gap:4,transition:"all .15s"}}
-        onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-        onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-        ⤴ <span style={{fontSize:11}}>Compartir</span>
-      </button>
-      {menu&&(
-        <>
-          <div onClick={()=>setMenu(false)} style={{position:"fixed",inset:0,zIndex:299}}/>
-          <div style={{position:"absolute",right:0,top:"calc(100% + 4px)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"6px",zIndex:300,boxShadow:"0 8px 24px rgba(0,0,0,.15)",display:"flex",flexDirection:"column",gap:2,minWidth:190,animation:"fadeUp .12s ease"}}>
-            {[
-              {icon:"⎘",label:"Copiar enlace",fn:copiar,color:C.text},
-              {icon:"🟢",label:"WhatsApp",fn:whatsapp,color:"#25D366"},
-              {icon:"✉️",label:"Email",fn:email,color:C.muted},
-            ].map(({icon,label,fn,color})=>(
-              <button key={label} onClick={fn} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,color,padding:"9px 12px",borderRadius:8,textAlign:"left",display:"flex",gap:10,alignItems:"center",transition:"background .1s",fontWeight:label==="WhatsApp"?600:400}}
-                onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                <span style={{fontSize:16,flexShrink:0}}>{icon}</span>{label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-
-// ─── POST CARD (sin OfertarBtn — solo aparece en DetailModal) ─────────────────
-
-// ─── BADGE DOCENTE ─────────────────────────────────────────────────────────────
-function DocBadge({avgUser,countPub,post}){
-  const esNuevo=post.created_at&&(Date.now()-new Date(post.created_at))<30*86400000;
-  if(post.verificado)return<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:20,background:"#1A6ED812",color:"#1A6ED8",border:"1px solid #1A6ED840",whiteSpace:"nowrap"}}>✓ Verificado</span>;
-  if(avgUser>=4.5&&countPub>=3)return<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:20,background:"#F59E0B12",color:"#B45309",border:"1px solid #F59E0B40",whiteSpace:"nowrap"}}>⭐ Top Valorado</span>;
-  if(countPub>=10)return<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:20,background:"#E05C5C12",color:"#C53030",border:"1px solid #E05C5C40",whiteSpace:"nowrap"}}>🔥 Popular</span>;
-  return null;
-}
-
-function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPerfil,avgPub,countPub,avgUser,yaOferte,fueRechazado,isFav,favId,onFavChange}){
-  const nombre=post.autor_nombre||sb.getDisplayName(post.autor_email)||safeDisplayName(post.autor_nombre,post.autor_email)||"Usuario";
-  const esMio=post.autor_email===session.user.email;
-  const autorAvatar=useAutorAvatar(post.autor_email,session.access_token);
-  return(
-    <div onClick={()=>onOpenDetail(post)} className="cl-card-anim"
-      style={{background:post.tipo==="busqueda"?"#FFFBEB":C.surface,border:`1px solid ${fueRechazado?C.danger+"40":post.tipo==="busqueda"?"#F59E0B33":C.border}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"box-shadow .18s,border-color .18s",fontFamily:FONT,borderLeft:esMio?`3px solid ${C.accent}`:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid #F59E0B`:undefined}}
-      onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 2px 14px rgba(0,0,0,.08)";e.currentTarget.style.borderColor=fueRechazado?C.danger+"60":C.accent+"50";}}
-      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=fueRechazado?C.danger+"40":C.border;}}>
-
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,gap:8}}>
-        <div style={{display:"flex",gap:10,alignItems:"flex-start",minWidth:0}}>
-          <Avatar letra={nombre[0]} img={autorAvatar||undefined}/>
-          <div style={{minWidth:0,flex:1}}>
-            <button onClick={e=>{e.stopPropagation();onOpenPerfil(post.autor_email);}}
-              style={{fontWeight:600,color:C.text,fontSize:14,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,textAlign:"left",lineHeight:1.3,display:"block"}}
-              onMouseEnter={e=>{e.currentTarget.style.color=C.accent;e.currentTarget.style.textDecoration="underline";}}
-              onMouseLeave={e=>{e.currentTarget.style.color=C.text;e.currentTarget.style.textDecoration="none";}}>
-              {nombre}
-            </button>
-            {post.tipo==="oferta"&&<DocBadge avgUser={avgUser} countPub={countPub} post={post}/>}
-            <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3,flexWrap:"wrap"}}>
-              {post.materia&&<span style={{fontSize:12,color:C.muted}}>{post.materia}</span>}
-              {post.created_at&&<span style={{fontSize:12,color:C.muted}}>· {fmtRel(post.created_at)}</span>}
-              {avgUser&&<MiniStars val={avgUser}/>}
-            </div>
-          </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-          <Tag tipo={post.tipo}/>
-          {post.created_at&&(()=>{const diff=(Date.now()-new Date(post.created_at));if(diff<86400000)return<span style={{background:LUD.grad,color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px",letterSpacing:.3,boxShadow:"0 2px 6px rgba(26,110,216,.3)"}}>HOY</span>;if(diff<259200000)return<span style={{background:"#2EC4A0",color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px",letterSpacing:.3}}>NUEVO</span>;return null;})()}
-          <FavBtn post={post} session={session} onFavChange={onFavChange} isFav={isFav} favId={favId}/>
-        </div>
-      </div>
-
-      {/* Content */}
-      <h3 style={{color:C.text,fontSize:15,fontWeight:600,margin:"0 0 5px",lineHeight:1.35}}>{post.titulo}</h3>
-      <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 10px"}}>{post.descripcion?.slice(0,120)}{post.descripcion?.length>120?"...":""}</p>
-      {avgPub&&<div style={{marginBottom:9}}><MiniStars val={avgPub} count={countPub}/></div>}
-
-      {/* Tags info */}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
-        {post.precio?<span style={{fontSize:13,fontWeight:800,color:C.accent}}>{fmtPrice(post.precio,post.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}>{post.precio_tipo&&post.modo!=="curso"?` /${post.precio_tipo}`:""}</span></span>:<span style={{fontSize:12,fontWeight:700,color:C.success}}>Gratis</span>}
-        {(post.modo==="grupal"||post.modo==="curso")&&<span style={{fontSize:12,color:C.success,background:C.success+"12",borderRadius:4,padding:"3px 8px",border:`1px solid ${C.success}30`}}>📚 Curso</span>}
-        {post.modo==="particular"&&<span style={{fontSize:12,color:C.info,background:C.info+"12",borderRadius:4,padding:"3px 8px",border:`1px solid ${C.info}30`}}>👤 Particular</span>}
-        {post.modalidad==="virtual"&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>🌐 Virtual</span>}
-        {post.modalidad==="presencial"&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>📍 Presencial</span>}
-        {post.modalidad==="mixto"&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>↔ Mixto</span>}
-        {post.tiene_prueba&&<span style={{fontSize:11,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",border:"1px solid #2EC4A040",borderRadius:4,padding:"3px 8px"}}>✓ Prueba</span>}
-        {(()=>{try{const pqs=JSON.parse(post.paquetes||"[]").filter(p=>p?.clases>0);const mejor=pqs.sort((a,b)=>(b.descuento||0)-(a.descuento||0))[0];return mejor?.descuento>0?<span style={{fontSize:11,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",border:"1px solid #2EC4A040",borderRadius:4,padding:"3px 8px"}}>📦 -{mejor.descuento}%</span>:null;}catch{return null;}})()}
-        {post.fecha_inicio&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:4,padding:"3px 8px",border:`1px solid ${C.border}`}}>Inicia {fmt(post.fecha_inicio)}</span>}
-        {yaOferte&&!esMio&&<span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:4,background:"#F59E0B12",border:"1px solid #F59E0B30",color:"#B45309"}}>Oferta enviada</span>}
-        {fueRechazado&&<span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:4,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`}}>Oferta rechazada</span>}
-      </div>
-
-      {/* Footer */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:`1px solid ${C.border}`,paddingTop:10,gap:8}} onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          {post.vistas>0&&<span style={{fontSize:12,color:C.muted}}>{post.vistas} vista{post.vistas!==1?"s":""}</span>}
-          {post.cantidad_inscriptos>0&&<span style={{fontSize:12,color:C.muted}}>{post.cantidad_inscriptos} inscripto{post.cantidad_inscriptos!==1?"s":""}</span>}
-        </div>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <ShareBtn post={post}/>
-          {!esMio&&<PostChatBtn post={post} session={session} onOpenChat={onOpenChat}/>}
-          {esMio&&<span style={{fontSize:12,color:C.muted,fontStyle:"italic"}}>Tu publicación</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── HOOK: debounce ──────────────────────────────────────────────────────────
-// useDebounce + useIntersectionObserver → imported from ./shared
-
-
-
-// ─── BÚSQUEDA CON IA ──────────────────────────────────────────────────────────
-function BusquedaIA({onBuscar,iaLoading,onClose}){
-  const [query,setQuery]=useState("");
-  const inputRef=useRef(null);
-  useEffect(()=>{setTimeout(()=>inputRef.current?.focus(),80);},[]);
-  const handleBuscar=()=>{if(!query.trim()||iaLoading)return;onBuscar(query);onClose();};
-  const DEFAULTS=["Clases de guitarra","Inglés conversacional","Matemáticas para ingresantes","Yoga online","Python desde cero","Cocina presencial"];
-  const [recientes,setRecientes]=useState([]);
-  useEffect(()=>{
-    try{
-      const stored=JSON.parse(localStorage.getItem("cl_busq_recientes")||"[]");
-      setRecientes(stored.slice(0,6));
-    }catch{}
-  },[]);
-  const SUGERENCIAS=recientes.length>0?recientes:DEFAULTS;
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:200,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"80px 16px 16px",fontFamily:FONT,backdropFilter:"blur(4px)",animation:"fadeIn .15s ease"}} onClick={onClose}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(600px,98vw)",boxShadow:"0 24px 64px rgba(0,0,0,.3)",overflow:"hidden",animation:"fadeUp .2s ease"}} onClick={e=>e.stopPropagation()}>
-        {/* Input principal estilo Spotlight */}
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 20px",borderBottom:`1px solid ${C.border}`}}>
-          <span style={{fontSize:20,flexShrink:0,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>✦</span>
-          <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter")handleBuscar();if(e.key==="Escape")onClose();}}
-            placeholder="Describí lo que querés aprender con tus palabras…"
-            style={{flex:1,background:"none",border:"none",color:C.text,fontSize:16,outline:"none",fontFamily:FONT}}/>
-          {query&&<button onClick={()=>setQuery("")} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",padding:0,flexShrink:0}}>×</button>}
-          <button onClick={handleBuscar} disabled={!query.trim()||iaLoading}
-            style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:10,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,opacity:!query.trim()||iaLoading?.5:1,flexShrink:0,boxShadow:"0 4px 12px rgba(123,63,190,.3)",transition:"opacity .15s"}}>
-            {iaLoading?"…":"Buscar"}
-          </button>
-          <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",flexShrink:0,lineHeight:1}}>×</button>
-        </div>
-        {/* Sugerencias */}
-        <div style={{padding:"16px 20px"}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:.5,marginBottom:12}}>{recientes.length>0?"BÚSQUEDAS RECIENTES":"SUGERENCIAS"}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {SUGERENCIAS.map(s=>(
-              <button key={s} onClick={()=>{setQuery(s);setTimeout(()=>inputRef.current?.focus(),50);}}
-                style={{background:"none",border:"none",textAlign:"left",padding:"9px 12px",borderRadius:8,cursor:"pointer",fontFamily:FONT,fontSize:14,color:C.text,display:"flex",alignItems:"center",gap:10,transition:"background .12s"}}
-                onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                <span style={{fontSize:16,flexShrink:0}}>🔍</span>
-                <span>{s}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── RECORDATORIOS DEL DÍA ────────────────────────────────────────────────────
-function RecordatoriosHoy({session,onOpenCurso}){
-  const [clases,setClases]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-  const hoy=DIAS[new Date().getDay()];
-  const ahora=new Date();
-  useEffect(()=>{
-    Promise.all([
-      sb.getMisInscripciones(session.user.email,session.access_token).catch(()=>[]),
-      sb.getPublicaciones({},session.access_token).catch(()=>[]),
-    ]).then(([ins,pubs])=>{
-      const pubMap={};pubs.forEach(p=>{pubMap[p.id]=p;});
-      const hoy_clases=[];
-      ins.forEach(insc=>{
-        const pub=pubMap[insc.publicacion_id];
-        if(!pub||pub.finalizado||pub.activo===false)return;
-        try{
-          const sinc=pub.clases_sinc?JSON.parse(pub.clases_sinc):[];
-          sinc.forEach(c=>{
-            if(c.dia!==hoy)return;
-            hoy_clases.push({pub,hora_inicio:c.hora_inicio,hora_fin:c.hora_fin});
-          });
-        }catch{}
-      });
-      // Ordenar por hora
-      hoy_clases.sort((a,b)=>a.hora_inicio.localeCompare(b.hora_inicio));
-      setClases(hoy_clases);
-    }).finally(()=>setLoading(false));
-  },[session]);// eslint-disable-line
-  if(loading||clases.length===0)return null;
-  return(
-    <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"12px 16px",marginBottom:16,animation:"fadeUp .25s ease"}}>
-      <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
-        <span style={{fontSize:16}}>📅</span>
-        <span style={{fontWeight:700,color:C.accent,fontSize:13}}>Tus clases de hoy — {hoy}</span>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {clases.map((c,i)=>{
-          const [h,m]=c.hora_inicio.split(":").map(Number);
-          const inicio=new Date();inicio.setHours(h,m,0,0);
-          const enCurso=ahora>=inicio&&ahora<new Date(inicio.getTime()+90*60000);
-          return(
-            <div key={i} onClick={()=>onOpenCurso(c.pub)}
-              style={{background:enCurso?"#4ECB7122":C.card,border:`1px solid ${enCurso?"#4ECB7155":C.border}`,borderRadius:10,padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,transition:"border-color .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-              onMouseLeave={e=>e.currentTarget.style.borderColor=enCurso?"#4ECB7155":C.border}>
-              <div style={{textAlign:"center",minWidth:44}}>
-                <div style={{fontWeight:700,color:enCurso?C.success:C.accent,fontSize:12}}>{c.hora_inicio}</div>
-                <div style={{color:C.muted,fontSize:10}}>{c.hora_fin}</div>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:600,color:C.text,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.pub.titulo}</div>
-                <div style={{color:C.muted,fontSize:11}}>{c.pub.materia}</div>
-              </div>
-              {enCurso&&<span style={{background:"#4ECB7122",color:C.success,border:"1px solid #4ECB7144",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",flexShrink:0}}>En curso</span>}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── EXPLORE PAGE — Vista dual: Home (MercadoLibre-style) + Resultados ────────
-function EmptyResultsWithAlerta({busqueda,filtroMateria,filtroModalidad,session,onClearAll,onBuscarIA}){
-  const [alertaCreada,setAlertaCreada]=useState(false);
-  const [creando,setCreando]=useState(false);
-  const textoAlerta=busqueda||filtroMateria?`${busqueda||""} ${filtroMateria||""}`.trim():null;
-
-  const crearAlertaAuto=async()=>{
-    if(!textoAlerta||alertaCreada)return;
-    setCreando(true);
-    try{
-      // Generar criterios con IA
-      let criterios={};
-      try{
-        const raw=await sb.callIA(
-          "Extraé criterios de búsqueda educativa. Respondé SOLO con JSON: {\"materia\":\"...\",\"palabras_clave\":[...],\"resumen\":\"...\"}",
-          `El usuario busca: "${textoAlerta}"`,
-          100,session.access_token
-        );
-        criterios=JSON.parse(raw.match(/\{[\s\S]*?\}/)?.[0]||"{}");
-      }catch{}
-      await sb.db("alertas_publicacion","POST",{
-        usuario_id:session.user.id,
-        usuario_email:session.user.email,
-        descripcion:textoAlerta,
-        criterios_json:JSON.stringify(criterios),
-        tipo_alerta:filtroModalidad&&filtroModalidad!=="all"?"oferta":"ambos",
-        usuario_ciudad:(()=>{try{return localStorage.getItem("cl_user_city")||null;}catch{return null;}})(),
-        activa:true,
-      },session.access_token,"return=minimal");
-      setAlertaCreada(true);
-      toast("✓ Alerta creada — te avisamos cuando aparezca algo","success",4000);
-    }catch(e){toast("Error al crear alerta","error");}
-    finally{setCreando(false);}
-  };
-
-  return(
-    <div style={{textAlign:"center",padding:"48px 20px"}}>
-      <div style={{fontSize:52,marginBottom:16}}>🔍</div>
-      <div style={{fontWeight:700,fontSize:18,marginBottom:8,color:C.text}}>Sin resultados</div>
-      <div style={{fontSize:14,color:C.muted,marginBottom:24,lineHeight:1.6,maxWidth:340,margin:"0 auto 24px"}}>
-        No encontramos publicaciones con esos criterios.<br/>Probá con menos filtros o una búsqueda diferente.
-      </div>
-      <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",marginBottom:textoAlerta?24:0}}>
-        <button onClick={onClearAll} style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 24px",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT}}>Limpiar filtros</button>
-        <button onClick={onBuscarIA} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,color:C.text,padding:"10px 24px",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",gap:6}}>
-          <span style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>✦</span> Buscar con IA
-        </button>
-      </div>
-      {textoAlerta&&!alertaCreada&&(
-        <div style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:14,padding:"16px 20px",maxWidth:400,margin:"0 auto",display:"flex",gap:12,alignItems:"center"}}>
-          <span style={{fontSize:24,flexShrink:0}}>🔔</span>
-          <div style={{flex:1,textAlign:"left"}}>
-            <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:3}}>¿Querés que te avisemos?</div>
-            <div style={{fontSize:12,color:C.muted}}>Creamos una alerta para "<strong>{textoAlerta.slice(0,40)}</strong>" y te mandamos un mail cuando aparezca algo.</div>
-          </div>
-          <button onClick={crearAlertaAuto} disabled={creando}
-            style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"8px 16px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0,whiteSpace:"nowrap"}}>
-            {creando?"...":"Sí, avisenme"}
-          </button>
-        </div>
-      )}
-      {alertaCreada&&(
-        <div style={{background:"#F0FFF4",border:"1px solid #2EC4A040",borderRadius:14,padding:"14px 20px",maxWidth:400,margin:"0 auto",fontSize:13,color:C.success,fontWeight:600}}>
-          ✓ Alerta activa — te mandamos un email cuando aparezca algo similar
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-
-
-// ─── LEADERBOARD VIEW ────────────────────────────────────────────────────────
-function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpenPerfil,filtroMateria}){
-  // Agrupar por autor y calcular score
-  const docentes=React.useMemo(()=>{
-    const map={};
-    posts.filter(p=>p.tipo==="oferta"&&p.activo!==false).forEach(p=>{
-      const email=p.autor_email;
-      if(!map[email])map[email]={
-        email,nombre:p.autor_nombre||p.autor_display_name||email.split("@")[0],
-        pubs:[],totalInscriptos:0,avgRating:0,materias:new Set(),
-      };
-      map[email].pubs.push(p);
-      map[email].materias.add(p.materia||"");
-    });
-    return Object.values(map).map(d=>{
-      const avgUser=reseñasUserMap[d.email];
-      const totalReseñas=d.pubs.reduce((a,p)=>{const r=reseñasMap[p.id];return a+(r?.count||0);},0);
-      const score=Math.round(
-        (avgUser||0)*20 +                     // rating (max 100)
-        Math.min(d.pubs.length,10)*5 +        // publicaciones (max 50)
-        Math.min(totalReseñas,20)*2            // reseñas (max 40)
-      );
-      return{...d,avgUser:avgUser||0,totalReseñas,score,materias:[...d.materias].filter(Boolean).slice(0,3)};
-    }).sort((a,b)=>b.score-a.score||b.avgUser-a.avgUser);
-  },[posts,reseñasMap,reseñasUserMap]);
-
-  // Filtrar por materia si hay filtro activo
-  const visibles=filtroMateria
-    ?docentes.filter(d=>d.materias.includes(filtroMateria))
-    :docentes;
-
-  const MEDALLAS=["🥇","🥈","🥉"];
-
-  if(!visibles.length)return(
-    <div style={{textAlign:"center",padding:"48px 0",color:C.muted,fontSize:14}}>
-      No hay docentes en esta materia todavía.
-    </div>
-  );
-
-  return(
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      <div style={{background:LUD.grad,borderRadius:14,padding:"14px 18px",marginBottom:4,display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:24}}>🏆</span>
-        <div>
-          <div style={{fontWeight:800,color:"#fff",fontSize:15}}>Ranking de docentes</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.75)"}}>Basado en rating, publicaciones y reseñas{filtroMateria?` · ${filtroMateria}`:""}</div>
-        </div>
-      </div>
-      {visibles.slice(0,20).map((d,i)=>(
-        <div key={d.email} onClick={()=>onOpenPerfil&&onOpenPerfil(d.email)}
-          style={{background:i<3?"linear-gradient(135deg,"+["#FFF9E6","#F0F4FF","#F4FFF4"][i]+","+C.surface+")":C.surface,border:`1px solid ${i<3?["#F59E0B40","#1A6ED840","#2EC4A040"][i]:C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",display:"flex",gap:14,alignItems:"center",transition:"box-shadow .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,.1)"}
-          onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
-          {/* Posición */}
-          <div style={{width:36,height:36,borderRadius:"50%",background:i<3?["linear-gradient(135deg,#F59E0B,#D97706)","linear-gradient(135deg,#94A3B8,#64748B)","linear-gradient(135deg,#CD7F32,#A0522D)"][i]:C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:i<3?18:14,color:i<3?"#fff":C.muted,flexShrink:0}}>
-            {i<3?MEDALLAS[i]:i+1}
-          </div>
-          {/* Avatar */}
-          <Avatar letra={d.nombre[0]} size={44}/>
-          {/* Info */}
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2}}>{d.nombre}</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-              {d.avgUser>0&&<span style={{fontSize:12,color:"#F59E0B",fontWeight:700}}>★ {d.avgUser.toFixed(1)}</span>}
-              <span style={{fontSize:11,color:C.muted}}>{d.pubs.length} clase{d.pubs.length!==1?"s":""}</span>
-              {d.totalReseñas>0&&<span style={{fontSize:11,color:C.muted}}>{d.totalReseñas} reseña{d.totalReseñas!==1?"s":""}</span>}
-            </div>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4}}>
-              {d.materias.map(m=><span key={m} style={{fontSize:10,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 7px",fontWeight:600}}>{m}</span>)}
-            </div>
-          </div>
-          {/* Score */}
-          <div style={{textAlign:"center",flexShrink:0}}>
-            <div style={{fontSize:20,fontWeight:800,color:i<3?["#F59E0B","#64748B","#CD7F32"][i]:C.accent}}>{d.score}</div>
-            <div style={{fontSize:9,color:C.muted,fontWeight:600}}>pts</div>
-          </div>
-        </div>
-      ))}
-      <div style={{textAlign:"center",fontSize:11,color:C.muted,padding:"8px 0"}}>
-        El ranking se actualiza en tiempo real basado en reseñas y actividad.
-      </div>
-    </div>
-  );
-}
-
-
-// ─── PÁGINA DE VERIFICACIÓN DE CERTIFICADO ───────────────────────────────────
-function CertificadoPage({certId,onClose}){
-  const [cert,setCert]=useState(null);
-  const [loading,setLoading]=useState(true);
-  const [error,setError]=useState(null);
-
-  useEffect(()=>{
-    if(!certId)return;
-    const SUPABASE_URL="https://hptdyehzqfpgtrpuydny.supabase.co";
-    const ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
-    fetch(`${SUPABASE_URL}/rest/v1/certificados?id=eq.${encodeURIComponent(certId)}&select=*`,{
-      headers:{"apikey":ANON_KEY,"Authorization":`Bearer ${ANON_KEY}`}
-    })
-    .then(r=>r.json())
-    .then(data=>{
-      if(data?.[0])setCert(data[0]);
-      else setError("Certificado no encontrado. Verificá el ID.");
-    })
-    .catch(()=>setError("Error al verificar el certificado."))
-    .finally(()=>setLoading(false));
-  },[certId]);
-
-  const fecha=cert?new Date(cert.fecha_emision).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"}):null;
-
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}} onClick={onClose}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(520px,96vw)",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0)",padding:"24px 28px",position:"relative"}}>
-          <button onClick={onClose} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(255,255,255,.7)",fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <span style={{fontSize:36}}>🎓</span>
-            <div>
-              <div style={{color:"#fff",fontWeight:800,fontSize:18}}>Verificación de Certificado</div>
-              <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>Luderis — Plataforma Educativa Argentina</div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{padding:"24px 28px"}}>
-          {loading&&(
-            <div style={{textAlign:"center",padding:"32px 0"}}>
-              <div style={{width:32,height:32,border:`3px solid ${C.accent}`,borderTop:"3px solid transparent",borderRadius:"50%",animation:"spin .8s linear infinite",margin:"0 auto 12px"}}/>
-              <div style={{color:C.muted,fontSize:14}}>Verificando certificado…</div>
-            </div>
-          )}
-
-          {error&&(
-            <div style={{textAlign:"center",padding:"24px 0"}}>
-              <div style={{fontSize:40,marginBottom:12}}>❌</div>
-              <div style={{color:C.danger,fontWeight:700,fontSize:15,marginBottom:8}}>Certificado inválido</div>
-              <div style={{color:C.muted,fontSize:13}}>{error}</div>
-            </div>
-          )}
-
-          {cert&&(
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {/* Badge verificado */}
-              <div style={{background:"#2EC4A012",border:"1px solid #2EC4A040",borderRadius:12,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:22}}>✅</span>
-                <div>
-                  <div style={{fontWeight:700,color:"#0F6E56",fontSize:14}}>Certificado verificado</div>
-                  <div style={{fontSize:11,color:C.muted}}>Este documento es auténtico y fue emitido por Luderis</div>
-                </div>
-              </div>
-
-              {/* Datos */}
-              {[
-                {label:"Alumno",value:cert.alumno_nombre,icon:"👤",big:true},
-                {label:"Curso completado",value:cert.curso_titulo,icon:"📚",big:true},
-                {label:"Materia",value:cert.materia,icon:"🏷️"},
-                {label:"Docente",value:cert.docente_nombre,icon:"🎓"},
-                {label:"Fecha de emisión",value:fecha,icon:"📅"},
-                {label:"ID del certificado",value:cert.id,icon:"🔑",mono:true},
-              ].filter(d=>d.value).map(({label,value,icon,big,mono})=>(
-                <div key={label} style={{background:C.bg,borderRadius:10,padding:"10px 14px",border:`1px solid ${C.border}`}}>
-                  <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.4,marginBottom:3,textTransform:"uppercase"}}>{icon} {label}</div>
-                  <div style={{fontSize:big?16:14,fontWeight:big?700:500,color:C.text,fontFamily:mono?"monospace":FONT}}>{value}</div>
-                </div>
-              ))}
-
-              <div style={{textAlign:"center",fontSize:11,color:C.muted,marginTop:4}}>
-                Emitido por <strong>Luderis</strong> · luderis.com
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -848,7 +123,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const [categorias,setCategorias]=useState([]);
   const [favsMap,setFavsMap]=useState({});
   const [rechazadasIds,setRechazadasIds]=useState(new Set());
-  const [hideBanner,setHideBanner]=useState(()=>{try{return localStorage.getItem("cl_hide_rechazadas")==="1";}catch{return false;}});
+  const [seenRechazadas,setSeenRechazadas]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("cl_seen_rechazadas")||"[]"));}catch{return new Set();}});
   const [pendientesIds,setPendientesIds]=useState(new Set());
   const [mostrarRechazadas,setMostrarRechazadas]=useState(false);
   const [filtroUbicacion,setFiltroUbicacion]=useState("");
@@ -861,6 +136,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const [iaExplanation,setIaExplanation]=useState("");
   const [iaLoading,setIaLoading]=useState(false);
   const [ordenamiento,setOrdenamiento]=useState("relevancia");
+  const [seccion,setSeccion]=useState(()=>{try{const s=sessionStorage.getItem("cl_seccion_explore");if(s)return s;}catch{}return "cursos";});// "cursos" | "clases" | "pedidos"
 
   // Palabras clave de cercanía para el prompt IA
   const PALABRAS_CERCA=["cerca","cercanía","mi zona","mi barrio","mi ciudad","presencial cerca","local"];
@@ -972,7 +248,12 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
         sb.getFavoritos(session.user.email,session.access_token).catch(()=>[]),
         sb.getCategorias(session.access_token).catch(()=>[]),
       ]);
-      const activos=d.filter(p=>p.activo!==false&&!p.finalizado);
+      const activos=d.filter(p=>{
+        if(p.activo===false||p.finalizado)return false;
+        // Búsquedas expiradas no se muestran
+        if(p.tipo==='busqueda'&&p.expires_at&&new Date(p.expires_at)<new Date())return false;
+        return true;
+      });
       setPosts(activos);
       setCategorias(cats||[]);
       const fm={};(favs||[]).forEach(f=>{fm[f.publicacion_id]=f.id;});
@@ -983,7 +264,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
         if(o.estado==="pendiente")pendSet.add(o.busqueda_id);
       });
       setRechazadasIds(rechSet);setPendientesIds(pendSet);
-      if(rechSet.size>0){try{if(localStorage.getItem("cl_hide_rechazadas")==="1"){}else{setHideBanner(false);}}catch{}}
+      // ya no hace nada aquí — la visibilidad del banner se deriva del estado
       const precios=activos.filter(p=>p.precio>0).map(p=>+p.precio);
       if(precios.length){const mn=Math.floor(Math.min(...precios)/100)*100;const mx=Math.ceil(Math.max(...precios)/100)*100;setPrecioMin(mn);setPrecioMax(mx);setSliderMin(mn);setSliderMax(mx);}
       const durs=activos.filter(p=>p.fecha_inicio&&p.fecha_fin).map(p=>Math.ceil((new Date(p.fecha_fin)-new Date(p.fecha_inicio))/604800000));
@@ -1061,7 +342,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   });
 
   const activeFilters=[
-    filtroTipo!=="all"&&(filtroTipo==="oferta"?"Clases":"Búsquedas"),
+    filtroTipo!=="all"&&(filtroTipo==="oferta"?"Clases":"Pedidos"),
     filtroModo!=="all"&&(filtroModo==="curso"?"Cursos":"Particulares"),
     filtroModalidad!=="all"&&(filtroModalidad==="presencial"?"Presencial":filtroModalidad==="virtual"?"Virtual":"Mixto"),
     filtroSinc!=="all"&&(filtroSinc==="sinc"?"Sincrónico":"Asincrónico"),
@@ -1078,7 +359,20 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   // Lista filtrada por IA (si hay) o todos los posts
   // Alumnos solo ven ofertas (clases/cursos), docentes ven todo
   const rolUsuario=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";
-  const visiblePosts=rolUsuario==="alumno"?posts.filter(p=>p.tipo==="oferta"||p.autor_email===session.user.email):posts;
+  const esDocente=rolUsuario==="docente"||rolUsuario==="ambos";
+  const postsPorRol=rolUsuario==="alumno"?posts.filter(p=>p.tipo==="oferta"||p.autor_email===session.user.email):posts;
+  const todosPedidos=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email);
+  // Filtro por sección (cursos vs clases)
+  const visiblePosts=postsPorRol.filter(p=>{
+    if(seccion==="pedidos") return p.tipo==="busqueda"&&p.autor_email!==session.user.email;
+    if(p.tipo==="busqueda"){
+      if(p.autor_email===session.user.email)return true;
+      return false;// en sección cursos/clases, las busquedas ajenas se muestran aparte
+    }
+    if(seccion==="cursos")return p.modo==="curso"||p.modo==="grupal";
+    if(seccion==="clases")return p.modo==="particular"||!p.modo;
+    return true;
+  });
   const filteredConRol=iaResults!==null
     ?visiblePosts.filter(p=>iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
     :visiblePosts.filter(p=>(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax));
@@ -1107,10 +401,17 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
 
   useEffect(()=>{setPagina(1);},[busquedaDebounced,filtroTipo,filtroModo,filtroModalidad,filtroSinc,filtroMateria,sliderMin,sliderMax,filtroFechaDesde,filtroFechaHasta,filtroDurMin,iaResults]);// eslint-disable-line
   useEffect(()=>{if(isSentinelVisible&&!loading)setPagina(p=>p+1);},[isSentinelVisible]);// eslint-disable-line
+  // Propagate section accent to CSS custom properties so the entire app page reflects it
+  const sT=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;
+  useEffect(()=>{
+    document.documentElement.style.setProperty('--cl-section-accent', sT.accent);
+    document.documentElement.style.setProperty('--cl-section-tint', sT.accent+'13');
+    document.documentElement.style.setProperty('--cl-section-grad', sT.grad);
+  },[sT.accent,sT.grad]);
   const clearAll=()=>{setFiltroTipo("all");setFiltroModo("all");setFiltroModalidad("all");setFiltroSinc("all");setFiltroMateria("");setSliderMin(precioMin);setSliderMax(precioMax);setFiltroFechaDesde("");setFiltroFechaHasta("");setFiltroDurMin(0);setBusqueda("");setFiltroUbicacion("");setFiltroMoneda("");};
   const selS={width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,cursor:"pointer",boxSizing:"border-box",colorScheme:localStorage.getItem("cl_theme")||"light"};
   const FL=({ch})=><div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:7,letterSpacing:.2}}>{ch}</div>;
-  const FC=({label,active,onClick})=>(<button onClick={onClick} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:active?600:400,cursor:"pointer",fontFamily:FONT,background:active?C.accent:"transparent",color:active?"#fff":C.muted,border:`1px solid ${active?C.accent:C.border}`,marginBottom:5,marginRight:5,transition:"all .12s"}}>{label}</button>);
+  const FC=({label,active,onClick})=>(<button onClick={onClick} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:active?600:400,cursor:"pointer",fontFamily:FONT,background:active?sT.accent:"transparent",color:active?"#fff":C.muted,border:`1px solid ${active?sT.accent:C.border}`,marginBottom:5,marginRight:5,transition:"all .12s"}}>{label}</button>);
 
   // Barra de búsqueda — click abre el modal IA (es el buscador principal)
   const searchBarJSX=(
@@ -1145,10 +446,12 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
   const recientes=posts.slice(0,8);
   const cursos=posts.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")).slice(0,6);
   const particulares=posts.filter(p=>p.tipo==="oferta"&&p.modo==="particular").slice(0,6);
+  // Búsquedas de alumnos visibles al docente en cada sección
+  const busquedasCursos=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="curso"||p.modo==="grupal"||!p.modo)).slice(0,8);
+  const busquedasClases=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="particular"||!p.modo)).slice(0,8);
 
   return(<>
     <div style={{fontFamily:FONT,animation:"fadeUp .2s ease"}}>
-      <RecordatoriosHoy session={session} onOpenCurso={onOpenCurso}/>
 
       {/* Drawer de filtros — siempre disponible */}
       {panelOpen&&(
@@ -1164,9 +467,8 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
               </div>
             </div>
             <div style={{padding:"16px 20px",flex:1}}>
-              <div style={{marginBottom:16}}><FL ch="Tipo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todo"],["oferta","Clases"],["busqueda","Búsquedas"]].map(([v,l])=><FC key={v} label={l} active={filtroTipo===v} onClick={()=>{setFiltroTipo(v);if(v!=="oferta"){setFiltroModo("all");setFiltroSinc("all");}}}/>)}</div></div>
-              {(filtroTipo==="all"||filtroTipo==="oferta")&&(<div style={{marginBottom:16}}><FL ch="Formato"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["curso","Cursos"],["particular","Clases part."]].map(([v,l])=><FC key={v} label={l} active={filtroModo===v} onClick={()=>{setFiltroModo(v);if(v!=="curso")setFiltroSinc("all");}}/>)}</div></div>)}
-              {(filtroModo==="curso"||filtroModo==="all")&&(filtroTipo==="all"||filtroTipo==="oferta")&&(<div style={{marginBottom:16}}><FL ch="Sincronismo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["sinc","Sincrónico"],["asinc","Asincrónico"]].map(([v,l])=><FC key={v} label={l} active={filtroSinc===v} onClick={()=>setFiltroSinc(v)}/>)}</div></div>)}
+              {/* Filtros contextuales a la sección activa */}
+              {seccion==="cursos"&&(<div style={{marginBottom:16}}><FL ch="Sincronismo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["sinc","En vivo"],["asinc","A tu ritmo"]].map(([v,l])=><FC key={v} label={l} active={filtroSinc===v} onClick={()=>setFiltroSinc(v)}/>)}</div></div>)}
               <div style={{marginBottom:16}}><FL ch="Modalidad"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todas"],["presencial","Presencial"],["virtual","Virtual"],["mixto","Mixto"]].map(([v,l])=><FC key={v} label={l} active={filtroModalidad===v} onClick={()=>setFiltroModalidad(v)}/>)}</div></div>
               <div style={{marginBottom:16}}><FL ch="Materia"/>
                 <SearchableSelect value={filtroMateria} onChange={setFiltroMateria} options={categorias.length>0?categorias.map(c=>c.nombre):MATERIAS} placeholder="Todas"/>
@@ -1198,7 +500,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
               {maxDurSemanas>0&&(<div style={{marginBottom:16}}><FL ch="Duración mínima"/><select value={filtroDurMin} onChange={e=>setFiltroDurMin(+e.target.value)} style={selS}><option value={0}>Cualquier duración</option>{[1,2,4,8,12,16].filter(v=>v<maxDurSemanas).map(v=><option key={v} value={v}>{v} sem.</option>)}</select></div>)}
             </div>
             <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,position:"sticky",bottom:0,background:C.surface}}>
-              <button onClick={()=>{setPanelOpen(false);setModoVista("resultados");}} style={{width:"100%",background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)"}}>
+              <button onClick={()=>{setPanelOpen(false);setModoVista("resultados");}} style={{width:"100%",background:sT.grad,border:"none",borderRadius:20,color:"#fff",padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:`0 4px 14px ${sT.accent}40`}}>
                 Ver {filtered.length} resultado{filtered.length!==1?"s":""}
               </button>
             </div>
@@ -1209,30 +511,92 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
       {modoVista==="home"&&(
         <div>
           {/* Hero con búsqueda grande */}
-          <div style={{background:`linear-gradient(135deg,${LUD.dark} 0%,${LUD.blue} 60%,${LUD.teal} 100%)`,borderRadius:16,padding:"36px 28px",marginBottom:24,position:"relative",overflow:"hidden"}}>
+          {(()=>{
+            const T=seccion==="cursos"?TIPO_PUB.curso:seccion==="clases"?TIPO_PUB.particular:TIPO_PUB.pedido;
+            const heroTitle=seccion==="cursos"?"Aprendé a tu ritmo":seccion==="clases"?"Encontrá tu profe ideal":"Pedidos de alumnos";
+            const heroSub=seccion==="cursos"?"Cursos estructurados con seguimiento real":seccion==="clases"?"Clases 1 a 1, a tu horario y ritmo":"Alumnos esperando que alguien como vos los contacte";
+            return(
+          <div style={{background:T.heroGrad,borderRadius:16,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",transition:"background .5s ease"}}>
             <div style={{position:"absolute",width:280,height:280,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-80,right:-60,pointerEvents:"none"}}/>
-            <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(46,196,160,.08)",bottom:-60,left:20,pointerEvents:"none"}}/>
+            <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,.06)",bottom:-60,left:20,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
-              <h1 style={{color:"#fff",fontSize:"clamp(20px,4vw,30px)",fontWeight:800,margin:"0 0 6px",letterSpacing:"-.5px"}}>
-                Aprendé lo que quieras
-              </h1>
-              <p style={{color:"rgba(255,255,255,.75)",fontSize:14,margin:"0 0 20px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6}}>
+              {/* Tabs Cursos / Clases / Pedidos */}
+              <div style={{display:"flex",gap:4,background:"rgba(255,255,255,.12)",borderRadius:12,padding:4,marginBottom:20,backdropFilter:"blur(8px)",width:"fit-content"}}>
+                {[
+                  {id:"cursos",icon:"🎓",label:"Cursos"},
+                  {id:"clases",icon:"👤",label:"Clases"},
+                  ...(esDocente?[{id:"pedidos",icon:"📣",label:"Pedidos"}]:[]),
+                ].map(tab=>(
+                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
+                    style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
+                      background:seccion===tab.id?"#fff":"transparent",
+                      color:seccion===tab.id?(tab.id==="cursos"?LUD.blue:tab.id==="clases"?"#C8660A":"#7B5CF0"):"rgba(255,255,255,.8)",
+                      boxShadow:seccion===tab.id?"0 2px 8px rgba(0,0,0,.15)":"none"}}>
+                    <span style={{fontSize:15}}>{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <h1 style={{color:"#fff",fontSize:"clamp(18px,4vw,26px)",fontWeight:800,margin:"0 0 4px",letterSpacing:"-.5px"}}>{heroTitle}</h1>
+              <p style={{color:"rgba(255,255,255,.8)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>📍 {userCity}</span>}
-                {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:posts.length>0?`${posts.length} publicaciones disponibles`:"Buscá clases particulares, cursos y más"}
+                {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:
+                  seccion==="pedidos"?`${todosPedidos.length} pedido${todosPedidos.length!==1?"s":""} esperando respuesta`:
+                  visiblePosts.filter(p=>p.tipo==="oferta").length>0
+                    ?`${visiblePosts.filter(p=>p.tipo==="oferta").length} ${seccion==="cursos"?"cursos disponibles":"docentes disponibles"}`
+                    :heroSub}
               </p>
               <button onClick={()=>setShowBusquedaIA(true)}
                 style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.15)",border:"2px solid rgba(255,255,255,.25)",borderRadius:14,padding:"14px 20px",cursor:"pointer",fontFamily:FONT,textAlign:"left",backdropFilter:"blur(8px)",transition:"all .2s"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.22)";e.currentTarget.style.borderColor="rgba(255,255,255,.5)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.15)";e.currentTarget.style.borderColor="rgba(255,255,255,.25)";}}>
                 <span style={{fontSize:18,fontWeight:700,color:"rgba(255,255,255,.9)"}}>✦</span>
-                <span style={{color:"rgba(255,255,255,.65)",fontSize:15,flex:1}}>Describí lo que querés aprender…</span>
+                <span style={{color:"rgba(255,255,255,.65)",fontSize:15,flex:1}}>{seccion==="pedidos"?"Buscá pedidos por materia o tema…":seccion==="cursos"?"Describí qué querés aprender…":"Describí qué clase estás buscando…"}</span>
                 <span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:600,color:"rgba(255,255,255,.8)",flexShrink:0,whiteSpace:"nowrap"}}>Buscar con IA</span>
               </button>
             </div>
           </div>
+            );
+          })()}
+
+          {/* ── Vista especial: Pedidos ── */}
+          {seccion==="pedidos"&&(
+            <div style={{marginBottom:24}}>
+              <div style={{background:`linear-gradient(135deg,${TIPO_PUB.pedido.dim},#E05C9A10)`,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:28}}>📣</span>
+                <div>
+                  <div style={{fontWeight:700,color:TIPO_PUB.pedido.accent,fontSize:15}}>Alumnos buscando docentes</div>
+                  <div style={{fontSize:13,color:C.muted}}>Contactalos directamente y ofrecé tus servicios</div>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+                {todosPedidos.length===0
+                  ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"40px",color:C.muted,fontSize:14}}>No hay pedidos activos en este momento.</div>
+                  :todosPedidos.map(p=>(
+                    <div key={p.id} onClick={()=>onOpenDetail(p)}
+                      style={{background:TIPO_PUB.pedido.bg,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",borderTop:`3px solid ${TIPO_PUB.pedido.accent}`,transition:"all .18s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.dim}`;}}
+                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+                      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                        <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={30}/>
+                        <div style={{minWidth:0,flex:1}}>
+                          <div style={{fontSize:11,fontWeight:600,color:TIPO_PUB.pedido.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
+                          <div style={{fontSize:10,color:C.muted}}>{p.materia||"Sin materia"}</div>
+                        </div>
+                      </div>
+                      <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span style={{fontSize:10,fontWeight:700,color:TIPO_PUB.pedido.accent,background:TIPO_PUB.pedido.dim,borderRadius:20,padding:"2px 8px"}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</span>
+                        {p.expires_at&&(()=>{const d=Math.ceil((new Date(p.expires_at)-new Date())/86400000);return d>0&&d<=7?<span style={{fontSize:10,color:C.warn}}>⏱ {d}d</span>:null;})()}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Categorías — cards con foto visual */}
-          <div style={{marginBottom:28}}>
+          {seccion==="pedidos"?null:<div style={{marginBottom:28}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <div style={{fontWeight:700,color:C.text,fontSize:16}}>Explorar por categoría</div>
               <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todo →</button>
@@ -1244,7 +608,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
                     <button key={cat.label} onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");}}
-                      style={{flexShrink:0,width:120,borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",transition:"transform .2s",textAlign:"left",display:"flex",flexDirection:"column"}}
+                      style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",transition:"transform .2s",textAlign:"left",display:"flex",flexDirection:"column"}}
                       onMouseEnter={e=>e.currentTarget.style.transform="translateY(-4px) scale(1.02)"}
                       onMouseLeave={e=>e.currentTarget.style.transform="none"}>
                       {/* Área visual */}
@@ -1270,16 +634,21 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 </button>
               </div>
             </div>
-          </div>
+          </div>}
 
-          {/* Accesos rápidos tipo ML */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
-            {[
-              {icon:"🎯",title:"Clases particulares",desc:"Uno a uno",onClick:()=>{setFiltroModo("particular");setModoVista("resultados");}},
-              {icon:"📚",title:"Cursos",desc:"Con certificado",onClick:()=>{setFiltroModo("curso");setModoVista("resultados");}},
+          {/* Accesos rápidos — distintos según sección */}
+          {seccion==="pedidos"?null:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
+            {(seccion==="cursos"?[
+              {icon:"⚡",title:"Sincrónicos",desc:"Con docente en vivo",onClick:()=>{setFiltroSinc("sinc");setModoVista("resultados");}},
+              {icon:"🎬",title:"A tu ritmo",desc:"Grabados, cuando quieras",onClick:()=>{setFiltroSinc("asinc");setModoVista("resultados");}},
               {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
               {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
-            ].map(item=>(
+            ]:[
+              {icon:"👤",title:"Uno a uno",desc:"Atención personalizada",onClick:()=>{setFiltroModalidad("all");setModoVista("resultados");}},
+              {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
+              {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
+              {icon:"📦",title:"Por paquete",desc:"Comprá varias clases",onClick:()=>{setModoVista("resultados");}},
+            ]).map(item=>(
               <button key={item.title} onClick={item.onClick}
                 style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 14px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s"}}
                 onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 20px rgba(0,0,0,.08)`;}}
@@ -1289,14 +658,16 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 <div style={{fontSize:11,color:C.muted}}>{item.desc}</div>
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* Publicaciones destacadas — scroll horizontal */}
-          {loading?<Spinner/>:[
-            {label:"✨ Publicaciones recientes",data:recientes},
-            ...(cursos.length?[{label:"📚 Cursos",data:cursos}]:[]),
-            ...(particulares.length?[{label:"🎯 Clases particulares",data:particulares}]:[]),
-          ].map(({label,data})=>data.length>0&&(
+          {seccion!=="pedidos"&&(loading?<Spinner/>:(seccion==="cursos"?[
+            {label:"✨ Cursos recientes",data:cursos.slice(0,8)},
+            {label:"⭐ Mejor valorados",data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
+          ]:[
+            {label:"✨ Docentes disponibles",data:particulares.slice(0,8)},
+            {label:"⭐ Mejor valorados",data:[...particulares].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
+          ]).map(({label,data})=>data.length>0&&(
             <div key={label} style={{marginBottom:24}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontWeight:700,color:C.text,fontSize:15}}>{label}</div>
@@ -1307,7 +678,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 <div style={{display:"flex",gap:14}} className="cl-hscroll">
                   {data.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:p.tipo==="busqueda"?"#FFFBEB":C.surface,border:`1px solid ${p.tipo==="busqueda"?"#F59E0B44":C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:220,transition:"all .18s",borderTop:`3px solid ${p.tipo==="busqueda"?"#F59E0B":C.accent}`}}
+                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.bg:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${getPubTipo(p).accent}`}}
                       onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
                       onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
                       {/* Avatar + nombre */}
@@ -1324,7 +695,8 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                       {/* Tags */}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                         <Tag tipo={p.tipo}/>
-                        {(p.modo==="curso"||p.modo==="grupal")&&<span style={{fontSize:10,color:C.success,background:C.success+"12",borderRadius:20,padding:"2px 8px",fontWeight:600}}>Curso</span>}
+                        {(p.modo==="curso"||p.modo==="grupal")&&<span style={{fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:20,padding:"2px 8px",fontWeight:600}}>🎓 Curso</span>}
+                        {p.modo==="particular"&&<span style={{fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:20,padding:"2px 8px",fontWeight:600}}>👤 Clase</span>}
                         {p.modalidad==="virtual"&&<span style={{fontSize:10,color:C.info,background:C.info+"12",borderRadius:20,padding:"2px 8px",fontWeight:600}}>🌐 Virtual</span>}
                         {p.modalidad==="presencial"&&<span style={{fontSize:10,color:C.muted,background:C.bg,borderRadius:20,padding:"2px 8px",border:`1px solid ${C.border}`}}>📍 Presencial</span>}
                       </div>
@@ -1332,35 +704,47 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                       <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
                         {reseñasMap[p.id]?.avg&&<MiniStars val={reseñasMap[p.id].avg} count={reseñasMap[p.id].count}/>}
                         {p.verificado&&<span style={{fontSize:9,fontWeight:700,color:C.info,background:C.info+"12",borderRadius:20,padding:"2px 7px",border:`1px solid ${C.info}30`,letterSpacing:.3}}>✓ VERIF.</span>}
+                        {p.tipo==="oferta"&&p.autor_disponible_ahora&&p.autor_disponible_hasta&&new Date(p.autor_disponible_hasta)>new Date()&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"2px 7px",letterSpacing:.3}}>🟢 Disponible</span>}
                       </div>
                       {/* Precio + inscriptos */}
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         {p.tipo==="busqueda"
-                          ?<div style={{fontSize:12,color:"#92400E",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>🔍 Busca docente</div>
-                          :p.precio?<div style={{fontWeight:800,color:C.accent,fontSize:15}}>{fmtPrice(p.precio,p.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}> /{p.precio_tipo||"hora"}</span></div>
+                          ?<div style={{fontSize:12,color:TIPO_PUB.pedido.accent,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</div>
+                          :p.precio?<div style={{fontWeight:800,color:getPubTipo(p).accent,fontSize:15}}>{fmtPrice(p.precio,p.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}> /{p.precio_tipo||"hora"}</span></div>
                           :<div style={{fontWeight:600,color:C.success,fontSize:13}}>Gratis</div>}
                         {p.cantidad_inscriptos>0&&<span style={{fontSize:10,color:C.muted}}>👥{p.cantidad_inscriptos}</span>}
                       </div>
+                      {p.tipo==="busqueda"&&p.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(p.expires_at)-new Date())/86400000);if(daysLeft<=3&&daysLeft>0)return(<div style={{fontSize:10,color:"#B45309",fontWeight:600,marginTop:4}}>⏱ Expira en {daysLeft} día{daysLeft!==1?"s":""}</div>);return null;})()}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          ))}
+          )))}
 
-          {/* Banner CTA: crear búsqueda */}
-          <div style={{background:`linear-gradient(135deg,#7B3FBE15,#1A6ED815)`,border:"1px solid #7B3FBE25",borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{fontSize:36}}>🔍</div>
-            <div style={{flex:1,minWidth:200}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>¿No encontrás lo que buscás?</div>
-              <div style={{fontSize:13,color:C.muted}}>Publicá una búsqueda y los docentes te contactan a vos.</div>
+          {/* Banner CTA: IA search — hidden in pedidos view */}
+          {seccion!=="pedidos"&&(()=>{
+            const T=seccion==="cursos"?TIPO_PUB.curso:TIPO_PUB.particular;
+            return(
+            <div style={{background:`linear-gradient(135deg,${T.dim},${T.border})`,border:`1px solid ${T.border}`,borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{fontSize:36}}>{seccion==="cursos"?"🎓":"👤"}</div>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>
+                  {seccion==="cursos"?"¿No encontrás el curso que buscás?":"¿No encontrás el docente ideal?"}
+                </div>
+                <div style={{fontSize:13,color:C.muted}}>
+                  {seccion==="cursos"
+                    ?"Describí el tema y te mostramos lo más relevante con IA."
+                    :"Describí qué necesitás y encontramos el docente perfecto."}
+                </div>
+              </div>
+              <button onClick={()=>setShowBusquedaIA(true)} style={{background:T.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:`0 4px 12px ${T.dim}`,flexShrink:0,whiteSpace:"nowrap"}}>
+                Buscar con IA →
+              </button>
             </div>
-            <button onClick={()=>{setShowBusquedaIA(true);}} style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(123,63,190,.3)",flexShrink:0,whiteSpace:"nowrap"}}>
-              Buscar con IA →
-            </button>
-          </div>
-
-          {posts.length>3&&<DocentesDestacados posts={posts} onOpenPerfil={onOpenPerfil} session={session}/>}
+            );
+          })()}
+          {posts.length>3&&seccion!=="pedidos"&&<DocentesDestacados posts={posts} onOpenPerfil={onOpenPerfil} session={session}/>}
 
           {/* ── Footer estilo ML ── */}
           <div style={{marginTop:32,paddingTop:24,borderTop:`1px solid ${C.border}`}}>
@@ -1395,13 +779,16 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                   </button>
                 </div>
               </div>
-              <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:24}}>💬</span>
+              {esDocente&&<div style={{border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:24}}>📣</span>
                 <div>
-                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Necesitás algo específico?</div>
-                  <div style={{color:C.muted,fontSize:12}}>Publicá una búsqueda y recibí ofertas de docentes</div>
+                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Querés ver pedidos de alumnos?</div>
+                  <button style={{background:"none",border:"none",color:TIPO_PUB.pedido.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:0,fontWeight:600}}
+                    onClick={()=>{setSeccion("pedidos");try{sessionStorage.setItem("cl_seccion_explore","pedidos");}catch{}}}>
+                    Ver pedidos activos →
+                  </button>
                 </div>
-              </div>
+              </div>}
             </div>
 
             {/* Pie */}
@@ -1437,49 +824,57 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
                 onMouseLeave={e=>e.currentTarget.style.background=C.bg}>←</button>
               {/* Buscador principal — trigger del modal */}
               <button onClick={()=>setShowBusquedaIA(true)}
-                style={{flex:1,display:"flex",alignItems:"center",gap:10,background:C.bg,border:`2px solid ${iaQuery?C.accent:C.border}`,borderRadius:10,padding:"11px 16px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"border-color .15s"}}
+                style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,background:C.bg,border:`2px solid ${iaQuery?C.accent:C.border}`,borderRadius:10,padding:"10px 12px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"border-color .15s"}}
                 onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
                 onMouseLeave={e=>e.currentTarget.style.borderColor=iaQuery?C.accent:C.border}>
-                <span style={{fontSize:15,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>✦</span>
-                <span style={{color:iaQuery?C.text:C.muted,fontSize:14,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {iaQuery?iaQuery:"Describí lo que querés aprender…"}
+                {!iaQuery&&<span style={{fontSize:13,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700,flexShrink:0}}>✦</span>}
+                <span style={{color:iaQuery?C.text:C.muted,fontSize:13,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {iaQuery?iaQuery:seccion==="pedidos"?"Describí qué sabés enseñar…":"Describí lo que querés aprender…"}
                 </span>
                 {iaQuery&&<span onClick={e=>{e.stopPropagation();setIaQuery("");setIaResults(null);setIaExplanation("");setPagina(1);}} style={{color:C.muted,fontSize:16,lineHeight:1,flexShrink:0}}>×</span>}
               </button>
               <button onClick={()=>setPanelOpen(v=>!v)}
-                style={{display:"flex",alignItems:"center",gap:6,background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 14px",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:600,flexShrink:0,whiteSpace:"nowrap"}}>
-                ≡ Filtros{activeFilters.length>0&&<span style={{background:C.accent,color:"#fff",borderRadius:"50%",width:18,height:18,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,marginLeft:2}}>{activeFilters.length}</span>}
+                style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 13px",cursor:"pointer",flexShrink:0}}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                {activeFilters.length>0&&<span style={{position:"absolute",top:-5,right:-5,background:C.accent,color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{activeFilters.length}</span>}
               </button>
             </div>
 
-            {/* Chips de tipo + modalidad + ordenamiento */}
+            {/* Chips de sección: Cursos / Clases / Pedidos */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-              {[["all","Todo"],["oferta","Clases"],["busqueda","Búsquedas"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 14px",borderRadius:20,fontSize:12,fontWeight:filtroTipo===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroTipo===v?C.accent:"transparent",color:filtroTipo===v?"#fff":C.muted,border:`1px solid ${filtroTipo===v?C.accent:C.border}`,transition:"all .12s"}}>{l}</button>
-              ))}
-              <div style={{width:1,height:18,background:C.border,margin:"0 2px"}}/>
-              {[["presencial","📍 Presencial"],["virtual","🌐 Virtual"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setFiltroModalidad(filtroModalidad===v?"all":v)} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:filtroModalidad===v?600:400,cursor:"pointer",fontFamily:FONT,background:filtroModalidad===v?C.accentDim:"transparent",color:filtroModalidad===v?C.accent:C.muted,border:`1px solid ${filtroModalidad===v?C.accent:C.border}`,transition:"all .12s"}}>{l}</button>
-              ))}
-              {/* Selector de ordenamiento */}
-              <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Ordenar:</span>
-                <select value={ordenamiento} onChange={e=>{setOrdenamiento(e.target.value);setPagina(1);}}
-                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 8px",color:C.text,fontSize:12,outline:"none",cursor:"pointer",fontFamily:FONT,colorScheme:localStorage.getItem("cl_theme")||"light"}}>
-                  <option value="relevancia">Más relevantes</option>
-                  <option value="recientes">Más recientes</option>
-                  <option value="rating">Mejor calificados</option>
-                  <option value="precio_asc">Precio: menor a mayor</option>
-                  <option value="precio_desc">Precio: mayor a menor</option>
-                  <option value="vistas">Más vistos</option>
-                  <option value="cercania">Más cercanos</option>
-                </select>
-                <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap"}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
-                <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden"}}>
-                  {[["cards","▦"],["lista","≡"],["ranking","🏆"]].map(([m,icon])=>(
-                    <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:30,height:28,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
-                  ))}
-                </div>
+              {[
+                {id:"cursos",label:"Cursos",T:TIPO_PUB.curso},
+                {id:"clases",label:"Clases",T:TIPO_PUB.particular},
+                ...(esDocente?[{id:"pedidos",label:"Pedidos",T:TIPO_PUB.pedido}]:[]),
+              ].map(({id,label,T})=>{
+                const active=seccion===id;
+                return(<button key={id}
+                  onClick={()=>{setSeccion(id);setFiltroTipo("all");setFiltroModo("all");try{sessionStorage.setItem("cl_seccion_explore",id);}catch{}}}
+                  style={{padding:"6px 18px",borderRadius:20,fontSize:13,fontWeight:active?700:400,cursor:"pointer",fontFamily:FONT,
+                    background:active?T.accent:"transparent",
+                    color:active?"#fff":C.muted,
+                    border:`1.5px solid ${active?T.accent:C.border}`,
+                    boxShadow:active?"0 2px 8px rgba(0,0,0,.12)":"none",
+                    transition:"all .15s"}}>{label}</button>);
+              })}
+            </div>
+            {/* Ordenar + resultados + vista — una sola fila compacta */}
+            <div style={{display:"flex",alignItems:"center",gap:6,overflow:"visible"}}>
+              <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",flexShrink:0}}>Ordenar</span>
+              <MiniDropdown value={ordenamiento} onChange={v=>{setOrdenamiento(v);setPagina(1);}} fontSize={12} options={[
+                {value:"relevancia",label:"Relevancia"},
+                {value:"recientes",label:"Recientes"},
+                {value:"rating",label:"Calificados"},
+                {value:"precio_asc",label:"Precio ↑"},
+                {value:"precio_desc",label:"Precio ↓"},
+                {value:"vistas",label:"Populares"},
+                {value:"cercania",label:"Cercanos"},
+              ]}/>
+              <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
+              <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",flexShrink:0}}>
+                {[["cards","▦"],["lista","≡"],["ranking","🏆"]].map(([m,icon])=>(
+                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
+                ))}
               </div>
             </div>
             {activeFilters.length>0&&(
@@ -1497,15 +892,39 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
             )}
           </div>
 
-          {/* Banner rechazadas */}
-          {rechazadasIds.size>0&&!hideBanner&&(
+          {/* Banner rechazadas — aparece cuando hay IDs nuevos no vistos */}
+          {(()=>{const nuevas=[...rechazadasIds].filter(id=>!seenRechazadas.has(id));return nuevas.length>0&&(
             <div style={{background:C.danger+"10",border:`1px solid ${C.danger}25`,borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <span style={{fontSize:12,color:C.muted,flex:1}}>
-                <span style={{color:C.danger,fontWeight:700}}>{rechazadasIds.size}</span> búsqueda{rechazadasIds.size!==1?"s":""} donde tu oferta fue rechazada (oculta{rechazadasIds.size!==1?"s":""})
+                <span style={{color:C.danger,fontWeight:700}}>{nuevas.length}</span> búsqueda{nuevas.length!==1?"s":""} donde tu oferta fue rechazada (oculta{nuevas.length!==1?"s":""})
               </span>
-              <button onClick={()=>{setHideBanner(true);try{localStorage.setItem("cl_hide_rechazadas","1");}catch{}}} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"2px 6px",flexShrink:0,borderRadius:"50%",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.border} onMouseLeave={e=>e.currentTarget.style.background="none"} title="Cerrar">×</button>
+              <button onClick={()=>{const next=new Set([...seenRechazadas,...rechazadasIds]);setSeenRechazadas(next);try{localStorage.setItem("cl_seen_rechazadas",JSON.stringify([...next]));}catch{}}} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"2px 6px",flexShrink:0,borderRadius:"50%",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.border} onMouseLeave={e=>e.currentTarget.style.background="none"} title="Cerrar">×</button>
             </div>
-          )}
+          );})()}
+
+          {/* Banner docente nuevo sin publicaciones */}
+          {(()=>{
+            const esDoc=rolUsuario==="docente"||rolUsuario==="ambos";
+            const misPubs=posts.filter(p=>p.autor_email===session.user.email&&p.tipo==="oferta");
+            let yaVisto=false;try{yaVisto=localStorage.getItem("cl_hide_docwelcome_"+session.user.email)==="1";}catch{}
+            if(!esDoc||misPubs.length>0||loading||yaVisto)return null;
+            return(
+              <div data-docwelcome="1" style={{background:`linear-gradient(135deg,${C.accentDim},${C.bg})`,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 18px",marginBottom:14,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:4}}>📢 ¿Querés aparecer acá?</div>
+                  <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Publicá tu primera clase y empezá a recibir alumnos. Solo tarda 2 minutos.</div>
+                </div>
+                <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
+                  <button onClick={()=>{if(typeof window._openNewPost==="function")window._openNewPost();}}
+                    style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"8px 18px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 10px rgba(26,110,216,.25)"}}>
+                    Publicar ahora →
+                  </button>
+                  <button onClick={e=>{e.currentTarget.closest("[data-docwelcome]").remove();try{localStorage.setItem("cl_hide_docwelcome_"+session.user.email,"1");}catch{}}}
+                    style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"2px 4px"}} title="Cerrar">×</button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Lista de resultados */}
           {loading?<Spinner/>:sorted.length===0?(
@@ -1563,7 +982,7 @@ function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso})
       )}
 
     </div>
-    {showBusquedaIA&&<BusquedaIA onBuscar={buscarConIA} iaLoading={iaLoading} onClose={()=>setShowBusquedaIA(false)}/>}
+    {showBusquedaIA&&<BusquedaIA onBuscar={buscarConIA} iaLoading={iaLoading} onClose={()=>setShowBusquedaIA(false)} seccion={seccion}/>}
   </>);
 }
 function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,toggling,ofertasPendientes,inscriptos}){
@@ -1609,6 +1028,7 @@ function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,toggling,
         {post.verificado&&<VerifiedBadge/>}
         {ofertasPendientes>0&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`}}>{ofertasPendientes} oferta{ofertasPendientes!==1?"s":""}</span>}
         {!finalizado&&post.inscripciones_cerradas&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:C.warn+"12",color:C.warn,border:`1px solid ${C.warn}30`}}>Inscripciones cerradas</span>}
+        {post.tipo==="busqueda"&&post.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(daysLeft<=0)return<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`}}>⏱ Expirada</span>;if(daysLeft<=3)return<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:"#FEF3C7",color:"#B45309",border:"1px solid #F59E0B33"}}>⏱ Expira en {daysLeft} día{daysLeft!==1?"s":""}</span>;return null;})()}
       </div>
       {/* Contenido + acciones */}
       <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
@@ -1629,6 +1049,9 @@ function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,toggling,
           {post.tipo==="oferta"&&<button onClick={()=>onOpenCurso(pendienteValidacion?{...post,_openValidacion:true}:post)} style={{background:pendienteValidacion?C.accent:C.accentDim,border:`1px solid ${C.accent}${pendienteValidacion?"":"44"}`,borderRadius:6,color:pendienteValidacion?"#fff":C.accent,padding:"6px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,textAlign:"center"}}>{pendienteValidacion?"⏳ Validar":"Contenido"}</button>}
           {!finalizado&&<button onClick={()=>onEdit(post)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",transition:"border-color .12s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>Editar</button>}
           {!finalizado&&!pendienteValidacion&&<button onClick={()=>onToggle(post)} disabled={toggling===post.id} style={{background:activo?C.warn+"12":C.success+"12",border:`1px solid ${activo?C.warn+"40":C.success+"40"}`,borderRadius:6,color:activo?C.warn:C.success,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",opacity:toggling===post.id?.5:1}}>{toggling===post.id?"...":(activo?"Pausar":"Activar")}</button>}
+          {post.tipo==="busqueda"&&post.expires_at&&Math.ceil((new Date(post.expires_at)-new Date())/86400000)<=3&&(
+            <button onClick={async()=>{try{await sb.updatePublicacion(post.id,{expires_at:new Date(Date.now()+14*86400000).toISOString()},session.access_token);if(onToggle)onToggle({...post,_renovar:true});}catch(e){alert("Error: "+e.message);}}} style={{background:C.success+"12",border:`1px solid ${C.success}40`,borderRadius:6,color:C.success,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",fontWeight:600}}>Renovar</button>
+          )}
           <button onClick={handleClickEliminar} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",transition:"all .12s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>Eliminar</button>
         </div>
       </div>
@@ -1675,6 +1098,7 @@ function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
       const miNombreContra=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("contraoferta",destinatario,{
         pub_titulo:oferta.busqueda_titulo,
+        pub_id:oferta.busqueda_id,
         de_nombre:miNombreContra,
         mi_rol:miRol,
         precio_nuevo:precio,
@@ -1718,7 +1142,6 @@ function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
 function OfertasRecibidasModal({post,session,onClose,onContactar}){
   const [ofertas,setOfertas]=useState([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(null);
   const [acuerdoOferta,setAcuerdoOferta]=useState(null);
-  const [contraModal,setContraModal]=useState(null);// oferta sobre la que se contraoferta
   const cargar=useCallback(async()=>{
     const all=await sb.getOfertasSobre(post.id,session.access_token);
     // Marcar como leídas en state local inmediatamente (borra el borde amarillo al instante)
@@ -1733,10 +1156,10 @@ function OfertasRecibidasModal({post,session,onClose,onContactar}){
     try{
       await sb.updateOfertaBusq(o.id,{estado,leida:true},session.access_token);
       if(estado==="aceptada"){
-        await sb.updatePublicacion(post.id,{activo:false},session.access_token).catch(()=>{});
+        await sb.updatePublicacion(post.id,{activo:false},session.access_token).catch(e=>console.warn("No se pudo desactivar busqueda:",e.message));
         sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_aceptada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
         // Email al docente cuya oferta fue aceptada
-        sb.sendEmail("oferta_aceptada",o.ofertante_email,{pub_titulo:post.titulo,alumno_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]},session.access_token).catch(()=>{});
+        sb.sendEmail("oferta_aceptada",o.ofertante_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]},session.access_token).catch(()=>{});
         const ofertaActualizada={...o,estado:"aceptada",busqueda_titulo:post.titulo,busqueda_autor_email:session.user.email};
         setAcuerdoOferta(ofertaActualizada);
         await cargar();
@@ -1790,13 +1213,12 @@ function OfertasRecibidasModal({post,session,onClose,onContactar}){
                         <div style={{fontSize:12,color:C.muted,marginTop:2}}>{o.contraoferta_mensaje}</div>
                       </div>
                     )}
-                    {o.estado==="pendiente"&&!contraEsDeAlumno&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      <button onClick={()=>responder(o,"aceptada")} disabled={saving===o.id} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:8,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>Aceptar</button>
-                      <button onClick={()=>setContraModal(o)} disabled={saving===o.id} style={{background:"#C85CE015",border:"1px solid #C85CE033",borderRadius:8,color:"#C85CE0",padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>Contraoferta</button>
-                      <button onClick={()=>responder(o,"rechazada")} disabled={saving===o.id} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:8,color:C.danger,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Rechazar</button>
+                    {o.estado==="pendiente"&&<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                      <button onClick={()=>responder(o,"aceptada")} disabled={saving===o.id} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:8,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>✓ Aceptar</button>
+                      <button onClick={()=>{onContactar({id:post.id,autor_email:o.ofertante_email,titulo:post.titulo,autor_nombre:o.ofertante_nombre});onClose();}} disabled={saving===o.id} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>💬 Negociar</button>
+                      <button onClick={()=>responder(o,"rechazada")} disabled={saving===o.id} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:8,color:C.danger,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>✗ Rechazar</button>
                       <span style={{fontSize:11,color:C.muted,alignSelf:"center"}}>{fmt(o.created_at)}</span>
                     </div>}
-                    {o.estado==="pendiente"&&contraEsDeAlumno&&<div style={{fontSize:11,color:C.muted,fontStyle:"italic"}}>Esperando respuesta del docente…</div>}
                     {o.estado==="aceptada"&&<div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                       <Btn onClick={()=>{onContactar({id:post.id,autor_email:o.ofertante_email,titulo:post.titulo,autor_nombre:o.ofertante_nombre});onClose();}} style={{padding:"6px 14px",fontSize:12}}>Chatear</Btn>
                       <button onClick={()=>setAcuerdoOferta({...o,busqueda_titulo:post.titulo,busqueda_autor_email:session.user.email})} style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:9,color:C.success,padding:"6px 13px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:700}}>
@@ -1812,7 +1234,6 @@ function OfertasRecibidasModal({post,session,onClose,onContactar}){
       </div>
     </Modal>
     {acuerdoOferta&&<AcuerdoModal oferta={acuerdoOferta} session={session} onClose={()=>setAcuerdoOferta(null)} onConfirmado={()=>{cargar();setAcuerdoOferta(null);}}/>}
-    {contraModal&&<ContraofertaModal oferta={contraModal} miRol="alumno" session={session} onClose={()=>setContraModal(null)} onEnviada={()=>{setContraModal(null);cargar();}}/>}
     </>
   );
 }
@@ -1844,7 +1265,33 @@ function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat,onRefreshOfert
         <div><h2 style={{fontSize:20,color:C.text,margin:"0 0 3px",fontWeight:700}}>Mis publicaciones</h2><p style={{color:C.muted,fontSize:12,margin:0}}>{posts.length} publicación{posts.length!==1?"es":""}</p></div>
         <Btn onClick={onNew} style={{padding:"7px 13px",fontSize:12}}>+ Nueva</Btn>
       </div>
-      {loading?<Spinner/>:posts.length===0?(<div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12}}>—</div><p style={{color:C.muted,fontSize:13}}>Todavía no publicaste nada.</p><Btn onClick={onNew} style={{marginTop:12}}>Crear primera publicación</Btn></div>):(
+      {loading?<Spinner/>:posts.length===0?(
+        <div style={{maxWidth:480,margin:"0 auto"}}>
+          {/* Checklist guiado para docentes nuevos */}
+          <div style={{background:`linear-gradient(135deg,${C.accentDim},${C.bg})`,border:`1px solid ${C.accent}33`,borderRadius:18,padding:"28px 28px 24px",marginBottom:16}}>
+            <div style={{fontSize:28,marginBottom:10}}>👋</div>
+            <div style={{fontWeight:800,color:C.text,fontSize:17,marginBottom:6}}>¡Bienvenido/a a Luderis!</div>
+            <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 20px"}}>Seguí estos pasos para empezar a recibir alumnos.</p>
+            {[
+              {n:1,icon:"👤",label:"Completá tu perfil",sub:"Nombre, foto y bio generan más confianza.",done:true},
+              {n:2,icon:"📢",label:"Publicá tu primera clase",sub:"Describí lo que enseñás, el precio y tu modalidad.",done:false,action:true},
+              {n:3,icon:"🎓",label:"Conseguí tu primer alumno",sub:"Vas a recibir una notificación cuando alguien se inscriba.",done:false},
+            ].map(s=>(
+              <div key={s.n} style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14,opacity:s.done||s.action?1:.55}}>
+                <div style={{width:32,height:32,borderRadius:"50%",background:s.done?C.success:s.action?C.accent:C.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,color:s.done||s.action?"#fff":C.muted,fontWeight:700}}>
+                  {s.done?"✓":s.n}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>{s.icon} {s.label}</div>
+                  <div style={{color:C.muted,fontSize:11,lineHeight:1.4}}>{s.sub}</div>
+                  {s.action&&<button onClick={onNew} style={{marginTop:8,background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"7px 18px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 10px rgba(26,110,216,.25)"}}>Publicar ahora →</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{color:C.muted,fontSize:11,textAlign:"center"}}>¿Tenés dudas? Usá el chat de soporte en la esquina inferior derecha.</p>
+        </div>
+      ):(
         <div style={{display:"grid",gap:14}}>
           {posts.map(p=>(<div key={p.id}>
             <MyPostCard post={p} session={session} onEdit={onEdit} onToggle={toggle} onDelete={remove} onOpenCurso={onOpenCurso} toggling={toggling} ofertasPendientes={ofertasMap[p.id]||0}/>
@@ -1861,9 +1308,12 @@ function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat,onRefreshOfert
 function FavoritosPage({session,onOpenDetail,onOpenChat,onOpenPerfil}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);const [filtroTipo,setFiltroTipo]=useState("all");
   useEffect(()=>{
+    let mounted=true;
     sb.getFavoritos(session.user.email,session.access_token).then(async fs=>{
-      if(fs.length>0){const all=await sb.getPublicaciones({},session.access_token);const ids=new Set(fs.map(f=>f.publicacion_id));setPosts(all.filter(p=>ids.has(p.id)));}
-    }).finally(()=>setLoading(false));
+      if(!mounted)return;
+      if(fs.length>0){const all=await sb.getPublicaciones({},session.access_token);if(mounted){const ids=new Set(fs.map(f=>f.publicacion_id));setPosts(all.filter(p=>ids.has(p.id)));}}
+    }).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[session]);
   const filtered=posts.filter(p=>filtroTipo==="all"||p.tipo===filtroTipo);
   return(
@@ -1891,6 +1341,7 @@ function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
   const [pubsNotifPend,setPubsNotifPend]=useState(new Set());
   useEffect(()=>{
     const miEmail2=session.user.email;const miUid2=session.user.id;
+    let mounted=true;
     Promise.all([
       sb.getMisInscripciones(miEmail2,session.access_token),
       sb.getPublicaciones({},session.access_token),
@@ -1898,6 +1349,7 @@ function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
       sb.getOfertasAceptadasRecibidas(miEmail2,session.access_token).catch(()=>[]),
       sb.getNotificaciones(miEmail2,session.access_token).catch(()=>[]),
     ]).then(([ins,todasPubs,misOfertas,ofertasRecibidas,notifs])=>{
+      if(!mounted)return;
       const insArr=ins||[];
       setInscripciones(insArr);
       const ids=[...new Set(insArr.map(i=>i.publicacion_id))];
@@ -1921,7 +1373,8 @@ function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
       (notifs||[]).filter(n=>n.tipo==="busqueda_acordada"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
       (notifs||[]).filter(n=>n.tipo==="nuevo_contenido"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
       setPubsNotifPend(pendSet);
-    }).finally(()=>setLoading(false));
+    }).finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
   },[session]);
 
   // Marca la notif de ayudante de una pub como leída
@@ -2104,6 +1557,7 @@ function ChatsPage({session,onOpenChat}){
   const [grupos,setGrupos]=useState([]);const [loading,setLoading]=useState(true);
   const [nombresMap,setNombresMap]=useState({});
   const miEmail=session.user.email;
+  const {confirm,confirmEl}=useConfirm();
 
   const cargar=()=>{
     setLoading(true);
@@ -2137,11 +1591,27 @@ function ChatsPage({session,onOpenChat}){
     }).finally(()=>setLoading(false));
   };
 
-  useEffect(()=>{cargar();},[miEmail,session.access_token]);// eslint-disable-line
+  useEffect(()=>{
+    let active=true;
+    setLoading(true);
+    sb.getMisChats(miEmail,session.access_token).then(async msgs=>{
+      if(!active)return;
+      msgs=msgs.filter(m=>m.para_nombre!=="__grupo__"&&m.de_nombre!=="__grupo__");
+      const pubMap={};
+      msgs.forEach(m=>{const otro=m.de_nombre===miEmail?m.para_nombre:m.de_nombre;const pKey=m.publicacion_id||"sin-pub";if(!pubMap[pKey])pubMap[pKey]={pubId:m.publicacion_id,pubTitulo:m.pub_titulo||"",chats:{},lastTime:m.created_at};if(!pubMap[pKey].pubTitulo&&m.pub_titulo)pubMap[pKey].pubTitulo=m.pub_titulo;const cKey=otro;if(!pubMap[pKey].chats[cKey])pubMap[pKey].chats[cKey]={otro,ultimo:m,unread:0};else if(m.created_at>pubMap[pKey].chats[cKey].ultimo.created_at)pubMap[pKey].chats[cKey].ultimo=m;if(m.de_nombre!==miEmail&&!m.leido)pubMap[pKey].chats[cKey].unread++;if(m.created_at>pubMap[pKey].lastTime)pubMap[pKey].lastTime=m.created_at;});
+      const sinTitulo=Object.values(pubMap).filter(g=>g.pubId&&!g.pubTitulo);
+      if(sinTitulo.length>0){try{const allPubs=await sb.getPublicaciones({},session.access_token);const pubById={};allPubs.forEach(p=>{pubById[p.id]=p.titulo;});sinTitulo.forEach(g=>{if(pubById[g.pubId])g.pubTitulo=pubById[g.pubId];});}catch{}}
+      const otroEmails=[...new Set(Object.values(pubMap).flatMap(g=>Object.values(g.chats).map(c=>c.otro)))];
+      const nMap={};await Promise.all(otroEmails.map(async email=>{try{const u=await sb.getUsuarioByEmail(email,session.access_token);nMap[email]=u?.nombre||u?.display_name||email.split("@")[0];}catch{nMap[email]=email.split("@")[0];}}));
+      if(!active)return;
+      setNombresMap(nMap);setGrupos(Object.values(pubMap).sort((a,b)=>new Date(b.lastTime)-new Date(a.lastTime)));
+    }).finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;};
+  },[miEmail,session.access_token]);// eslint-disable-line
 
   const borrarChat=async(pubId,otroEmail,e)=>{
     e.stopPropagation();
-    if(!window.confirm("¿Borrar esta conversación? Se eliminarán todos los mensajes."))return;
+    if(!await confirm({msg:"¿Borrar esta conversación? Se eliminarán todos los mensajes.",confirmLabel:"Borrar",danger:true}))return;
     try{
       // Use admin-actions edge function which has service role to bypass RLS
       const res=await fetch("https://hptdyehzqfpgtrpuydny.supabase.co/functions/v1/admin-actions",{
@@ -2159,6 +1629,7 @@ function ChatsPage({session,onOpenChat}){
 
   return(
     <div style={{fontFamily:FONT}}>
+      {confirmEl}
       <h2 style={{fontSize:20,color:C.text,margin:"0 0 16px",fontWeight:700}}>Mis chats</h2>
       {loading?<Spinner/>:grupos.length===0?(<div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12,color:C.border}}>◻</div><p style={{color:C.muted,fontSize:13,marginBottom:8}}>No iniciaste ninguna conversación.</p><p style={{color:C.muted,fontSize:12}}>Inscribite en una clase o que acepten tu oferta para poder chatear.</p></div>):(
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -2204,204 +1675,22 @@ function ChatsPage({session,onOpenChat}){
   );
 }
 
-// ─── CHAT MODAL ───────────────────────────────────────────────────────────────
-function ChatModal({post,session,onClose,onUnreadChange}){
-  const miEmail=session.user.email;const otroEmail=post.autor_email;
-  const [msgs,setMsgs]=useState([]);const [input,setInput]=useState("");const [loading,setLoading]=useState(true);
-  const [otroEscribiendo,setOtroEscribiendo]=useState(false);
-  const [imagenPrevia,setImagenPrevia]=useState(null);// base64 de imagen a enviar
-  const [subiendoImg,setSubiendoImg]=useState(false);
-  const bottomRef=useRef(null);const markedRef=useRef(false);
-  const escribiendoTimer=useRef(null);
-  const fileInputRef=useRef(null);
-
-  // Broadcast "escribiendo" al otro via localStorage (cross-tab) o Realtime
-  const emitirEscribiendo=useCallback(()=>{
-    try{localStorage.setItem(`cl_typing_${post.id}_${miEmail}`,Date.now());}catch{}
-  },[post.id,miEmail]);
-
-  // Detectar si el otro está escribiendo via polling de localStorage
-  useEffect(()=>{
-    const check=()=>{
-      try{
-        const ts=parseInt(localStorage.getItem(`cl_typing_${post.id}_${otroEmail}`)||"0");
-        setOtroEscribiendo(Date.now()-ts<3000);
-      }catch{}
-    };
-    const t=setInterval(check,500);
-    return()=>clearInterval(t);
-  },[post.id,otroEmail]);
-
-  const handleInputChange=(e)=>{
-    setInput(e.target.value);
-    emitirEscribiendo();
-    clearTimeout(escribiendoTimer.current);
-    escribiendoTimer.current=setTimeout(()=>{
-      try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
-    },2500);
-  };
-  const marcar=useCallback(async()=>{
-    try{await sb.marcarLeidos(post.id,miEmail,session.access_token);}catch{}
-    // Borrar notificaciones de nuevo_mensaje de esta pub
-    try{await sb.marcarNotifsTipoLeidas(miEmail,["nuevo_mensaje","chat_grupal"],session.access_token);}catch{}
-    if(onUnreadChange)onUnreadChange();
-  },[post.id,miEmail,session.access_token,onUnreadChange]);
-  const cargar=useCallback(async()=>{
-    try{
-      // Traer todos los mensajes del usuario y filtrar por esta conversación
-      const todos=await sb.getMisChats(miEmail,session.access_token);
-      const data=todos.filter(m=>
-        String(m.publicacion_id)===String(post.id)&&
-        m.para_nombre!=="__grupo__"&&
-        (m.de_nombre===otroEmail||m.para_nombre===otroEmail||m.de_nombre===miEmail)
-      );
-      setMsgs(data);setLoading(false);
-      setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:"smooth"}),50);
-      const tieneNoLeidos=data.some(m=>m.para_nombre===miEmail&&!m.leido);
-      if(tieneNoLeidos||!markedRef.current){await marcar();markedRef.current=true;}
-    }catch(e){console.error(e);setLoading(false);}
-  },[post.id,miEmail,otroEmail,session.access_token,marcar]);
-  useEffect(()=>{
-    cargar();
-    // Supabase Realtime en vez de polling — escucha INSERT en mensajes de este chat
-    let canal=null;
-    try{
-      const supabaseUrl="https://hptdyehzqfpgtrpuydny.supabase.co";
-      const anonKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
-      const ws=new WebSocket(`${supabaseUrl.replace("https","wss")}/realtime/v1/websocket?apikey=${anonKey}&vsn=1.0.0`);
-      canal=ws;
-      ws.onopen=()=>{
-        ws.send(JSON.stringify({topic:`realtime:mensajes_${post.id}`,event:"phx_join",payload:{},ref:"1"}));
-        ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
-      };
-      ws.onmessage=(e)=>{
-        try{
-          const msg=JSON.parse(e.data);
-          if(msg.event==="INSERT"||msg.payload?.type==="INSERT"){cargar();}
-        }catch{}
-      };
-      ws.onerror=()=>{
-        // Fallback a polling si WebSocket falla
-        const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};
-      };
-    }catch{
-      const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};
-    }
-    return()=>{try{canal?.close?.();}catch{}};
-  },[cargar]);
-  const QUICK_ACTIONS=[
-    {label:"¿Cómo me inscribo?",q:"¿Cómo me inscribo a un curso?"},
-    {label:"¿Cómo publico?",q:"¿Cómo publico una clase?"},
-    {label:"¿Cómo verifico mi perfil?",q:"¿Cómo verifico mi perfil?"},
-    {label:"¿Cómo funciona el quiz?",q:"¿Cómo funciona el sistema de exámenes/quizzes?"},
-    {label:"¿Cómo contacto al docente?",q:"¿Cómo contacto a un docente?"},
-    {label:"¿Cómo cambio mi nombre?",q:"¿Cómo cambio mi nombre visible?"},
-  ];
-  const handleQuick=(quickQ)=>{setInput(quickQ);setTimeout(()=>sendMsg(quickQ),50);};
-  // Procesar imagen seleccionada
-  const handleImageSelect=(e)=>{
-    const file=e.target.files?.[0];
-    if(!file)return;
-    if(file.size>4*1024*1024){alert("La imagen no puede superar 4MB");return;}
-    const reader=new FileReader();
-    reader.onload=(ev)=>setImagenPrevia(ev.target.result);
-    reader.readAsDataURL(file);
-    e.target.value="";
-  };
-
-  const sendMsg=async(overrideQ)=>{
-    const txt=(overrideQ||input).trim();
-    if(!txt&&!imagenPrevia)return;
-    const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
-    setInput("");setImagenPrevia(null);
-    try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
-    try{
-      await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:mensajeTexto,leido:false,pub_titulo:post.titulo},session.access_token);
-      sb.insertNotificacion({usuario_id:null,alumno_email:otroEmail,tipo:"nuevo_mensaje",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
-      sb.sendEmail("nuevo_mensaje",otroEmail,{pub_titulo:post.titulo,de_nombre:sb.getDisplayName(miEmail)||miEmail.split("@")[0],preview:imagenPrevia?"[Imagen]":txt},session.access_token).catch(()=>{});
-      cargar();
-    }catch(e){alert("Error al enviar: "+e.message);}
-  };
-  const nombre=post.autor_nombre||safeDisplayName(null,otroEmail)||"Usuario";
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"12px"}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,98vw)",height:"min(680px,90vh)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {/* Anti-puenteo */}
-        <div style={{background:C.warn+"12",borderBottom:`1px solid ${C.warn}25`,padding:"6px 14px",display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-          <span style={{fontSize:12}}>🛡️</span>
-          <span style={{fontSize:11,color:C.muted}}>Realizá los pagos a través de Luderis para estar protegido.</span>
-        </div>
-        <div style={{padding:"13px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
-          <div style={{display:"flex",gap:9,alignItems:"center"}}>
-            <Avatar letra={nombre[0]} size={32}/>
-            <div><div style={{fontWeight:700,color:C.text,fontSize:13}}>{nombre}</div><div style={{fontSize:11,color:C.muted,maxWidth:280,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div></div>
-          </div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:21,cursor:"pointer"}}>×</button>
-        </div>
-        <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:6}}>
-          {loading?<Spinner/>:msgs.length===0?<div style={{color:C.muted,textAlign:"center",padding:28,fontSize:13}}>Empezá la conversación 👋</div>
-            :msgs.map((m,i)=>{
-              const esPropio=m.de_nombre===miEmail;
-              const isImg=m.texto?.startsWith("[img]");
-              const imgSrc=isImg?m.texto.match(/\[img\]([\s\S]*?)\[\/img\]/)?.[1]:null;
-              const textoPosterImg=isImg?m.texto.replace(/\[img\][\s\S]*?\[\/img\]/,"").trim():"";
-              return(
-                <div key={i} style={{display:"flex",justifyContent:esPropio?"flex-end":"flex-start"}}>
-                  <div style={{background:esPropio?C.accent:C.card,color:esPropio?"#fff":C.text,padding:imgSrc?"6px 6px":undefined,borderRadius:13,maxWidth:"78%",overflow:"hidden"}}>
-                    {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:220,borderRadius:9,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank")}/>}
-                    {(textoPosterImg||!isImg)&&<div style={{padding:"8px 12px",fontSize:13,lineHeight:1.5}}>{sanitizeContactInfo(isImg?textoPosterImg:m.texto)}</div>}
-                  </div>
-                </div>
-              );
-            })}
-          <div ref={bottomRef}/>
-        </div>
-        {/* Indicador "Escribiendo..." */}
-        {otroEscribiendo&&(
-          <div style={{padding:"4px 16px",fontSize:11,color:C.muted,display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-            <div style={{display:"flex",gap:3,alignItems:"center"}}>
-              {[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:C.muted,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}
-            </div>
-            escribiendo…
-          </div>
-        )}
-        {/* Preview de imagen */}
-        {imagenPrevia&&(
-          <div style={{padding:"6px 13px",flexShrink:0,display:"flex",alignItems:"center",gap:8,background:C.bg,borderTop:`1px solid ${C.border}`}}>
-            <img src={imagenPrevia} alt="preview" style={{height:52,width:52,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}}/>
-            <div style={{flex:1,fontSize:12,color:C.muted}}>Imagen lista para enviar</div>
-            <button onClick={()=>setImagenPrevia(null)} style={{background:"none",border:"none",color:C.danger,fontSize:18,cursor:"pointer",lineHeight:1}}>×</button>
-          </div>
-        )}
-        <div style={{padding:"10px 13px",borderTop:`1px solid ${C.border}`,display:"flex",gap:7,flexShrink:0,alignItems:"flex-end"}}>
-          {/* Botón imagen */}
-          <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImageSelect}/>
-          <button onClick={()=>fileInputRef.current?.click()}
-            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 10px",cursor:"pointer",color:C.muted,fontSize:16,flexShrink:0,lineHeight:1,transition:"all .15s"}}
-            title="Enviar imagen"
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            📎
-          </button>
-          <textarea value={input} onChange={handleInputChange}
-            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
-            placeholder="Escribí un mensaje... (Shift+Enter para nueva línea)"
-            rows={1}
-            style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 13px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:120,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
-            onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
-          />
-          <button onClick={()=>sendMsg()} disabled={!input.trim()&&!imagenPrevia}
-            style={{background:C.accent,border:"none",borderRadius:9,padding:"9px 13px",fontWeight:700,cursor:"pointer",color:"#fff",fontSize:15,flexShrink:0,opacity:(!input.trim()&&!imagenPrevia)?.4:1,transition:"opacity .15s"}}>↑</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FinalizarClaseModal({post,session,onClose,onFinalizado}){
   const [inscripciones,setInscripciones]=useState([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(false);
-  useEffect(()=>{sb.getInscripciones(post.id,session.access_token).then(ins=>{setInscripciones(ins.filter(i=>!i.clase_finalizada));}).finally(()=>setLoading(false));},[post.id,session]);
-  const finalizar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{finalizado:true},session.access_token).catch(()=>{});await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:new Date().toISOString()},session.access_token)));await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"valorar_curso",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));onFinalizado();onClose();}finally{setSaving(false);}};
+  useEffect(()=>{
+    let mounted=true;
+    sb.getInscripciones(post.id,session.access_token)
+      .then(ins=>{if(mounted)setInscripciones(ins.filter(i=>!i.clase_finalizada));})
+      .finally(()=>{if(mounted)setLoading(false);});
+    return()=>{mounted=false;};
+  },[post.id,session.access_token]);// eslint-disable-line
+  const finalizar=async()=>{setSaving(true);try{
+    await sb.updatePublicacion(post.id,{finalizado:true},session.access_token);// no silenciar — si falla, no marcar inscripciones
+    await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:new Date().toISOString()},session.access_token)));
+    await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"valorar_curso",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));
+    onFinalizado();onClose();
+  }catch(e){alert("Error al finalizar: "+e.message);}finally{setSaving(false);}};
   return(
     <Modal onClose={onClose} width="min(420px,95vw)">
       <div style={{padding:"20px 22px"}}>
@@ -2427,9 +1716,6 @@ const PostFormModal  = React.lazy(() => import('./PostFormModal'));
 const OnboardingModal= React.lazy(() => import('./OnboardingModal'));
 const MiCuentaPage   = React.lazy(() => import('./MiCuentaPage'));
 
-import AgendaPage, { DocentesDestacados } from "./AgendaPage";
-import AdminPage from "./AdminPage";
-
 // Named exports from PostFormModal bundle
 const PerfilPage     = React.lazy(() => import('./PostFormModal').then(m => ({ default: m.PerfilPage })));
 
@@ -2438,16 +1724,25 @@ function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
   const [loading,setLoading]=useState(true);
   const [tab,setTab]=useState("todas");
 
+  const autoMarkTimer=useRef(null);
   useEffect(()=>{
     if(!open)return;
     setLoading(true);
-    sb.getNotificaciones(session.user.email,session.access_token).then(data=>{
+    // Cargar TODAS las notifs (no solo sin leer) para el panel
+    sb.getTodasNotificaciones(session.user.email,session.access_token).then(data=>{
       setNotifs((data||[]).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)));
+      // Auto-marcar como leídas después de 2s (el usuario ya las vio)
+      autoMarkTimer.current=setTimeout(()=>{
+        sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(()=>{});
+        setNotifs(p=>p.map(n=>({...n,leida:true})));
+      },2000);
     }).catch(()=>{}).finally(()=>setLoading(false));
+    return()=>clearTimeout(autoMarkTimer.current);
   },[open,session.user.email,session.access_token]);
 
   const marcarTodo=async()=>{
-    await sb.marcarNotifsTipoLeidas(session.user.email,["nueva_inscripcion","oferta_aceptada","oferta_rechazada","contraoferta","nuevo_mensaje","nueva_oferta","nuevo_contenido","nuevo_ayudante","valorar_curso","alerta_publicacion"],session.access_token).catch(()=>{});
+    clearTimeout(autoMarkTimer.current);
+    await sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(()=>{});
     setNotifs(p=>p.map(n=>({...n,leida:true})));
   };
 
@@ -2458,6 +1753,8 @@ function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
     oferta_rechazada:{icon:"❌",color:"#E53E3E",label:"Oferta rechazada"},
     contraoferta:{icon:"🔄",color:"#F59E0B",label:"Contraoferta"},
     nuevo_mensaje:{icon:"💬",color:"#7B3FBE",label:"Mensaje nuevo"},
+    chat_grupal:{icon:"💬",color:"#1A6ED8",label:"Mensaje en grupo"},
+    clase_iniciada:{icon:"📹",color:"#C80000",label:"¡Clase en vivo!"},
     nuevo_contenido:{icon:"📚",color:"#1A6ED8",label:"Nuevo contenido"},
     nuevo_ayudante:{icon:"🤝",color:"#2EC4A0",label:"Co-docente agregado"},
     valorar_curso:{icon:"⭐",color:"#F59E0B",label:"Valorar curso"},
@@ -2565,83 +1862,149 @@ function ScrollToTopBtn(){
 }
 
 function ChatBotWidget(){
-  const [open,setOpen]=useState(false);const [msgs,setMsgs]=useState([{from:"bot",text:"¡Hola! 👋 Soy el asistente de ClasseLink. ¿En qué puedo ayudarte?"}]);
-  const [input,setInput]=useState("");const [loading,setLoading]=useState(false);
+  const [open,setOpen]=useState(false);
+  const [msgs,setMsgs]=useState([{from:"bot",text:"¡Hola! Soy Ludy 🦊, la asistente virtual de Luderis. Podés preguntarme cualquier cosa sobre la plataforma — cómo publicar, inscribirte, usar el chat, exámenes, pagos, o lo que necesites. ¿En qué te ayudo?"}]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [failCount,setFailCount]=useState(0);
   const endRef=useRef(null);
   useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,open]);
-  const FAQS=[
-    {q:"¿Cómo me inscribo a un curso?",a:"Abrí la publicación del curso y hacé clic en 'Ver curso'. Dentro de la página del curso encontrás el botón 'Inscribirme'. Con eso tendrás acceso a todo el contenido al instante.",tags:["inscrib","curso","acceso","unirme","anotarme"]},
-    {q:"¿Cómo publico una clase o curso?",a:"Hacé clic en '+ Nueva publicación' en el menú lateral o en el botón '+ Publicar' arriba. Elegí si ofrecés clases (docente) o buscás clases (alumno), completá los datos y publicá.",tags:["public","ofrec","creo","nueva","anunci"]},
-    {q:"¿Cómo verifico mi perfil?",a:"Al crear una publicación de oferta, el sistema te hace una pregunta sobre tu materia con IA. Si respondés correctamente, obtenés la insignia ✓ Verificado que da más confianza a los alumnos.",tags:["verific","insignia","confianza","validar"]},
-    {q:"¿Cómo contacto a un docente?",a:"Para chatear con un docente necesitás estar inscripto en su clase. Una vez inscripto, aparece el botón '💬 Iniciar conversación' en la publicación.",tags:["contact","chat","mensaje","hablar","escribir","docente"]},
-    {q:"¿Cómo finalizo una clase?",a:"Entrá a tu publicación desde Mi cuenta → Contenido → botón 'Finalizar clase' (verde) en la barra de arriba. Esto notifica a todos los inscriptos para que puedan valorarte.",tags:["finaliz","terminar","cerrar","complet"]},
-    {q:"¿Cómo dejo una reseña?",a:"Las reseñas se habilitan cuando el docente finaliza las clases. Entrá al curso y en la parte inferior verás la sección para calificar con estrellas y escribir tu opinión.",tags:["reseña","opinión","valorar","calific","estrellas","puntaje"]},
-    {q:"¿Cómo funciona el sistema de ofertas?",a:"Publicá una búsqueda explicando qué necesitás aprender. Los docentes interesados te envían ofertas con su precio y mensaje. Desde Mi cuenta podés aceptar o rechazar cada una.",tags:["oferta","busqueda","busco","propuest","sistem","recib"]},
-    {q:"¿Cómo veo el perfil de un docente?",a:"Hacé clic en el nombre o avatar del docente en cualquier publicación o card. Verás su perfil completo con credenciales, historial de publicaciones y reseñas recibidas.",tags:["perfil","docente","ver","quien","credencial","historial"]},
-    {q:"¿Puedo chatear sin estar inscripto?",a:"No, el chat individual está disponible solo si estás inscripto en la clase del docente, o si el docente aceptó tu oferta de búsqueda. También hay un chat grupal dentro de cada curso para inscriptos.",tags:["chatear","sin inscrib","acceso chat","hablar sin"]},
-    {q:"¿Cómo agrego favoritos?",a:"En cada publicación de la lista hay un botón ★. Hacé clic para guardar. Podés ver todos tus favoritos en la sección 'Favoritos' del menú lateral.",tags:["favorit","guardar","★","star","lista"]},
-    {q:"¿Cómo cambio mi nombre visible?",a:"Andá a Mi cuenta → 'Editar perfil' → campo 'Nombre visible'. Ese nombre se mostrará en chats, reseñas y publicaciones.",tags:["nombre","display","cambiar","editar perfil","apodo"]},
-    {q:"¿Cómo funciona el chat grupal?",a:"Cada curso tiene un chat grupal visible para todos los inscriptos y el docente. Aparece dentro de la página del curso, abajo del contenido. El docente puede designar ayudantes que también tienen acceso especial.",tags:["grupal","grupo","chat curso","todos","ayudante"]},
-    {q:"¿Cómo cierro las inscripciones?",a:"Desde la página de tu curso (Mi cuenta → Contenido), usá el botón naranja 'Cerrar inscripciones' en la barra superior. Los alumnos ya inscriptos mantienen su acceso.",tags:["cerrar inscripciones","cupo","no más inscrib"]},
-    {q:"¿Cómo agrego a un ayudante?",a:"Dentro de la página del curso, en el panel 'Alumnos', hay una sección 'Ayudantes'. Ingresá el ID del usuario (lo encuentra en su Mi cuenta → Editar perfil) y agregalo. Tendrá acceso de edición y color especial en el chat.",tags:["ayudante","asistente","colaborad","agregar ayud"]},
-    {q:"¿Hay costo por usar ClasseLink?",a:"ClasseLink es gratuito para alumnos y docentes. El precio lo fija cada docente en su publicación y lo arreglan directamente.",tags:["costo","gratis","precio","pago","cobro","cuánto"]},
-  ];
-  // Matching mejorado: busca por tags y keywords
-  const matchFaq=(q)=>{
-    const ql=q.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-    // Buscar por tags primero
-    let best=null;let bestScore=0;
-    for(const f of FAQS){
-      let score=0;
-      for(const tag of (f.tags||[])){
-        if(ql.includes(tag.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")))score+=2;
-      }
-      // Buscar palabras de la pregunta
-      const words=f.q.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").split(" ").filter(w=>w.length>3);
-      for(const w of words){if(ql.includes(w))score+=1;}
-      if(score>bestScore){bestScore=score;best=f;}
-    }
-    return bestScore>=2?best:null;
-  };
+
+  const SYSTEM_LUDY=`Sos Ludy, la asistente virtual de Luderis. Luderis es una plataforma educativa argentina que conecta docentes y alumnos. Tu rol es responder cualquier pregunta sobre cómo usar la app, de forma clara, breve y amable. Usás español rioplatense (vos, hacé, etc). Tenés memoria de toda la conversación — podés hacer referencia a mensajes anteriores.
+
+ESTRUCTURA DE LA APP:
+Menú principal: Explorar · Mis chats · Mis inscripciones · Mi cuenta.
+
+━━━ EXPLORAR ━━━
+Secciones: Cursos (grupales con contenido estructurado), Clases (particulares 1 a 1), Pedidos (alumnos buscando docente).
+• Botón ✦ → búsqueda con IA: describís en lenguaje natural y la IA encuentra publicaciones relevantes.
+• Botón embudo → panel de filtros: modalidad, materia, ubicación, precio, fecha de inicio, sincronismo.
+• Ordenar: Relevancia / Recientes / Calificados / Precio ↑↓ / Populares / Cercanos.
+• Favoritos: botón ★ en cada card. Se guardan en la sección "Favoritos" del menú.
+• Click en una card → detalle. Desde ahí: "Inscribirme" (o pago con Mercado Pago si tiene precio), o "Ofertar" en pedidos.
+
+━━━ CURSOS Y CLASES — PÁGINA INTERNA ━━━
+Al entrar a un curso tenés 4 tabs:
+1. CONTENIDO: archivos, videos de YouTube, links y texto publicado por el docente. El docente y co-docentes pueden agregar/editar contenido. Los alumnos lo ven y lo pueden descargar.
+2. APRENDER: sección de estudio interactivo.
+   • Flashcards: el docente crea mazos de tarjetas (pregunta/respuesta) para estudiar. La IA puede generar un mazo automáticamente basado en el contenido del curso. Los alumnos pueden crear sus propias flashcards privadas también. Funcionan con sistema de voltear la carta.
+   • Exámenes / Quizzes: el docente crea quizzes de opción múltiple (la nota se calcula automáticamente) o exámenes entregables (el alumno sube un archivo y el docente lo corrige y asigna nota). Los alumnos los ven en esta tab.
+   • Notas: el docente ve la tabla completa de notas de todos los alumnos. El alumno solo ve sus propias notas.
+3. AGENDA: calendario con las clases programadas por día de la semana y horario. El docente puede iniciar una videollamada en vivo desde acá (Jitsi Meet, sin instalar nada). Cuando hay una clase en vivo aparece un banner naranja parpadeante para todos los inscriptos.
+4. COMUNIDAD: chat grupal del curso. Todos los inscriptos y el docente pueden chatear. Los mensajes pueden incluir texto, imágenes y archivos. El docente puede agregar Co-docentes (ayudantes) que tienen acceso especial y aparecen con color distinto en el chat.
+
+Acciones del docente en su propio curso (barra superior):
+• "Finalizar clase" (botón verde) → marca el curso como finalizado y notifica a todos los inscriptos para que dejen reseña.
+• "Cerrar inscripciones" (botón naranja) → nadie nuevo se puede inscribir, pero los actuales mantienen acceso.
+• "Iniciar clase en vivo" → abre videollamada Jitsi para todos los inscriptos.
+
+━━━ PEDIDOS ━━━
+• Los alumnos publican un Pedido describiendo qué quieren aprender (materia, modalidad, disponibilidad, presupuesto).
+• Los docentes los ven en Explorar → Pedidos y pueden enviar una Oferta con precio y mensaje personalizado.
+• El alumno recibe la oferta en Mi cuenta → Actividad. Puede aceptar, rechazar o contraofertar.
+• Al aceptar, se crea automáticamente un espacio de clase privado entre los dos.
+
+━━━ PUBLICAR ━━━
+Botón "+ Publicar" (arriba en mobile, menú lateral en desktop).
+Tipos de publicación:
+• "Ofrezco clases" (docente): título, materia/categoría, descripción, precio (por hora/clase/mes o gratis), modalidad (virtual/presencial/mixto), ubicación, foto de portada, modo (particular 1a1, grupal, o curso estructurado), paquetes de clases con descuento, clase de prueba gratuita, fechas de inicio/fin.
+• "Busco clases / Pedido" (alumno): describís qué querés aprender, presupuesto, modalidad preferida. Los pedidos expiran a los 30 días.
+Verificación de docente: al publicar la primera oferta, la IA hace una pregunta sobre tu materia. Si respondés bien → badge ✓ Verificado en tu perfil y publicaciones.
+
+━━━ MI CUENTA ━━━
+Tabs disponibles:
+• Publicaciones: tus propias publicaciones con filtros Todo/Cursos/Clases/Pedidos. Podés pausar (desactivar), editar, eliminar cada una.
+• Estadísticas: métricas de docente — vistas, alumnos inscriptos, tasa de conversión, precio promedio, rating, publicaciones por mes (gráfico de barras).
+• Mis clases: cursos en los que participás como co-docente o ayudante.
+• Actividad: ofertas que docentes enviaron a tus pedidos. Podés aceptar/rechazar/contraofertar. Badge rojo = actividad nueva sin ver.
+• Credenciales: subís documentos (título universitario, certificados, experiencia laboral, etc) que se muestran en tu perfil público para generar confianza.
+• Reseñas: reseñas que recibiste de alumnos. Solo se habilitan después de que el docente finaliza las clases.
+• Alertas ✦: configurás alertas automáticas con IA — describís con texto libre qué tipo de publicación te interesa y te notificamos por email cuando aparezca una que coincida.
+• Referidos: código único para invitar personas. Cada referido exitoso genera créditos en tu billetera.
+• Billetera: saldo de créditos Luderis ganados por referidos u otras acciones. Se pueden usar en la plataforma.
+• Editar perfil: nombre visible, bio, foto de perfil, color de avatar, video de presentación (link de YouTube), idiomas que hablás, franja horaria de disponibilidad, "Disponible ahora" (badge verde 🟢 en tus publicaciones con horario de disponibilidad), tema visual (Claro/Oscuro).
+
+━━━ MIS CHATS ━━━
+• Chat individual con docentes, disponible solo si estás inscripto o si el docente aceptó tu oferta/pedido.
+• Podés enviar texto, imágenes y archivos.
+• NO se puede iniciar chat con cualquier persona sin estar inscripto primero.
+
+━━━ MIS INSCRIPCIONES ━━━
+• Lista de todos los cursos y clases en los que estás inscripto.
+• Badge rojo = novedades sin ver (nuevo contenido, clase finalizada para valorar, nuevo co-docente, clase en vivo).
+• Desde acá accedés a la página completa de cada curso con todas sus tabs.
+
+━━━ NOTIFICACIONES ━━━
+Ícono campana (header) → panel deslizable con historial.
+Tipos: nueva oferta recibida, oferta aceptada/rechazada, contraoferta, nueva inscripción a tu curso, nuevo contenido publicado, clase finalizada (para dejar reseña), alerta de búsqueda disparada, pago aprobado por Mercado Pago, anuncios del equipo de Luderis.
+
+━━━ PAGOS — MERCADO PAGO ━━━
+• Si el docente configuró precio, al hacer clic en "Inscribirme" se redirige a Mercado Pago.
+• El pago va directo al docente. Luderis no retiene comisión actualmente.
+• Si hay problema con el pago, intentá de nuevo o contactá directamente al docente por chat.
+
+━━━ PERFIL PÚBLICO ━━━
+• Clic en nombre o avatar de cualquier usuario → perfil completo.
+• Muestra: foto, nombre, bio, materia principal, rating promedio, publicaciones activas, reseñas recibidas, credenciales verificadas, disponibilidad actual.
+• Botón compartir → copia link del perfil.
+
+━━━ REGLAS DE COMPORTAMIENTO ━━━
+• Respondé SOLO sobre Luderis y el uso de la app.
+• Si preguntan algo ajeno (matemáticas, recetas, etc), decí amablemente que solo podés ayudar con la plataforma.
+• Si el usuario tiene un error técnico/bug real que no podés resolver, o después de dos intentos de explicar sigue sin entender, incluí al final de tu respuesta exactamente: [NECESITA_SOPORTE]
+• No uses ese tag si la consulta es una duda normal que pudiste responder bien.
+• Respondé en español rioplatense, máximo 4 oraciones. Sé conciso y directo.`;
+
   const QUICK_ACTIONS=[
     {label:"¿Cómo me inscribo?",q:"¿Cómo me inscribo a un curso?"},
-    {label:"¿Cómo publico?",q:"¿Cómo publico una clase?"},
-    {label:"¿Cómo verifico mi perfil?",q:"¿Cómo verifico mi perfil?"},
-    {label:"¿Cómo funciona el quiz?",q:"¿Cómo funciona el sistema de exámenes/quizzes?"},
-    {label:"¿Cómo contacto al docente?",q:"¿Cómo contacto a un docente?"},
-    {label:"¿Cómo cambio mi nombre?",q:"¿Cómo cambio mi nombre visible?"},
+    {label:"¿Cómo publico?",q:"¿Cómo publico una clase o curso?"},
+    {label:"¿Cómo funciona el chat?",q:"¿Cuándo puedo chatear con un docente?"},
+    {label:"¿Cómo uso los pedidos?",q:"¿Cómo funciona el sistema de pedidos?"},
   ];
   const handleQuick=(quickQ)=>{setInput(quickQ);setTimeout(()=>sendMsg(quickQ),50);};
   const sendMsg=async(overrideQ)=>{
     const q=(overrideQ||input).trim();if(!q)return;
     setInput("");
-    setMsgs(prev=>[...prev,{from:"user",text:q}]);
+    // Agregamos el mensaje del usuario al historial local ANTES de llamar a la IA
+    const newUserMsg={from:"user",text:q};
+    const nextMsgs=[...msgs,newUserMsg];
+    setMsgs(nextMsgs);
     setLoading(true);
-    // Check FAQs first
-    const faq=matchFaq(q);
-    if(faq){setTimeout(()=>{setMsgs(prev=>[...prev,{from:"bot",text:faq.a}]);setLoading(false);},600);return;}
-    // Use AI
     try{
-      const SYSTEM_CHATBOT=`Sos el asistente de soporte de ClasseLink, una plataforma educativa argentina que conecta docentes y estudiantes.\n\nFUNCIONES PRINCIPALES:\n- Explorar: ver publicaciones de clases y búsquedas. Botón ✦ IA para búsqueda inteligente.\n- Publicar: botón "+ Publicar". Elegís "Busco clases" o "Ofrezco clases". Los docentes se verifican respondiendo una pregunta de IA sobre su tema.\n- Inscripción: abrís una publicación → Ver curso → Inscribirme.\n- Chat: disponible si estás inscripto o si el docente aceptó tu oferta.\n- Favoritos: botón ★ en cada publicación.\n- Ofertas: en búsquedas podés ofertar tus clases con precio y mensaje.\n- Quiz/Exámenes: en la página del curso, tab "Exámenes". Multiple choice (nota automática) o Entregable (corregido por docente).\n- Notas: tab "Notas" en el curso. Los alumnos ven sus notas, docentes ven tabla completa.\n- Verificación: los docentes suman badge ✓ respondiendo una pregunta de IA al publicar.\n- Mi cuenta: gestionar publicaciones, ver estadísticas, editar perfil y bio.\n- Modo oscuro/claro: Mi cuenta → Editar perfil → botones Tema.\n\nRespondé en español, de forma breve y amable. Si no podés resolver el problema en 2 intentos, sugerí contactar al soporte por WhatsApp.`;
-      const text=await sb.callIA(SYSTEM_CHATBOT,q,350,"").catch(()=>"Lo siento, el asistente no está disponible en este momento.");
-      // Mostrar siempre la opción de contacto humano junto a la respuesta de IA
-      setMsgs(prev=>[...prev,{from:"bot",text:text},{from:"bot",text:"¿Necesitás ayuda de una persona?",action:true}]);
+      // Construimos el historial en formato Anthropic: solo mensajes user/assistant (no bot action)
+      // Últimos 10 turnos para no gastar tokens demás
+      const history=nextMsgs
+        .filter(m=>m.from==="user"||m.from==="bot")
+        .filter(m=>!m.action)
+        .slice(-10)
+        .map(m=>({role:m.from==="user"?"user":"assistant",content:m.text}));
+      const text=await sb.callIAChat(SYSTEM_LUDY,history,600).catch(()=>null);
+      if(!text){
+        setFailCount(n=>n+1);
+        setMsgs(prev=>[...prev,{from:"bot",text:"Lo siento, no pude procesar tu consulta en este momento.",action:true}]);
+        return;
+      }
+      const needsSupport=text.includes("[NECESITA_SOPORTE]");
+      const cleanText=text.replace("[NECESITA_SOPORTE]","").trim();
+      setMsgs(prev=>[...prev,{from:"bot",text:cleanText},...(needsSupport?[{from:"bot",text:"Si el problema persiste, podés hablar directo con el equipo:",action:true}]:[])]);
+      if(needsSupport)setFailCount(n=>n+1);
     }catch{
-      setMsgs(prev=>[...prev,{from:"bot",text:"Lo siento, no pude procesar tu consulta en este momento."},{from:"bot",text:"Podés hablar con un representante:",action:true}]);
+      setFailCount(n=>n+1);
+      setMsgs(prev=>[...prev,{from:"bot",text:"Hubo un error al procesar tu consulta.",action:true}]);
     }finally{setLoading(false);}
   };
-  const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20ClasseLink","_blank");
+  const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20Luderis","_blank","noopener,noreferrer");
   return(
     <div style={{position:"fixed",bottom:22,right:22,zIndex:500,fontFamily:FONT}} className="cl-chatbot-fab">
       <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}}`}</style>
       {open&&(
         <div style={{position:"absolute",bottom:64,right:0,width:"min(340px,88vw)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,boxShadow:"0 8px 32px #0008",display:"flex",flexDirection:"column",maxHeight:460,overflow:"hidden"}}>
           {/* Header */}
-          <div style={{background:C.accent,borderRadius:"20px 20px 0 0",padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{background:"var(--cl-section-accent)",borderRadius:"20px 20px 0 0",padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
-              <span style={{fontSize:20}}>🎓</span>
+              <span style={{fontSize:20}}>🦊</span>
               <div>
-              <div style={{fontWeight:700,color:"#fff",fontSize:13}}>Soporte Luderis</div>
+              <div style={{fontWeight:700,color:"#fff",fontSize:13}}>Ludy · Asistente de Luderis</div>
               <div style={{fontSize:11,color:"rgba(255,255,255,.7)",display:"flex",alignItems:"center",gap:4}}>
                 <span style={{width:6,height:6,borderRadius:"50%",background:"#2EC4A0",display:"inline-block",animation:"pulse 2s infinite"}}/>
                 En línea · Responde al instante
@@ -2666,7 +2029,7 @@ function ChatBotWidget(){
                     </button>
                   </div>
                 ):(
-                  <div style={{background:m.from==="user"?C.accent:C.card,color:m.from==="user"?"#fff":C.text,borderRadius:m.from==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:"9px 13px",maxWidth:220,fontSize:12,lineHeight:1.5,border:`1px solid ${m.from==="user"?"transparent":C.border}`}}>{m.text}</div>
+                  <div style={{background:m.from==="user"?"var(--cl-section-accent)":C.card,color:m.from==="user"?"#fff":C.text,borderRadius:m.from==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:"9px 13px",maxWidth:220,fontSize:12,lineHeight:1.5,border:`1px solid ${m.from==="user"?"transparent":C.border}`}}>{m.text}</div>
                 )}
               </div>
             ))}
@@ -2676,12 +2039,12 @@ function ChatBotWidget(){
           {/* Input */}
           <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8}}>
             <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Escribí tu pregunta..." style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 13px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
-            <button onClick={()=>sendMsg()} disabled={!input.trim()||loading} style={{background:C.accent,border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:15,flexShrink:0,opacity:!input.trim()?0.5:1}}>↑</button>
+            <button onClick={()=>sendMsg()} disabled={!input.trim()||loading} style={{background:"var(--cl-section-accent)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:15,flexShrink:0,opacity:!input.trim()?0.5:1}}>↑</button>
           </div>
         </div>
       )}
       {/* FAB button */}
-      <button onClick={()=>setOpen(v=>!v)} style={{width:52,height:52,borderRadius:"50%",background:open?C.border:C.accent,border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <button onClick={()=>setOpen(v=>!v)} style={{width:52,height:52,borderRadius:"50%",background:open?C.border:"var(--cl-section-accent)",border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
         {open?"×":"💬"}
       </button>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
@@ -2702,13 +2065,16 @@ export default function App(){
   // Exponer setter global para que MiCuentaPage lo llame
   window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};
   const [showOnboarding,setShowOnboarding]=useState(false);
+  const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
   // Verificar onboarding cada vez que cambia la sesión
   // Cargar perfil completo desde DB al login — fuente de verdad
   useEffect(()=>{
     if(!session?.user?.email)return;
     const email=session.user.email;
+    let mounted=true;
     sb.getUsuarioByEmail(email,session.access_token).then(u=>{
+      if(!mounted)return;
       if(!u)return;
       // Sincronizar localStorage con los datos reales de la DB
       try{
@@ -2719,16 +2085,34 @@ export default function App(){
         if(u.onboarding_completado)localStorage.setItem("cl_onboarding_done_"+email,"1");
         if(u.materias_interes?.length)localStorage.setItem("cl_materias_pref_"+email,JSON.stringify(u.materias_interes));
       }catch{}
-      // Verificar onboarding
+      // Verificar onboarding — solo mostrar si nunca fue completado ni descartado
       if(!u.onboarding_completado){
-        try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done)setShowOnboarding(true);}catch{}
+        try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done){setOnboardingUpgrade(false);setShowOnboarding(true);}}catch{}
       }
     }).catch(()=>{
+      if(!mounted)return;
       // Fallback a localStorage si falla la DB
-      try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done)setShowOnboarding(true);}catch{}
+      try{const done=localStorage.getItem("cl_onboarding_done_"+email);if(!done){setOnboardingUpgrade(false);setShowOnboarding(true);}}catch{}
     });
+    return()=>{mounted=false;};
   },[session?.user?.email]);// eslint-disable-line
-  const [chatPost,setChatPost]=useState(null);const [detailPost,setDetailPost]=useState(null);const [cursoPost,setCursoPost]=useState(null);
+  const [chatPost,setChatPost]=useState(null);const [detailPost,setDetailPost]=useState(null);
+  const [cursoPost,setCursoPostRaw]=useState(null);
+  const setCursoPost=(p)=>{try{if(p)sessionStorage.setItem("cl_curso_id",p.id);else sessionStorage.removeItem("cl_curso_id");}catch{}setCursoPostRaw(p);};
+  // Restaurar curso abierto al refrescar
+  useEffect(()=>{
+    if(!session)return;
+    const id=sessionStorage.getItem("cl_curso_id");
+    if(!id)return;
+    let mounted=true;
+    sb.getPublicacionesByIds([id],session.access_token).then(pubs=>{
+      if(!mounted)return;
+      const pub=pubs?.[0];
+      if(pub&&pub.tipo==="oferta")setCursoPostRaw(pub);
+      else sessionStorage.removeItem("cl_curso_id");
+    }).catch(()=>{});
+    return()=>{mounted=false;};
+  },[session?.user?.email]);// eslint-disable-line
   // SEO: update title/meta when viewing a specific publication
   useEffect(()=>{
     if(cursoPost||detailPost){
@@ -2746,6 +2130,40 @@ export default function App(){
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Exponer función global para que el sidebar pueda abrir el panel
   useEffect(()=>{window._openNotifPanel=()=>setNotifPanelOpen(v=>!v);return()=>{window._openNotifPanel=null;};},[]);// eslint-disable-line
+  // Tipos de notif que alimentan cada badge
+  const TIPOS_CUENTA=["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema"];
+  const TIPOS_INSC=["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido","clase_iniciada"];
+  // Badge Actividad: MiCuentaPage llama esto al abrir la tab → marca como leídas en DB
+  useEffect(()=>{
+    window._resetCuentaBadge=()=>{
+      setOfertasAceptadasNuevas(0);setOfertasCount(0);
+      const s=sessionRef.current;
+      if(s?.user?.email)sb.marcarNotifsTipoLeidas(s.user.email,TIPOS_CUENTA,s.access_token).catch(()=>{});
+    };
+    return()=>{window._resetCuentaBadge=null;};
+  },[]);// eslint-disable-line
+  // Badge Inscripciones: marca como leídas en DB al navegar a esa sección
+  useEffect(()=>{
+    if(page!=="inscripciones")return;
+    setNotifCount(0);
+    const s=sessionRef.current;
+    if(s?.user?.email)sb.marcarNotifsTipoLeidas(s.user.email,TIPOS_INSC,s.access_token).catch(()=>{});
+  },[page]);// eslint-disable-line
+  // Exponer apertura del formulario de nueva publicación (usado por banners)
+  useEffect(()=>{window._openNewPost=()=>{setEditPost(null);setShowForm(true);};return()=>{window._openNewPost=null;};},[]);// eslint-disable-line
+  // Exponer navegación a publicación (para notification click)
+  useEffect(()=>{
+    window.__openPub=(pubId)=>{
+      if(!pubId)return;
+      sb.getPublicacionesByIds([pubId],session?.access_token).then(pubs=>{
+        const pub=pubs?.[0];
+        if(!pub)return;
+        if(pub.tipo==="oferta")setCursoPost(pub);
+        else setDetailPost(pub);
+      }).catch(()=>{});
+    };
+    return()=>{window.__openPub=null;};
+  },[session]);//eslint-disable-line
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -2762,10 +2180,10 @@ export default function App(){
   });
   const sessionRef=useRef(session);useEffect(()=>{sessionRef.current=session;},[session]);
   useEffect(()=>{window.__openAdmin=()=>setShowAdmin(true);return()=>{window.__openAdmin=null;};},[]);
-  const [esAdmin,setEsAdmin]=useState(()=>{
-    const rol=localStorage.getItem("cl_rol_"+(session?.user?.email||""))||"alumno";
-    return rol==="admin"||session?.user?.email==="salvadordevedia@gmail.com";
-  });
+  // Siempre inicia como false — se confirma desde DB (no localStorage) para evitar spoofing
+  const [esAdmin,setEsAdmin]=useState(false);
+  // Rol real del usuario (DB-verified, no localStorage)
+  const [rolSesion,setRolSesion]=useState("alumno");
 
   // Re-sync rol from DB on app load and on window focus
   useEffect(()=>{
@@ -2774,6 +2192,7 @@ export default function App(){
       sb.getUsuarioByEmail(session.user.email,session.access_token).then(u=>{
         if(u?.rol){
           try{localStorage.setItem("cl_rol_"+session.user.email,u.rol);}catch{}
+          setRolSesion(u.rol);
           setEsAdmin(u.rol==="admin"||session.user.email==="salvadordevedia@gmail.com");
         }
       }).catch(()=>{});
@@ -2823,12 +2242,15 @@ export default function App(){
     }
   },[]);
 
-  const mostrarNotifPush=useCallback((titulo,cuerpo,icon="/logo.png")=>{
+  const mostrarNotifPush=useCallback((titulo,cuerpo,{icon="/logo.png",tag="luderis-notif",pubId=null}={})=>{
     if(!("Notification" in window)||Notification.permission!=="granted")return;
     try{
-      const n=new Notification(titulo,{body:cuerpo,icon,badge:"/logo.png",tag:"luderis-notif",renotify:true});
-      n.onclick=()=>{window.focus();n.close();};
-      setTimeout(()=>n.close(),6000);
+      const n=new Notification(titulo,{body:cuerpo,icon,badge:"/logo.png",tag,renotify:true,silent:false});
+      n.onclick=()=>{
+        window.focus();n.close();
+        if(pubId&&window.__openPub)window.__openPub(pubId);
+      };
+      setTimeout(()=>n.close(),8000);
     }catch{}
   },[]);
 
@@ -2889,20 +2311,39 @@ export default function App(){
       // Push notification si hay mensajes nuevos y la tab no está activa
       if(newUnread>0&&document.hidden&&window.__pushNotif){
         const lastMsg=msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__").slice(-1)[0];
-        if(lastMsg){const senderName=sb.getDisplayName(lastMsg.de_nombre)||"Alguien";window.__pushNotif(`Mensaje de ${senderName}`,(lastMsg.texto||"").slice(0,80));}
+        if(lastMsg){
+          const senderName=sb.getDisplayName(lastMsg.de_nombre)||"Alguien";
+          const isImg=lastMsg.texto?.startsWith("[img]");
+          const preview=isImg?"📷 Imagen":(lastMsg.texto||"").slice(0,100);
+          window.__pushNotif(
+            `💬 Mensaje de ${senderName}`,
+            preview,
+            {tag:`luderis-chat-${lastMsg.publicacion_id}`,pubId:lastMsg.publicacion_id}
+          );
+        }
       }
       setUnread(newUnread);
       setOfertasCount(ofertas.length);
       // Notifs para Mis inscripciones
-      const notifsInsc=(nfs||[]).filter(n=>["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"].includes(n.tipo));
+      const notifsInsc=(nfs||[]).filter(n=>["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido","clase_iniciada"].includes(n.tipo));
       setNotifCount(notifsInsc.length);setNotifs(nfs||[]);
+      // Push urgente para clase en vivo
+      const claseViva=notifsInsc.filter(n=>n.tipo==="clase_iniciada"&&!n.leida);
+      if(claseViva.length>0&&window.__pushNotif){
+        const n=claseViva[0];
+        window.__pushNotif("📹 ¡Clase en vivo!",`${n.pub_titulo} — Uníte ahora`,{tag:`luderis-clase-${n.publicacion_id}`,pubId:n.publicacion_id});
+      }
       // Badge Mi Cuenta: notifs de ofertas/contras/inscripciones recibidas
       const notifsCuenta=(nfs||[]).filter(n=>["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema"].includes(n.tipo));
       // Push para notificaciones nuevas
       if(notifsCuenta.length>0&&document.hidden&&window.__pushNotif){
         const lastNotif=notifsCuenta[0];
-        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta"};
-        window.__pushNotif(LABELS[lastNotif.tipo]||"Notificación",lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis");
+        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta",oferta_rechazada:"❌ Oferta rechazada",contraoferta:"🔄 Contraoferta recibida"};
+        window.__pushNotif(
+          LABELS[lastNotif.tipo]||"🔔 Notificación",
+          lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis",
+          {tag:`luderis-cuenta-${lastNotif.tipo}`,pubId:lastNotif.publicacion_id}
+        );
       }
       setOfertasAceptadasNuevas(notifsCuenta.length);
     }).catch(()=>{});
@@ -2963,7 +2404,7 @@ export default function App(){
     if(!ogDesc){ogDesc=document.createElement("meta");ogDesc.setAttribute("property","og:description");document.head.appendChild(ogDesc);}
     ogDesc.content=meta.content;
   },[page]);// eslint-disable-line
-  const logout=()=>{sb.clearSession();setSession(null);};
+  const logout=()=>{sb.clearSession();setSession(null);try{sessionStorage.removeItem("cl_curso_id");sessionStorage.removeItem("cl_page");}catch{};setPage("explore");};
   const openChat=(p)=>{chatPostRef.current=p;setChatPost(p);};
   const closeChat=()=>{chatPostRef.current=null;setChatPost(null);refreshUnread();setChatsKey(k=>k+1);};
   // Tema con estado React para re-render
@@ -2972,13 +2413,13 @@ export default function App(){
   if(!session){
     const showAuth=window.location.hash==="#auth"||sessionStorage.getItem("ld_auth")==="1";
     const goAuth=()=>{sessionStorage.setItem("ld_auth","1");window.location.hash="#auth";forceThemeRender(n=>n+1);};
-    if(!showAuth)return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{min-height:100vh;font-family:${FONT}}`}</style><LandingPage onEnter={goAuth}/></>);
-    return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT}}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);setSession(s);}}/></>);
+    if(!showAuth)return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}`}</style><LandingPage onEnter={goAuth}/></>);
+    return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);setSession(s);}}/></>);
   }
   const SW=isMobile?0:224;
   return(
-    <div style={{minHeight:"100vh",background:C.bg,fontFamily:FONT,color:C.text,display:"flex"}}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tabPulse{0%,100%{opacity:1}50%{opacity:0.5}}*{box-sizing:border-box}html,body,#root{background:${C.bg};color:${C.text};min-height:100vh;font-family:${FONT}}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}::-webkit-scrollbar-track{background:transparent}.cl-card-anim{animation:fadeUp .2s ease both}.cl-fade{animation:fadeIn .15s ease both}input,textarea,select{color-scheme:${_themeKey()==="light"?"light":"dark"};background-color:${C.surface}!important;color:${C.text}!important;border-color:${C.border}}input::placeholder,textarea::placeholder{color:${C.muted};opacity:1}input:focus,textarea:focus,select:focus{border-color:${C.accent}!important;outline:none}@media(max-width:768px){input,textarea,select{font-size:16px!important}.cl-hide-desk{display:none!important}button{-webkit-tap-highlight-color:transparent}}.cl-tabs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.cl-tabs-scroll::-webkit-scrollbar{display:none}.cl-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.cl-grid-2{grid-template-columns:1fr!important}}.cl-row-wrap{display:flex;flex-wrap:wrap;gap:8px}`}</style>
+    <div style={{minHeight:"100vh",background:`var(--cl-section-tint, ${C.bg})`,fontFamily:FONT,color:C.text,display:"flex",transition:"background .4s ease",overflowX:"hidden",maxWidth:"100vw"}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tabPulse{0%,100%{opacity:1}50%{opacity:0.5}}*{box-sizing:border-box}html,body,#root{background:${C.bg};color:${C.text};min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}::-webkit-scrollbar-track{background:transparent}.cl-card-anim{animation:fadeUp .2s ease both}.cl-fade{animation:fadeIn .15s ease both}input,textarea,select{color-scheme:${_themeKey()==="light"?"light":"dark"};background-color:${C.surface}!important;color:${C.text}!important;border-color:${C.border}}input::placeholder,textarea::placeholder{color:${C.muted};opacity:1}input:focus,textarea:focus,select:focus{border-color:${C.accent}!important;outline:none}@media(max-width:768px){input,textarea,select{font-size:16px!important}.cl-hide-desk{display:none!important}button{-webkit-tap-highlight-color:transparent}}.cl-tabs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.cl-tabs-scroll::-webkit-scrollbar{display:none}.cl-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.cl-grid-2{grid-template-columns:1fr!important}}.cl-row-wrap{display:flex;flex-wrap:wrap;gap:8px}`}</style>
       <Sidebar page={page} setPage={setPage} session={session} onLogout={logout} onNewPost={()=>{setEditPost(null);setShowForm(true);}} unreadCount={unread} ofertasCount={ofertasCount} notifCount={notifCount} ofertasAceptadasNuevas={ofertasAceptadasNuevas} mobile={isMobile} open={sidebarOpen} onClose={()=>setSidebarOpen(false)} theme={currentTheme} onToggleTheme={toggleTheme} onForceRender={()=>forceThemeRender(n=>n+1)} esAdmin={esAdmin}/>
       {isMobile&&(
         <>
@@ -2990,8 +2431,8 @@ export default function App(){
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {/* Campana notificaciones */}
-              <button onClick={()=>setNotifPanelOpen(v=>!v)} style={{position:"relative",background:"none",border:"none",cursor:"pointer",padding:"6px",borderRadius:"50%",fontSize:18,lineHeight:1,color:notifCount>0?C.accent:C.muted}}>
-                🔔
+              <button onClick={()=>setNotifPanelOpen(v=>!v)} style={{position:"relative",background:"none",border:"none",cursor:"pointer",padding:"6px",borderRadius:"50%",lineHeight:1,color:notifCount>0?C.accent:C.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 {notifCount>0&&<span style={{position:"absolute",top:2,right:2,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4,minWidth:14,textAlign:"center"}}>{notifCount>9?"9+":notifCount}</span>}
               </button>
               <Btn onClick={()=>{setEditPost(null);setShowForm(true);}} style={{padding:"6px 14px",fontSize:12,borderRadius:16}}>{t("newPost")}</Btn>
@@ -3007,9 +2448,9 @@ export default function App(){
                 {id:"cuenta",icon:"👤",label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
               ].map(item=>(
                 <button key={item.id} onClick={()=>setPage(item.id)}
-                  style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"6px 0",position:"relative",fontFamily:FONT,borderTop:`2px solid ${page===item.id?C.accent:"transparent"}`,transition:"all .15s"}}>
-                  <span style={{fontSize:20,color:page===item.id?C.accent:C.muted,lineHeight:1,transition:"color .15s"}}>{item.icon}</span>
-                  <span style={{fontSize:10,color:page===item.id?C.accent:C.muted,fontWeight:page===item.id?600:400,whiteSpace:"nowrap",transition:"color .15s"}}>{item.label}</span>
+                  style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"6px 0",position:"relative",fontFamily:FONT,borderTop:`2px solid ${page===item.id?"var(--cl-section-accent)":"transparent"}`,transition:"all .15s"}}>
+                  <span style={{fontSize:20,color:page===item.id?"var(--cl-section-accent)":C.muted,lineHeight:1,transition:"color .15s"}}>{item.icon}</span>
+                  <span style={{fontSize:10,color:page===item.id?"var(--cl-section-accent)":C.muted,fontWeight:page===item.id?600:400,whiteSpace:"nowrap",transition:"color .15s"}}>{item.label}</span>
                   {item.badge>0&&<span style={{position:"absolute",top:4,right:10,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4}}>{item.badge>9?"9+":item.badge}</span>}
                 </button>
               ))}
@@ -3017,14 +2458,14 @@ export default function App(){
           </div>
         </>
       )}
-      <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 12px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:C.bg}}>
+      <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
           {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={setDetailPost} onOpenPerfil={setPerfilEmail} onOpenCurso={setCursoPost}/>}
           {page==="agenda"&&<AgendaPage session={session} onOpenCurso={setCursoPost}/>}
           {page==="chats"&&<ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/>}
           {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={setDetailPost} onOpenChat={openChat} onOpenPerfil={setPerfilEmail}/>}
           {page==="inscripciones"&&<InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>}
-          {page==="cuenta"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}><MiCuentaPage key={myPostsKey} session={session} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost} onEdit={p=>{setEditPost(p);setShowForm(true);}} onNew={()=>{setEditPost(null);setShowForm(true);}} onOpenChat={openChat} onRefreshOfertas={refreshUnread} onStartOnboarding={()=>setShowOnboarding(true)} onClearBadge={()=>{
+          {page==="cuenta"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}><MiCuentaPage key={myPostsKey} session={session} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost} onEdit={p=>{setEditPost(p);setShowForm(true);}} onNew={()=>{setEditPost(null);setShowForm(true);}} onOpenChat={openChat} onRefreshOfertas={refreshUnread} onStartOnboarding={()=>{setOnboardingUpgrade(true);setShowOnboarding(true);}} onClearBadge={()=>{
             setOfertasAceptadasNuevas(0);
             setOfertasCount(0);
             sb.marcarNotifsTipoLeidas(session.user.email,["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion"],session.access_token).then(refreshUnread).catch(()=>{});
@@ -3037,7 +2478,7 @@ export default function App(){
       {cursoPost&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando curso…</div></div>}><CursoPage post={cursoPost} session={session} onClose={()=>setCursoPost(null)} onUpdatePost={p=>setCursoPost(p)}/></React.Suspense>}
       {certVerifId&&<CertificadoPage certId={certVerifId} onClose={()=>setCertVerifId(null)}/>}
       {perfilEmail&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando perfil…</div></div>}><PerfilPage autorEmail={perfilEmail} session={session} onClose={()=>setPerfilEmail(null)} onOpenDetail={(p)=>{setPerfilEmail(null);setTimeout(()=>setDetailPost(p),80);}} onOpenChat={(p)=>{setPerfilEmail(null);setTimeout(()=>openChat(p),80);}}/></React.Suspense>}
-      {showForm&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando formulario…</div></div>}><PostFormModal session={session} postToEdit={editPost} onClose={()=>{setShowForm(false);setEditPost(null);}}
+      {showForm&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando formulario…</div></div>}><PostFormModal session={session} postToEdit={editPost} modoInicial={editPost?undefined:(()=>{try{return sessionStorage.getItem("cl_seccion")||"curso";}catch{return"curso";}})()  } onClose={()=>{setShowForm(false);setEditPost(null);}}
   onSave={(newPub,meta)=>{
     setMyPostsKey(k=>k+1);
     if(newPub&&(meta?.esCursoNuevo||meta?.esParticularNuevo)){
@@ -3046,7 +2487,7 @@ export default function App(){
     }
   }}/>
       </React.Suspense>}
-      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} onClose={()=>setShowOnboarding(false)}/></React.Suspense>}
+      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={()=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"dismissed");}catch{}setShowOnboarding(false);setOnboardingUpgrade(false);}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
       {showAdmin&&<AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/>}
       <ScrollToTopBtn/>
       <ChatBotWidget/>
