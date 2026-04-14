@@ -1862,51 +1862,121 @@ function ScrollToTopBtn(){
 }
 
 function ChatBotWidget(){
-  const [open,setOpen]=useState(false);const [msgs,setMsgs]=useState([{from:"bot",text:"¡Hola! Soy Ludy 🦊, la asistente virtual de Luderis. Estoy acá para ayudarte a encontrar clases, publicar contenido y resolver cualquier duda sobre la plataforma. ¿En qué te puedo ayudar?"}]);
-  const [input,setInput]=useState("");const [loading,setLoading]=useState(false);
+  const [open,setOpen]=useState(false);
+  const [msgs,setMsgs]=useState([{from:"bot",text:"¡Hola! Soy Ludy 🦊, la asistente virtual de Luderis. Podés preguntarme cualquier cosa sobre la plataforma — cómo publicar, inscribirte, usar el chat, exámenes, pagos, o lo que necesites. ¿En qué te ayudo?"}]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [failCount,setFailCount]=useState(0);
   const endRef=useRef(null);
   useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,open]);
-  const FAQS=[
-    {q:"¿Cómo me inscribo a un curso?",a:"Abrí la publicación del curso y hacé clic en 'Ver curso'. Dentro de la página del curso encontrás el botón 'Inscribirme'. Con eso tendrás acceso a todo el contenido al instante.",tags:["inscrib","curso","acceso","unirme","anotarme"]},
-    {q:"¿Cómo publico una clase o curso?",a:"Hacé clic en '+ Nueva publicación' en el menú lateral o en el botón '+ Publicar' arriba. Elegí si ofrecés clases (docente) o buscás clases (alumno), completá los datos y publicá.",tags:["public","ofrec","creo","nueva","anunci"]},
-    {q:"¿Cómo verifico mi perfil?",a:"Al crear una publicación de oferta, el sistema te hace una pregunta sobre tu materia con IA. Si respondés correctamente, obtenés la insignia ✓ Verificado que da más confianza a los alumnos.",tags:["verific","insignia","confianza","validar"]},
-    {q:"¿Cómo contacto a un docente?",a:"Para chatear con un docente necesitás estar inscripto en su clase. Una vez inscripto, aparece el botón '💬 Iniciar conversación' en la publicación.",tags:["contact","chat","mensaje","hablar","escribir","docente"]},
-    {q:"¿Cómo finalizo una clase?",a:"Entrá a tu publicación desde Mi cuenta → Contenido → botón 'Finalizar clase' (verde) en la barra de arriba. Esto notifica a todos los inscriptos para que puedan valorarte.",tags:["finaliz","terminar","cerrar","complet"]},
-    {q:"¿Cómo dejo una reseña?",a:"Las reseñas se habilitan cuando el docente finaliza las clases. Entrá al curso y en la parte inferior verás la sección para calificar con estrellas y escribir tu opinión.",tags:["reseña","opinión","valorar","calific","estrellas","puntaje"]},
-    {q:"¿Cómo funciona el sistema de ofertas?",a:"Publicá una búsqueda explicando qué necesitás aprender. Los docentes interesados te envían ofertas con su precio y mensaje. Desde Mi cuenta podés aceptar o rechazar cada una.",tags:["oferta","busqueda","busco","propuest","sistem","recib"]},
-    {q:"¿Cómo veo el perfil de un docente?",a:"Hacé clic en el nombre o avatar del docente en cualquier publicación o card. Verás su perfil completo con credenciales, historial de publicaciones y reseñas recibidas.",tags:["perfil","docente","ver","quien","credencial","historial"]},
-    {q:"¿Puedo chatear sin estar inscripto?",a:"No, el chat individual está disponible solo si estás inscripto en la clase del docente, o si el docente aceptó tu oferta de búsqueda. También hay un chat grupal dentro de cada curso para inscriptos.",tags:["chatear","sin inscrib","acceso chat","hablar sin"]},
-    {q:"¿Cómo agrego favoritos?",a:"En cada publicación de la lista hay un botón ★. Hacé clic para guardar. Podés ver todos tus favoritos en la sección 'Favoritos' del menú lateral.",tags:["favorit","guardar","★","star","lista"]},
-    {q:"¿Cómo cambio mi nombre visible?",a:"Andá a Mi cuenta → 'Editar perfil' → campo 'Nombre visible'. Ese nombre se mostrará en chats, reseñas y publicaciones.",tags:["nombre","display","cambiar","editar perfil","apodo"]},
-    {q:"¿Cómo funciona el chat grupal?",a:"Cada curso tiene un chat grupal visible para todos los inscriptos y el docente. Aparece dentro de la página del curso, abajo del contenido. El docente puede designar ayudantes que también tienen acceso especial.",tags:["grupal","grupo","chat curso","todos","ayudante"]},
-    {q:"¿Cómo cierro las inscripciones?",a:"Desde la página de tu curso (Mi cuenta → Contenido), usá el botón naranja 'Cerrar inscripciones' en la barra superior. Los alumnos ya inscriptos mantienen su acceso.",tags:["cerrar inscripciones","cupo","no más inscrib"]},
-    {q:"¿Cómo agrego a un ayudante?",a:"Dentro de la página del curso, en el panel 'Alumnos', hay una sección 'Ayudantes'. Ingresá el ID del usuario (lo encuentra en su Mi cuenta → Editar perfil) y agregalo. Tendrá acceso de edición y color especial en el chat.",tags:["ayudante","asistente","colaborad","agregar ayud"]},
-    {q:"¿Hay costo por usar Luderis?",a:"Luderis es gratuito para alumnos y docentes. El precio lo fija cada docente en su publicación y lo arreglan directamente.",tags:["costo","gratis","precio","pago","cobro","cuánto"]},
-  ];
-  // Matching mejorado: busca por tags y keywords
-  const matchFaq=(q)=>{
-    const ql=q.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-    // Buscar por tags primero
-    let best=null;let bestScore=0;
-    for(const f of FAQS){
-      let score=0;
-      for(const tag of (f.tags||[])){
-        if(ql.includes(tag.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")))score+=2;
-      }
-      // Buscar palabras de la pregunta
-      const words=f.q.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").split(" ").filter(w=>w.length>3);
-      for(const w of words){if(ql.includes(w))score+=1;}
-      if(score>bestScore){bestScore=score;best=f;}
-    }
-    return bestScore>=2?best:null;
-  };
+
+  const SYSTEM_LUDY=`Sos Ludy, la asistente virtual de Luderis. Luderis es una plataforma educativa argentina que conecta docentes y alumnos. Tu rol es responder cualquier pregunta sobre cómo usar la app, de forma clara, breve y amable. Usás español rioplatense (vos, hacé, etc).
+
+ESTRUCTURA DE LA APP:
+La app tiene 4 secciones principales en el menú: Explorar, Mis chats, Mis inscripciones y Mi cuenta.
+
+EXPLORAR:
+- Muestra publicaciones de otros usuarios. Hay 3 tipos de sección: Cursos (grupales con contenido estructurado), Clases (particulares 1 a 1) y Pedidos (alumnos que buscan docente).
+- Chips de sección arriba: "Cursos", "Clases", "Pedidos" — cambian el tipo de contenido mostrado.
+- Botón ✦ (estrella con destellos) abre la búsqueda con IA: describís lo que querés y la IA encuentra las publicaciones más relevantes.
+- Botón embudo (Filtros): abre panel lateral con filtros de modalidad (virtual/presencial/mixto), materia, ubicación, precio, fecha, sincronismo.
+- "Ordenar": menú para ordenar por Relevancia, Recientes, Calificados, Precio, Populares, Cercanos.
+- Tarjetas de publicación: muestran título, docente, precio, modalidad. Click → abre detalle.
+- En el detalle: botón "Ver curso" para cursos/clases, o "Ofertar" para pedidos.
+
+INSCRIPCIÓN A CURSOS/CLASES:
+- Abrís la publicación → "Ver curso/clase" → botón "Inscribirme" (o pago con Mercado Pago si tiene precio).
+- Una vez inscripto tenés acceso a todo el contenido del curso en "Mis inscripciones".
+- Si la clase es particular, al inscribirte se habilita el chat con el docente.
+
+PEDIDOS (antes llamados "Búsquedas"):
+- Los alumnos publican un "Pedido" describiendo qué quieren aprender.
+- Los docentes ven los pedidos en la sección Explorar → Pedidos y pueden enviar una oferta con precio y mensaje.
+- El alumno recibe la oferta en Mi cuenta → Actividad y puede aceptarla o rechazarla.
+- Si se acepta, se crea automáticamente un espacio de clase entre los dos.
+
+PUBLICAR (para docentes y alumnos):
+- Botón "+ Publicar" (arriba a la derecha en mobile, o en el menú lateral en desktop).
+- Tipos: "Ofrezco clases" (docente) o "Busco clases/Pedido" (alumno).
+- Al publicar una oferta (clase/curso), la IA hace una pregunta de verificación sobre tu materia. Si respondés bien, obtenés el badge ✓ Verificado en tu perfil.
+- Podés configurar: título, materia, descripción, precio (por hora/clase/mes o gratis), modalidad, ubicación, foto, modo (particular, grupal, curso), paquetes de clases con descuento, clase de prueba, fecha de inicio/fin para cursos.
+
+CURSOS (modo estructurado):
+- El docente crea "Contenido" con clases/módulos, archivos, videos de YouTube, links.
+- Dentro del curso hay tabs: Contenido, Chat grupal, Alumnos, Exámenes, Notas, Agenda.
+- Chat grupal: todos los inscriptos y el docente pueden chatear. El docente puede agregar "Co-docentes" (ayudantes) que también pueden moderar.
+- Exámenes: el docente crea quizzes de opción múltiple (nota automática) o entregables (el alumno sube archivo, el docente califica).
+- Notas: el docente ve tabla de notas de todos los alumnos. El alumno ve solo sus notas.
+- Agenda/calendario: el docente programa clases por día de la semana con horario.
+- Para finalizar: botón "Finalizar clase" (verde) desde la página del curso. Notifica a los inscriptos para que dejen reseña.
+- Para cerrar inscripciones: botón "Cerrar inscripciones" (naranja). Los inscriptos actuales mantienen acceso.
+
+MI CUENTA:
+- Tabs: Publicaciones, Estadísticas, Mis clases, Actividad, Credenciales, Reseñas, Alertas, Referidos, Billetera.
+- Publicaciones: tus propias publicaciones. Filtros: Todo / Cursos / Clases / Pedidos. Podés pausar, editar, eliminar.
+- Estadísticas: métricas de tus publicaciones (vistas, alumnos, conversión, rating, etc).
+- Mis clases: clases activas donde participás como co-docente/ayudante.
+- Actividad: ofertas enviadas por docentes a tus pedidos. Podés aceptar, rechazar o contraofertar. Badge rojo indica actividad nueva.
+- Credenciales: subís documentos (títulos, certificados, experiencia) que se muestran en tu perfil público.
+- Reseñas: reseñas que recibiste. Las reseñas las dejan los alumnos cuando el docente finaliza las clases.
+- Alertas ✦: configurás alertas automáticas con IA — describís qué tipo de publicación te interesa y te notificamos cuando aparezca una que coincida.
+- Referidos: código para invitar personas. Cada referido genera beneficios.
+- Billetera: saldo de Luderis (créditos por referidos u otras acciones).
+- Editar perfil: nombre visible, bio, foto de perfil, color de avatar, video de presentación (YouTube), disponibilidad inmediata, idiomas, tema (oscuro/claro).
+
+MIS CHATS:
+- Lista de conversaciones activas. Podés chatear con docentes de clases en las que estás inscripto.
+- Chat individual: solo si estás inscripto o si el docente aceptó tu oferta/pedido.
+- NO podés iniciar chat con cualquier persona — requiere inscripción previa.
+- Podés enviar texto, imágenes y archivos.
+
+MIS INSCRIPCIONES:
+- Lista de cursos y clases en los que estás inscripto.
+- Desde acá accedés al contenido, chat grupal, exámenes, notas de cada curso.
+- Badge rojo indica novedades sin ver (nuevo contenido, clase finalizada para valorar, etc).
+
+NOTIFICACIONES:
+- Campana (ícono de bell) arriba a la derecha → panel de notificaciones.
+- Tipos: nueva oferta recibida, oferta aceptada/rechazada, nueva inscripción al tus cursos, nuevo contenido, clase finalizada, alerta de búsqueda activada, pago aprobado, anuncios de Luderis.
+
+PAGOS (Mercado Pago):
+- Si el docente configuró precio, al inscribirse se redirige a Mercado Pago.
+- El pago va directamente al docente (Luderis no retiene comisión por ahora).
+- Si hay problema con el pago, intentá de nuevo o contactá al docente directamente.
+
+PERFIL PÚBLICO:
+- Hacé clic en el nombre o avatar de cualquier usuario para ver su perfil.
+- Muestra: foto, nombre, bio, materia principal, publicaciones activas, reseñas, rating, credenciales verificadas, disponibilidad.
+- Podés compartir el perfil con el botón de compartir.
+
+FAVORITOS:
+- Botón ★ en cada publicación para guardar.
+- Sección "Favoritos" en el menú lateral para ver los guardados.
+
+MODO OSCURO/CLARO:
+- Mi cuenta → Editar perfil → sección Tema → botones Claro / Oscuro.
+
+VERIFICACIÓN DE DOCENTE:
+- Al crear tu primera publicación de clase, la IA te hace una pregunta sobre tu materia.
+- Si respondés correctamente, obtenés el badge ✓ Verificado visible en tu perfil y publicaciones.
+- Aumenta la confianza de los alumnos.
+
+DISPONIBILIDAD INMEDIATA:
+- En Editar perfil podés activar "Disponible ahora" con horario hasta cuándo.
+- Aparece un badge verde "🟢 Disponible hoy" en tus publicaciones.
+
+REGLAS DE COMPORTAMIENTO:
+- Respondé SOLO sobre Luderis y cómo usar la app.
+- Si te preguntan algo que no tiene que ver con Luderis (matemáticas, recetas, etc), decí amablemente que solo podés ayudar con dudas de la plataforma.
+- Si después de explicar bien algo el usuario sigue con el mismo problema o menciona un error técnico/bug, incluí al final de tu respuesta exactamente este texto: "[NECESITA_SOPORTE]"
+- No uses ese tag si la consulta es una duda normal que pudiste responder.
+- Respondé siempre en español rioplatense, máximo 4 oraciones por respuesta. Sé conciso.`;
+
   const QUICK_ACTIONS=[
     {label:"¿Cómo me inscribo?",q:"¿Cómo me inscribo a un curso?"},
-    {label:"¿Cómo publico?",q:"¿Cómo publico una clase?"},
-    {label:"¿Cómo verifico mi perfil?",q:"¿Cómo verifico mi perfil?"},
-    {label:"¿Cómo funciona el quiz?",q:"¿Cómo funciona el sistema de exámenes/quizzes?"},
-    {label:"¿Cómo contacto al docente?",q:"¿Cómo contacto a un docente?"},
-    {label:"¿Cómo cambio mi nombre?",q:"¿Cómo cambio mi nombre visible?"},
+    {label:"¿Cómo publico?",q:"¿Cómo publico una clase o curso?"},
+    {label:"¿Cómo funciona el chat?",q:"¿Cuándo puedo chatear con un docente?"},
+    {label:"¿Cómo uso los pedidos?",q:"¿Cómo funciona el sistema de pedidos?"},
   ];
   const handleQuick=(quickQ)=>{setInput(quickQ);setTimeout(()=>sendMsg(quickQ),50);};
   const sendMsg=async(overrideQ)=>{
@@ -1914,17 +1984,20 @@ function ChatBotWidget(){
     setInput("");
     setMsgs(prev=>[...prev,{from:"user",text:q}]);
     setLoading(true);
-    // Check FAQs first
-    const faq=matchFaq(q);
-    if(faq){setTimeout(()=>{setMsgs(prev=>[...prev,{from:"bot",text:faq.a}]);setLoading(false);},600);return;}
-    // Use AI
     try{
-      const SYSTEM_CHATBOT=`Sos Ludy, la asistente virtual de Luderis, una plataforma educativa argentina que conecta docentes y estudiantes. Respondé como Ludy — amable, breve y clara.\n\nFUNCIONES PRINCIPALES:\n- Explorar: ver publicaciones de clases y búsquedas. Botón ✦ IA para búsqueda inteligente.\n- Publicar: botón "+ Publicar". Elegís "Busco clases" o "Ofrezco clases". Los docentes se verifican respondiendo una pregunta de IA sobre su tema.\n- Inscripción: abrís una publicación → Ver curso → Inscribirme.\n- Chat: disponible si estás inscripto o si el docente aceptó tu oferta.\n- Favoritos: botón ★ en cada publicación.\n- Ofertas: en búsquedas podés ofertar tus clases con precio y mensaje.\n- Quiz/Exámenes: en la página del curso, tab "Exámenes". Multiple choice (nota automática) o Entregable (corregido por docente).\n- Notas: tab "Notas" en el curso. Los alumnos ven sus notas, docentes ven tabla completa.\n- Verificación: los docentes suman badge ✓ respondiendo una pregunta de IA al publicar.\n- Mi cuenta: gestionar publicaciones, ver estadísticas, editar perfil y bio.\n- Modo oscuro/claro: Mi cuenta → Editar perfil → botones Tema.\n\nRespondé en español, de forma breve y amable. Si no podés resolver el problema en 2 intentos, sugerí contactar al soporte por WhatsApp.`;
-      const text=await sb.callIA(SYSTEM_CHATBOT,q,350,"").catch(()=>"Lo siento, el asistente no está disponible en este momento.");
-      // Mostrar siempre la opción de contacto humano junto a la respuesta de IA
-      setMsgs(prev=>[...prev,{from:"bot",text:text},{from:"bot",text:"¿Necesitás ayuda de una persona?",action:true}]);
+      const text=await sb.callIA(SYSTEM_LUDY,q,500,"").catch(()=>null);
+      if(!text){
+        setFailCount(n=>n+1);
+        setMsgs(prev=>[...prev,{from:"bot",text:"Lo siento, no pude procesar tu consulta en este momento.",action:true}]);
+        return;
+      }
+      const needsSupport=text.includes("[NECESITA_SOPORTE]");
+      const cleanText=text.replace("[NECESITA_SOPORTE]","").trim();
+      setMsgs(prev=>[...prev,{from:"bot",text:cleanText},...(needsSupport?[{from:"bot",text:"Si el problema persiste, podés hablar directo con el equipo:",action:true}]:[])]);
+      if(needsSupport)setFailCount(n=>n+1);
     }catch{
-      setMsgs(prev=>[...prev,{from:"bot",text:"Lo siento, no pude procesar tu consulta en este momento."},{from:"bot",text:"Podés hablar con un representante:",action:true}]);
+      setFailCount(n=>n+1);
+      setMsgs(prev=>[...prev,{from:"bot",text:"Hubo un error al procesar tu consulta.",action:true}]);
     }finally{setLoading(false);}
   };
   const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20Luderis","_blank","noopener,noreferrer");
