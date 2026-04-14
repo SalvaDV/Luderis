@@ -4911,12 +4911,12 @@ function InscripcionModal({post,session,onClose,onDone}){
   const inscribirDirecto=async(metodoElegido)=>{
     setLoadingInsc(true);
     try{
-      await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:session.user.email},session.access_token);
+      const esPruebaLocal=metodoElegido==="prueba";
+      await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:session.user.email,...(esPruebaLocal?{es_prueba:true}:{})},session.access_token);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
       // Info del mail según lo que eligió
-      const esPruebaLocal=metodoElegido==="prueba";
       const paqueteInfo=paqueteElegido&&!esPruebaLocal?`${paqueteElegido.nombre||paqueteElegido.clases+" clases"}`:null;
       const precioMail=esPruebaLocal?(parseFloat(post.precio_prueba)||0):precioEfectivo;
       const clasesCount=paqueteElegido&&!esPruebaLocal?(paqueteElegido.clases||1):1;
@@ -5149,8 +5149,27 @@ function InscripcionModal({post,session,onClose,onDone}){
                   )}
                 </>
               )}
-              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} clases`:esPrueba?"Clase de prueba":null} tipoPago={paqueteElegido?"paquete_clase":esPrueba?"clase":"clase"} clasesQty={paqueteElegido?paqueteElegido.clases:null}/>}
+              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} clases`:esPrueba?"Clase de prueba":null} tipoPago={paqueteElegido?"paquete_clase":esPrueba?"prueba":"clase"} clasesQty={paqueteElegido?paqueteElegido.clases:null}/>}
               {metodo==="stripe"&&<StripeCheckoutBtn post={post} session={session} onDone={onDone} onClose={onClose}/>}
+              {/* Opción temporal: inscribirse y coordinar el pago directamente con el docente */}
+              {!metodo&&(tienePrecio||esPrueba)&&(
+                <div style={{marginTop:4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,margin:"6px 0"}}>
+                    <div style={{flex:1,height:"1px",background:C.border}}/>
+                    <span style={{fontSize:11,color:C.muted}}>o también</span>
+                    <div style={{flex:1,height:"1px",background:C.border}}/>
+                  </div>
+                  <button onClick={()=>inscribirDirecto("sin_pago")} disabled={loadingInsc}
+                    style={{width:"100%",background:"transparent",border:`1px solid ${C.border}`,borderRadius:12,color:C.muted,padding:"11px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"border-color .15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                    📋 Inscribirme y coordinar el pago con el docente
+                  </button>
+                  <div style={{fontSize:10,color:C.muted,textAlign:"center",marginTop:5}}>
+                    El docente sabrá que estás interesado y acordarán el pago por chat
+                  </div>
+                </div>
+              )}
               {loadingInsc&&<div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center",padding:"8px",color:C.muted,fontSize:13}}><Spinner small/>Procesando…</div>}
               {errInsc&&<div style={{color:C.danger,fontSize:12,padding:"8px 12px",background:C.danger+"10",borderRadius:8,textAlign:"center"}}>{errInsc}</div>}
             </>

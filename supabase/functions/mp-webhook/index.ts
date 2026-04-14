@@ -119,6 +119,7 @@ serve(async (req) => {
           alumno_email:   meta.alumno_email,
           pagado_mp:      true,
           mp_payment_id:  mpPayId,
+          es_prueba:      tipo === "prueba",
         };
         // Para paquetes: guardar cantidad de clases
         if (meta.clases_cantidad) {

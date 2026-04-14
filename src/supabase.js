@@ -436,6 +436,25 @@ export const callIAChat = async (system, messages, maxTokens = 600) => {
   return data.content?.map(c => c.text || "").join("") || "";
 };
 
+// Ludy usa su propia edge function — el system prompt vive en el servidor
+export const callLudy = async (messages, maxTokens = 600) => {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/ludy-chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify({ messages, max_tokens: maxTokens }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.text || "";
+};
+
 export const verificarConIA = async (titulo, materia, descripcion, respuesta, userToken = "") => {
   const contexto = `Tema: "${titulo}"${descripcion ? ` — ${descripcion.slice(0, 200)}` : ""}. Materia: "${materia}".`;
   const system = `Sos un evaluador de conocimiento para una plataforma educativa. Evaluás si el docente conoce el tema específico que está publicando. SIEMPRE respondé con JSON válido sin markdown, SOLO el objeto JSON. Formato: {"pregunta":"...","correcta":true,"feedback":"..."} - "pregunta": una pregunta técnica y específica sobre el tema exacto del título/descripción - "correcta": true si demuestra conocimiento básico del tema, false si está vacía o incorrecta - "feedback": máximo 1 oración`;
