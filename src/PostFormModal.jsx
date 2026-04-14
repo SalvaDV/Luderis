@@ -56,35 +56,30 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
 const STREAK_MILESTONES=[3,7,14,30,60,100,365];
 const STREAK_LABELS={3:"3 días 🌱",7:"1 semana 🔥",14:"2 semanas ⚡",30:"1 mes 🏆",60:"2 meses 💎",100:"100 días 🦁",365:"1 año 👑"};
 
-function calcStreak(email){
-  try{
-    const KEY=`cl_streak_${email}`;
-    const DAYS_KEY=`cl_streak_days_${email}`;
-    const today=new Date().toDateString();
-    const last=localStorage.getItem(KEY);
-    const days=parseInt(localStorage.getItem(DAYS_KEY)||"0");
-    if(!last){localStorage.setItem(KEY,today);localStorage.setItem(DAYS_KEY,"1");return 1;}
-    const diff=Math.floor((new Date()-new Date(last))/(86400000));
-    if(diff===0)return days||1;
-    if(diff===1){const n=(days||1)+1;localStorage.setItem(DAYS_KEY,String(n));localStorage.setItem(KEY,today);return n;}
-    localStorage.setItem(DAYS_KEY,"1");localStorage.setItem(KEY,today);return 1;
-  }catch{return 1;}
-}
+// calcStreak ya no existe en frontend — la fuente de verdad es el servidor (RPC actualizar_streak)
 
 function StreakBadge({session}){
-  const [streak,setStreak]=React.useState(()=>calcStreak(session.user.email));
+  const [streak,setStreak]=React.useState(1);
   const [showModal,setShowModal]=React.useState(false);
   const [newMilestone,setNewMilestone]=React.useState(null);
 
   React.useEffect(()=>{
-    // Detectar si acabamos de alcanzar un milestone
-    const prev=parseInt(localStorage.getItem(`cl_streak_days_${session.user.email}_prev`)||"0");
-    if(STREAK_MILESTONES.includes(streak)&&streak>prev){
-      setNewMilestone(streak);
-      localStorage.setItem(`cl_streak_days_${session.user.email}_prev`,String(streak));
-      setTimeout(()=>setNewMilestone(null),5000);
-    }
-  },[streak]);
+    // Llamamos al servidor para obtener/actualizar la racha con hora confiable
+    if(!session?.user?.id||!session?.access_token)return;
+    sb.actualizarStreak(session.user.id,session.access_token)
+      .then(dias=>{
+        const n=typeof dias==="number"?dias:1;
+        setStreak(n);
+        // Detectar si acabamos de alcanzar un milestone
+        const prev=parseInt(localStorage.getItem(`cl_streak_prev_${session.user.id}`)||"0");
+        if(STREAK_MILESTONES.includes(n)&&n>prev){
+          setNewMilestone(n);
+          localStorage.setItem(`cl_streak_prev_${session.user.id}`,String(n));
+          setTimeout(()=>setNewMilestone(null),5000);
+        }
+      })
+      .catch(()=>{}); // fire & forget: si falla el RPC, el badge queda en 1
+  },[session?.user?.id,session?.access_token]);
 
   const nextMilestone=STREAK_MILESTONES.find(m=>m>streak)||null;
   const progress=nextMilestone?(streak/(nextMilestone))*100:100;

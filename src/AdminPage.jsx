@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
-import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm } from "./shared";
+import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
 
 // ─── ADMIN EMAILS — solo estos pueden acceder ─────────────────────────────────
 const FALLBACK_ADMIN = "salvadordevedia@gmail.com";
@@ -161,12 +161,12 @@ function OverviewTab({ session }) {
   useEffect(() => {
     let mounted=true;
     Promise.all([
-      adminDb("usuarios?select=id,created_at,email,rol,bloqueado", "GET", null, session.access_token).catch(() => []),
-      adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda,materia,autor_email,autor_nombre", "GET", null, session.access_token).catch(() => []),
-      adminDb("inscripciones?select=id,created_at,publicacion_id", "GET", null, session.access_token).catch(() => []),
-      adminDb("pagos?select=id,monto,estado,created_at", "GET", null, session.access_token).catch(() => []),
-      adminDb("denuncias?select=id,created_at,revisada", "GET", null, session.access_token).catch(() => []),
-      adminDb("rese%C3%B1as?select=id,estrellas,created_at", "GET", null, session.access_token).catch(() => []),
+      adminDb("usuarios?select=id,created_at,email,rol,bloqueado", "GET", null, session.access_token).catch(e=>{logError("admin/usuarios",e);return[];}),
+      adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda,materia,autor_email,autor_nombre", "GET", null, session.access_token).catch(e=>{logError("admin/publicaciones",e);return[];}),
+      adminDb("inscripciones?select=id,created_at,publicacion_id", "GET", null, session.access_token).catch(e=>{logError("admin/inscripciones",e);return[];}),
+      adminDb("pagos?select=id,monto,estado,created_at", "GET", null, session.access_token).catch(e=>{logError("admin/pagos",e);return[];}),
+      adminDb("denuncias?select=id,created_at,revisada", "GET", null, session.access_token).catch(e=>{logError("admin/denuncias",e);return[];}),
+      adminDb("rese%C3%B1as?select=id,estrellas,created_at", "GET", null, session.access_token).catch(e=>{logError("admin/reseñas",e);return[];}),
     ]).then(([users, pubs, insc, pagos, denuncias, resenas]) => {
       if(!mounted)return;
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);

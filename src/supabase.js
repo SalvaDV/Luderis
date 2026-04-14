@@ -639,6 +639,11 @@ export const liberarPagoClase = async (claseId, token) => {
 export const getPagosDocente = (email, token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
 
+// ── Streak / Racha ────────────────────────────────────────────────────────────
+// Llama al RPC del servidor para calcular la racha con hora confiable (no manipulable por el cliente)
+export const actualizarStreak = (usuarioId, token) =>
+  rpc("actualizar_streak", { p_usuario_id: usuarioId }, token);
+
 // ── Alertas de búsquedas por materia ──────────────────────────────────────────
 
 export const getAlertasBusquedas = (email, token) =>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import * as sb from "./supabase";
-import { C, FONT, LUD, t, Btn } from "./shared";
+import { C, FONT, LUD, t, Btn, logError } from "./shared";
 
 function AuthScreen({onLogin}){
   const [mode,setMode]=useState("login");const [email,setEmail]=useState("");const [pass,setPass]=useState("");const [pass2,setPass2]=useState("");
@@ -20,27 +20,27 @@ function AuthScreen({onLogin}){
         if(r.access_token){
           const uid=r.user?.id;
           const nombre=email.split("@")[0];
-          if(uid){try{await sb.insertUsuario({id:uid,email,nombre},r.access_token);}catch{}}
+          if(uid){try{await sb.insertUsuario({id:uid,email,nombre},r.access_token);}catch(e){logError("insertUsuario en registro",e);}}
           // Email de bienvenida (fire & forget)
-          sb.sendEmail("bienvenida",email,{nombre,email},r.access_token).catch(()=>{});
+          sb.sendEmail("bienvenida",email,{nombre,email},r.access_token).catch(e=>logError("email bienvenida",e));
           // Registrar referido si hay código guardado
           try{
             const refCode=localStorage.getItem("cl_ref_code");
             if(refCode&&uid){
               // El código es btoa(user.id) — decodificamos
               let referidorId=null;
-              try{referidorId=atob(refCode.padEnd(refCode.length+((4-refCode.length%4)%4),"="));}catch{}
+              try{referidorId=atob(refCode.padEnd(refCode.length+((4-refCode.length%4)%4),"="));}catch(e){logError("decodificar ref_code",e);}
               if(referidorId){
                 await sb.db("referidos","POST",{
                   referidor_id:referidorId,
                   referido_id:uid,
                   referido_email:email,
                   estado:"pendiente",
-                },r.access_token,"return=minimal").catch(()=>{});
+                },r.access_token,"return=minimal").catch(e=>logError("registrar referido",e));
                 localStorage.removeItem("cl_ref_code");
               }
             }
-          }catch{}
+          }catch(e){logError("bloque referidos",e);}
           sb.saveSession(r);onLogin(r);
         }else setOk("Revisá tu email para confirmar tu cuenta.");
       }else{

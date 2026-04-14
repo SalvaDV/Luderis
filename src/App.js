@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import {
   C, FONT, LUD, _themeKey,
-  applyTheme, toast, ToastContainer,
+  applyTheme, toast, ToastContainer, logError,
   MATERIAS, CATEGORIAS_DATA, getPubTipo, TIPO_PUB,
   avatarColor, fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   MONEDA_SYM, setLang, STRINGS, t,
@@ -1010,7 +1010,7 @@ function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,toggling,
     setLoadingDelete(true);
     try{
       if(post.tipo==="busqueda"&&ofertaAceptadaInfo?.email){
-        sb.insertNotificacion({usuario_id:null,alumno_email:ofertaAceptadaInfo.email,tipo:"busqueda_eliminada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+        sb.insertNotificacion({usuario_id:null,alumno_email:ofertaAceptadaInfo.email,tipo:"busqueda_eliminada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(e=>logError("notif busqueda_eliminada",e));
       }
       setConfirmDelete(false);
       onDelete(post);
@@ -1093,7 +1093,7 @@ function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
       },session.access_token);
       // Notificar al otro
       const destinatario=miRol==="alumno"?oferta.ofertante_email:oferta.busqueda_autor_email;
-      sb.insertNotificacion({usuario_id:null,alumno_email:destinatario,tipo:"contraoferta",publicacion_id:oferta.busqueda_id,pub_titulo:oferta.busqueda_titulo,leida:false},session.access_token).catch(()=>{});
+      sb.insertNotificacion({usuario_id:null,alumno_email:destinatario,tipo:"contraoferta",publicacion_id:oferta.busqueda_id,pub_titulo:oferta.busqueda_titulo,leida:false},session.access_token).catch(e=>logError("notif contraoferta",e));
       // Email al destinatario de la contraoferta
       const miNombreContra=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("contraoferta",destinatario,{
@@ -1104,7 +1104,7 @@ function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
         precio_nuevo:precio,
         tipo_precio:tipo,
         mensaje:msg,
-      },session.access_token).catch(()=>{});
+      },session.access_token).catch(e=>logError("email contraoferta",e));
       onEnviada();
     }catch(e){alert(e.message);}finally{setSaving(false);}
   };
@@ -1157,15 +1157,15 @@ function OfertasRecibidasModal({post,session,onClose,onContactar}){
       await sb.updateOfertaBusq(o.id,{estado,leida:true},session.access_token);
       if(estado==="aceptada"){
         await sb.updatePublicacion(post.id,{activo:false},session.access_token).catch(e=>console.warn("No se pudo desactivar busqueda:",e.message));
-        sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_aceptada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+        sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_aceptada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(e=>logError("notif oferta_aceptada",e));
         // Email al docente cuya oferta fue aceptada
-        sb.sendEmail("oferta_aceptada",o.ofertante_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]},session.access_token).catch(()=>{});
+        sb.sendEmail("oferta_aceptada",o.ofertante_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]},session.access_token).catch(e=>logError("email oferta_aceptada",e));
         const ofertaActualizada={...o,estado:"aceptada",busqueda_titulo:post.titulo,busqueda_autor_email:session.user.email};
         setAcuerdoOferta(ofertaActualizada);
         await cargar();
       } else {
         if(estado==="rechazada"){
-          sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_rechazada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+          sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_rechazada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(e=>logError("notif oferta_rechazada",e));
         }
         await cargar();
       }
@@ -1688,7 +1688,7 @@ function FinalizarClaseModal({post,session,onClose,onFinalizado}){
   const finalizar=async()=>{setSaving(true);try{
     await sb.updatePublicacion(post.id,{finalizado:true},session.access_token);// no silenciar — si falla, no marcar inscripciones
     await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:new Date().toISOString()},session.access_token)));
-    await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"valorar_curso",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));
+    await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"valorar_curso",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(e=>logError("notif valorar_curso",e))));
     onFinalizado();onClose();
   }catch(e){alert("Error al finalizar: "+e.message);}finally{setSaving(false);}};
   return(
@@ -1733,16 +1733,16 @@ function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
       setNotifs((data||[]).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)));
       // Auto-marcar como leídas después de 2s (el usuario ya las vio)
       autoMarkTimer.current=setTimeout(()=>{
-        sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(()=>{});
+        sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(e=>logError("auto marcar notifs leídas",e));
         setNotifs(p=>p.map(n=>({...n,leida:true})));
       },2000);
-    }).catch(()=>{}).finally(()=>setLoading(false));
+    }).catch(e=>logError("cargar notificaciones",e)).finally(()=>setLoading(false));
     return()=>clearTimeout(autoMarkTimer.current);
   },[open,session.user.email,session.access_token]);
 
   const marcarTodo=async()=>{
     clearTimeout(autoMarkTimer.current);
-    await sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(()=>{});
+    await sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(e=>logError("marcar todo leído",e));
     setNotifs(p=>p.map(n=>({...n,leida:true})));
   };
 

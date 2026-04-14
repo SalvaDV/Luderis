@@ -11,6 +11,12 @@ export const C={...THEMES[_themeKey()]};
 export function applyTheme(key){Object.assign(C,THEMES[key]||THEMES.dark);try{localStorage.setItem("cl_theme",key);}catch{}}
 export const FONT="'Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
 
+// ─── LOGGING ─────────────────────────────────────────────────────────────────
+// Centralizado para poder agregar Sentry u otro servicio después sin tocar cada archivo
+export const logError = (context, error) => {
+  console.error(`[Luderis] ${context}:`, error);
+};
+
 // ─── TOAST GLOBAL ─────────────────────────────────────────────────────────────
 let _toastCb=null;
 export const toast=(msg,type="info",dur=3000)=>{if(_toastCb)_toastCb({msg,type,id:Date.now()});};
