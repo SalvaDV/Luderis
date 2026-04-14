@@ -412,6 +412,30 @@ export const callIA = async (system, userMsg, maxTokens = 600, userToken = "") =
   return data.content?.map(c => c.text || "").join("") || "";
 };
 
+// Multi-turn: acepta el historial completo como array [{role:"user"|"assistant", content:"..."}]
+export const callIAChat = async (system, messages, maxTokens = 600) => {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-proxy`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: maxTokens,
+      system,
+      messages,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content?.map(c => c.text || "").join("") || "";
+};
+
 export const verificarConIA = async (titulo, materia, descripcion, respuesta, userToken = "") => {
   const contexto = `Tema: "${titulo}"${descripcion ? ` — ${descripcion.slice(0, 200)}` : ""}. Materia: "${materia}".`;
   const system = `Sos un evaluador de conocimiento para una plataforma educativa. Evaluás si el docente conoce el tema específico que está publicando. SIEMPRE respondé con JSON válido sin markdown, SOLO el objeto JSON. Formato: {"pregunta":"...","correcta":true,"feedback":"..."} - "pregunta": una pregunta técnica y específica sobre el tema exacto del título/descripción - "correcta": true si demuestra conocimiento básico del tema, false si está vacía o incorrecta - "feedback": máximo 1 oración`;
