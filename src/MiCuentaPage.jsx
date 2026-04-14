@@ -87,7 +87,7 @@ function MiActividadCard({session}){
   );
 }
 
-function DocenteStats({pubs,reseñas,inscritosMap}){
+function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[]}){
   const [seccion,setSeccion]=useState("resumen");
   const ofertas=pubs.filter(p=>p.tipo==="oferta"&&p.activo!==false&&!p.finalizado);
   const finalizadas=pubs.filter(p=>p.tipo==="oferta"&&!!p.finalizado);
@@ -95,6 +95,15 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
   const totalAlumnos=Object.values(inscritosMap||{}).reduce((a,b)=>a+b,0);
   const avg=calcAvg(reseñas);
   const totalVistas=pubs.reduce((a,p)=>a+(parseInt(p.vistas)||0),0);
+
+  // Alumnos activos vs finalizados
+  const alumnosActivos=ofertas.reduce((a,p)=>a+(inscritosMap[p.id]||0),0);
+  const alumnosFinalizados=finalizadas.reduce((a,p)=>a+(inscritosMap[p.id]||0),0);
+
+  // Tasa de conversión: ofertas enviadas en pedidos → aceptadas
+  const ofertasEnv=misOfertasEnv.length;
+  const ofertasAcept=misOfertasEnv.filter(o=>o.estado==="aceptada").length;
+  const tasaOfertas=ofertasEnv>0?Math.round((ofertasAcept/ofertasEnv)*100):null;
 
   // Ingresos estimados — suma de precio * inscriptos por pub (solo con precio definido)
   const ingresosEst=todasOfertas.reduce((acc,p)=>{
@@ -201,7 +210,7 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
             ))}
           </div>
 
-          {/* Ingresos estimados */}
+          {/* Ingresos estimados + conversión */}
           <div style={{...statStyle,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Ingresos estimados</div>
@@ -214,6 +223,44 @@ function DocenteStats({pubs,reseñas,inscritosMap}){
               <div style={{fontSize:10,color:C.muted}}>visitas → inscriptos</div>
             </div>}
           </div>
+
+          {/* Alumnos activos vs finalizados */}
+          {(alumnosActivos>0||alumnosFinalizados>0)&&(
+            <div style={statStyle}>
+              <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:10}}>ALUMNOS POR ESTADO</div>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <div style={{flex:1,textAlign:"center",background:C.success+"12",borderRadius:10,padding:"10px 6px"}}>
+                  <div style={{fontSize:22,fontWeight:700,color:C.success}}>{alumnosActivos}</div>
+                  <div style={{fontSize:10,color:C.muted}}>En clases activas</div>
+                </div>
+                <div style={{flex:1,textAlign:"center",background:C.purple+"12",borderRadius:10,padding:"10px 6px"}}>
+                  <div style={{fontSize:22,fontWeight:700,color:C.purple}}>{alumnosFinalizados}</div>
+                  <div style={{fontSize:10,color:C.muted}}>En clases finalizadas</div>
+                </div>
+              </div>
+              {/* Barra de proporción */}
+              {totalAlumnos>0&&(
+                <div style={{height:6,background:C.border,borderRadius:4,overflow:"hidden",display:"flex"}}>
+                  <div style={{height:"100%",background:C.success,width:`${(alumnosActivos/totalAlumnos)*100}%`,transition:"width .5s ease"}}/>
+                  <div style={{height:"100%",background:C.purple,width:`${(alumnosFinalizados/totalAlumnos)*100}%`,transition:"width .5s ease"}}/>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tasa de conversión de ofertas en pedidos */}
+          {tasaOfertas!==null&&(
+            <div style={{...statStyle,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Ofertas en pedidos</div>
+                <div style={{fontSize:10,color:C.muted}}>{ofertasAcept} aceptadas de {ofertasEnv} enviadas</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:24,fontWeight:700,color:tasaOfertas>=50?C.success:C.warn}}>{tasaOfertas}%</div>
+                <div style={{fontSize:10,color:C.muted}}>tasa de aceptación</div>
+              </div>
+            </div>
+          )}
 
           {/* Actividad mensual */}
           {mesesData.some(d=>d.v>0)&&(
@@ -1966,7 +2013,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {tabCuenta==="estadisticas"&&(
         <div>
           <MiActividadCard session={session}/>
-          {loading?<Spinner/>:<DocenteStats pubs={pubs} reseñas={reseñas} inscritosMap={inscritosMap}/>}
+          {loading?<Spinner/>:<DocenteStats pubs={pubs} reseñas={reseñas} inscritosMap={inscritosMap} misOfertasEnv={misOfertasEnv}/>}
         </div>
       )}
 

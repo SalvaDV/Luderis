@@ -359,9 +359,62 @@ export default function App(){
       setOfertasAceptadasNuevas(notifsCuenta.length);
     }).catch(()=>{});
   },[session]);
+  // ── Supabase Realtime: notificaciones instantáneas ─────────────────────────
+  useEffect(()=>{
+    if(!session?.user?.email)return;
+    const email=session.user.email;
+    const NOTIF_LABELS={
+      nueva_inscripcion:{icon:"🎓",label:"Nueva inscripción",type:"success"},
+      nueva_oferta:{icon:"📩",label:"Nueva oferta",type:"info"},
+      oferta_aceptada:{icon:"✅",label:"Oferta aceptada",type:"success"},
+      oferta_rechazada:{icon:"❌",label:"Oferta rechazada",type:"error"},
+      contraoferta:{icon:"🔄",label:"Contraoferta recibida",type:"info"},
+      nuevo_mensaje:{icon:"💬",label:"Mensaje nuevo",type:"info"},
+      clase_iniciada:{icon:"📹",label:"¡Clase en vivo!",type:"success"},
+      nuevo_contenido:{icon:"📚",label:"Nuevo contenido",type:"info"},
+      valorar_curso:{icon:"⭐",label:"Valorar curso",type:"info"},
+      pago_aprobado_mp:{icon:"💳",label:"Pago aprobado",type:"success"},
+      sistema:{icon:"📣",label:"Anuncio de Luderis",type:"info"},
+    };
+    let ws,heartbeat,dead=false;
+    const connect=()=>{
+      if(dead)return;
+      try{
+        ws=new WebSocket(`${sb.SUPABASE_URL.replace("https","wss")}/realtime/v1/websocket?apikey=${sb.SUPABASE_KEY}&vsn=1.0.0`);
+        ws.onopen=()=>{
+          ws.send(JSON.stringify({
+            topic:"realtime:public:notificaciones",event:"phx_join",
+            payload:{config:{broadcast:{ack:false,self:false},presence:{key:""},
+              postgres_changes:[{event:"INSERT",schema:"public",table:"notificaciones",filter:`alumno_email=eq.${email}`}]
+            }},ref:"1"
+          }));
+          heartbeat=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));},25000);
+        };
+        ws.onmessage=(e)=>{
+          try{
+            const msg=JSON.parse(e.data);
+            if(msg.event==="postgres_changes"||(msg.payload?.data?.type==="INSERT")){
+              const record=msg.payload?.data?.record||msg.payload?.record;
+              refreshUnread();
+              if(record?.tipo){
+                const info=NOTIF_LABELS[record.tipo]||{icon:"🔔",label:"Notificación",type:"info"};
+                const texto=record.pub_titulo?`${info.icon} ${info.label} — ${record.pub_titulo}`:`${info.icon} ${info.label}`;
+                toast(texto,info.type,5000);
+              }
+            }
+          }catch{}
+        };
+        ws.onclose=()=>{clearInterval(heartbeat);if(!dead)setTimeout(connect,5000);};
+        ws.onerror=()=>ws.close();
+      }catch{}
+    };
+    connect();
+    return()=>{dead=true;clearInterval(heartbeat);try{ws?.close();}catch{}};
+  },[session?.user?.email,refreshUnread]);
+
   useEffect(()=>{
     refreshUnread();
-    let t=setInterval(refreshUnread,8000);
+    let t=setInterval(refreshUnread,30000);// fallback — Realtime cubre el tiempo real
     // Share link handler — si viene ?pub=ID en la URL, abrir el popup
     try{
       const params=new URLSearchParams(window.location.search);
@@ -388,7 +441,7 @@ export default function App(){
       clearInterval(t);
       if(!document.hidden){
         refreshUnread(); // actualizar inmediatamente al volver
-        t=setInterval(refreshUnread,8000);
+        t=setInterval(refreshUnread,30000);
       }
     };
     document.addEventListener("visibilitychange",onVisibility);
