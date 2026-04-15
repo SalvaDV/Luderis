@@ -524,23 +524,14 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 </div>
               </div>
             )}
-            {/* Tipo de publicación — cards para alumno (busqueda) o docente ofertando */}
+            {/* Tipo de publicación — para busquedas siempre es clase particular */}
+            {tipo==="busqueda"&&modo!=="particular"&&(()=>{setModo("particular");return null;})()}
             {tipo==="busqueda"&&(
-              <div>
-                <Label>¿Qué estás buscando?</Label>
-                <div style={{display:"flex",gap:10}}>
-                  {[
-                    {v:"curso",icon:"📚",label:"Un curso",sub:"Contenido estructurado con múltiples clases",color:"#7B3FBE"},
-                    {v:"particular",icon:"🎯",label:"Clases particulares",sub:"Clases 1 a 1 o en grupo pequeño",color:"#7B5CF0"},
-                  ].map(({v,icon,label,sub,color})=>(
-                    <button key={v} onClick={()=>setModo(v)}
-                      style={{flex:1,padding:"16px 12px",borderRadius:16,border:`2px solid ${modo===v?color:C.border}`,background:modo===v?color+"15":C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s",position:"relative"}}>
-                      {modo===v&&<div style={{position:"absolute",top:10,right:10,width:18,height:18,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900}}>✓</div>}
-                      <div style={{fontSize:32,marginBottom:8}}>{icon}</div>
-                      <div style={{fontSize:14,fontWeight:700,color:modo===v?color:C.text,marginBottom:4}}>{label}</div>
-                      <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{sub}</div>
-                    </button>
-                  ))}
+              <div style={{background:"#7B5CF0"+"15",border:"2px solid #7B5CF0",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:32}}>🎯</span>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#7B5CF0"}}>Pedido de clase particular</div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2}}>Los docentes podrán ver tu pedido y contactarte</div>
                 </div>
               </div>
             )}

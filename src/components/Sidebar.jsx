@@ -108,12 +108,12 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
       <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
         {/* Campana notificaciones */}
         <button onClick={()=>{if(typeof window._openNotifPanel==="function")window._openNotifPanel();}}
-          style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,border:`1px solid ${(unreadCount+ofertasCount+notifCount)>0?C.accent+"40":C.border}`,background:(unreadCount+ofertasCount+notifCount)>0?C.accentDim:"none",cursor:"pointer",fontFamily:FONT,fontSize:12,color:(unreadCount+ofertasCount+notifCount)>0?C.accent:C.muted,width:"100%",transition:"all .15s"}}
+          style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,border:`1px solid ${(unreadCount+notifCount)>0?C.accent+"40":C.border}`,background:(unreadCount+notifCount)>0?C.accentDim:"none",cursor:"pointer",fontFamily:FONT,fontSize:12,color:(unreadCount+notifCount)>0?C.accent:C.muted,width:"100%",transition:"all .15s"}}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=(unreadCount+ofertasCount+notifCount)>0?C.accent+"40":C.border;e.currentTarget.style.color=(unreadCount+ofertasCount+notifCount)>0?C.accent:C.muted;}}>
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=(unreadCount+notifCount)>0?C.accent+"40":C.border;e.currentTarget.style.color=(unreadCount+notifCount)>0?C.accent:C.muted;}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span style={{flex:1}}>Notificaciones</span>
-          {(unreadCount+ofertasCount+notifCount)>0&&<span style={{background:C.danger,color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px"}}>{Math.min(unreadCount+ofertasCount+notifCount,99)}</span>}
+          {(unreadCount+notifCount)>0&&<span style={{background:C.danger,color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px"}}>{Math.min(unreadCount+notifCount,99)}</span>}
         </button>
         <div style={{display:"flex",gap:6}}>
           <button onClick={onToggleTheme}
