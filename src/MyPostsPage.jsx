@@ -160,6 +160,7 @@ export function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
 export function OfertasRecibidasModal({post,session,onClose,onContactar}){
   const [ofertas,setOfertas]=useState([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(null);
   const [acuerdoOferta,setAcuerdoOferta]=useState(null);
+  const [contraModal,setContraModal]=useState(null);// oferta para contra-negociar
   const cargar=useCallback(async()=>{
     const all=await sb.getOfertasSobre(post.id,session.access_token);
     // Marcar como leídas en state local inmediatamente (borra el borde amarillo al instante)
@@ -233,7 +234,7 @@ export function OfertasRecibidasModal({post,session,onClose,onContactar}){
                     )}
                     {o.estado==="pendiente"&&<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                       <button onClick={()=>responder(o,"aceptada")} disabled={saving===o.id} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:8,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>✓ Aceptar</button>
-                      <button onClick={()=>{onContactar({id:post.id,autor_email:o.ofertante_email,titulo:post.titulo,autor_nombre:o.ofertante_nombre});onClose();}} disabled={saving===o.id} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>💬 Negociar</button>
+                      <button onClick={()=>setContraModal(o)} disabled={saving===o.id} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>↔ Negociar precio</button>
                       <button onClick={()=>responder(o,"rechazada")} disabled={saving===o.id} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:8,color:C.danger,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>✗ Rechazar</button>
                       <span style={{fontSize:11,color:C.muted,alignSelf:"center"}}>{fmt(o.created_at)}</span>
                     </div>}
@@ -252,6 +253,7 @@ export function OfertasRecibidasModal({post,session,onClose,onContactar}){
       </div>
     </Modal>
     {acuerdoOferta&&<AcuerdoModal oferta={acuerdoOferta} session={session} onClose={()=>setAcuerdoOferta(null)} onConfirmado={()=>{cargar();setAcuerdoOferta(null);}}/>}
+    {contraModal&&<ContraofertaModal oferta={{...contraModal,busqueda_titulo:post.titulo}} miRol="alumno" session={session} onClose={()=>setContraModal(null)} onEnviada={()=>{setContraModal(null);cargar();}}/>}
     </>
   );
 }

@@ -481,7 +481,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"40px",color:C.muted,fontSize:14}}>No hay pedidos activos en este momento.</div>
                   :todosPedidos.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:TIPO_PUB.pedido.bg,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",borderTop:`3px solid ${TIPO_PUB.pedido.accent}`,transition:"all .18s"}}
+                      style={{background:TIPO_PUB.pedido.dim,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",borderTop:`3px solid ${TIPO_PUB.pedido.accent}`,transition:"all .18s"}}
                       onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.dim}`;}}
                       onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
                       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
@@ -592,7 +592,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <div style={{display:"flex",gap:14}} className="cl-hscroll">
                   {data.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.bg:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${getPubTipo(p).accent}`}}
+                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${getPubTipo(p).accent}`}}
                       onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
                       onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
                       {/* Avatar + nombre */}

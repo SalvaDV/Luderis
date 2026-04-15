@@ -2056,27 +2056,34 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 {ofertasEnviadas.length>0&&(
                   <div>
                     <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:10}}>Mis ofertas enviadas</div>
-                    {ofertasEnviadas.map(o=>(
-                      <div key={o.id} style={{background:C.surface,border:`1px solid ${o.estado==="aceptada"?C.success+"50":o.estado==="rechazada"?C.danger+"50":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                    {ofertasEnviadas.map(o=>{
+                      const tieneContraAlumno=o.estado==="pendiente"&&o.contraoferta_precio&&o.contraoferta_de==="alumno";
+                      return(
+                      <div key={o.id} style={{background:C.surface,border:`1px solid ${tieneContraAlumno?"#C85CE050":o.estado==="aceptada"?C.success+"50":o.estado==="rechazada"?C.danger+"50":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>{o.busqueda_titulo}</div>
                             <div style={{fontSize:12,color:C.muted}}>Para: {o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email)}</div>
                             {o.precio&&<div style={{fontSize:12,color:C.accent,fontWeight:600,marginTop:4}}>{fmtPrice(o.precio)}/{o.precio_tipo}</div>}
+                            {tieneContraAlumno&&<div style={{fontSize:12,color:"#C85CE0",fontWeight:600,marginTop:2}}>↔ Contraoferta: {fmtPrice(o.contraoferta_precio)}/{o.contraoferta_tipo||o.precio_tipo}</div>}
                           </div>
-                          <span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:20,flexShrink:0,
-                            background:o.estado==="aceptada"?C.success+"12":o.estado==="rechazada"?C.danger+"12":"#F59E0B12",
-                            color:o.estado==="aceptada"?C.success:o.estado==="rechazada"?C.danger:"#B45309",
-                            border:`1px solid ${o.estado==="aceptada"?C.success+"30":o.estado==="rechazada"?C.danger+"30":"#F59E0B30"}`}}>
-                            {o.estado==="aceptada"?"✓ Aceptada":o.estado==="rechazada"?"✕ Rechazada":o.estado==="retirada"?"Retirada":"Pendiente"}
-                          </span>
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                            <span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:20,flexShrink:0,
+                              background:tieneContraAlumno?"#C85CE015":o.estado==="aceptada"?C.success+"12":o.estado==="rechazada"?C.danger+"12":"#F59E0B12",
+                              color:tieneContraAlumno?"#C85CE0":o.estado==="aceptada"?C.success:o.estado==="rechazada"?C.danger:"#B45309",
+                              border:`1px solid ${tieneContraAlumno?"#C85CE033":o.estado==="aceptada"?C.success+"30":o.estado==="rechazada"?C.danger+"30":"#F59E0B30"}`}}>
+                              {tieneContraAlumno?"↔ Negociando":o.estado==="aceptada"?"✓ Aceptada":o.estado==="rechazada"?"✕ Rechazada":o.estado==="retirada"?"Retirada":"Pendiente"}
+                            </span>
+                            {tieneContraAlumno&&<ContraRespondedor oferta={o} session={session} onActualizado={cargar} onVer={()=>{}} onChat={(of)=>onOpenChat({id:of.busqueda_id,autor_email:of.busqueda_autor_email,titulo:of.busqueda_titulo,autor_nombre:of.busqueda_autor_nombre||safeDisplayName(null,of.busqueda_autor_email)})}/>}
+                          </div>
                         </div>
                         <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
                           {o.estado==="aceptada"&&<Btn onClick={()=>onOpenChat({id:o.busqueda_id,autor_email:o.busqueda_autor_email,titulo:o.busqueda_titulo,autor_nombre:o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email)})} style={{padding:"5px 14px",fontSize:12,borderRadius:20}}>Chatear</Btn>}
                           <button onClick={()=>descartarOferta(o.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"5px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Ocultar</button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 {ofertasEnviadas.length===0&&ofertasAceptadasNuevas.length===0&&(
