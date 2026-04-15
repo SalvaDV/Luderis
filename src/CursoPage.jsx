@@ -667,7 +667,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           value={input}
           onChange={e=>{setInput(e.target.value);emitirEscribiendo();}}
           onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
-          placeholder="Escribí al grupo… (Shift+Enter para nueva línea)"
+          placeholder="Escribí al grupo…"
           rows={1}
           style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 14px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:100,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
           onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}

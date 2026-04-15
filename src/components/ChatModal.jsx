@@ -185,7 +185,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
           </button>
           <textarea value={input} onChange={handleInputChange}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
-            placeholder="Escribí un mensaje... (Shift+Enter para nueva línea)"
+            placeholder="Escribí un mensaje..."
             rows={1}
             style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 13px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:120,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
             onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}

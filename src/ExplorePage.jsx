@@ -272,10 +272,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   // Filtro por sección (cursos vs clases)
   const visiblePosts=postsPorRol.filter(p=>{
     if(seccion==="pedidos") return p.tipo==="busqueda"&&p.autor_email!==session.user.email;
-    if(p.tipo==="busqueda"){
-      if(p.autor_email===session.user.email)return true;
-      return false;// en sección cursos/clases, las busquedas ajenas se muestran aparte
-    }
+    if(p.tipo==="busqueda") return false;// busquedas SOLO en la sección Pedidos
     if(seccion==="cursos")return p.modo==="curso"||p.modo==="grupal";
     if(seccion==="clases")return p.modo==="particular"||!p.modo;
     return true;
@@ -347,6 +344,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     ?categorias.map(c=>({label:c.nombre,slug:c.slug,count:posts.filter(p=>p.materia===c.nombre).length}))
     :MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.materia===m).length}))
   ).filter(c=>c.count>0||categorias.length===0).slice(0,19);
+
+  // Categorías para la sección pedidos (conteo desde busquedas)
+  const catsPedidos=MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.tipo==="busqueda"&&p.materia===m&&p.autor_email!==session.user.email).length})).filter(c=>c.count>0).slice(0,19);
 
   // Publicaciones destacadas para el home (las más recientes con mejor rating)
   const destacadas=posts.filter(p=>p.tipo==="oferta").slice(0,6);
@@ -503,15 +503,16 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           )}
 
           {/* Categorías — cards con foto visual */}
-          {seccion==="pedidos"?null:<div style={{marginBottom:28}}>
+          {(()=>{const catsActivas=seccion==="pedidos"?catsPedidos:cats;if(catsActivas.length===0)return null;return(
+          <div style={{marginBottom:28}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:16}}>Explorar por categoría</div>
+              <div style={{fontWeight:700,color:C.text,fontSize:16}}>{seccion==="pedidos"?"Pedidos por materia":"Explorar por categoría"}</div>
               <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todo →</button>
             </div>
             <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
               <div style={{display:"flex",gap:12,paddingBottom:6}} className="cl-cats-row">
-                {cats.map(cat=>{
+                {catsActivas.map(cat=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
                     <button key={cat.label} onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");}}
@@ -541,11 +542,17 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 </button>
               </div>
             </div>
-          </div>}
+          </div>
+          );})()}
 
           {/* Accesos rápidos — distintos según sección */}
-          {seccion==="pedidos"?null:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
-            {(seccion==="cursos"?[
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
+            {(seccion==="pedidos"?[
+              {icon:"📣",title:"Recientes",desc:"Pedidos publicados hoy",onClick:()=>setModoVista("resultados")},
+              {icon:"🌐",title:"Online",desc:"Clases a distancia",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
+              {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
+              {icon:"✦",title:"Buscar con IA",desc:"Encontrá pedidos afines",onClick:()=>setShowBusquedaIA(true)},
+            ]:seccion==="cursos"?[
               {icon:"⚡",title:"Sincrónicos",desc:"Con docente en vivo",onClick:()=>{setFiltroSinc("sinc");setModoVista("resultados");}},
               {icon:"🎬",title:"A tu ritmo",desc:"Grabados, cuando quieras",onClick:()=>{setFiltroSinc("asinc");setModoVista("resultados");}},
               {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
@@ -565,7 +572,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <div style={{fontSize:11,color:C.muted}}>{item.desc}</div>
               </button>
             ))}
-          </div>}
+          </div>
 
           {/* Publicaciones destacadas — scroll horizontal */}
           {seccion!=="pedidos"&&(loading?<Spinner/>:(seccion==="cursos"?[
@@ -736,7 +743,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 onMouseLeave={e=>e.currentTarget.style.borderColor=iaQuery?C.accent:C.border}>
                 {!iaQuery&&<span style={{fontSize:13,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700,flexShrink:0}}>✦</span>}
                 <span style={{color:iaQuery?C.text:C.muted,fontSize:13,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {iaQuery?iaQuery:seccion==="pedidos"?"Describí qué sabés enseñar…":"Describí lo que querés aprender…"}
+                  {iaQuery?iaQuery:seccion==="pedidos"?"Describí qué querés aprender…":"Describí lo que querés aprender…"}
                 </span>
                 {iaQuery&&<span onClick={e=>{e.stopPropagation();setIaQuery("");setIaResults(null);setIaExplanation("");setPagina(1);}} style={{color:C.muted,fontSize:16,lineHeight:1,flexShrink:0}}>×</span>}
               </button>
@@ -835,10 +842,24 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
 
           {/* Lista de resultados */}
           {loading?<Spinner/>:sorted.length===0?(
-            <div style={{textAlign:"center",color:C.muted,padding:"60px 0",fontSize:13}}>
-              <div style={{fontSize:26,marginBottom:10,color:C.border}}>◎</div>
-              {hasFilters||iaQuery?"Sin resultados con esos filtros.":posts.length===0?"Todavía no hay publicaciones.":"Sin resultados."}
-              {(hasFilters||iaQuery)&&<div style={{marginTop:8,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+            <div style={{textAlign:"center",color:C.muted,padding:"48px 16px",fontSize:13}}>
+              <div style={{fontSize:36,marginBottom:10}}>🔍</div>
+              <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:6}}>
+                {hasFilters||iaQuery?"Sin resultados con esos filtros.":posts.length===0?"Todavía no hay publicaciones.":"Sin resultados."}
+              </div>
+              {iaResults!==null&&iaResults.length===0&&(
+                <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",maxWidth:380,margin:"16px auto 0",textAlign:"left"}}>
+                  <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:6}}>🔔 ¿Querés que te avisemos?</div>
+                  <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.5}}>
+                    Creá una alerta y te notificamos cuando aparezca algo relacionado con <strong style={{color:C.text}}>"{iaQuery}"</strong>.
+                  </div>
+                  <button onClick={()=>{alert("Función de alertas próximamente. Por ahora podés buscar de nuevo más tarde.");}}
+                    style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%"}}>
+                    🔔 Crear alerta para "{iaQuery}"
+                  </button>
+                </div>
+              )}
+              {(hasFilters||iaQuery)&&<div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
                 {hasFilters&&<button onClick={clearAll} style={{background:"none",border:"none",color:C.accent,cursor:"pointer",fontFamily:FONT,fontSize:13,textDecoration:"underline"}}>Limpiar filtros</button>}
                 {iaQuery&&<button onClick={()=>{setIaQuery("");setIaResults(null);}} style={{background:"none",border:"none",color:C.accent,cursor:"pointer",fontFamily:FONT,fontSize:13,textDecoration:"underline"}}>Limpiar búsqueda IA</button>}
               </div>}

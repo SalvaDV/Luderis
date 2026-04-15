@@ -7,12 +7,12 @@ export default function BusquedaIA({onBuscar,iaLoading,onClose,seccion}){
   const esPedidos=seccion==="pedidos";
   const esClases=seccion==="clases";
   const iaDesc=esPedidos
-    ?"Describí qué sabés enseñar. La IA va a encontrar los pedidos de alumnos más afines a vos."
+    ?"Describí qué querés aprender. La IA va a encontrar los pedidos de alumnos más afines a tu búsqueda."
     :esClases
     ?"Describí qué querés aprender. La IA va a buscar los mejores docentes disponibles."
     :"Describí qué querés aprender. La IA va a buscar los cursos más relevantes.";
   const iaPlaceholder=esPedidos
-    ?"Ej: quiero dar clases de inglés a adultos principiantes en CABA…"
+    ?"Ej: quiero aprender inglés de cero, presencial en CABA…"
     :esClases
     ?"Ej: clases de guitarra para principiantes, presencial en Palermo…"
     :"Ej: Python para principiantes con seguimiento y ejercicios prácticos…";
