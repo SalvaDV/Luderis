@@ -10,6 +10,7 @@ import {
   LUD,
   CATEGORIAS_DATA,
   getPubTipo,
+  SkeletonList,
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal, ContraofertaModal } from "./App";
@@ -288,8 +289,9 @@ function AyudanteBuscador({post,session,ayudantesActuales,onUpdate}){
         const insc=await sb.getInscripcionByPubEmail(post.id,email,session.access_token);
         if(insc&&insc.length>0)await sb.deleteInscripcion(insc[0].id,session.access_token);
       }catch(_){}
-      // Notificar al nuevo co-docente
+      // Notificar al nuevo co-docente (in-app + email)
       sb.insertNotificacion({usuario_id:uid,alumno_email:email,tipo:"nuevo_ayudante",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+      sb.sendEmail("nuevo_ayudante",email,{pub_titulo:post.titulo,docente_nombre:session.user.user_metadata?.display_name||session.user.email,pub_id:post.id},session.access_token).catch(()=>{});
       onUpdate(newAyuds);setEmailInput("");setErr("");
     }catch(e){setErr("Error: "+e.message);}finally{setSaving(false);}
   };
@@ -4494,9 +4496,10 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                       const newAyuds=isAyud?ayuds.filter(id=>id!==ins.alumno_id):[...ayuds,ins.alumno_id];
                       await sb.updatePublicacion(post.id,{ayudantes:newAyuds},session.access_token);
                       post.ayudantes=newAyuds;setInscripciones([...inscripciones]);
-                      // Notificar al nuevo ayudante
+                      // Notificar al nuevo ayudante (in-app + email)
                       if(!isAyud){
                         sb.insertNotificacion({usuario_id:ins.alumno_id||null,alumno_email:ins.alumno_email,tipo:"nuevo_ayudante",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+                        sb.sendEmail("nuevo_ayudante",ins.alumno_email,{pub_titulo:post.titulo,docente_nombre:docenteDisplayName,pub_id:post.id},session.access_token).catch(()=>{});
                       }
                     }} style={{background:isAyud?"#C85CE022":"#5CA8E015",border:`1px solid ${isAyud?"#C85CE044":"#5CA8E033"}`,borderRadius:7,color:isAyud?C.purple:C.info,padding:"3px 9px",cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:FONT,flexShrink:0}}>
                       {isAyud?"Quitar ayudante":"+ Ayudante"}
@@ -4547,8 +4550,13 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           {(esMio||esAyudante)&&<SkillManager post={post} session={session}/>}
           <div id="contenido" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:14}}>Contenido <span style={{color:C.muted,fontWeight:400,fontSize:12}}>({contenido.filter(c=>c.tipo!=="quiz").length})</span></div>
-              {(esMio||esAyudante)&&<div style={{display:"flex",gap:6}}><button onClick={()=>setShowAdd(v=>!v)} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"5px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>+ Agregar</button></div>}
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:15}}>Material del curso</div>
+                {contenido.filter(c=>c.tipo!=="quiz").length>0&&<span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,fontSize:11,fontWeight:700,color:C.muted,padding:"1px 8px"}}>{contenido.filter(c=>c.tipo!=="quiz").length}</span>}
+              </div>
+              {(esMio||esAyudante)&&<button onClick={()=>setShowAdd(v=>!v)} style={{background:showAdd?C.accent:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:9,color:"#fff",padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:5,transition:"opacity .15s",opacity:showAdd?.8:1}}>
+                <span style={{fontSize:15,lineHeight:1}}>{showAdd?"×":"+"}</span>{showAdd?"Cancelar":"Agregar"}
+              </button>}
             </div>
             {(esMio||esAyudante)&&showQuizCreator&&(
               <QuizCreator publicacionId={post.id} session={session} onSaved={(item)=>{setContenido(prev=>[...prev,item]);setShowQuizCreator(false);}} onCancel={()=>setShowQuizCreator(false)}/>
@@ -4556,41 +4564,76 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             {(esMio||esAyudante)&&showAdd&&(
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px",marginBottom:14}}>
                 <div style={{display:"flex",gap:5,marginBottom:9,flexWrap:"wrap"}}>
-                  {[["video","🎬"],["archivo","📁"],["texto","📝"],["aviso","📢"],["tarea","📌"],["link","🔗"],["quiz","📝"]].map(([v,ic])=>(<button key={v} onClick={()=>setNuevoTipo(v)} style={{padding:"6px 9px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",background:nuevoTipo===v?C.accent:C.surface,color:nuevoTipo===v?"#fff":C.muted,border:`1px solid ${nuevoTipo===v?"transparent":C.border}`,fontFamily:FONT}}>{ic} {v}</button>))}
+                  {[["video","🎬","#1A6ED8"],["archivo","📁","#2EC4A0"],["texto","📝","#5A7294"],["aviso","📢","#E8881A"],["tarea","📌","#7B5CF0"],["link","🔗","#0EA5E9"],["quiz","🧩","#E8881A"]].map(([v,ic,clr])=>{const sel=nuevoTipo===v;return(<button key={v} onClick={()=>setNuevoTipo(v)} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:700,cursor:"pointer",background:sel?clr:`${clr}10`,color:sel?"#fff":clr,border:`1.5px solid ${sel?clr:clr+"40"}`,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,transition:"all .15s",transform:sel?"scale(1.03)":"none"}}>{ic}<span style={{textTransform:"capitalize"}}>{v}</span></button>);})}
                 </div>
                 <input value={nuevoTitulo} onChange={e=>setNuevoTitulo(e.target.value)} placeholder="Título" style={iS}/>
                 {nuevoTipo!=="texto"&&nuevoTipo!=="aviso"&&nuevoTipo!=="tarea"?<input value={nuevoUrl} onChange={e=>setNuevoUrl(e.target.value)} placeholder="URL" style={iS}/>:<textarea value={nuevoTexto} onChange={e=>setNuevoTexto(e.target.value)} placeholder="Contenido..." style={{...iS,minHeight:70,resize:"vertical"}}/>}
                 <div style={{display:"flex",gap:8}}><Btn onClick={addContenido} disabled={savingC||!nuevoTitulo.trim()} style={{padding:"7px 14px",fontSize:12}}>{savingC?"...":"Guardar"}</Btn><button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Cancelar</button></div>
               </div>
             )}
-            {loading?<Spinner/>:contenido.length===0?<div style={{textAlign:"center",padding:"30px 0",color:C.muted,fontSize:13}}>{esMio?"Cargá el primer contenido.":"El docente aún no cargó contenido."}</div>:(
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {loading?<SkeletonList n={4}/>:contenido.length===0?(
+              <div style={{textAlign:"center",padding:"36px 20px",color:C.muted}}>
+                <div style={{fontSize:36,marginBottom:10,opacity:.4}}>{esMio?"📤":"📭"}</div>
+                <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:4}}>{esMio?"Todavía no hay contenido":"El docente aún no cargó material"}</div>
+                <div style={{fontSize:12}}>{esMio?"Hacé clic en \"+ Agregar\" para subir el primer recurso.":"Volvé más tarde, el docente todavía está preparando el curso."}</div>
+              </div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {contenido.map((c,i)=>{
-                  const TIPO={video:{icon:"🎬",color:C.info},archivo:{icon:"📁",color:C.success},texto:{icon:"📝",color:C.text},aviso:{icon:"📢",color:C.accent},tarea:{icon:"📌",color:C.purple},link:{icon:"🔗",color:C.info}};
-                  const t=TIPO[c.tipo]||{icon:"📄",color:C.text};
-                  if(c.tipo==="quiz"){return null;}// Quizzes van en tab Exámenes
-                  return(<div key={c.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 15px",opacity:tieneAcceso?1:.6}}>
-                    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:9}}>
-                      <div style={{display:"flex",alignItems:"center",gap:9,flex:1,minWidth:0}}>
-                        <div style={{width:34,height:34,borderRadius:9,background:C.card,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,border:`1px solid ${C.border}`}}>{t.icon}</div>
-                        <div style={{minWidth:0,flex:1}}>
-                          <div style={{fontWeight:600,color:t.color,fontSize:13,marginBottom:2}}>{i+1}. {c.titulo}</div>
-                          {c.tipo==="texto"&&c.texto&&tieneAcceso&&<p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.5}}>{c.texto}</p>}
-                          {c.tipo==="aviso"&&c.texto&&<p style={{color:C.accent,fontSize:12,margin:0,background:C.accentDim,borderRadius:7,padding:"6px 9px"}}>{c.texto}</p>}
-                          {c.tipo==="tarea"&&c.texto&&tieneAcceso&&<p style={{color:C.purple,fontSize:12,margin:0,background:"#C85CE015",borderRadius:7,padding:"6px 9px"}}>{c.texto}</p>}
-                          {(c.tipo==="video"||c.tipo==="archivo"||c.tipo==="link")&&safeUrl(c.url)&&tieneAcceso&&<a href={safeUrl(c.url)} target="_blank" rel="noopener noreferrer" style={{color:C.info,fontSize:12,textDecoration:"none"}}>{c.tipo==="video"?"▶ Ver video":c.tipo==="archivo"?"📥 Abrir":"→ Link"}</a>}
-                          {!tieneAcceso&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>Inscribite para ver</div>}
+                  const TIPO_C={
+                    video:{icon:"🎬",color:"#1A6ED8",bg:"#1A6ED812",label:"Video",cta:"▶ Ver video"},
+                    archivo:{icon:"📁",color:"#2EC4A0",bg:"#2EC4A012",label:"Archivo",cta:"↓ Descargar"},
+                    texto:{icon:"📝",color:"#5A7294",bg:"#5A729412",label:"Texto",cta:null},
+                    aviso:{icon:"📢",color:"#E8881A",bg:"#E8881A12",label:"Aviso",cta:null},
+                    tarea:{icon:"📌",color:"#7B5CF0",bg:"#7B5CF012",label:"Tarea",cta:null},
+                    link:{icon:"🔗",color:"#0EA5E9",bg:"#0EA5E912",label:"Link",cta:"→ Abrir link"},
+                  };
+                  const t=TIPO_C[c.tipo]||{icon:"📄",color:C.muted,bg:C.surface,label:c.tipo,cta:null};
+                  if(c.tipo==="quiz"){return null;}
+                  const numBadge=contenido.filter(x=>x.tipo!=="quiz").findIndex(x=>x.id===c.id)+1;
+                  return(
+                    <div key={c.id}
+                      style={{background:C.surface,borderRadius:12,border:`1px solid ${C.border}`,borderLeft:`3px solid ${t.color}`,padding:"12px 14px",opacity:tieneAcceso?1:.55,transition:"box-shadow .15s,transform .15s",cursor:"default"}}
+                      onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 2px 14px ${t.color}18`;e.currentTarget.style.transform="translateX(2px)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+                      <div style={{display:"flex",alignItems:"flex-start",gap:11}}>
+                        {/* Icon bubble */}
+                        <div style={{width:36,height:36,borderRadius:10,background:t.bg,border:`1px solid ${t.color}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0,position:"relative"}}>
+                          {t.icon}
+                          <span style={{position:"absolute",bottom:-5,right:-5,width:16,height:16,borderRadius:"50%",background:t.color,color:"#fff",fontSize:8,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.surface}`}}>{numBadge}</span>
+                        </div>
+                        {/* Content */}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
+                            <span style={{fontWeight:700,color:C.text,fontSize:13}}>{c.titulo}</span>
+                            <span style={{fontSize:9,fontWeight:700,color:t.color,background:t.bg,borderRadius:20,padding:"1px 7px",border:`1px solid ${t.color}30`,letterSpacing:.4,textTransform:"uppercase",flexShrink:0}}>{t.label}</span>
+                          </div>
+                          {c.tipo==="texto"&&c.texto&&tieneAcceso&&<p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.6,marginTop:2}}>{c.texto}</p>}
+                          {c.tipo==="aviso"&&c.texto&&<p style={{color:"#E8881A",fontSize:12,margin:"4px 0 0",background:"#E8881A0E",borderRadius:8,padding:"7px 10px",borderLeft:"2px solid #E8881A40"}}>{c.texto}</p>}
+                          {c.tipo==="tarea"&&c.texto&&tieneAcceso&&<p style={{color:"#7B5CF0",fontSize:12,margin:"4px 0 0",background:"#7B5CF00E",borderRadius:8,padding:"7px 10px",borderLeft:"2px solid #7B5CF040"}}>{c.texto}</p>}
+                          {t.cta&&safeUrl(c.url)&&tieneAcceso&&(
+                            <a href={safeUrl(c.url)} target="_blank" rel="noopener noreferrer"
+                              style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:7,background:t.bg,border:`1px solid ${t.color}40`,borderRadius:7,padding:"5px 11px",color:t.color,fontSize:11,fontWeight:700,textDecoration:"none",fontFamily:FONT,transition:"background .12s"}}
+                              onMouseEnter={e=>e.currentTarget.style.background=`${t.color}20`}
+                              onMouseLeave={e=>e.currentTarget.style.background=t.bg}>
+                              {t.cta}
+                            </a>
+                          )}
+                          {!tieneAcceso&&<div style={{color:C.muted,fontSize:11,marginTop:3}}>🔒 Inscribite para acceder</div>}
                           {(esMio||esAyudante)&&editingContenidoId===c.id&&(
                             <InlineContenidoEditor item={c} session={session} onSaved={(updated)=>{setContenido(prev=>prev.map(x=>x.id===c.id?{...x,...updated}:x));setEditingContenidoId(null);}} onCancel={()=>setEditingContenidoId(null)}/>
                           )}
                         </div>
+                        {/* Teacher actions */}
+                        {(esMio||esAyudante)&&<div style={{display:"flex",gap:4,flexShrink:0,opacity:.5,transition:"opacity .12s"}}
+                          onMouseEnter={e=>e.currentTarget.style.opacity="1"}
+                          onMouseLeave={e=>e.currentTarget.style.opacity=".5"}>
+                          <button onClick={()=>setEditingContenidoId(editingContenidoId===c.id?null:c.id)} title="Editar" style={{background:editingContenidoId===c.id?C.accentDim:"none",border:`1px solid ${editingContenidoId===c.id?C.accent:C.border}`,borderRadius:7,color:editingContenidoId===c.id?C.accent:C.muted,fontSize:11,padding:"3px 9px",cursor:"pointer",fontFamily:FONT}}>✎</button>
+                          <button onClick={()=>removeContenido(c.id)} title="Eliminar" style={{background:"none",border:"none",color:C.danger,fontSize:17,cursor:"pointer",padding:"2px 6px",lineHeight:1,borderRadius:7}}>×</button>
+                        </div>}
                       </div>
-                      {(esMio||esAyudante)&&<div style={{display:"flex",gap:5,flexShrink:0}}>
-                        <button onClick={()=>setEditingContenidoId(editingContenidoId===c.id?null:c.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,fontSize:11,padding:"2px 8px",cursor:"pointer",fontFamily:FONT}}>✎</button>
-                        <button onClick={()=>removeContenido(c.id)} style={{background:"none",border:"none",color:C.danger,fontSize:15,cursor:"pointer"}}>×</button>
-                      </div>}
                     </div>
-                  </div>);
+                  );
                 })}
               </div>
             )}

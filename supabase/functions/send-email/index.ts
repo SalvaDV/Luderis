@@ -317,6 +317,27 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
       <p style="font-size:12px;color:#A0AEC0;text-align:center;">Podés pausar o eliminar esta alerta desde Mi Cuenta → Alertas.</p>
     `, "Encontramos una publicación que coincide con tu alerta."),
   }),
+
+  nuevo_ayudante: (data: any, appUrl: string) => ({
+    subject: `Ahora sos co-docente de "${data.pub_titulo}"`,
+    preheader: `${data.docente_nombre} te agregó como co-docente.`,
+    html: emailBase(`
+      <h2>¡Sos co-docente!</h2>
+      <p><strong>${data.docente_nombre}</strong> te agregó como co-docente en su publicación. Ahora podés subir contenido y ver los alumnos inscriptos.</p>
+      <div class="info-box">
+        <div class="label">Publicación</div>
+        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Docente principal</div>
+        <div class="value">${data.docente_nombre}</div>
+      </div>
+      <p>Como co-docente podés agregar contenido, responder en el foro y ver la lista de alumnos inscriptos.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : appUrl}" class="btn">Ir a la clase →</a>
+      </p>
+    `, `${data.docente_nombre} te agregó como co-docente.`),
+  }),
 };
 
 // ── Templates adicionales ──────────────────────────────────────────────────────
