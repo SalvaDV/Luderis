@@ -190,7 +190,6 @@ export const useAutorAvatar=(email,token)=>{
 export const Spinner=({small})=>(<div style={{display:"flex",justifyContent:"center",padding:small?"4px":"32px 0"}}><div style={{width:small?16:26,height:small?16:26,border:`2px solid ${C.border}`,borderTop:`2px solid ${C.accent}`,borderRight:`2px solid ${C.teal||C.accent}40`,borderRadius:"50%",animation:"spin .6s linear infinite"}}/></div>);
 
 export const SkeletonCard=()=>(<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",fontFamily:FONT}}>
-  <style>{`@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}.sk{background:linear-gradient(90deg,${C.border} 25%,${C.bg} 50%,${C.border} 75%);background-size:400px;animation:shimmer 1.4s infinite linear;border-radius:6px}`}</style>
   <div style={{display:"flex",gap:10,marginBottom:12}}>
     <div className="sk" style={{width:38,height:38,borderRadius:"50%",flexShrink:0}}/>
     <div style={{flex:1}}><div className="sk" style={{height:13,width:"55%",marginBottom:6}}/><div className="sk" style={{height:11,width:"35%"}}/></div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import {
   C, FONT, LUD,
-  Spinner, Avatar, Tag, MiniStars, SearchableSelect, Btn, Chip,
+  Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect, Btn, Chip,
   fmtPrice, fmtRel, fmt,
   safeDisplayName, _avatarCache,
   MATERIAS, CATEGORIAS_DATA, getPubTipo, TIPO_PUB,
@@ -575,7 +575,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           </div>
 
           {/* Publicaciones destacadas — scroll horizontal */}
-          {seccion!=="pedidos"&&(loading?<Spinner/>:(seccion==="cursos"?[
+          {seccion!=="pedidos"&&(loading?<SkeletonList n={4}/>:(seccion==="cursos"?[
             {label:"✨ Cursos recientes",data:cursos.slice(0,8)},
             {label:"⭐ Mejor valorados",data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
           ]:[
@@ -841,7 +841,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           })()}
 
           {/* Lista de resultados */}
-          {loading?<Spinner/>:sorted.length===0?(
+          {loading?<SkeletonList n={7}/>:sorted.length===0?(
             <div style={{textAlign:"center",color:C.muted,padding:"48px 16px",fontSize:13}}>
               <div style={{fontSize:36,marginBottom:10}}>🔍</div>
               <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:6}}>

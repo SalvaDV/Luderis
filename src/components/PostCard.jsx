@@ -20,9 +20,11 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
   const T=getPubTipo(post);
   return(
     <div onClick={()=>onOpenDetail(post)} className="cl-card-anim"
-      style={{background:post.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"box-shadow .18s,border-color .18s",fontFamily:FONT,borderLeft:esMio?`3px solid ${C.accent}`:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined}}
-      onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 2px 14px ${T.dim}`;e.currentTarget.style.borderColor=fueRechazado?C.danger+"60":T.accent+"50";}}
-      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;}}>
+      style={{background:post.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"box-shadow .18s,border-color .18s,transform .15s",willChange:"transform",fontFamily:FONT,borderLeft:esMio?`3px solid ${C.accent}`:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined}}
+      onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 2px 14px ${T.dim}`;e.currentTarget.style.borderColor=fueRechazado?C.danger+"60":T.accent+"50";e.currentTarget.style.transform="translateY(-3px)";}}
+      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;e.currentTarget.style.transform="none";}}
+      onMouseDown={e=>e.currentTarget.style.transform="translateY(-1px) scale(0.99)"}
+      onMouseUp={e=>e.currentTarget.style.transform="translateY(-3px)"}>
 
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,gap:8}}>

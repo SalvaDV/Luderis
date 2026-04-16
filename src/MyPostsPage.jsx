@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { C, FONT, LUD, Spinner, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName } from "./shared";
+import { C, FONT, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName } from "./shared";
 import * as sb from "./supabase";
 import { AcuerdoModal } from "./MiCuentaPage";
 
@@ -285,7 +285,7 @@ export default function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat
         <div><h2 style={{fontSize:20,color:C.text,margin:"0 0 3px",fontWeight:700}}>Mis publicaciones</h2><p style={{color:C.muted,fontSize:12,margin:0}}>{posts.length} publicación{posts.length!==1?"es":""}</p></div>
         <Btn onClick={onNew} style={{padding:"7px 13px",fontSize:12}}>+ Nueva</Btn>
       </div>
-      {loading?<Spinner/>:posts.length===0?(
+      {loading?<SkeletonList n={4}/>:posts.length===0?(
         <div style={{maxWidth:480,margin:"0 auto"}}>
           {/* Checklist guiado para docentes nuevos */}
           <div style={{background:`linear-gradient(135deg,${C.accentDim},${C.bg})`,border:`1px solid ${C.accent}33`,borderRadius:18,padding:"28px 28px 24px",marginBottom:16}}>
