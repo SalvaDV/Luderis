@@ -512,22 +512,27 @@ export default function App(){
               <Btn onClick={()=>{setEditPost(null);setShowForm(true);}} style={{padding:"6px 14px",fontSize:12,borderRadius:16}}>{t("newPost")}</Btn>
             </div>
           </div>
-          {/* Bottom navbar mobile — scroll horizontal con fade en los extremos */}
+          {/* Bottom navbar mobile — SVG icons + pill active state */}
           <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,zIndex:50}}>
-            <div style={{display:"flex",height:58,width:"100%"}}>
+            <div style={{display:"flex",height:60,width:"100%"}}>
               {[
-                {id:"explore",icon:"🔍",label:t("explore"),badge:0},
-                {id:"chats",icon:"💬",label:t("chats"),badge:unread},
-                {id:"inscripciones",icon:"🎓",label:t("classes"),badge:notifCount},
-                {id:"cuenta",icon:"👤",label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
-              ].map(item=>(
-                <button key={item.id} onClick={()=>setPage(item.id)}
-                  style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"6px 0",position:"relative",fontFamily:FONT,borderTop:`2px solid ${page===item.id?"var(--cl-section-accent)":"transparent"}`,transition:"all .15s"}}>
-                  <span style={{fontSize:20,color:page===item.id?"var(--cl-section-accent)":C.muted,lineHeight:1,transition:"color .15s"}}>{item.icon}</span>
-                  <span style={{fontSize:10,color:page===item.id?"var(--cl-section-accent)":C.muted,fontWeight:page===item.id?600:400,whiteSpace:"nowrap",transition:"color .15s"}}>{item.label}</span>
-                  {item.badge>0&&<span style={{position:"absolute",top:4,right:10,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4}}>{item.badge>9?"9+":item.badge}</span>}
-                </button>
-              ))}
+                {id:"explore",svg:`<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>`,label:t("explore"),badge:0},
+                {id:"chats",svg:`<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>`,label:t("chats"),badge:unread},
+                {id:"inscripciones",svg:`<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>`,label:t("classes"),badge:notifCount},
+                {id:"cuenta",svg:`<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>`,label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
+              ].map(item=>{
+                const active=page===item.id;
+                return(
+                  <button key={item.id} onClick={()=>setPage(item.id)}
+                    style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"4px 0 6px",position:"relative",fontFamily:FONT}}>
+                    <div style={{borderRadius:14,padding:"5px 14px",background:active?`${C.accent}18`:"transparent",transition:"background .2s"}}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active?C.accent:C.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",transition:"stroke .15s"}} dangerouslySetInnerHTML={{__html:item.svg}}/>
+                    </div>
+                    <span style={{fontSize:10,color:active?C.accent:C.muted,fontWeight:active?600:400,whiteSpace:"nowrap",transition:"color .15s"}}>{item.label}</span>
+                    {item.badge>0&&<span style={{position:"absolute",top:4,right:10,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4}}>{item.badge>9?"9+":item.badge}</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>
