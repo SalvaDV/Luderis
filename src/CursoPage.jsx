@@ -4413,33 +4413,38 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           <button onClick={()=>setShowJitsiCurso(true)} style={{background:"#C80000",border:"none",borderRadius:9,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:6}}>📹 Unirme ahora</button>
         </div>
       )}
-      <div className="curso-main-header" style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`2px solid ${getPubTipo(post).accent}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-        <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>← Volver</button>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:1}}>
-            <span style={{fontSize:10,fontWeight:700,color:getPubTipo(post).accent,background:getPubTipo(post).dim,borderRadius:20,padding:"2px 8px",flexShrink:0}}>{getPubTipo(post).emoji} {getPubTipo(post).label}</span>
+      {/* ── STICKY HEADER: 2 rows ── */}
+      <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`2px solid ${getPubTipo(post).accent}`}}>
+        {/* Row 1: nav + title */}
+        <div style={{padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,padding:"5px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,whiteSpace:"nowrap"}}>← Volver</button>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:9,fontWeight:700,color:getPubTipo(post).accent,background:getPubTipo(post).dim,borderRadius:20,padding:"1px 7px",flexShrink:0,whiteSpace:"nowrap"}}>{getPubTipo(post).label}</span>
+              <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
+            </div>
+            <div style={{fontSize:10,color:C.muted,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.materia} · {post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)}</div>
           </div>
-          <div style={{fontWeight:700,color:C.text,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
-          <div style={{fontSize:11,color:C.muted}}>{post.materia} · {post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)}</div>
         </div>
-        <div className="curso-actions">
-          {esMio&&!localFinalizado&&!localCerrado&&<button onClick={()=>setShowCerrarInsc(true)} style={{background:"#E0955C15",border:"1px solid #E0955C33",borderRadius:9,color:C.warn,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Cerrar inscripciones</button>}
-          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){alert("Error: "+e.message);}}} style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:9,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Reabrir inscripciones</button>}
+        {/* Row 2: actions — scrollable on mobile */}
+        <div className="curso-actions" style={{padding:"0 14px 8px",borderTop:`1px solid ${C.border}`,paddingTop:6}}>
+          {esMio&&!localFinalizado&&!localCerrado&&<button onClick={()=>setShowCerrarInsc(true)} style={{background:"#E0955C12",border:"1px solid #E0955C33",borderRadius:7,color:C.warn,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Cerrar inscrip.</button>}
+          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){alert("Error: "+e.message);}}} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.success,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
           {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
-            style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:9,color:claseActiva?"#C80000":"#fff",padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
-            {claseActiva?<><span style={{width:6,height:6,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>Clase en vivo</>:iniciandoClase?"Iniciando…":"▶ Iniciar clase"}
+            style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+            {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":"▶ Iniciar clase"}
           </button>}
-          {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:9,color:C.success,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:600}}>Finalizar clase</button>}
-          {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:12,color:C.info,fontWeight:600}}>Clase finalizada</span>}
-          {!esMio&&inscripcion&&<button onClick={()=>setShowDenuncia(true)} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:9,color:C.danger,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Denunciar</button>}
-          {esMio?<span style={{fontSize:12,color:C.muted}}>Sos el docente</span>:
-            esAyudante?<span style={{fontSize:12,color:C.purple,fontWeight:600}}>✦ Co-docente</span>:(
+          {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.success,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
+          {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:11,color:C.info,fontWeight:600,whiteSpace:"nowrap"}}>✓ Clase finalizada</span>}
+          {!esMio&&inscripcion&&<button onClick={()=>setShowDenuncia(true)} style={{background:"#E05C5C12",border:"1px solid #E05C5C33",borderRadius:7,color:C.danger,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,whiteSpace:"nowrap"}}>Denunciar</button>}
+          {esMio?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Sos el docente</span>:
+            esAyudante?<span style={{fontSize:11,color:C.purple,fontWeight:600,whiteSpace:"nowrap"}}>✦ Co-docente</span>:(
             inscLoading?<Spinner small/>:(
-              localFinalizado?<span style={{fontSize:12,color:C.info}}>Clase finalizada</span>:
-              localCerrado?<span style={{fontSize:12,color:C.muted}}>Inscripciones cerradas</span>:
-              inscripcion?<button onClick={desinscribirse} style={{background:"none",border:`1px solid ${C.danger}`,borderRadius:9,color:C.danger,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Desinscribirme</button>
-              :(localCerrado||post.inscripciones_cerradas)?<span style={{fontSize:12,color:C.muted}}>Inscripciones cerradas</span>
-              :<Btn onClick={inscribirse} variant="success" style={{padding:"7px 14px",fontSize:12}}>Inscribirme →</Btn>
+              localFinalizado?<span style={{fontSize:11,color:C.info,whiteSpace:"nowrap"}}>Clase finalizada</span>:
+              localCerrado?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Inscripciones cerradas</span>:
+              inscripcion?<button onClick={desinscribirse} style={{background:"none",border:`1px solid ${C.danger}`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,whiteSpace:"nowrap"}}>Desinscribirme</button>
+              :(localCerrado||post.inscripciones_cerradas)?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Inscripciones cerradas</span>
+              :<Btn onClick={inscribirse} variant="success" style={{padding:"5px 12px",fontSize:11,whiteSpace:"nowrap"}}>Inscribirme →</Btn>
             )
           )}
         </div>
@@ -4527,15 +4532,15 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           <style>{`.curso-tabs::-webkit-scrollbar{display:none}`}</style>
           <div className="curso-tabs" style={{display:"flex",gap:2,marginBottom:14,background:C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`}}>
             {[
-              {id:"contenido",label:"📁 Contenido"},
-              {id:"aprender",label:"🎓 Aprender",pendiente:esPendienteValidacion},
-              ...(hasCal||esMio?[{id:"agenda",label:"📅 Agenda"}]:[]),
-              {id:"comunidad",label:mensajesNuevos>0?`💬 Comunidad (${mensajesNuevos})`:"💬 Comunidad"},
+              {id:"contenido",label:"Contenido"},
+              {id:"aprender",label:"Aprender",pendiente:esPendienteValidacion},
+              ...(hasCal||esMio?[{id:"agenda",label:"Agenda"}]:[]),
+              {id:"comunidad",label:mensajesNuevos>0?`Comunidad (${mensajesNuevos})`:"Comunidad"},
             ].map(tab=>(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
-                style={{flex:1,padding:"8px 4px",borderRadius:9,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
-                  fontWeight:tabActivo===tab.id?700:400,fontSize:12,cursor:"pointer",fontFamily:FONT,
-                  textAlign:"center",
+                style={{flex:1,padding:"6px 4px",borderRadius:8,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
+                  fontWeight:tabActivo===tab.id?700:500,fontSize:11,cursor:"pointer",fontFamily:FONT,
+                  textAlign:"center",whiteSpace:"nowrap",
                   background:tabActivo===tab.id?C.accent:tab.pendiente?"#F5C84212":"transparent",
                   color:tabActivo===tab.id?"#fff":tab.pendiente?C.accent:C.muted,
                   transition:"all .15s",
