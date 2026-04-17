@@ -540,8 +540,8 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 <Label>¿Qué querés publicar?</Label>
                 <div style={{display:"flex",gap:10}}>
                   {[
-                    {v:"curso",icon:"📚",label:"Curso",sub:"Contenido estructurado, múltiples alumnos, precio fijo",color:"#7B3FBE"},
-                    {v:"particular",icon:"🎯",label:"Clase particular",sub:"1 a 1 o grupo pequeño, horario flexible",color:C.blue||"#1A6ED8"},
+                    {v:"curso",icon:"📚",label:"Curso",sub:"Contenido estructurado, múltiples alumnos, precio fijo",color:"#1A6ED8"},
+                    {v:"particular",icon:"🎯",label:"Clase particular",sub:"1 a 1 o grupo pequeño, horario flexible",color:"#E8881A"},
                   ].map(({v,icon,label,sub,color})=>(
                     <button key={v} onClick={()=>setModo(v)}
                       style={{flex:1,padding:"16px 12px",borderRadius:16,border:`2px solid ${modo===v?color:C.border}`,background:modo===v?color+"15":C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s",position:"relative"}}>

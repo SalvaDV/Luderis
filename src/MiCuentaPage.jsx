@@ -1991,7 +1991,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             </div>
           ):(
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {(filtroPubsTipo==="all"?pubs:pubs.filter(p=>p.tipo===filtroPubsTipo)).map(p=>(<div key={p.id}>
+              {pubsFiltradas.map(p=>(<div key={p.id}>
                 {/* Banner clickeable → abre DetailPage */}
                 <div onClick={()=>onOpenDetail(p)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"10px 10px 0 0",padding:"9px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,borderBottom:"none",transition:"background .15s"}}
                   onMouseEnter={e=>e.currentTarget.style.background=C.accentDim}

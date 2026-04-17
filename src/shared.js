@@ -397,7 +397,7 @@ export function useConfirm(){
   ):null;
   return{confirm,confirmEl};
 }
-export const Chip=({label,val})=>val?(<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px"}}><div style={{color:C.muted,fontSize:11,marginBottom:2}}>{label}</div><div style={{color:C.text,fontWeight:600,fontSize:13}}>{val}</div></div>):null;
+export const Chip=({label,val,accent})=>val?(<div style={{background:accent?`${accent}10`:C.surface,border:`1px solid ${accent?accent+"30":C.border}`,borderRadius:8,padding:"8px 14px"}}><div style={{color:accent||C.muted,fontSize:11,marginBottom:2,fontWeight:accent?700:400,letterSpacing:accent?".4px":"0"}}>{label}</div><div style={{color:accent||C.text,fontWeight:600,fontSize:13}}>{val}</div></div>):null;
 export const MiniStars=({val,count})=>{if(!val)return null;const v=parseFloat(val);return(<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"linear-gradient(135deg,#F59E0B12,#F5C84212)",border:"1px solid #F59E0B35",borderRadius:20,padding:"3px 9px"}}><span style={{color:"#B45309",fontSize:12}}>★</span><span style={{color:"#B45309",fontSize:12,fontWeight:700}}>{v.toFixed(1)}</span>{count>0&&<span style={{color:C.muted,fontSize:11}}>({count})</span>}</span>);};
 
 // ─── CALENDARIO CURSO ─────────────────────────────────────────────────────────
