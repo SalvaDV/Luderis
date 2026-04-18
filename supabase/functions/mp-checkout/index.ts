@@ -100,8 +100,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Buscar conexión MP del docente (para marketplace split) ─────────
+    let mpConexion: { mp_user_id: string } | null = null;
+    if (!ES_RECARGA && docente_email) {
+      const { data } = await supabase
+        .from("mp_conexiones")
+        .select("mp_user_id")
+        .eq("usuario_email", docente_email)
+        .maybeSingle();
+      mpConexion = data ?? null;
+    }
+
+    // ── Calcular comisión Luderis (10%) ──────────────────────────────────
+    const precioTotal   = Number(precio) * Number(cantidad);
+    const comisionMonto = Math.round(precioTotal * 0.10); // en ARS, redondeado
+
     // ── Crear preferencia en MercadoPago ────────────────────────────────
-    const preferencia = {
+    const preferencia: Record<string, unknown> = {
       items: [{ id: publicacion_id, title: titulo ?? "Clase en Luderis", description: descripcion ?? "Clase particular", category_id: "education", quantity: Number(cantidad), unit_price: Number(precio), currency_id: "ARS" }],
       payer: { email: alumno_email, name: alumno_nombre ?? alumno_email.split("@")[0] },
       back_urls: {
@@ -110,10 +125,28 @@ Deno.serve(async (req) => {
         pending: `${APP_URL}?mp=pending&pub=${publicacion_id}`,
       },
       auto_return: "approved",
-      external_reference: JSON.stringify({ publicacion_id, alumno_email, docente_email, modo, tipo, clases_cantidad: clases_cantidad ?? null }),
+      external_reference: JSON.stringify({
+        publicacion_id,
+        alumno_email,
+        docente_email,
+        modo,
+        tipo,
+        clases_cantidad: clases_cantidad ?? null,
+        // Indica si el split es inmediato (docente tiene MP conectado)
+        split_inmediato: !!mpConexion,
+      }),
       payment_methods: { installments: modo === "curso" ? 12 : 1 },
       statement_descriptor: "LUDERIS",
     };
+
+    // ── Marketplace split: si el docente tiene MP conectado ──────────────
+    // El pago va 90% al docente y 10% a Luderis automáticamente.
+    // Si NO está conectado: el total va a Luderis y se libera manualmente
+    // después del período de escrow de 72hs (vía liberar-pago).
+    if (mpConexion?.mp_user_id) {
+      preferencia.marketplace_fee = comisionMonto;        // lo que queda en Luderis
+      preferencia.collector       = { id: mpConexion.mp_user_id }; // destinatario
+    }
 
     const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
@@ -126,9 +159,10 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        preference_id: mpData.id,
-        checkout_url: MP_ACCESS_TOKEN?.startsWith("TEST-") ? mpData.sandbox_init_point : mpData.init_point,
-        expires_at: mpData.expiration_date_to,
+        preference_id:  mpData.id,
+        checkout_url:   MP_ACCESS_TOKEN?.startsWith("TEST-") ? mpData.sandbox_init_point : mpData.init_point,
+        expires_at:     mpData.expiration_date_to,
+        split_inmediato: !!mpConexion, // el frontend puede mostrar info al alumno
       }),
       { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
     );
