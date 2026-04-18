@@ -430,6 +430,47 @@ Object.assign(TEMPLATES, {
     `, `Nueva publicación: ${data.pub_titulo}`),
   }),
 
+  liquidacion_disponible: (data: any, appUrl: string) => ({
+    subject: `Tu liquidación de ${data.periodo_label} está disponible 💰`,
+    preheader: `Monto neto: $${Number(data.monto_neto).toLocaleString("es-AR")}. Descargá tu PDF.`,
+    html: emailBase(`
+      <h2>Tu liquidación mensual está lista</h2>
+      <p>¡Hola <strong>${data.nombre}</strong>! Ya procesamos tu liquidación de <strong>${data.periodo_label}</strong>.</p>
+      <div class="info-box">
+        <div class="label">Período</div>
+        <div class="value">${data.periodo_label}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Clases cobradas</div>
+        <div class="value">${data.cantidad_clases}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Monto bruto total</div>
+        <div class="value">$${Number(data.monto_bruto).toLocaleString("es-AR")}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Comisión Luderis (10%)</div>
+        <div class="value" style="color:#5A7294;">- $${Number(data.comision).toLocaleString("es-AR")}</div>
+      </div>
+      <div class="info-box" style="background:#EBF8F4;border-color:#2EC4A040;">
+        <div class="label" style="color:#2EC4A0;">MONTO NETO A COBRAR</div>
+        <div class="value" style="font-size:22px;font-weight:800;color:#0F3F7A;">$${Number(data.monto_neto).toLocaleString("es-AR")}</div>
+      </div>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${data.pdf_url}" class="btn">Descargar PDF →</a>
+      </p>
+      <div class="divider"/>
+      <p style="font-size:13px;color:#5A7294;">
+        <strong>¿Cómo facturar?</strong><br/>
+        Emití tu factura/recibo electrónico desde AFIP (o tu app de facturación) por el monto neto indicado.
+        El PDF adjunto sirve como referencia para la emisión del comprobante. Tenés 30 días para emitirlo.
+      </p>
+      <p style="text-align:center;margin:16px 0;">
+        <a href="${appUrl}?page=cuenta&tab=pagos" style="color:#1A6ED8;font-size:13px;">Ver mis liquidaciones en Luderis →</a>
+      </p>
+    `, `Liquidación ${data.periodo_label} — Neto: $${Number(data.monto_neto).toLocaleString("es-AR")}`),
+  }),
+
 });
 
 // ── Handler principal ──────────────────────────────────────────────────────────

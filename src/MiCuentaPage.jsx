@@ -1080,18 +1080,32 @@ function PagosTab({session}){
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
           <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>📄 Liquidaciones</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {liquidaciones.map(liq=>(
+            {liquidaciones.map(liq=>{
+              const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+              const [yr,mn]=liq.periodo.split("-").map(Number);
+              const periodoLabel=`${meses[mn-1]} ${yr}`;
+              return(
               <div key={liq.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:C.bg,borderRadius:10,border:`1px solid ${C.border}`}}>
                 <div>
-                  <div style={{fontWeight:600,color:C.text,fontSize:13}}>{liq.periodo}</div>
+                  <div style={{fontWeight:600,color:C.text,fontSize:13}}>{periodoLabel}</div>
                   <div style={{fontSize:11,color:C.muted,marginTop:2}}>{liq.cantidad_clases} clase{liq.cantidad_clases!==1?"s":""} · Comisión ${Number(liq.comision_luderis).toLocaleString("es-AR")}</div>
                 </div>
                 <div style={{textAlign:"right"}}>
                   <div style={{fontWeight:700,color:C.text,fontSize:14}}>${Number(liq.monto_neto).toLocaleString("es-AR")}</div>
-                  {liq.pdf_url&&<a href={liq.pdf_url} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:C.accent,textDecoration:"none"}}>Descargar PDF</a>}
+                  {liq.pdf_url&&(
+                    <button
+                      onClick={async()=>{
+                        const url=await sb.getLiquidacionSignedUrl(session?.user?.email,liq.periodo,session?.access_token);
+                        if(url)window.open(url,"_blank","noopener");
+                        else toast("No se pudo generar el link de descarga","error");
+                      }}
+                      style={{fontSize:11,color:C.accent,textDecoration:"none",background:"none",border:"none",cursor:"pointer",padding:0,marginTop:2}}
+                    >⬇ Descargar PDF</button>
+                  )}
                 </div>
               </div>
-            ))}
+            );})}
+
           </div>
           <p style={{fontSize:11,color:C.muted,margin:"12px 0 0",lineHeight:1.5}}>Usá estas liquidaciones como respaldo para emitir tu factura mensual a Luderis.</p>
         </div>

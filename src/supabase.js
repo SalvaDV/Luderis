@@ -666,6 +666,28 @@ export const getPagosDocenteEscrow = (email, token) =>
 export const getLiquidaciones = (email, token) =>
   db(`liquidaciones?docente_email=eq.${encodeURIComponent(email)}&order=periodo.desc&limit=24`, "GET", null, token).catch(() => []);
 
+// Genera una URL firmada (1hs) para descargar el PDF de una liquidación
+// Path en Storage: "{docente_email}/{periodo}.pdf"
+export const getLiquidacionSignedUrl = async (docenteEmail, periodo, token) => {
+  const path = `${docenteEmail}/${periodo}.pdf`;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/liquidaciones/${encodeURIComponent(path)}`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token || SUPABASE_KEY}`,
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: 3600 }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.signedURL ? `${SUPABASE_URL}${data.signedURL}` : null;
+  } catch {
+    return null;
+  }
+};
+
 // ── Streak / Racha ────────────────────────────────────────────────────────────
 // Llama al RPC del servidor para calcular la racha con hora confiable (no manipulable por el cliente)
 export const actualizarStreak = (usuarioId, token) =>
