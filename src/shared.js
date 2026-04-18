@@ -168,8 +168,13 @@ const _avatarCacheSet=(key,val)=>{
   }
   _avatarCache[key]=val;
 };
+// Dominios permitidos para avatares (evita cargar URLs externas expiradas o no confiables)
+const AVATAR_TRUSTED=["supabase.co","googleusercontent.com","gravatar.com","github.com","githubusercontent.com"];
+const isTrustedAvatar=(url)=>{if(!url)return false;try{const h=new URL(url).hostname;return AVATAR_TRUSTED.some(d=>h===d||h.endsWith("."+d));}catch{return false;}};
+const sanitizeAvatar=(url)=>isTrustedAvatar(url)?url:null;
+
 export const useAutorAvatar=(email,token)=>{
-  const lsAvatar=()=>{try{return localStorage.getItem("cl_avatar_"+email)||null;}catch{return null;}};
+  const lsAvatar=()=>{try{const v=localStorage.getItem("cl_avatar_"+email);return sanitizeAvatar(v);}catch{return null;}};
   const [url,setUrl]=useState(_avatarCache[email]||lsAvatar());
   useEffect(()=>{
     if(!email)return;
@@ -177,9 +182,10 @@ export const useAutorAvatar=(email,token)=>{
     if(_avatarCache[email]!==undefined&&_avatarCache[email]!==null)return;
     _avatarCacheSet(email,null);
     sb.getUsuarioByEmail(email,token).then(u=>{
-      const av=u?.avatar_url||null;
+      const av=sanitizeAvatar(u?.avatar_url||null);
       _avatarCacheSet(email,av);
       if(av)try{localStorage.setItem("cl_avatar_"+email,av);}catch{}
+      else try{localStorage.removeItem("cl_avatar_"+email);}catch{} // limpiar URLs no confiables
       setUrl(av);
     }).catch(()=>{_avatarCacheSet(email,null);});
   },[email]);// eslint-disable-line

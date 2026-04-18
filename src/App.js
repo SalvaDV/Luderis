@@ -87,7 +87,10 @@ export default function App(){
       if(!u)return;
       // Sincronizar localStorage con los datos reales de la DB
       try{
-        if(u.avatar_url){localStorage.setItem("cl_avatar_"+email,u.avatar_url);_avatarCache[email]=u.avatar_url;}
+        // Solo cachear avatares de dominios confiables
+        const av=u.avatar_url&&["supabase.co","googleusercontent.com","gravatar.com","github.com","githubusercontent.com"].some(d=>{try{const h=new URL(u.avatar_url).hostname;return h===d||h.endsWith("."+d);}catch{return false;}})?u.avatar_url:null;
+        if(av){localStorage.setItem("cl_avatar_"+email,av);_avatarCache[email]=av;}
+        else{try{localStorage.removeItem("cl_avatar_"+email);}catch{}}
         if(u.bio)localStorage.setItem("cl_bio_"+email,u.bio);
         if(u.ubicacion)localStorage.setItem("cl_user_city",u.ubicacion);
         if(u.rol)localStorage.setItem("cl_rol_"+email,u.rol);
