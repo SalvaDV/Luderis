@@ -20,6 +20,11 @@ const ADMIN_ONLY_ACTIONS = new Set([
   "enviar_anuncio",
   "aprobar_docente",
   "rechazar_docente",
+  // Escrow & liquidaciones
+  "liberar_pago_manual",
+  "resolver_disputa",
+  "generar_liquidacion_manual",
+  "upsert_config",
 ]);
 
 // ── Acciones que cualquier usuario autenticado puede ejecutar (con verificación de ownership) ──
@@ -149,6 +154,77 @@ serve(async (req) => {
       const { user_id } = params;
       if (!user_id) throw new Error("user_id requerido");
       await adminClient.from("usuarios").update({ rol: "alumno", verificado: false }).eq("id", user_id);
+
+    // ── Escrow: liberar un pago manualmente ─────────────────────────────────
+    } else if (action === "liberar_pago_manual") {
+      const { pago_id } = params;
+      if (!pago_id) throw new Error("pago_id requerido");
+      const liberarSecret = Deno.env.get("LIBERAR_PAGO_SECRET") ?? "";
+      const lRes = await fetch(`${SUPABASE_URL}/functions/v1/liberar-pago`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${liberarSecret}` },
+        body: JSON.stringify({ pago_id }),
+      });
+      const lData = await lRes.json();
+      if (!lRes.ok) throw new Error(lData.error ?? `liberar-pago error ${lRes.status}`);
+      result = lData;
+
+    // ── Escrow: resolver una disputa ─────────────────────────────────────────
+    } else if (action === "resolver_disputa") {
+      const { disputa_id, resolucion, estado } = params;
+      // estado: "resuelta_alumno" | "resuelta_docente"
+      if (!disputa_id || !estado) throw new Error("disputa_id y estado requeridos");
+
+      // Obtener pago_id de la disputa
+      const { data: disputa } = await adminClient.from("disputas").select("pago_id").eq("id", disputa_id).single();
+
+      // Actualizar disputa
+      await adminClient.from("disputas").update({
+        estado,
+        resolucion: resolucion ?? null,
+        admin_email: user.email,
+        resuelto_at: new Date().toISOString(),
+        updated_at:  new Date().toISOString(),
+      }).eq("id", disputa_id);
+
+      if (disputa?.pago_id) {
+        if (estado === "resuelta_docente") {
+          // Liberar pago al docente
+          await adminClient.from("pagos").update({ estado_escrow: "retenido" }).eq("id", disputa.pago_id);
+          const liberarSecret = Deno.env.get("LIBERAR_PAGO_SECRET") ?? "";
+          await fetch(`${SUPABASE_URL}/functions/v1/liberar-pago`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${liberarSecret}` },
+            body: JSON.stringify({ pago_id: disputa.pago_id }),
+          });
+        } else if (estado === "resuelta_alumno") {
+          // Marcar como reembolsado (el admin gestiona el reembolso en MP manualmente)
+          await adminClient.from("pagos").update({ estado_escrow: "reembolsado" }).eq("id", disputa.pago_id);
+        }
+      }
+      result = { ok: true, estado, pago_id: disputa?.pago_id ?? null };
+
+    // ── Liquidaciones: generar manualmente ──────────────────────────────────
+    } else if (action === "generar_liquidacion_manual") {
+      const { periodo, docente_email: docenteEmail } = params;
+      const liqSecret = Deno.env.get("GENERAR_LIQ_SECRET") ?? "";
+      const lRes = await fetch(`${SUPABASE_URL}/functions/v1/generar-liquidacion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${liqSecret}` },
+        body: JSON.stringify({ periodo: periodo ?? null, docente_email: docenteEmail ?? null }),
+      });
+      const lData = await lRes.json();
+      if (!lRes.ok) throw new Error(lData.error ?? `generar-liquidacion error ${lRes.status}`);
+      result = lData;
+
+    // ── Configuración: upsert clave→valor ────────────────────────────────────
+    } else if (action === "upsert_config") {
+      const { rows } = params;
+      if (!rows?.length) throw new Error("rows requerido");
+      for (const row of rows) {
+        await adminClient.from("config").upsert(row, { onConflict: "clave" });
+      }
+      result = { ok: true };
 
     // ── Acciones de usuario (con verificación de ownership) ─────────────────
     } else if (action === "borrar_chat") {

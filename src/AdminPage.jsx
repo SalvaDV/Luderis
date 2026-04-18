@@ -75,6 +75,8 @@ const TABS = [
   { id: "pubs", label: "📋 Publicaciones" },
   { id: "reports", label: "🚨 Denuncias" },
   { id: "payments", label: "💰 Pagos" },
+  { id: "escrow", label: "📦 Escrow" },
+  { id: "liquidaciones", label: "📄 Liquidaciones" },
   { id: "notifs", label: "📣 Anuncios" },
   { id: "config", label: "⚙️ Configuración" },
 ];
@@ -145,6 +147,8 @@ export default function AdminPage({ session, onClose, onChatUser }) {
         {tab === "pubs" && <PubsTab session={session} />}
         {tab === "reports" && <ReportsTab session={session} />}
         {tab === "payments" && <PaymentsTab session={session} />}
+        {tab === "escrow" && <EscrowTab session={session} />}
+        {tab === "liquidaciones" && <LiquidacionesTab session={session} />}
         {tab === "notifs" && <NotifsTab session={session} />}
         {tab === "config" && <ConfigTab session={session} />}
       </div>
@@ -1026,6 +1030,336 @@ function PaymentsTab({ session }) {
             </tbody>
           </table>
           {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: C.muted, fontSize: 13 }}>Sin pagos</div>}
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─── TAB: ESCROW ──────────────────────────────────────────────────────────────
+function EscrowTab({ session }) {
+  const [pagosRetenidos, setPagosRetenidos] = useState([]);
+  const [disputas, setDisputas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [liberando, setLiberando] = useState(null); // pago_id en proceso
+  const [resolviendo, setResolviendo] = useState(null);
+  const [resolucionModal, setResolucionModal] = useState(null); // { disputa, tipo }
+  const [resolucionText, setResolucionText] = useState("");
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    Promise.all([
+      adminDb("pagos?estado_escrow=in.(retenido,en_disputa)&select=id,monto,docente_email,alumno_email,estado_escrow,clase_finalizada_at,liberado_at,publicacion_id,created_at&order=clase_finalizada_at.asc&limit=100", "GET", null, session.access_token),
+      adminDb("disputas?estado=eq.abierta&select=*&order=created_at.desc&limit=50", "GET", null, session.access_token),
+    ]).then(([p, d]) => {
+      setPagosRetenidos(p || []);
+      setDisputas(d || []);
+    }).catch(() => toast("Error cargando escrow", "error"))
+      .finally(() => setLoading(false));
+  }, [session]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const liberar = async (pago_id) => {
+    setLiberando(pago_id);
+    try {
+      const r = await adminAction("liberar_pago_manual", { pago_id }, session.access_token);
+      toast(`✓ Liberado — ${r.metodo} — neto $${Number(r.monto_neto||0).toLocaleString("es-AR")}`, "success");
+      cargar();
+    } catch(e) { toast("Error: " + e.message, "error"); }
+    finally { setLiberando(null); }
+  };
+
+  const resolverDisputa = async (disputa, estado) => {
+    setResolviendo(disputa.id);
+    try {
+      await adminAction("resolver_disputa", { disputa_id: disputa.id, estado, resolucion: resolucionText || null }, session.access_token);
+      toast(`✓ Disputa resuelta a favor del ${estado === "resuelta_docente" ? "docente" : "alumno"}`, "success");
+      setResolucionModal(null); setResolucionText("");
+      cargar();
+    } catch(e) { toast("Error: " + e.message, "error"); }
+    finally { setResolviendo(null); }
+  };
+
+  const horasRetenido = (at) => {
+    if (!at) return "—";
+    const h = Math.floor((Date.now() - new Date(at).getTime()) / 3600000);
+    return h >= 72 ? `⚠️ ${h}h (vencido)` : `${h}h / 72h`;
+  };
+
+  const totalRetenido = pagosRetenidos.reduce((a, p) => a + Number(p.monto || 0), 0);
+
+  if (loading) return <div style={{ padding: 40 }}><Spinner /></div>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+        <StatBox icon="📦" label="Pagos retenidos" value={pagosRetenidos.filter(p => p.estado_escrow === "retenido").length} color={C.warn} sub="Esperando 72hs" />
+        <StatBox icon="⚠️" label="En disputa" value={pagosRetenidos.filter(p => p.estado_escrow === "en_disputa").length} color={C.danger} sub="Requieren intervención" />
+        <StatBox icon="💰" label="Monto retenido total" value={`$${totalRetenido.toLocaleString("es-AR")}`} color={C.accent} sub="Suma de todos los retenidos" />
+        <StatBox icon="🚨" label="Disputas abiertas" value={disputas.length} color={C.danger} sub="Sin resolver" />
+      </div>
+
+      {/* Pagos retenidos */}
+      <Card>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 14 }}>📦 Pagos retenidos / en disputa</div>
+        {pagosRetenidos.length === 0 ? (
+          <div style={{ color: C.muted, fontSize: 13 }}>No hay pagos retenidos ✓</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT, fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: C.bg }}>
+                  {["Docente", "Alumno", "Monto", "Estado", "Tiempo retenido", "Acción"].map(h => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.muted, borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pagosRetenidos.map(p => (
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: "8px 12px" }}>{p.docente_email?.split("@")[0]}</td>
+                    <td style={{ padding: "8px 12px" }}>{p.alumno_email?.split("@")[0]}</td>
+                    <td style={{ padding: "8px 12px", fontWeight: 700, color: C.accent }}>${Number(p.monto || 0).toLocaleString("es-AR")}</td>
+                    <td style={{ padding: "8px 12px" }}>
+                      <Badge color={p.estado_escrow === "en_disputa" ? C.danger : C.warn}>{p.estado_escrow}</Badge>
+                    </td>
+                    <td style={{ padding: "8px 12px", color: C.muted }}>{horasRetenido(p.clase_finalizada_at)}</td>
+                    <td style={{ padding: "8px 12px" }}>
+                      {p.estado_escrow === "retenido" && (
+                        <button
+                          onClick={() => liberar(p.id)}
+                          disabled={liberando === p.id}
+                          style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT, opacity: liberando === p.id ? .6 : 1 }}
+                        >{liberando === p.id ? "…" : "Liberar ahora"}</button>
+                      )}
+                      {p.estado_escrow === "en_disputa" && (
+                        <span style={{ fontSize: 11, color: C.muted }}>Ver disputas ↓</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Disputas abiertas */}
+      <Card>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 14 }}>🚨 Disputas abiertas</div>
+        {disputas.length === 0 ? (
+          <div style={{ color: C.muted, fontSize: 13 }}>No hay disputas abiertas ✓</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {disputas.map(d => (
+              <div key={d.id} style={{ background: C.bg, border: `1px solid ${C.danger}40`, borderRadius: 10, padding: "12px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                  <div>
+                    <Badge color={C.danger}>{d.motivo}</Badge>
+                    <span style={{ marginLeft: 8, fontSize: 12, color: C.muted }}>{fmt(d.created_at)}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => setResolucionModal({ disputa: d, tipo: "docente" })}
+                      style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
+                      ✓ Favor docente
+                    </button>
+                    <button onClick={() => setResolucionModal({ disputa: d, tipo: "alumno" })}
+                      style={{ background: C.danger, color: "#fff", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
+                      ↩ Reembolso alumno
+                    </button>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: C.text }}>
+                  <strong>Alumno:</strong> {d.alumno_email} · <strong>Docente:</strong> {d.docente_email}
+                </div>
+                {d.descripcion && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>"{d.descripcion}"</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Modal resolución disputa */}
+      {resolucionModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: C.surface, borderRadius: 16, padding: 28, width: "min(480px,92vw)", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 8 }}>
+              {resolucionModal.tipo === "docente" ? "✓ Resolver a favor del docente" : "↩ Reembolso al alumno"}
+            </div>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>
+              {resolucionModal.tipo === "docente"
+                ? "El pago se liberará al docente. Asegurate de haber verificado que la clase se dio."
+                : "El pago se marcará como 'reembolsado'. Deberás gestionar el reembolso manualmente en MercadoPago."}
+            </div>
+            <textarea
+              value={resolucionText}
+              onChange={e => setResolucionText(e.target.value)}
+              placeholder="Notas de resolución (opcional)…"
+              rows={3}
+              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 13, outline: "none", fontFamily: FONT, boxSizing: "border-box", resize: "vertical" }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
+              <button onClick={() => { setResolucionModal(null); setResolucionText(""); }}
+                style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: C.muted, fontFamily: FONT }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => resolverDisputa(resolucionModal.disputa, resolucionModal.tipo === "docente" ? "resuelta_docente" : "resuelta_alumno")}
+                disabled={!!resolviendo}
+                style={{ background: resolucionModal.tipo === "docente" ? C.success : C.danger, color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontWeight: 700, fontFamily: FONT, opacity: resolviendo ? .6 : 1 }}>
+                {resolviendo ? "Procesando…" : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── TAB: LIQUIDACIONES ───────────────────────────────────────────────────────
+function LiquidacionesTab({ session }) {
+  const [liquidaciones, setLiquidaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [generando, setGenerando] = useState(false);
+  const [periodoGen, setPeriodoGen] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [docenteGen, setDocenteGen] = useState("");
+  const [filtroP, setFiltroP] = useState("");
+
+  const SUPA_URL_LIQ = "https://hptdyehzqfpgtrpuydny.supabase.co";
+  const ANON_LIQ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    adminDb("liquidaciones?select=*&order=periodo.desc,docente_email.asc&limit=200", "GET", null, session.access_token)
+      .then(setLiquidaciones)
+      .catch(() => toast("Error cargando liquidaciones", "error"))
+      .finally(() => setLoading(false));
+  }, [session]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const generar = async () => {
+    setGenerando(true);
+    try {
+      const r = await adminAction("generar_liquidacion_manual", {
+        periodo: periodoGen || null,
+        docente_email: docenteGen.trim() || null,
+      }, session.access_token);
+      toast(`✓ ${r.exitosos || 0} liquidaciones generadas`, "success");
+      cargar();
+    } catch(e) { toast("Error: " + e.message, "error"); }
+    finally { setGenerando(false); }
+  };
+
+  const downloadPdf = async (liq) => {
+    // Generar signed URL usando el token del admin
+    try {
+      const path = `${liq.docente_email}/${liq.periodo}.pdf`;
+      const res = await fetch(`${SUPA_URL_LIQ}/storage/v1/object/sign/liquidaciones/${encodeURIComponent(path)}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${session.access_token}`, "apikey": ANON_LIQ, "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresIn: 3600 }),
+      });
+      if (!res.ok) { toast("No se pudo generar el link", "error"); return; }
+      const d = await res.json();
+      if (d.signedURL) window.open(`${SUPA_URL_LIQ}${d.signedURL}`, "_blank", "noopener");
+      else toast("PDF no disponible", "warn");
+    } catch { toast("Error al descargar", "error"); }
+  };
+
+  const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const periodoLabel = (p) => { const [y,m] = p.split("-").map(Number); return `${meses[m-1]} ${y}`; };
+
+  const filtered = filtroP ? liquidaciones.filter(l => l.periodo === filtroP) : liquidaciones;
+  const periodos = [...new Set(liquidaciones.map(l => l.periodo))].sort().reverse();
+
+  const totalNeto = filtered.reduce((a, l) => a + Number(l.monto_neto || 0), 0);
+  const totalCom  = filtered.reduce((a, l) => a + Number(l.comision_luderis || 0), 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Generador manual */}
+      <Card>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 14 }}>⚙️ Generar liquidaciones</div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 4 }}>PERÍODO</div>
+            <input type="month" value={periodoGen} onChange={e => setPeriodoGen(e.target.value)}
+              style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", fontFamily: FONT }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 4 }}>DOCENTE (opcional — vacío = todos)</div>
+            <input value={docenteGen} onChange={e => setDocenteGen(e.target.value)}
+              placeholder="email@docente.com"
+              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", fontFamily: FONT, boxSizing: "border-box" }} />
+          </div>
+          <Btn onClick={generar} disabled={generando} style={{ alignSelf: "flex-end" }}>
+            {generando ? "Generando PDFs…" : "📄 Generar liquidaciones"}
+          </Btn>
+        </div>
+        <div style={{ marginTop: 10, fontSize: 12, color: C.muted }}>
+          Genera PDFs, los sube a Storage y envía emails a los docentes. Idempotente (sobreescribe si ya existe).
+        </div>
+      </Card>
+
+      {/* Stats del período filtrado */}
+      {filtered.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12 }}>
+          <StatBox icon="👩‍🏫" label="Docentes" value={filtered.length} color={C.accent} />
+          <StatBox icon="📚" label="Clases totales" value={filtered.reduce((a, l) => a + (l.cantidad_clases || 0), 0)} color={C.info} />
+          <StatBox icon="💸" label="Neto a pagar" value={`$${totalNeto.toLocaleString("es-AR")}`} color={C.success} />
+          <StatBox icon="🏦" label="Comisiones" value={`$${totalCom.toLocaleString("es-AR")}`} color={C.warn} />
+        </div>
+      )}
+
+      {/* Filtro por período */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <Pill label="Todos" active={!filtroP} onClick={() => setFiltroP("")} />
+        {periodos.map(p => <Pill key={p} label={periodoLabel(p)} active={filtroP === p} onClick={() => setFiltroP(p)} />)}
+      </div>
+
+      {/* Tabla */}
+      {loading ? <Spinner /> : (
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT }}>
+            <thead>
+              <tr style={{ background: C.bg }}>
+                {["Período", "Docente", "Clases", "Monto bruto", "Comisión", "Monto neto", "PDF"].map(h => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: .3, borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(l => (
+                <tr key={l.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <td style={{ padding: "10px 14px", fontWeight: 700, color: C.text, fontSize: 13 }}>{periodoLabel(l.periodo)}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 12, color: C.text }}>{l.docente_email?.split("@")[0] || "—"}<br/><span style={{ fontSize: 10, color: C.muted }}>{l.docente_email}</span></td>
+                  <td style={{ padding: "10px 14px", fontSize: 13, color: C.text }}>{l.cantidad_clases}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 13, color: C.text }}>${Number(l.monto_bruto || 0).toLocaleString("es-AR")}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 13, color: C.muted }}>- ${Number(l.comision_luderis || 0).toLocaleString("es-AR")}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.success }}>${Number(l.monto_neto || 0).toLocaleString("es-AR")}</td>
+                  <td style={{ padding: "10px 14px" }}>
+                    {l.pdf_url ? (
+                      <button onClick={() => downloadPdf(l)}
+                        style={{ background: "none", border: `1px solid ${C.accent}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, color: C.accent, cursor: "pointer", fontFamily: FONT, fontWeight: 700 }}>
+                        ⬇ PDF
+                      </button>
+                    ) : <span style={{ fontSize: 11, color: C.muted }}>Sin PDF</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: C.muted, fontSize: 13 }}>Sin liquidaciones{filtroP ? ` para ${periodoLabel(filtroP)}` : ""}</div>}
         </Card>
       )}
     </div>
