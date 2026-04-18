@@ -188,18 +188,31 @@ function isSolvableByPropagation(
 }
 
 // ── Step 4: Find minimal hints ────────────────────────────────────────────────
-// Try pairs first; fall back to triples if no pair makes the puzzle logic-solvable.
+// Try 0 hints first (hardest), then 1, then pairs, then triples.
+// Uses the minimum that makes the puzzle logic-solvable without backtracking.
 function findHints(
   N: number,
   solution: [number, number][],
   regions: number[][]
 ): [number, number][] {
+  // 0 hints — ideal: pure logic, no givens
+  if (isSolvableByPropagation(N, regions, [])) return [];
+
+  // 1 hint — try each solution cell alone
+  for (let i = 0; i < N; i++) {
+    const h: [number, number][] = [solution[i]];
+    if (isSolvableByPropagation(N, regions, h)) return h;
+  }
+
+  // 2 hints — try all pairs
   for (let i = 0; i < N; i++) {
     for (let j = i + 1; j < N; j++) {
       const h: [number, number][] = [solution[i], solution[j]];
       if (isSolvableByPropagation(N, regions, h)) return h;
     }
   }
+
+  // 3 hints — fallback
   for (let i = 0; i < N; i++) {
     for (let j = i + 1; j < N; j++) {
       for (let k = j + 1; k < N; k++) {
@@ -208,12 +221,17 @@ function findHints(
       }
     }
   }
+
+  // Último recurso: 3 fijos (puzzle difícil pero jugable)
   return [solution[0], solution[1], solution[2]];
 }
 
 // ── Step 5: Classify difficulty ───────────────────────────────────────────────
 function classifyDifficulty(N: number, hintCount: number): "fácil" | "medio" | "difícil" {
-  if (N <= 7 && hintCount >= 2) return "fácil";
+  if (hintCount === 0) return "difícil";
+  if (hintCount === 1 || N >= 9) return N <= 7 ? "medio" : "difícil";
+  // hintCount >= 2
+  if (N <= 7) return "fácil";
   if (N <= 8) return "medio";
   return "difícil";
 }

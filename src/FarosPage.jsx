@@ -2,17 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { C, FONT, toast } from './shared';
 import * as sb from './supabase';
 import {
-  createCellState, toggleCell, getConflicts, checkWin, formatTime, REGION_PALETTE,
+  createCellState, toggleCell, getConflicts, checkWin, formatTime, REGION_PALETTE, PUZZLE_EPOCH,
 } from './FarosGameLogic';
 import FarosGrid from './components/FarosGrid';
 import FarosWinOverlay from './components/FarosWinOverlay';
 import FarosStreakBar from './components/FarosStreakBar';
 
-// Puzzle number derived from days since epoch (2026-01-01 = puzzle #1)
+// Puzzle number: #1 en el día de lanzamiento (PUZZLE_EPOCH), +1 por día
 function getPuzzleNumber(dateStr) {
-  const epoch = new Date('2026-01-01');
+  const epoch = new Date(PUZZLE_EPOCH);
   const d = new Date(dateStr);
-  return Math.floor((d - epoch) / 86400000) + 1;
+  return Math.max(1, Math.floor((d - epoch) / 86400000) + 1);
 }
 
 // How many consecutive days the user has completed (newest-first sorted dates)
@@ -253,7 +253,9 @@ export default function FarosPage({ session, onBack, onWin }) {
             background: 'rgba(255,225,100,.3)', border: '1px solid rgba(230,180,30,.4)',
             borderRadius: 8, padding: '4px 12px',
           }}>
-            💡 {puzzle.hints.length} faro{puzzle.hints.length !== 1 ? 's' : ''} ya colocado{puzzle.hints.length !== 1 ? 's' : ''} como pista
+            {puzzle.hints.length === 0
+              ? '🧠 Sin pistas — ¡a pura lógica!'
+              : `💡 ${puzzle.hints.length} faro${puzzle.hints.length !== 1 ? 's' : ''} ya colocado${puzzle.hints.length !== 1 ? 's' : ''} como pista`}
           </div>
 
           {cellState && (
@@ -303,8 +305,8 @@ export default function FarosPage({ session, onBack, onWin }) {
             ? `✓ ¡Resuelto en ${formatTime(winTime)}!`
             : conflicts.length > 0
             ? '⚠ Conflicto — ajustá la posición de los faros'
-            : farosPlaced === 0
-            ? `Colocá los ${N - puzzle.hints.length} faros restantes`
+            : farosPlaced === puzzle.hints.length
+            ? `Colocá los ${N - puzzle.hints.length} faros`
             : `${farosPlaced} de ${N} faros colocados · ${N - farosPlaced} restante${N - farosPlaced !== 1 ? 's' : ''}`}
         </div>
 

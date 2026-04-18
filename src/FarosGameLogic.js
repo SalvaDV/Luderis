@@ -1,3 +1,7 @@
+// ── Fecha de lanzamiento — actualizar el día que salga a producción ──────────
+// Esta fecha determina el número de puzzle (#1 en el primer día de lanzamiento).
+export const PUZZLE_EPOCH = '2026-04-18'; // ← cambiar a la fecha de lanzamiento real
+
 // ── Paleta de 10 colores distinguibles para regiones ─────────────────────────
 // Siempre se usan los primeros N para una grilla N×N.
 export const REGION_PALETTE = [
