@@ -124,7 +124,7 @@ CREATE TABLE puzzles (
   regions     jsonb NOT NULL,   -- array 2D [row][col] → índice de región (0-based)
   hints       jsonb NOT NULL,   -- array de [row, col]
   solution    jsonb NOT NULL,   -- array de [row, col] ordenado por región
-  colors      jsonb NOT NULL,   -- array de {bg, border, dark, name} por región
+  colors      jsonb NOT NULL,   -- array de índices al REGION_PALETTE global (ver sección Paleta)
   difficulty  text NOT NULL,    -- 'fácil' | 'medio' | 'difícil'
   created_at  timestamptz DEFAULT now()
 );
@@ -198,6 +198,35 @@ Para cada puzzle candidato, el solver:
 | `FarosRules` | Sección de reglas (estática, recibe grid_size para ajustar texto) |
 | `FarosWinOverlay` | Overlay de victoria: stats, compartir, volver |
 | `FarosStreakBar` | Barra de racha y días de la semana |
+
+---
+
+## Paleta de colores de regiones
+
+La paleta está definida como constante global con exactamente **10 colores**, usados en orden para cada puzzle (los primeros N para una grilla N×N). Los colores deben ser distinguibles entre sí independientemente del tamaño del puzzle.
+
+Criterios:
+- Diferencia de hue ≥ 25° entre cualquier par de colores adyacentes en la paleta.
+- Variación adicional en saturación/luminosidad para no depender solo del hue.
+- Distinguibles para los tipos más comunes de daltonismo (deuteranopia / protanopia) mediante diferencia de luminancia cuando el hue es similar.
+- Se usa el mismo orden siempre para que el jugador los reconozca de un día al otro.
+
+Paleta de referencia (10 colores):
+
+| # | Nombre    | BG       | Border   |
+|---|-----------|----------|----------|
+| 0 | Azul      | #D4E8FF  | #1A6ED8  |
+| 1 | Verde     | #CCF5EC  | #2EC4A0  |
+| 2 | Naranja   | #FFE8CC  | #E8881A  |
+| 3 | Violeta   | #EAE0FF  | #7B5CF0  |
+| 4 | Dorado    | #FFF4CC  | #F59E0B  |
+| 5 | Rojo      | #FFE0E0  | #E53E3E  |
+| 6 | Celeste   | #CCF0FF  | #0EA5E9  |
+| 7 | Rosa      | #FFE4F0  | #EC4899  |
+| 8 | Lima      | #E8FFD4  | #65A30D  |
+| 9 | Índigo    | #E0E8FF  | #4F46E5  |
+
+La implementación valida que los 10 colores sean perceptualmente distinguibles antes de deploy. Si en el futuro se detecta un par problemático para daltonismo, se ajusta el color individual sin cambiar la estructura.
 
 ---
 
