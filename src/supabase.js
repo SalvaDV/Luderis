@@ -696,6 +696,37 @@ export const registrarClickContacto = async (pubId, token) => {
 
 // ── Alertas de publicaciones ──────────────────────────────────────────────────
 
+// ── Faros puzzle helpers ──────────────────────────────────────────────────────
+
+// Returns today's puzzle or null if none exists yet
+export const getTodaysPuzzle = (token) => {
+  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  return db(`puzzles?date=eq.${today}&limit=1`, 'GET', null, token)
+    .then(rows => rows?.[0] ?? null);
+};
+
+// Returns the user's result for today's puzzle, or null if not solved
+export const getTodaysPuzzleResult = (token, puzzleId) =>
+  db(`puzzle_results?puzzle_id=eq.${puzzleId}&limit=1`, 'GET', null, token)
+    .then(rows => rows?.[0] ?? null);
+
+// Saves the user's result. Silently ignores duplicates (409 conflict).
+export const submitPuzzleResult = async (token, puzzleId, timeSeconds) => {
+  try {
+    return await db(
+      'puzzle_results',
+      'POST',
+      { puzzle_id: puzzleId, time_seconds: timeSeconds },
+      token,
+      'return=representation'
+    );
+  } catch (e) {
+    // UNIQUE violation (user solved it already) — not an error for us
+    if (e.message?.includes('23505') || e.message?.includes('unique')) return null;
+    throw e;
+  }
+};
+
 export const dispararAlertas = async (pub, token) => {
   try {
     const alertas = await db(
