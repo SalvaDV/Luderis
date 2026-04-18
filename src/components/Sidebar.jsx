@@ -7,7 +7,7 @@ import {
   Avatar, LegalModal,
 } from "../shared";
 
-export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin}){
+export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin,juegosBadge}){
   const [legalTab,setLegalTab]=useState(null);// "tc"|"priv"|null
   const nombre=sb.getDisplayName(session.user.email);
   const nav=[
@@ -16,6 +16,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
     {id:"chats",icon:"💬",label:t("chats"),badge:unreadCount},
     {id:"favoritos",icon:"★",label:t("favorites")},
     {id:"inscripciones",icon:"🎓",label:t("classes"),badge:notifCount},
+    {id:"juegos",icon:"🔦",label:"Juegos",badge:juegosBadge?1:0,badgeDot:true},
     {id:"cuenta",icon:"👤",label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
   ];
   const inner=(
@@ -81,7 +82,11 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
             onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";}}}>
             <span style={{fontSize:16,lineHeight:1}}>{item.icon}</span>
             <span style={{flex:1}}>{item.label}</span>
-            {item.badge>0&&<span style={{background:C.danger,color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px",minWidth:18,textAlign:"center"}}>{item.badge>9?"9+":item.badge}</span>}
+            {item.badge>0&&(
+              item.badgeDot
+                ?<span style={{width:8,height:8,borderRadius:"50%",background:C.danger||"#E53E3E",flexShrink:0}}/>
+                :<span style={{background:C.danger||"#E53E3E",color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px",minWidth:18,textAlign:"center"}}>{item.badge>9?"9+":item.badge}</span>
+            )}
             {active&&<span style={{width:3,height:22,borderRadius:2,background:LUD.grad,flexShrink:0}}/>}
           </button>);
         })}

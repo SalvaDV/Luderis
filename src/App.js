@@ -59,6 +59,7 @@ const MiCuentaPage   = React.lazy(() => import('./MiCuentaPage'));
 
 // Named exports from PostFormModal bundle
 const PerfilPage     = React.lazy(() => import('./PostFormModal').then(m => ({ default: m.PerfilPage })));
+const FarosPage      = React.lazy(() => import('./FarosPage'));
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 // Named exports for lazy-loaded modules that need these components
@@ -135,6 +136,7 @@ export default function App(){
   const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
   const [unread,setUnread]=useState(0);const [ofertasCount,setOfertasCount]=useState(0);const [notifCount,setNotifCount]=useState(0);const [notifs,setNotifs]=useState([]);const [showNotifs,setShowNotifs]=useState(false);
+  const [juegosBadge,setJuegosBadge]=useState(false);
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Exponer función global para que el sidebar pueda abrir el panel
   useEffect(()=>{window._openNotifPanel=()=>setNotifPanelOpen(v=>!v);return()=>{window._openNotifPanel=null;};},[]);// eslint-disable-line
@@ -326,6 +328,23 @@ export default function App(){
     return()=>clearTimeout(t);
   },[session?.expires_at,session?.refresh_token]);// eslint-disable-line
 
+  // ── Faros badge: show until user wins today's puzzle ─────────────────────────
+  useEffect(() => {
+    if (!session?.access_token) { setJuegosBadge(false); return; }
+    let mounted = true;
+    sb.getTodaysPuzzle(session.access_token)
+      .then(p => {
+        if (!mounted || !p) return;
+        return sb.getTodaysPuzzleResult(session.access_token, p.id);
+      })
+      .then(result => {
+        if (!mounted) return;
+        setJuegosBadge(!result);
+      })
+      .catch(() => { if (mounted) setJuegosBadge(false); });
+    return () => { mounted = false; };
+  }, [session?.access_token]); // eslint-disable-line
+
   const chatPostRef=useRef(null);
   const refreshUnread=useCallback(()=>{
     if(!session)return;
@@ -513,7 +532,7 @@ export default function App(){
   return(
     <div style={{minHeight:"100vh",background:`var(--cl-section-tint, ${C.bg})`,fontFamily:FONT,color:C.text,display:"flex",transition:"background .4s ease",overflowX:"hidden",maxWidth:"100vw"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tabPulse{0%,100%{opacity:1}50%{opacity:0.5}}@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}*{box-sizing:border-box}html,body,#root{background:${C.bg};color:${C.text};min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}::-webkit-scrollbar-track{background:transparent}.cl-card-anim{animation:fadeUp .2s ease both}.cl-fade{animation:fadeIn .15s ease both}.sk{background:linear-gradient(90deg,var(--cl-sk-a,#E2E8F0) 25%,var(--cl-sk-b,#F7FAFC) 50%,var(--cl-sk-a,#E2E8F0) 75%);background-size:400px;animation:shimmer 1.4s infinite linear;border-radius:6px}.cl-card-anim:nth-child(1){animation-delay:0ms}.cl-card-anim:nth-child(2){animation-delay:40ms}.cl-card-anim:nth-child(3){animation-delay:80ms}.cl-card-anim:nth-child(4){animation-delay:120ms}.cl-card-anim:nth-child(5){animation-delay:160ms}.cl-card-anim:nth-child(6){animation-delay:200ms}input,textarea,select{color-scheme:${_themeKey()==="light"?"light":"dark"};background-color:${C.surface}!important;color:${C.text}!important;border-color:${C.border}}input::placeholder,textarea::placeholder{color:${C.muted};opacity:1}input:focus,textarea:focus,select:focus{border-color:${C.accent}!important;outline:none}@media(max-width:768px){input,textarea,select{font-size:16px!important}.cl-hide-desk{display:none!important}button{-webkit-tap-highlight-color:transparent}}.cl-tabs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.cl-tabs-scroll::-webkit-scrollbar{display:none}.cl-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.cl-grid-2{grid-template-columns:1fr!important}}.cl-row-wrap{display:flex;flex-wrap:wrap;gap:8px}.curso-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.curso-actions::-webkit-scrollbar{display:none}@media(max-width:600px){.curso-actions{overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;gap:6px!important}.curso-actions button,.curso-actions a{white-space:nowrap;font-size:11px!important;padding:5px 9px!important;min-height:0!important}.curso-actions span{white-space:nowrap;font-size:11px!important}.curso-pad{padding:12px 14px!important}.curso-card{padding:13px 15px!important;border-radius:12px!important}.curso-main-header{padding:8px 12px!important}}`}</style>
-      <Sidebar page={page} setPage={setPage} session={session} onLogout={logout} onNewPost={()=>{setEditPost(null);setShowForm(true);}} unreadCount={unread} ofertasCount={ofertasCount} notifCount={notifCount} ofertasAceptadasNuevas={ofertasAceptadasNuevas} mobile={isMobile} open={sidebarOpen} onClose={()=>setSidebarOpen(false)} theme={currentTheme} onToggleTheme={toggleTheme} onForceRender={()=>forceThemeRender(n=>n+1)} esAdmin={esAdmin}/>
+      <Sidebar page={page} setPage={setPage} session={session} onLogout={logout} onNewPost={()=>{setEditPost(null);setShowForm(true);}} unreadCount={unread} ofertasCount={ofertasCount} notifCount={notifCount} ofertasAceptadasNuevas={ofertasAceptadasNuevas} mobile={isMobile} open={sidebarOpen} onClose={()=>setSidebarOpen(false)} theme={currentTheme} onToggleTheme={toggleTheme} onForceRender={()=>forceThemeRender(n=>n+1)} esAdmin={esAdmin} juegosBadge={juegosBadge}/>
       {isMobile&&(
         <>
           {/* Top bar mobile */}
@@ -537,6 +556,7 @@ export default function App(){
               {[
                 {id:"explore",svg:`<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>`,label:t("explore"),badge:0},
                 {id:"chats",svg:`<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>`,label:t("chats"),badge:unread},
+                {id:"juegos",svg:`<circle cx="10" cy="10" r="7"/><path d="M10 7v6M7 10h6"/>`,label:"Juegos",badge:juegosBadge?1:0,badgeDot:true},
                 {id:"inscripciones",svg:`<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>`,label:t("classes"),badge:notifCount},
                 {id:"cuenta",svg:`<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>`,label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
               ].map(item=>{
@@ -548,7 +568,11 @@ export default function App(){
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active?C.accent:C.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",transition:"stroke .15s"}} dangerouslySetInnerHTML={{__html:item.svg}}/>
                     </div>
                     <span style={{fontSize:10,color:active?C.accent:C.muted,fontWeight:active?600:400,whiteSpace:"nowrap",transition:"color .15s"}}>{item.label}</span>
-                    {item.badge>0&&<span style={{position:"absolute",top:4,right:10,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4}}>{item.badge>9?"9+":item.badge}</span>}
+                    {item.badge>0&&(
+                      item.badgeDot
+                        ?<span style={{position:"absolute",top:6,right:"calc(50% - 14px)",width:8,height:8,borderRadius:"50%",background:C.danger||"#E53E3E"}}/>
+                        :<span style={{position:"absolute",top:4,right:10,background:C.danger||"#E53E3E",color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4}}>{item.badge>9?"9+":item.badge}</span>
+                    )}
                   </button>
                 );
               })}
@@ -563,6 +587,19 @@ export default function App(){
           {page==="chats"&&<ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/>}
           {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={setDetailPost} onOpenChat={openChat} onOpenPerfil={setPerfilEmail}/>}
           {page==="inscripciones"&&<InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>}
+          {page==="juegos"&&(
+            <React.Suspense fallback={
+              <div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>
+                Cargando…
+              </div>
+            }>
+              <FarosPage
+                session={session}
+                onBack={()=>setPage("explore")}
+                onWin={()=>setJuegosBadge(false)}
+              />
+            </React.Suspense>
+          )}
           {page==="cuenta"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}><MiCuentaPage key={myPostsKey} session={session} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost} onEdit={p=>{setEditPost(p);setShowForm(true);}} onNew={()=>{setEditPost(null);setShowForm(true);}} onOpenChat={openChat} onRefreshOfertas={refreshUnread} onStartOnboarding={()=>{setOnboardingUpgrade(true);setShowOnboarding(true);}} onClearBadge={()=>{
             setOfertasAceptadasNuevas(0);
             setOfertasCount(0);
