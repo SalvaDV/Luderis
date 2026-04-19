@@ -7,6 +7,7 @@ import {
 import FarosGrid from './components/FarosGrid';
 import FarosWinOverlay from './components/FarosWinOverlay';
 import FarosStreakBar from './components/FarosStreakBar';
+import FarosTomorrow from './components/FarosTomorrow';
 
 // Puzzle number: #1 en el día de lanzamiento (PUZZLE_EPOCH), +1 por día
 function getPuzzleNumber(dateStr) {
@@ -47,6 +48,7 @@ export default function FarosPage({ session, onBack, onWin }) {
   const [error, setError] = useState(null);
   const [cellState, setCellState] = useState(null);
   const [won, setWon] = useState(false);
+  const [wonOnLoad, setWonOnLoad] = useState(false); // ganado en sesión anterior
   const [winTime, setWinTime] = useState(0);
   const [streak, setStreak] = useState(0);
   const startTimeRef = React.useRef(Date.now());
@@ -71,6 +73,7 @@ export default function FarosPage({ session, onBack, onWin }) {
         if (!mounted) return;
         if (result) {
           setWon(true);
+          setWonOnLoad(true);
           setWinTime(result.time_seconds);
           // Show full solution in won state
           setCellState(createCellState(p.grid_size, p.solution));
@@ -177,6 +180,19 @@ export default function FarosPage({ session, onBack, onWin }) {
         <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
         <div style={{ fontSize: 13 }}>No se pudo cargar el puzzle. Revisá tu conexión.</div>
       </div>
+    );
+  }
+
+  if (wonOnLoad && puzzle) {
+    return (
+      <FarosTomorrow
+        streak={streak}
+        winTime={winTime}
+        difficulty={puzzle.difficulty}
+        gridSize={puzzle.grid_size}
+        puzzleNum={getPuzzleNumber(puzzle.date)}
+        onShare={handleShare}
+      />
     );
   }
 
