@@ -28,8 +28,43 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-signature, x-request-id",
 };
+
+// Verifica la firma HMAC SHA-256 que envía Mercado Pago en el header `x-signature`.
+// Formato del header: "ts=<timestamp>,v1=<hash>"
+// Firma = HMAC_SHA256(secret, `id:<dataId>;request-id:<reqId>;ts:<ts>;`)
+async function verifyMpSignature(req: Request, dataId: string | null): Promise<boolean> {
+  const secret = Deno.env.get("MP_WEBHOOK_SECRET");
+  // Si no hay secreto configurado, no bloqueamos (retrocompat): logueamos y seguimos.
+  if (!secret) {
+    console.warn("MP_WEBHOOK_SECRET no configurado — firma no verificada");
+    return true;
+  }
+  const sigHeader = req.headers.get("x-signature");
+  const reqId = req.headers.get("x-request-id");
+  if (!sigHeader || !dataId) return false;
+
+  const parts = Object.fromEntries(
+    sigHeader.split(",").map(p => {
+      const [k, ...v] = p.trim().split("=");
+      return [k, v.join("=")];
+    })
+  );
+  const ts = parts["ts"];
+  const v1 = parts["v1"];
+  if (!ts || !v1) return false;
+
+  const manifest = `id:${dataId};request-id:${reqId ?? ""};ts:${ts};`;
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(manifest));
+  const expected = Array.from(new Uint8Array(sigBuf))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+  return expected === v1;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -42,6 +77,17 @@ serve(async (req) => {
     // MP solo nos interesa cuando notifica sobre pagos
     if (topic !== "payment" && topic !== "merchant_order") {
       return new Response("ok", { status: 200, headers: CORS });
+    }
+
+    // Verificar firma MP (solo para eventos de payment, merchant_order no firma igual)
+    if (topic === "payment") {
+      const valid = await verifyMpSignature(req, id);
+      if (!valid) {
+        console.warn("mp-webhook: firma inválida", { id });
+        return new Response(JSON.stringify({ error: "invalid signature" }), {
+          status: 401, headers: { ...CORS, "Content-Type": "application/json" }
+        });
+      }
     }
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN");

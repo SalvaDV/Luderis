@@ -15,15 +15,16 @@ export default function FinalizarClaseModal({post,session,onClose,onFinalizado})
     const ahora=new Date().toISOString();
     await sb.updatePublicacion(post.id,{finalizado:true},session.access_token);
     await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:ahora},session.access_token)));
-    // Notificar al alumno: tiene 72hs para disputar (el trigger de BD actualiza estado_escrow)
+    // Notificar al alumno: tiene que confirmar que recibió la clase (doble confirmación).
+    // El pago NO pasa a "retenido" hasta que el alumno confirme (o pasen 7 días sin respuesta).
     await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({
       usuario_id:ins.alumno_id||null,
       alumno_email:ins.alumno_email,
-      tipo:"disputa_abierta",
+      tipo:"confirmar_clase",
       publicacion_id:post.id,
       pub_titulo:post.titulo,
       leida:false,
-    }).catch(e=>logError("notif disputa_abierta",e))));
+    }).catch(e=>logError("notif confirmar_clase",e))));
     onFinalizado();onClose();
   }catch(e){alert("Error al finalizar: "+e.message);}finally{setSaving(false);}};
   return(

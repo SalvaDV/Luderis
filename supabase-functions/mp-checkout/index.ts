@@ -1,12 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "https://classelink.vercel.app,https://luderis.vercel.app,http://localhost:3000")
+  .split(",").map(s => s.trim()).filter(Boolean);
+
+function corsHeaders(origin: string | null) {
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 Deno.serve(async (req) => {
+  const CORS = corsHeaders(req.headers.get("origin"));
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS });
   }
@@ -68,16 +76,36 @@ Deno.serve(async (req) => {
         );
       }
 
-      // El precio enviado por el cliente debe coincidir con el de la BD (tolerancia $1)
-      // Para paquetes: precio enviado es el total del paquete (ya calculado en frontend)
+      // Validar que el precio enviado por el cliente coincida con el de la BD.
+      // Para paquetes permitimos un descuento máximo (DESCUENTO_MAX_PAQUETE) por escalonamiento.
+      // Para clases/cursos individuales sólo se acepta rounding (± $1).
       const precioReal = parseFloat(pub.precio);
-      const esPaquete = tipo === "paquete_clase" && clases_cantidad;
-      const precioCliente = esPaquete
-        ? parseFloat(precio) // precio total del paquete ya calculado
-        : parseFloat(precio) * Number(cantidad);
-      const precioEsperado = esPaquete ? precioReal * Number(clases_cantidad) : precioReal * Number(cantidad);
-      // Tolerancia mayor para paquetes (descuentos aplicados)
-      const tolerancia = esPaquete ? precioEsperado * 0.5 : 1; // hasta 50% de descuento permitido
+      if (!Number.isFinite(precioReal) || precioReal <= 0) {
+        return new Response(
+          JSON.stringify({ error: "Precio inválido en publicación" }),
+          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      const precioClienteNum = parseFloat(precio);
+      const cantidadNum = Number(cantidad);
+      const clasesCantidadNum = Number(clases_cantidad);
+      if (!Number.isFinite(precioClienteNum) || precioClienteNum <= 0 ||
+          !Number.isFinite(cantidadNum) || cantidadNum <= 0) {
+        return new Response(
+          JSON.stringify({ error: "Precio o cantidad inválidos" }),
+          { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      const esPaquete = tipo === "paquete_clase" && Number.isFinite(clasesCantidadNum) && clasesCantidadNum > 0;
+      const precioCliente = esPaquete ? precioClienteNum : precioClienteNum * cantidadNum;
+      const precioEsperado = esPaquete ? precioReal * clasesCantidadNum : precioReal * cantidadNum;
+
+      // Descuento máximo permitido para paquetes (configurable por env). Default 20%.
+      const DESCUENTO_MAX_PAQUETE = Math.max(0, Math.min(0.5, parseFloat(Deno.env.get("DESCUENTO_MAX_PAQUETE") ?? "0.20")));
+      const tolerancia = esPaquete ? precioEsperado * DESCUENTO_MAX_PAQUETE : 1;
+
+      // Nunca permitir cobrar MÁS de lo esperado (protege al alumno).
+      // Permitir cobrar menos sólo dentro de la tolerancia (descuento autorizado).
       if (precioCliente > precioEsperado + 1 || precioCliente < precioEsperado - tolerancia) {
         return new Response(
           JSON.stringify({ error: "El precio no coincide", precio_real: precioReal }),

@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
+import { SUPABASE_URL as SUPA_URL, SUPABASE_KEY as ANON_KEY } from "./supabase";
 import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
 
-// ─── ADMIN EMAILS — solo estos pueden acceder ─────────────────────────────────
-const FALLBACK_ADMIN = "salvadordevedia@gmail.com";
-
-// ─── DB DIRECTO (usa anon key para lecturas admin — requiere RLS permisivo o service role) ──
-const SUPA_URL = "https://hptdyehzqfpgtrpuydny.supabase.co";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
+// Admin fallback email (optional, only for bootstrapping). Set REACT_APP_ADMIN_EMAIL in env to use.
+const FALLBACK_ADMIN = (process.env.REACT_APP_ADMIN_EMAIL || "").toLowerCase();
 
 const adminDb = async (path, method = "GET", body = null, token) => {
   const h = { "apikey": ANON_KEY, "Authorization": `Bearer ${token || ANON_KEY}`, "Content-Type": "application/json", "Prefer": "return=representation" };
@@ -17,12 +14,11 @@ const adminDb = async (path, method = "GET", body = null, token) => {
   return text ? JSON.parse(text) : [];
 };
 
-// ─── CONFIG PERSISTIDA EN LOCALSTORAGE ───────────────────────────────────────
 // Admin action via Edge Function (bypasea RLS con service role)
 const adminAction = async (action, params, token) => {
-  const res = await fetch("https://hptdyehzqfpgtrpuydny.supabase.co/functions/v1/admin-actions", {
+  const res = await fetch(`${SUPA_URL}/functions/v1/admin-actions`, {
     method: "POST",
-    headers: {"Content-Type": "application/json", "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g", "x-user-token": token},
+    headers: {"Content-Type": "application/json", "apikey": ANON_KEY, "x-user-token": token},
     body: JSON.stringify({action, ...params}),
   });
   const data = await res.json();
@@ -83,11 +79,13 @@ const TABS = [
 
 export default function AdminPage({ session, onClose, onChatUser }) {
   const [tab, setTab] = useState("overview");
-  const [isAdmin, setIsAdmin] = React.useState(session?.user?.email === FALLBACK_ADMIN);
-  const [checkingAdmin, setCheckingAdmin] = React.useState(session?.user?.email !== FALLBACK_ADMIN);
+  const userEmailLc = (session?.user?.email || "").toLowerCase();
+  const isFallbackAdmin = !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
+  const [isAdmin, setIsAdmin] = React.useState(isFallbackAdmin);
+  const [checkingAdmin, setCheckingAdmin] = React.useState(!isFallbackAdmin);
 
   React.useEffect(() => {
-    if (session?.user?.email === FALLBACK_ADMIN) { setIsAdmin(true); setCheckingAdmin(false); return; }
+    if (isFallbackAdmin) { setIsAdmin(true); setCheckingAdmin(false); return; }
     let mounted=true;
     // Check rol in DB
     adminDb(`usuarios?email=eq.${encodeURIComponent(session.user.email)}&select=rol`, "GET", null, session.access_token)
@@ -95,7 +93,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       .catch(() => { if(mounted)setIsAdmin(false); })
       .finally(() => { if(mounted)setCheckingAdmin(false); });
     return()=>{mounted=false;};
-  }, [session]);
+  }, [session, isFallbackAdmin]);
 
   if (checkingAdmin) return (
     <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>

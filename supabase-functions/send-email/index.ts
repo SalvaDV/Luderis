@@ -12,11 +12,18 @@
  *   APP_URL          → https://classelink.vercel.app
  */
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "https://classelink.vercel.app,https://luderis.vercel.app,http://localhost:3000")
+  .split(",").map(s => s.trim()).filter(Boolean);
+
+function buildCors(origin: string | null) {
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 // ── Paleta de colores Luderis ──────────────────────────────────────────────────
 const BRAND = {
@@ -430,6 +437,7 @@ Object.assign(TEMPLATES, {
 
 // ── Handler principal ──────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
+  const CORS = buildCors(req.headers.get("origin"));
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {

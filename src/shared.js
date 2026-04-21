@@ -193,7 +193,10 @@ export const useAutorAvatar=(email,token)=>{
 };
 
 // ─── MICRO-COMPONENTES ────────────────────────────────────────────────────────
-export const Spinner=({small})=>(<div style={{display:"flex",justifyContent:"center",padding:small?"4px":"32px 0"}}><div style={{width:small?16:26,height:small?16:26,border:`2px solid ${C.border}`,borderTop:`2px solid ${C.accent}`,borderRight:`2px solid ${C.teal||C.accent}40`,borderRadius:"50%",animation:"spin .6s linear infinite"}}/></div>);
+export const Spinner=({small,label="Cargando"})=>(<div role="status" aria-live="polite" style={{display:"flex",justifyContent:"center",padding:small?"4px":"32px 0"}}>
+  <div aria-hidden="true" style={{width:small?16:26,height:small?16:26,border:`2px solid ${C.border}`,borderTop:`2px solid ${C.accent}`,borderRight:`2px solid ${C.teal||C.accent}40`,borderRadius:"50%",animation:"spin .6s linear infinite"}}/>
+  <span style={{position:"absolute",width:1,height:1,padding:0,margin:-1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap",border:0}}>{label}</span>
+</div>);
 
 export const SkeletonCard=()=>(<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",fontFamily:FONT}}>
   <div style={{display:"flex",gap:10,marginBottom:12}}>
@@ -239,7 +242,9 @@ export const Input=({style={},...props})=>(<input style={{width:"100%",backgroun
   onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}
   {...props}/>);
 
-export const Btn=({children,variant="primary",style={},...props})=>{
+const _reducedMotion=typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+export const Btn=({children,variant="primary",style={},disabled=false,onMouseEnter,onMouseLeave,...props})=>{
   const styles={
     primary:{bg:C.accent,color:"#fff",border:"none"},
     danger:{bg:C.danger,color:"#fff",border:"none"},
@@ -250,9 +255,28 @@ export const Btn=({children,variant="primary",style={},...props})=>{
     outline:{bg:"transparent",color:C.accent,border:`1px solid ${C.accent}`},
   };
   const s=styles[variant]||styles.primary;
-  return(<button style={{background:s.bg,color:s.color,border:s.border,borderRadius:20,padding:"9px 22px",fontWeight:600,fontSize:15,cursor:"pointer",fontFamily:FONT,transition:"all .15s",...style}}
-    onMouseEnter={e=>{e.currentTarget.style.opacity=".88";e.currentTarget.style.transform="scale(1.01)";}}
-    onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="scale(1)";}}
+  return(<button
+    disabled={disabled}
+    aria-disabled={disabled}
+    style={{
+      background:s.bg,color:s.color,border:s.border,
+      borderRadius:20,padding:"9px 22px",fontWeight:600,fontSize:15,
+      cursor:disabled?"not-allowed":"pointer",
+      opacity:disabled?.55:1,
+      fontFamily:FONT,
+      transition:_reducedMotion?"none":"transform .15s,opacity .15s,box-shadow .15s",
+      ...style,
+    }}
+    onMouseEnter={e=>{
+      if(disabled)return;
+      if(!_reducedMotion){e.currentTarget.style.opacity=".88";e.currentTarget.style.transform="scale(1.01)";}
+      onMouseEnter?.(e);
+    }}
+    onMouseLeave={e=>{
+      if(disabled)return;
+      if(!_reducedMotion){e.currentTarget.style.opacity="1";e.currentTarget.style.transform="scale(1)";}
+      onMouseLeave?.(e);
+    }}
     {...props}>{children}</button>);
 };
 
@@ -316,7 +340,21 @@ export function SearchableSelect({value,onChange,options,placeholder="Todas",sty
 
 export const ErrMsg=({msg})=>msg?<div style={{color:C.danger,fontSize:13,margin:"5px 0",fontFamily:FONT,display:"flex",alignItems:"center",gap:5}}><span>⚠</span>{msg}</div>:null;
 export const Label=({children})=><div style={{color:C.muted,fontSize:13,fontWeight:600,letterSpacing:.3,marginBottom:6}}>{children}</div>;
-export const Modal=({children,onClose,width="min(600px,97vw)"})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}}><div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch"}}>{children}</div></div>);
+export const Modal=({children,onClose,width="min(600px,97vw)",ariaLabel})=>{
+  useEffect(()=>{
+    const onKey=(e)=>{if(e.key==="Escape"&&onClose)onClose();};
+    document.addEventListener("keydown",onKey);
+    const prev=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    return()=>{document.removeEventListener("keydown",onKey);document.body.style.overflow=prev;};
+  },[onClose]);
+  const handleBackdrop=(e)=>{if(e.target===e.currentTarget&&onClose)onClose();};
+  return(<div role="dialog" aria-modal="true" aria-label={ariaLabel||"Diálogo"}
+    onClick={handleBackdrop}
+    style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}}>
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch"}}>{children}</div>
+  </div>);
+};
 
 // ─── LEGAL MODAL (T&C + Privacidad) ──────────────────────────────────────────
 const LEGAL_SECTIONS=[

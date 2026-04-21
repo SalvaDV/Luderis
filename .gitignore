@@ -8,6 +8,8 @@
 
 # Variables de entorno (nunca subir al repo)
 .env
+.env.*
+.env.txt
 .env.local
 .env.development.local
 .env.test.local
@@ -27,3 +29,10 @@ yarn-error.log*
 supabase/.branches
 supabase/.temp
 .claude/
+.superpowers/
+
+# Archivos sueltos que no deberían entrar al bundle/repo
+src/IMG_*.PNG
+src/IMG_*.png
+src/*.pdf
+src/insert_helper.py

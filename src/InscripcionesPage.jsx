@@ -99,14 +99,26 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
     }catch{}
   };
 
+  const confirmarClaseAlumno=async(ins)=>{
+    try{
+      await sb.updateInscripcion(ins.id,{alumno_confirmada:true,alumno_confirmada_at:new Date().toISOString()},session.access_token);
+      setInscripciones(prev=>prev.map(i=>i.id===ins.id?{...i,alumno_confirmada:true,alumno_confirmada_at:new Date().toISOString()}:i));
+    }catch(e){
+      logError("confirmarClaseAlumno",e);
+      alert("No se pudo confirmar: "+(e.message||"error"));
+    }
+  };
+
   const renderCard=(ins)=>{
     const p=posts[ins.publicacion_id];if(!p)return null;
     const finalizado=ins.clase_finalizada||!!p.finalizado;
+    const pendienteConfirmacion=!!ins.clase_finalizada&&!ins.alumno_confirmada;
     const ti=tiempoInfo(p,ins);
     const tieneNotif=pubsNotifPend.has(p.id);
+    const borderColor=pendienteConfirmacion?"#FFB84D":(tieneNotif?C.accent:C.border);
     return(
-      <div key={ins.id} style={{background:C.card,border:`1px solid ${tieneNotif?C.accent:C.border}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",transition:"border-color .15s"}}
-        onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=tieneNotif?C.accent:C.border}>
+      <div key={ins.id} style={{background:C.card,border:`1px solid ${borderColor}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",transition:"border-color .15s"}}
+        onMouseEnter={e=>e.currentTarget.style.borderColor=pendienteConfirmacion?"#FF9800":C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=borderColor}>
         <div onClick={()=>{marcarNotifPubLeida(p.id);onOpenCurso(p);}} style={{display:"flex",gap:12,alignItems:"center",flex:1,minWidth:0,cursor:"pointer"}}>
           <div style={{width:44,height:44,borderRadius:11,background:finalizado?"#4ECB7115":tieneNotif?C.accentDim:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,position:"relative"}}>
             {finalizado?"✓":"·"}
@@ -115,11 +127,18 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-            {tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700}}>🔔 Clase finalizada — dejá tu reseña</span>}
-            {!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600}}>{ti.icon} {ti.texto}</span>
+            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700}}>⏳ El docente marcó la clase como finalizada — confirmá si la recibiste</span>}
+            {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700}}>🔔 Clase finalizada — dejá tu reseña</span>}
+            {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600}}>{ti.icon} {ti.texto}</span>
               :<span style={{fontSize:11,color:C.muted}}>Inscripto {fmt(ins.created_at)}</span>)}
           </div>
         </div>
+        {pendienteConfirmacion&&(
+          <button onClick={(e)=>{e.stopPropagation();confirmarClaseAlumno(ins);}}
+            style={{background:"#4ECB71",color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
+            ✓ Confirmar
+          </button>
+        )}
         <button onClick={()=>onOpenChat({id:p.id,autor_email:p.autor_email,titulo:p.titulo,autor_nombre:p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)})}
           style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
           Contactar
