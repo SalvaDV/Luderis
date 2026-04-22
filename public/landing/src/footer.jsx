@@ -6,7 +6,7 @@ function Footer(){
   const cols = [
     {h:'Producto', items:['Cursos','Clases particulares','Búsqueda con IA','Certificados','Pagos']},
     {h:'Empresa', items:['Nosotros','Carreras','Manifiesto','Press kit','Contacto']},
-    {h:'Recursos', items:['Blog','Guías','Changelog','Status','Ayuda']},
+    {h:'Recursos', items:['Ayuda','Libro de Quejas','Changelog','Status','Blog']},
     {h:'Legal', items:['Términos','Devoluciones','Defensa al Consumidor','Privacidad']},
   ];
   return (
@@ -38,7 +38,7 @@ function Footer(){
               <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', color:'oklch(1 0 0 / .5)', textTransform:'uppercase', marginBottom:18}}>{c.h}</div>
               <div style={{display:'flex', flexDirection:'column', gap:10}}>
                 {c.items.map(i=>{
-                  const legalLinks={'Términos':'/terminos','Devoluciones':'/devoluciones','Defensa al Consumidor':'/consumidor','Privacidad':'/privacidad'};
+                  const legalLinks={'Términos':'/terminos','Devoluciones':'/devoluciones','Defensa al Consumidor':'/consumidor','Privacidad':'/privacidad','Ayuda':'/ayuda','Libro de Quejas':'/quejas'};
                   const href=legalLinks[i]||'#';
                   return(
                   <a key={i} href={href} data-cursor style={{fontSize:14, color:'var(--paper)', transition:'opacity .2s'}}

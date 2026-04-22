@@ -291,8 +291,10 @@ export default function DefensaConsumidorPage() {
                 }}>{s.titulo}</button>
             ))}
             <div style={{ borderTop: `1px solid ${BORDER}`, margin: "12px 16px 0", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              <a href="/terminos" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📄 Términos y Condiciones</a>
+              <a href="/terminos"    style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📄 Términos y Condiciones</a>
               <a href="/devoluciones" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>💸 Política de Devoluciones</a>
+              <a href="/ayuda"        style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>🙋 Centro de ayuda</a>
+              <a href="/quejas"       style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📋 Libro de Quejas</a>
             </div>
           </div>
         </aside>

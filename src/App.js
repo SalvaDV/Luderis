@@ -21,6 +21,8 @@ import LandingPage from "./LandingPage";
 import TerminosPage from "./TerminosPage";
 import PoliticaDevoluciones from "./PoliticaDevoluciones";
 import DefensaConsumidorPage from "./DefensaConsumidorPage";
+import AyudaPage from "./AyudaPage";
+import LibroQuejasPage from "./LibroQuejasPage";
 import AuthScreen from "./AuthScreen";
 import { PriceSlider } from "./PostFormModal";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
@@ -532,6 +534,8 @@ export default function App(){
   if(window.location.pathname==="/terminos")return <TerminosPage/>;
   if(window.location.pathname==="/devoluciones")return <PoliticaDevoluciones/>;
   if(window.location.pathname==="/consumidor")return <DefensaConsumidorPage/>;
+  if(window.location.pathname==="/ayuda")return <AyudaPage/>;
+  if(window.location.pathname==="/quejas")return <LibroQuejasPage/>;
   if(!session){
     const showAuth=window.location.hash==="#auth"||sessionStorage.getItem("ld_auth")==="1";
     const goAuth=()=>{sessionStorage.setItem("ld_auth","1");window.location.hash="#auth";forceThemeRender(n=>n+1);};
