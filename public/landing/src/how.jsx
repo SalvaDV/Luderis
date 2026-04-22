@@ -25,13 +25,65 @@ function How(){
     return ()=>window.removeEventListener('scroll', onScroll);
   },[]);
 
+  // Mobile: tab-selectable layout (no scroll-driven)
+  if(isMobile){
+    return (
+      <section id="como" style={{position:'relative', background:'var(--blue-deep)', color:'var(--paper)', padding:'60px 16px 60px'}}>
+        <div style={{position:'absolute', inset:0, opacity:.75}}>
+          <Shader palette="dark"/>
+        </div>
+        <div style={{position:'relative', zIndex:2}}>
+          <Kicker color="var(--paper)">04 · Flujo</Kicker>
+          <h2 style={{fontSize:'clamp(36px, 10vw, 56px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'18px 0 24px', maxWidth:720}}>
+            En 4 pasos<br/>estás <i style={{fontStyle:'italic', fontWeight:500, color:'var(--orange)'}}>adentro.</i>
+          </h2>
+
+          {/* Step selector tabs */}
+          <div style={{display:'flex', gap:8, flexWrap:'wrap', marginBottom:32}}>
+            {steps.map((s,i)=>(
+              <button key={s.n} onClick={()=>setActive(i)} style={{
+                padding:'8px 16px', borderRadius:99, fontFamily:'var(--font-mono)', fontSize:12, fontWeight:600,
+                background: i===active ? 'var(--orange)' : 'transparent',
+                color: i===active ? 'var(--ink)' : 'oklch(1 0 0 / .7)',
+                border: i===active ? '1px solid var(--orange)' : '1px solid oklch(1 0 0 / .2)',
+                transition:'all .3s'
+              }}>PASO {s.n}</button>
+            ))}
+          </div>
+
+          {/* Active step content */}
+          <div style={{minHeight:200}}>
+            <div style={{fontFamily:'var(--font-mono)', fontSize:13, color:'var(--orange)', marginBottom:12}}>PASO {steps[active].n}</div>
+            <div style={{fontSize:'clamp(32px,8vw,52px)', fontWeight:700, letterSpacing:'-.04em', lineHeight:1}}>{steps[active].title}</div>
+            <p style={{fontSize:16, lineHeight:1.55, color:'oklch(1 0 0 / .8)', margin:'16px 0 0'}}>{steps[active].desc}</p>
+            <div style={{marginTop:18, display:'flex', flexWrap:'wrap', gap:8, fontFamily:'var(--font-mono)', fontSize:11, color:'oklch(1 0 0 / .55)'}}>
+              {steps[active].detail.split(' · ').map((d,j)=>(
+                <span key={j} style={{display:'flex', alignItems:'center', gap:6}}>{j>0 && <span>→</span>}{d}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Progress bar (clickeable) */}
+          <div style={{display:'flex', gap:6, marginTop:32}}>
+            {steps.map((_,i)=>(
+              <button key={i} onClick={()=>setActive(i)} style={{
+                flex:1, height:4, borderRadius:99, border:'none', padding:0,
+                background: i<=active?'var(--orange)':'oklch(1 0 0 / .15)', transition:'background .4s'
+              }}/>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="como" ref={sectionRef} style={{position:'relative', background:'var(--blue-deep)', color:'var(--paper)', padding:'0', height:`${steps.length*80}vh`}}>
       <div style={{position:'sticky', top:0, height:'100vh', overflow:'hidden'}}>
         <div style={{position:'absolute', inset:0, opacity:.75}}>
           <Shader palette="dark"/>
         </div>
-        <div style={{position:'relative', zIndex:2, height:'100%', display:'flex', flexDirection:'column', padding: isMobile ? '60px 16px 40px' : '80px 28px 60px', maxWidth:1344, margin:'0 auto'}}>
+        <div style={{position:'relative', zIndex:2, height:'100%', display:'flex', flexDirection:'column', padding:'80px 28px 60px', maxWidth:1344, margin:'0 auto'}}>
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:24}}>
             <div>
               <Kicker color="var(--paper)">04 · Flujo</Kicker>
@@ -43,7 +95,7 @@ function How(){
           </div>
 
           <div style={{flex:1, display:'flex', alignItems:'center', position:'relative'}}>
-            <div style={{width:'100%', display:'grid', gridTemplateColumns:'1fr 1fr', gap:60, alignItems:'center'}} className="lud-how-grid">
+            <div style={{width:'100%', display:'grid', gridTemplateColumns:'1fr 1fr', gap:60, alignItems:'center'}}>
               {/* Step detail */}
               <div style={{position:'relative', minHeight:300}}>
                 {steps.map((s,i)=>(
@@ -65,7 +117,7 @@ function How(){
                 ))}
               </div>
 
-              {/* Visual: stepper + preview */}
+              {/* Visual: stepper */}
               <div>
                 <div style={{display:'flex', flexDirection:'column', gap:10}}>
                   {steps.map((s,i)=>(
@@ -105,10 +157,6 @@ function How(){
           </div>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 860px){ .lud-how-grid{ grid-template-columns: 1fr !important; gap: 30px !important;}}
-      `}</style>
     </section>
   );
 }

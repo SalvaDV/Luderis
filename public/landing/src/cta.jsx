@@ -27,7 +27,7 @@ function CTA({onEnter}){
           </div>
         </Reveal>
         <Reveal delay={0.4}>
-          <div style={{display:'flex', justifyContent:'center', gap:24, marginTop:36, flexWrap:'wrap', fontFamily:'var(--font-mono)', fontSize:12, color:'var(--muted)'}}>
+          <div style={{display:'flex', justifyContent:'center', gap:24, marginTop:36, flexWrap:'wrap', fontFamily:'var(--font-mono)', fontSize:12, color:'var(--ink)'}}>
             {['✓ Match instantáneo','✓ Docentes verificados','✓ Búsqueda con IA','✓ Privacidad primero'].map(x=>(
               <span key={x}>{x}</span>
             ))}

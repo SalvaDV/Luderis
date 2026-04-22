@@ -1,7 +1,9 @@
 // Sección Dos mundos (Cursos / Clases particulares)
 function Worlds({onEnter}){
+  const w = useWindowWidth();
+  const isMobile = w <= 640;
   return (
-    <section id="mundos" style={{padding:'140px 28px 120px', position:'relative'}}>
+    <section id="mundos" style={{padding: isMobile ? '80px 16px 60px' : '140px 28px 120px', position:'relative'}}>
       <div style={{maxWidth:1344, margin:'0 auto'}}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:40, marginBottom:60, flexWrap:'wrap'}}>
           <Reveal>
@@ -21,8 +23,8 @@ function Worlds({onEnter}){
           {/* CURSOS */}
           <Reveal delay={0.1}>
             <div data-cursor data-cursor-label="CURSOS" onClick={onEnter} style={{
-              background:'var(--ink)', color:'var(--paper)', borderRadius:28, padding:'40px',
-              position:'relative', overflow:'hidden', minHeight:540,
+              background:'var(--ink)', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
+              position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 540,
               display:'flex', flexDirection:'column', justifyContent:'space-between'
             }}>
               <div style={{position:'absolute', inset:0, opacity:.9}}>
@@ -33,7 +35,7 @@ function Worlds({onEnter}){
                   <Kicker color="var(--paper)">◎ Cursos estructurados</Kicker>
                   <div style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.5}}>01</div>
                 </div>
-                <h3 style={{fontSize:72, fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'24px 0 0'}}>
+                <h3 style={{fontSize: isMobile ? 48 : 72, fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'24px 0 0'}}>
                   Cursos<br/><span style={{color:'#2EC4A0'}}>completos.</span>
                 </h3>
                 <p style={{fontSize:16, lineHeight:1.55, opacity:.92, margin:'20px 0 0', maxWidth:400}}>
@@ -41,7 +43,7 @@ function Worlds({onEnter}){
                 </p>
               </div>
               <div style={{position:'relative', zIndex:2, marginTop:40}}>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .12)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
+                <div className="lud-worlds-feat-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .12)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
                   {[
                     ['Clases organizadas','Módulos + lecciones'],
                     ['Evaluaciones','Automáticas + revisadas'],
@@ -65,8 +67,8 @@ function Worlds({onEnter}){
           {/* CLASES */}
           <Reveal delay={0.2}>
             <div data-cursor data-cursor-label="CLASES" onClick={onEnter} style={{
-              background:'#100A00', color:'var(--paper)', borderRadius:28, padding:'40px',
-              position:'relative', overflow:'hidden', minHeight:540,
+              background:'#100A00', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
+              position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 540,
               display:'flex', flexDirection:'column', justifyContent:'space-between'
             }}>
               <div style={{position:'absolute', inset:0, opacity:.9}}>
@@ -77,7 +79,7 @@ function Worlds({onEnter}){
                   <Kicker color="var(--paper)">◎ 1:1 a tu medida</Kicker>
                   <div style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.5}}>02</div>
                 </div>
-                <h3 style={{fontSize:72, fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'24px 0 0'}}>
+                <h3 style={{fontSize: isMobile ? 48 : 72, fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'24px 0 0'}}>
                   Clases<br/><span style={{fontStyle:'italic', fontWeight:500, color:'#F4C030'}}>particulares.</span>
                 </h3>
                 <p style={{fontSize:16, lineHeight:1.55, margin:'20px 0 0', maxWidth:400, opacity:.93}}>
@@ -85,7 +87,7 @@ function Worlds({onEnter}){
                 </p>
               </div>
               <div style={{position:'relative', zIndex:2, marginTop:40}}>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .12)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
+                <div className="lud-worlds-feat-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .12)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
                   {[
                     ['Horarios','A tu medida'],
                     ['Chat directo','Sin intermediarios'],
@@ -110,6 +112,7 @@ function Worlds({onEnter}){
 
       <style>{`
         @media (max-width: 860px){ .lud-worlds-grid{ grid-template-columns: 1fr !important; } }
+        @media (max-width: 640px){ .lud-worlds-feat-grid{ grid-template-columns: 1fr !important; } }
       `}</style>
     </section>
   );

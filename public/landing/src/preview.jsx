@@ -1,5 +1,7 @@
 // Preview mockup de la app (mobile + desktop flotando)
 function Preview({onEnter}){
+  const w = useWindowWidth();
+  const isMobile = w <= 900;
   const [tab, setTab] = React.useState('alumno');
   return (
     <section style={{padding:'140px 28px 120px', position:'relative', overflow:'hidden'}}>
@@ -27,14 +29,14 @@ function Preview({onEnter}){
         </div>
 
         <Reveal delay={0.15}>
-          <div style={{position:'relative', borderRadius:28, overflow:'hidden', background:'linear-gradient(135deg, oklch(0.92 0.06 258), oklch(0.96 0.04 80))', padding:'60px 60px 0', minHeight:560, border:'1px solid var(--line)'}}>
+          <div style={{position:'relative', borderRadius:28, overflow:'hidden', background:'linear-gradient(135deg, oklch(0.92 0.06 258), oklch(0.96 0.04 80))', padding: isMobile ? '40px 24px 0' : '60px 60px 0', minHeight: isMobile ? 420 : 560, border:'1px solid var(--line)'}}>
             <div style={{position:'absolute', inset:0, opacity:.65}}>
               <Shader palette="deep" intensity={1}/>
             </div>
-            <div style={{position:'relative', zIndex:2, display:'grid', gridTemplateColumns:'1.3fr .9fr', gap:40, alignItems:'flex-end'}} className="lud-prev-grid">
-              {/* Desktop mock */}
-              <DesktopMock tab={tab}/>
-              {/* Phone mock */}
+            <div style={{position:'relative', zIndex:2, display:'flex', justifyContent:'center', alignItems:'flex-end', gap:40}}>
+              {/* Desktop mock — solo en desktop */}
+              {!isMobile && <DesktopMock tab={tab}/>}
+              {/* Phone mock — siempre visible */}
               <PhoneMock tab={tab}/>
             </div>
           </div>

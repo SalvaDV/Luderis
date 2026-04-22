@@ -88,6 +88,7 @@ function Hero({onEnter}){
             <input
               value={query}
               onChange={e=>setQuery(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter') onEnter(); }}
               data-cursor data-cursor-label="TYPE"
               style={{
                 flex:1, minWidth:0, background:'transparent', border:'none', outline:'none',
@@ -95,7 +96,7 @@ function Hero({onEnter}){
               }}
               placeholder="Quiero aprender..."
             />
-            <button data-cursor data-cursor-label="ENTER" style={{
+            <button onClick={onEnter} data-cursor data-cursor-label="ENTER" style={{
               background:'var(--paper)', color:'var(--ink)', border:'none', borderRadius:16,
               padding:'12px 20px', fontFamily:'inherit', fontSize:14, fontWeight:600, display:'inline-flex', alignItems:'center', gap:8
             }}>

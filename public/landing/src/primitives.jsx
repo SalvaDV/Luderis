@@ -104,11 +104,12 @@ function MagBtn({children, onClick, variant='ink', style={}, icon='arrow'}){
   },[]);
 
   const vs = {
-    ink:    {background:'var(--ink)', color:'var(--paper)', border:'1px solid var(--ink)'},
-    blue:   {background:'var(--blue)', color:'#fff', border:'1px solid var(--blue)'},
-    orange: {background:'var(--orange)', color:'var(--ink)', border:'1px solid var(--orange)'},
-    line:   {background:'transparent', color:'var(--ink)', border:'1px solid var(--ink)'},
-    paper:  {background:'var(--paper)', color:'var(--ink)', border:'1px solid var(--paper)'},
+    ink:      {background:'var(--ink)', color:'var(--paper)', border:'1px solid var(--ink)'},
+    blue:     {background:'var(--blue)', color:'#fff', border:'1px solid var(--blue)'},
+    orange:   {background:'var(--orange)', color:'var(--ink)', border:'1px solid var(--orange)'},
+    line:     {background:'transparent', color:'var(--ink)', border:'1px solid var(--ink)'},
+    paper:    {background:'var(--paper)', color:'var(--ink)', border:'1px solid var(--paper)'},
+    gradient: {background:'linear-gradient(135deg, var(--blue) 0%, var(--orange) 100%)', color:'#fff', border:'none'},
   }[variant];
 
   return (

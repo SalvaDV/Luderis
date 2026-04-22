@@ -247,6 +247,11 @@ function MagBtn({
       background: 'var(--paper)',
       color: 'var(--ink)',
       border: '1px solid var(--paper)'
+    },
+    gradient: {
+      background: 'linear-gradient(135deg, var(--blue) 0%, var(--orange) 100%)',
+      color: '#fff',
+      border: 'none'
     }
   }[variant];
   return /*#__PURE__*/React.createElement("button", {
@@ -834,6 +839,7 @@ function Nav({
     onClick: onEnter,
     "data-cursor": true,
     "data-cursor-label": "LOGIN",
+    className: "lud-nav-ingresar",
     style: {
       background: 'transparent',
       border: 'none',
@@ -846,7 +852,7 @@ function Nav({
     }
   }, "Ingresar"), /*#__PURE__*/React.createElement(MagBtn, {
     onClick: onEnter,
-    variant: "ink"
+    variant: "gradient"
   }, "Empezar gratis"), /*#__PURE__*/React.createElement("button", {
     className: "lud-burger",
     onClick: () => setMobile(m => !m),
@@ -905,6 +911,7 @@ function Nav({
         }
         @media (max-width: 640px){
           .lud-nav-links{display:none !important}
+          .lud-nav-ingresar{display:none !important}
         }
       `));
 }
@@ -1108,6 +1115,9 @@ function Hero({
   }, "BUSCAR CON IA")), /*#__PURE__*/React.createElement("input", {
     value: query,
     onChange: e => setQuery(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') onEnter();
+    },
     "data-cursor": true,
     "data-cursor-label": "TYPE",
     style: {
@@ -1123,6 +1133,7 @@ function Hero({
     },
     placeholder: "Quiero aprender..."
   }), /*#__PURE__*/React.createElement("button", {
+    onClick: onEnter,
     "data-cursor": true,
     "data-cursor-label": "ENTER",
     style: {
@@ -1476,10 +1487,12 @@ Object.assign(window, {
 function Worlds({
   onEnter
 }) {
+  const w = useWindowWidth();
+  const isMobile = w <= 640;
   return /*#__PURE__*/React.createElement("section", {
     id: "mundos",
     style: {
-      padding: '140px 28px 120px',
+      padding: isMobile ? '80px 16px 60px' : '140px 28px 120px',
       position: 'relative'
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -1540,10 +1553,10 @@ function Worlds({
       background: 'var(--ink)',
       color: 'var(--paper)',
       borderRadius: 28,
-      padding: '40px',
+      padding: isMobile ? '24px' : '40px',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: 540,
+      minHeight: isMobile ? 'auto' : 540,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between'
@@ -1577,7 +1590,7 @@ function Worlds({
     }
   }, "01")), /*#__PURE__*/React.createElement("h3", {
     style: {
-      fontSize: 72,
+      fontSize: isMobile ? 48 : 72,
       fontWeight: 700,
       letterSpacing: '-.05em',
       lineHeight: .95,
@@ -1602,6 +1615,7 @@ function Worlds({
       marginTop: 40
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "lud-worlds-feat-grid",
     style: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
@@ -1657,10 +1671,10 @@ function Worlds({
       background: '#100A00',
       color: 'var(--paper)',
       borderRadius: 28,
-      padding: '40px',
+      padding: isMobile ? '24px' : '40px',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: 540,
+      minHeight: isMobile ? 'auto' : 540,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between'
@@ -1694,7 +1708,7 @@ function Worlds({
     }
   }, "02")), /*#__PURE__*/React.createElement("h3", {
     style: {
-      fontSize: 72,
+      fontSize: isMobile ? 48 : 72,
       fontWeight: 700,
       letterSpacing: '-.05em',
       lineHeight: .95,
@@ -1721,6 +1735,7 @@ function Worlds({
       marginTop: 40
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "lud-worlds-feat-grid",
     style: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
@@ -1768,6 +1783,7 @@ function Worlds({
     onClick: onEnter
   }, "Encontrar docente"))))))), /*#__PURE__*/React.createElement("style", null, `
         @media (max-width: 860px){ .lud-worlds-grid{ grid-template-columns: 1fr !important; } }
+        @media (max-width: 640px){ .lud-worlds-feat-grid{ grid-template-columns: 1fr !important; } }
       `));
 }
 window.Worlds = Worlds;
@@ -2166,6 +2182,130 @@ function How() {
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Mobile: tab-selectable layout (no scroll-driven)
+  if (isMobile) {
+    return /*#__PURE__*/React.createElement("section", {
+      id: "como",
+      style: {
+        position: 'relative',
+        background: 'var(--blue-deep)',
+        color: 'var(--paper)',
+        padding: '60px 16px 60px'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        opacity: .75
+      }
+    }, /*#__PURE__*/React.createElement(Shader, {
+      palette: "dark"
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative',
+        zIndex: 2
+      }
+    }, /*#__PURE__*/React.createElement(Kicker, {
+      color: "var(--paper)"
+    }, "04 \xB7 Flujo"), /*#__PURE__*/React.createElement("h2", {
+      style: {
+        fontSize: 'clamp(36px, 10vw, 56px)',
+        fontWeight: 700,
+        letterSpacing: '-.05em',
+        lineHeight: .95,
+        margin: '18px 0 24px',
+        maxWidth: 720
+      }
+    }, "En 4 pasos", /*#__PURE__*/React.createElement("br", null), "est\xE1s ", /*#__PURE__*/React.createElement("i", {
+      style: {
+        fontStyle: 'italic',
+        fontWeight: 500,
+        color: 'var(--orange)'
+      }
+    }, "adentro.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap',
+        marginBottom: 32
+      }
+    }, steps.map((s, i) => /*#__PURE__*/React.createElement("button", {
+      key: s.n,
+      onClick: () => setActive(i),
+      style: {
+        padding: '8px 16px',
+        borderRadius: 99,
+        fontFamily: 'var(--font-mono)',
+        fontSize: 12,
+        fontWeight: 600,
+        background: i === active ? 'var(--orange)' : 'transparent',
+        color: i === active ? 'var(--ink)' : 'oklch(1 0 0 / .7)',
+        border: i === active ? '1px solid var(--orange)' : '1px solid oklch(1 0 0 / .2)',
+        transition: 'all .3s'
+      }
+    }, "PASO ", s.n))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        minHeight: 200
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-mono)',
+        fontSize: 13,
+        color: 'var(--orange)',
+        marginBottom: 12
+      }
+    }, "PASO ", steps[active].n), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 'clamp(32px,8vw,52px)',
+        fontWeight: 700,
+        letterSpacing: '-.04em',
+        lineHeight: 1
+      }
+    }, steps[active].title), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 16,
+        lineHeight: 1.55,
+        color: 'oklch(1 0 0 / .8)',
+        margin: '16px 0 0'
+      }
+    }, steps[active].desc), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 18,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 8,
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        color: 'oklch(1 0 0 / .55)'
+      }
+    }, steps[active].detail.split(' · ').map((d, j) => /*#__PURE__*/React.createElement("span", {
+      key: j,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6
+      }
+    }, j > 0 && /*#__PURE__*/React.createElement("span", null, "\u2192"), d)))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 6,
+        marginTop: 32
+      }
+    }, steps.map((_, i) => /*#__PURE__*/React.createElement("button", {
+      key: i,
+      onClick: () => setActive(i),
+      style: {
+        flex: 1,
+        height: 4,
+        borderRadius: 99,
+        border: 'none',
+        padding: 0,
+        background: i <= active ? 'var(--orange)' : 'oklch(1 0 0 / .15)',
+        transition: 'background .4s'
+      }
+    })))));
+  }
   return /*#__PURE__*/React.createElement("section", {
     id: "como",
     ref: sectionRef,
@@ -2198,7 +2338,7 @@ function How() {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      padding: isMobile ? '60px 16px 40px' : '80px 28px 60px',
+      padding: '80px 28px 60px',
       maxWidth: 1344,
       margin: '0 auto'
     }
@@ -2248,8 +2388,7 @@ function How() {
       gridTemplateColumns: '1fr 1fr',
       gap: 60,
       alignItems: 'center'
-    },
-    className: "lud-how-grid"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
@@ -2375,9 +2514,7 @@ function How() {
       background: i <= active ? 'var(--orange)' : 'oklch(1 0 0 / .12)',
       transition: 'background .4s'
     }
-  }))))), /*#__PURE__*/React.createElement("style", null, `
-        @media (max-width: 860px){ .lud-how-grid{ grid-template-columns: 1fr !important; gap: 30px !important;}}
-      `));
+  }))))));
 }
 window.How = How;
 
@@ -2386,6 +2523,8 @@ window.How = How;
 function Preview({
   onEnter
 }) {
+  const w = useWindowWidth();
+  const isMobile = w <= 900;
   const [tab, setTab] = React.useState('alumno');
   return /*#__PURE__*/React.createElement("section", {
     style: {
@@ -2450,8 +2589,8 @@ function Preview({
       borderRadius: 28,
       overflow: 'hidden',
       background: 'linear-gradient(135deg, oklch(0.92 0.06 258), oklch(0.96 0.04 80))',
-      padding: '60px 60px 0',
-      minHeight: 560,
+      padding: isMobile ? '40px 24px 0' : '60px 60px 0',
+      minHeight: isMobile ? 420 : 560,
       border: '1px solid var(--line)'
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2467,13 +2606,12 @@ function Preview({
     style: {
       position: 'relative',
       zIndex: 2,
-      display: 'grid',
-      gridTemplateColumns: '1.3fr .9fr',
-      gap: 40,
-      alignItems: 'flex-end'
-    },
-    className: "lud-prev-grid"
-  }, /*#__PURE__*/React.createElement(DesktopMock, {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+      gap: 40
+    }
+  }, !isMobile && /*#__PURE__*/React.createElement(DesktopMock, {
     tab: tab
   }), /*#__PURE__*/React.createElement(PhoneMock, {
     tab: tab
@@ -3139,7 +3277,7 @@ function CTA({
       flexWrap: 'wrap',
       fontFamily: 'var(--font-mono)',
       fontSize: 12,
-      color: 'var(--muted)'
+      color: 'var(--ink)'
     }
   }, ['✓ Match instantáneo', '✓ Docentes verificados', '✓ Búsqueda con IA', '✓ Privacidad primero'].map(x => /*#__PURE__*/React.createElement("span", {
     key: x
