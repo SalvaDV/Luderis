@@ -256,6 +256,8 @@ export default function PoliticaDevoluciones() {
             <div style={{ borderTop: `1px solid ${BORDER}`, margin: "12px 16px 0", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
               <a href="/terminos" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📄 Términos y Condiciones</a>
               <a href="/consumidor" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>⚖️ Defensa al Consumidor</a>
+              <a href="/privacidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>🔒 Política de Privacidad</a>
+              <a href="/accesibilidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>♿ Accesibilidad</a>
             </div>
           </div>
         </aside>
