@@ -18,6 +18,7 @@ import {
   useIntersectionObserver,
 } from "./shared";
 import LandingPage from "./LandingPage";
+import TerminosPage from "./TerminosPage";
 import AuthScreen from "./AuthScreen";
 import { PriceSlider } from "./PostFormModal";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
@@ -525,6 +526,8 @@ export default function App(){
   // Tema con estado React para re-render
   const [currentTheme,setCurrentTheme]=useState(_themeKey());
   const toggleTheme=()=>{const next=currentTheme==="light"?"dark":"light";applyTheme(next);setCurrentTheme(next);forceThemeRender(n=>n+1);};
+  // Rutas públicas sin autenticación
+  if(window.location.pathname==="/terminos")return <TerminosPage/>;
   if(!session){
     const showAuth=window.location.hash==="#auth"||sessionStorage.getItem("ld_auth")==="1";
     const goAuth=()=>{sessionStorage.setItem("ld_auth","1");window.location.hash="#auth";forceThemeRender(n=>n+1);};
