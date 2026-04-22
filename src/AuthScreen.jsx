@@ -235,7 +235,9 @@ function AuthScreen({onLogin}){
                   </button>
                   <span style={{fontSize:12,color:"#718096",lineHeight:1.6}}>
                     Acepto los{" "}
-                    <button onClick={()=>setShowTerminos(true)} style={{background:"none",border:"none",color:LUD.blue,cursor:"pointer",fontSize:12,fontFamily:FONT,padding:0,textDecoration:"underline",fontWeight:600}}>Términos y Condiciones</button>
+                    <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{color:LUD.blue,fontSize:12,fontWeight:600}}>Términos y Condiciones</a>
+                    {" "}y las{" "}
+                    <a href="/devoluciones" target="_blank" rel="noopener noreferrer" style={{color:LUD.blue,fontSize:12,fontWeight:600}}>Políticas de Devolución</a>
                   </span>
                 </div>
               )}

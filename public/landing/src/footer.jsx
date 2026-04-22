@@ -7,7 +7,7 @@ function Footer(){
     {h:'Producto', items:['Cursos','Clases particulares','Búsqueda con IA','Certificados','Pagos']},
     {h:'Empresa', items:['Nosotros','Carreras','Manifiesto','Press kit','Contacto']},
     {h:'Recursos', items:['Blog','Guías','Changelog','Status','Ayuda']},
-    {h:'Legal', items:['Términos','Privacidad','Cookies','Licencias']},
+    {h:'Legal', items:['Términos','Devoluciones','Privacidad','Cookies']},
   ];
   return (
     <footer style={{background:'var(--ink)', color:'var(--paper)', padding:'80px 28px 32px', position:'relative', overflow:'hidden'}}>
@@ -37,11 +37,15 @@ function Footer(){
             <div key={c.h}>
               <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', color:'oklch(1 0 0 / .5)', textTransform:'uppercase', marginBottom:18}}>{c.h}</div>
               <div style={{display:'flex', flexDirection:'column', gap:10}}>
-                {c.items.map(i=>(
-                  <a key={i} href="#" data-cursor style={{fontSize:14, color:'var(--paper)', transition:'opacity .2s'}}
+                {c.items.map(i=>{
+                  const legalLinks={'Términos':'/terminos','Devoluciones':'/devoluciones','Privacidad':'/privacidad'};
+                  const href=legalLinks[i]||'#';
+                  return(
+                  <a key={i} href={href} data-cursor style={{fontSize:14, color:'var(--paper)', transition:'opacity .2s'}}
                     onMouseEnter={e=>e.currentTarget.style.opacity='.6'}
                     onMouseLeave={e=>e.currentTarget.style.opacity='1'}>{i}</a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

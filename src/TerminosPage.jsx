@@ -365,7 +365,7 @@ export default function TerminosPage() {
             <Destacado>
               Luderis actúa como intermediario en la relación entre Alumno y Docente.
               No garantiza la devolución de pagos salvo en los casos expresamente indicados en la
-              política de reembolsos vigente. Las devoluciones quedan sujetas a las políticas del
+              <a href="/devoluciones">política de devoluciones</a> vigente. Las devoluciones quedan sujetas a las políticas del
               procesador de pago utilizado.
             </Destacado>
             <P>

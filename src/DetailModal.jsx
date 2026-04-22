@@ -221,7 +221,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                         {/* Anti-puenteo */}
                         <div style={{background:C.warn+"10",border:`1px solid ${C.warn}25`,borderRadius:8,padding:"8px 10px",display:"flex",gap:6,alignItems:"flex-start"}}>
                           <span style={{fontSize:12,flexShrink:0}}>⚠️</span>
-                          <span style={{fontSize:11,color:C.muted,lineHeight:1.4}}>Por favor realizá el pago a través de la plataforma. Las transacciones fuera de Luderis no tienen protección.</span>
+                          <span style={{fontSize:11,color:C.muted,lineHeight:1.4}}>Por favor realizá el pago a través de la plataforma. Las transacciones fuera de Luderis no tienen protección. <a href="/devoluciones" target="_blank" rel="noopener noreferrer" style={{color:"inherit",fontWeight:600,textDecoration:"underline"}}>Ver política de devoluciones</a> · <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{color:"inherit",fontWeight:600,textDecoration:"underline"}}>T&C</a></span>
                         </div>
                       </div>
                     )}
