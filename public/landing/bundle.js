@@ -3526,7 +3526,25 @@ function Footer() {
     items: ['Blog', 'Guías', 'Changelog', 'Status', 'Ayuda']
   }, {
     h: 'Legal',
-    items: ['Términos', 'Privacidad', 'Cookies', 'Licencias']
+    items: [{
+      label: 'Términos',
+      tab: 'tc'
+    }, {
+      label: 'Privacidad',
+      tab: 'priv'
+    }, {
+      label: 'Quejas',
+      tab: 'quejas'
+    }, {
+      label: 'Accesibilidad',
+      tab: 'acceso'
+    }, {
+      label: 'Consumidor',
+      tab: 'consumidor'
+    }, {
+      label: 'Cookies',
+      tab: 'cookies'
+    }]
   }];
   return /*#__PURE__*/React.createElement("footer", {
     style: {
@@ -3617,18 +3635,23 @@ function Footer() {
       flexDirection: 'column',
       gap: 10
     }
-  }, c.items.map(i => /*#__PURE__*/React.createElement("a", {
-    key: i,
-    href: "#",
-    "data-cursor": true,
-    style: {
-      fontSize: 14,
-      color: 'var(--paper)',
-      transition: 'opacity .2s'
-    },
-    onMouseEnter: e => e.currentTarget.style.opacity = '.6',
-    onMouseLeave: e => e.currentTarget.style.opacity = '1'
-  }, i)))))), /*#__PURE__*/React.createElement("div", {
+  }, c.items.map(i => {
+    const isLegal = typeof i === 'object';
+    const label = isLegal ? i.label : i;
+    const href = isLegal ? `/?legal=${i.tab}` : '#';
+    return /*#__PURE__*/React.createElement("a", {
+      key: label,
+      href: href,
+      "data-cursor": true,
+      style: {
+        fontSize: 14,
+        color: 'var(--paper)',
+        transition: 'opacity .2s'
+      },
+      onMouseEnter: e => e.currentTarget.style.opacity = '.6',
+      onMouseLeave: e => e.currentTarget.style.opacity = '1'
+    }, label);
+  }))))), /*#__PURE__*/React.createElement("div", {
     style: {
       borderTop: '1px solid oklch(1 0 0 / .15)',
       paddingTop: 24,

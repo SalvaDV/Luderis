@@ -149,10 +149,13 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
           ))}
         </div>
         {/* Links legales */}
-        <div style={{display:"flex",gap:8,justifyContent:"center",paddingTop:4}}>
-          <button onClick={()=>setLegalTab("tc")} style={{background:"none",border:"none",color:C.muted,fontSize:10,cursor:"pointer",fontFamily:FONT,textDecoration:"underline",padding:0}}>Términos</button>
-          <span style={{color:C.border,fontSize:10}}>·</span>
-          <button onClick={()=>setLegalTab("priv")} style={{background:"none",border:"none",color:C.muted,fontSize:10,cursor:"pointer",fontFamily:FONT,textDecoration:"underline",padding:0}}>Privacidad</button>
+        <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",paddingTop:4}}>
+          {[["tc","Términos"],["priv","Privacidad"],["quejas","Quejas"],["acceso","Accesibilidad"],["consumidor","Consumidor"],["cookies","Cookies"]].map(([id,label],i,arr)=>(
+            <React.Fragment key={id}>
+              <button onClick={()=>setLegalTab(id)} style={{background:"none",border:"none",color:C.muted,fontSize:10,cursor:"pointer",fontFamily:FONT,textDecoration:"underline",padding:0}}>{label}</button>
+              {i<arr.length-1&&<span style={{color:C.border,fontSize:10}}>·</span>}
+            </React.Fragment>
+          ))}
         </div>
       </div>
       </div>

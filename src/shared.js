@@ -380,21 +380,67 @@ const PRIVACY_SECTIONS=[
   {title:"Seguridad",body:"Implementamos medidas técnicas y organizativas para proteger tus datos: cifrado en tránsito (HTTPS/TLS), acceso con credenciales únicas, y políticas de acceso mínimo necesario (Row Level Security en base de datos)."},
   {title:"Cookies",body:"Usamos almacenamiento local (localStorage) para mantener tu sesión y preferencias. No usamos cookies de seguimiento publicitario."},
 ];
+const COMPLAINTS_SECTIONS=[
+  {title:"Cómo presentar un reclamo",body:"Podés enviarnos tu reclamo a contacto@luderis.com con el asunto 'RECLAMO' o usar el formulario de contacto dentro de la plataforma. Describí el problema con el mayor detalle posible (fecha, usuario involucrado, monto si aplica)."},
+  {title:"Plazo de respuesta",body:"Nos comprometemos a responder todo reclamo dentro de los 10 días hábiles siguientes a su recepción, conforme al artículo 4 de la Ley 24.240 de Defensa del Consumidor."},
+  {title:"Resolución",body:"Si la situación lo requiere, podemos ofrecer: reembolso parcial o total, mediación entre las partes, suspensión de la cuenta involucrada, o derivación al área legal. Nuestro objetivo es resolver el 100% de los reclamos de buena fe."},
+  {title:"OMIC y organismos externos",body:"Si no quedás conforme con nuestra respuesta, podés radicar tu reclamo ante la Oficina Municipal de Información al Consumidor (OMIC) de tu municipio, ante la Dirección General de Defensa y Protección al Consumidor del GCBA, o a través de consumidor.gob.ar."},
+  {title:"Disputas entre usuarios",body:"Luderis no es parte en las relaciones contractuales entre docentes y alumnos, pero podemos actuar como intermediario facilitador en disputas. Ante casos de fraude o incumplimiento grave iniciamos investigaciones internas y podemos suspender cuentas preventivamente."},
+  {title:"Contacto",body:"Email: contacto@luderis.com\nHorario de atención: lunes a viernes de 10 a 18 hs (Argentina)"},
+];
+const ACCESSIBILITY_SECTIONS=[
+  {title:"Compromiso con la accesibilidad",body:"Luderis se compromete a que su plataforma sea accesible para todas las personas, incluyendo aquellas con discapacidades visuales, auditivas, motoras o cognitivas. Seguimos las pautas WCAG 2.1 nivel AA como referencia."},
+  {title:"Medidas implementadas",body:"• Contraste de color suficiente en textos (ratio ≥ 4.5:1)\n• Textos alternativos en imágenes relevantes\n• Navegación por teclado en formularios y modales\n• Roles ARIA en componentes interactivos\n• Fuentes escalables (rem/em) que respetan el tamaño del sistema\n• Compatibilidad con lectores de pantalla (VoiceOver, TalkBack)"},
+  {title:"Limitaciones conocidas",body:"Algunos contenidos generados por usuarios (imágenes de perfil, materiales de cursos) pueden no tener descripciones alternativas. Estamos trabajando en herramientas para que docentes agreguen estos metadatos."},
+  {title:"Tecnologías de apoyo compatibles",body:"La plataforma fue probada con VoiceOver (iOS/macOS) y Chrome con extensiones de accesibilidad. Si encontrás problemas con otro lector de pantalla, por favor reportalo."},
+  {title:"Reportar un problema",body:"Si encontrás una barrera de accesibilidad escribinos a contacto@luderis.com con el asunto 'ACCESIBILIDAD'. Describi el problema, el dispositivo y la tecnología de apoyo que usás. Respondemos en hasta 5 días hábiles."},
+  {title:"Actualizaciones",body:"Realizamos auditorías de accesibilidad cada 6 meses y con cada lanzamiento de funcionalidades importantes."},
+];
+const CONSUMER_SECTIONS=[
+  {title:"Tus derechos como consumidor",body:"Como usuario de Luderis sos considerado consumidor en los términos de la Ley 24.240 de Defensa del Consumidor de la República Argentina y sus modificatorias."},
+  {title:"Derecho a la información",body:"Tenés derecho a recibir información clara, veraz y detallada sobre los servicios que adquirís, incluyendo: precio total, condiciones de la clase o curso, datos del docente, y políticas de cancelación."},
+  {title:"Derecho de arrepentimiento",body:"Conforme al artículo 34 de la Ley 24.240, tenés 10 días corridos desde la contratación para revocar la operación sin costo alguno, siempre que el servicio no haya comenzado a ejecutarse con tu consentimiento expreso. Para ejercerlo escribí a contacto@luderis.com con el asunto 'ARREPENTIMIENTO' indicando el número de transacción."},
+  {title:"Garantía de servicio",body:"Si un docente cancela una clase pagada sin previo aviso o no cumple con lo pactado, tenés derecho a reembolso completo. Procesamos los reembolsos dentro de los 5 días hábiles."},
+  {title:"Precios y facturación",body:"Todos los precios publicados incluyen IVA cuando corresponde. Podés solicitar comprobante de pago a contacto@luderis.com. Aceptamos ARS, USD y otras monedas según disponibilidad del docente."},
+  {title:"Botón de arrepentimiento",body:"Podés ejercer tu derecho de arrepentimiento directamente desde tu perfil → Mis compras → Solicitar reembolso, dentro de los 10 días corridos de la contratación."},
+  {title:"Organismos de defensa",body:"Podés consultar o radicar reclamos ante:\n• consumidor.gob.ar (Secretaría de Comercio)\n• OMIC de tu municipio\n• Defensa del Consumidor GCBA (para residentes en CABA)"},
+];
+const COOKIES_SECTIONS=[
+  {title:"¿Qué usamos?",body:"Luderis no usa cookies de seguimiento ni publicidad. Usamos únicamente almacenamiento local del navegador (localStorage y sessionStorage) para mantener tu sesión activa y guardar preferencias como el tema visual (claro/oscuro) y el idioma."},
+  {title:"Datos almacenados localmente",body:"• Token de sesión (se elimina al cerrar sesión)\n• Preferencias de tema e idioma\n• Cache de avatar e información de perfil (para acelerar la carga)\n• Estado de onboarding y notificaciones vistas"},
+  {title:"Terceros",body:"Usamos los siguientes servicios externos que pueden establecer sus propias políticas:\n• Supabase (autenticación e infraestructura) — supabase.com/privacy\n• MercadoPago (pagos) — mercadopago.com.ar/privacidad\n• Google OAuth (inicio de sesión con Google) — policies.google.com/privacy"},
+  {title:"Control",body:"Podés limpiar el almacenamiento local desde la configuración de tu navegador en cualquier momento. Esto cerrará tu sesión y restablecerá tus preferencias."},
+  {title:"Cambios",body:"Si en el futuro incorporamos cookies de análisis (ej. para métricas de uso), lo informaremos con 30 días de anticipación y solicitaremos tu consentimiento explícito."},
+];
+
+const LEGAL_TABS=[
+  {id:"tc",    label:"Términos",      sections:null},// LEGAL_SECTIONS — asignado abajo
+  {id:"priv",  label:"Privacidad",    sections:null},
+  {id:"quejas",label:"Quejas",        sections:COMPLAINTS_SECTIONS},
+  {id:"acceso",label:"Accesibilidad", sections:ACCESSIBILITY_SECTIONS},
+  {id:"consumidor",label:"Consumidor",sections:CONSUMER_SECTIONS},
+  {id:"cookies",label:"Cookies",      sections:COOKIES_SECTIONS},
+];
+// Asignación separada para evitar forward reference
+LEGAL_TABS[0].sections=null;// se resuelve en runtime
+LEGAL_TABS[1].sections=null;
+
 export function LegalModal({tab="tc",onClose}){
   const [activeTab,setActiveTab]=React.useState(tab);
-  const sections=activeTab==="tc"?LEGAL_SECTIONS:PRIVACY_SECTIONS;
+  const found=LEGAL_TABS.find(t=>t.id===activeTab);
+  const sections=activeTab==="tc"?LEGAL_SECTIONS:activeTab==="priv"?PRIVACY_SECTIONS:(found?.sections||[]);
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9990,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(640px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)"}} onClick={e=>e.stopPropagation()}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9990,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={onClose}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(680px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)"}} onClick={e=>e.stopPropagation()}>
         <div style={{padding:"18px 20px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{fontWeight:800,fontSize:16,color:C.text}}>Luderis — Legal</div>
             <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
           </div>
-          <div style={{display:"flex",gap:4}}>
-            {[["tc","Términos y Condiciones"],["priv","Política de Privacidad"]].map(([id,label])=>(
+          <div style={{display:"flex",gap:2,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:0}}>
+            {LEGAL_TABS.map(({id,label})=>(
               <button key={id} onClick={()=>setActiveTab(id)}
-                style={{padding:"7px 14px",borderRadius:"8px 8px 0 0",border:"none",fontSize:12,fontWeight:activeTab===id?700:400,cursor:"pointer",fontFamily:FONT,background:activeTab===id?C.bg:"transparent",color:activeTab===id?C.accent:C.muted,borderBottom:activeTab===id?`2px solid ${C.accent}`:"2px solid transparent"}}>
+                style={{padding:"7px 12px",borderRadius:"8px 8px 0 0",border:"none",fontSize:11,fontWeight:activeTab===id?700:400,cursor:"pointer",fontFamily:FONT,whiteSpace:"nowrap",flexShrink:0,background:activeTab===id?C.bg:"transparent",color:activeTab===id?C.accent:C.muted,borderBottom:activeTab===id?`2px solid ${C.accent}`:"2px solid transparent"}}>
                 {label}
               </button>
             ))}

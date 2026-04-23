@@ -16,6 +16,7 @@ import {
   useMPRetorno,
   useDebounce,
   useIntersectionObserver,
+  LegalModal,
 } from "./shared";
 import LandingPage from "./LandingPage";
 import AuthScreen from "./AuthScreen";
@@ -76,6 +77,7 @@ export default function App(){
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
+  const [legalTab,setLegalTab]=useState(null);
   // Verificar onboarding cada vez que cambia la sesión
   // Cargar perfil completo desde DB al login — fuente de verdad
   useEffect(()=>{
@@ -193,6 +195,11 @@ export default function App(){
   });
   const sessionRef=useRef(session);useEffect(()=>{sessionRef.current=session;},[session]);
   useEffect(()=>{window.__openAdmin=()=>setShowAdmin(true);return()=>{window.__openAdmin=null;};},[]);
+  // Abrir modal legal desde URL ?legal=tc|priv|quejas|acceso|consumidor|cookies
+  useEffect(()=>{
+    const p=new URLSearchParams(window.location.search).get("legal");
+    if(p)setLegalTab(p);
+  },[]);
   // Siempre inicia como false — se confirma desde DB (no localStorage) para evitar spoofing
   const [esAdmin,setEsAdmin]=useState(false);
   // Rol real del usuario (DB-verified, no localStorage)
@@ -627,6 +634,7 @@ export default function App(){
       </React.Suspense>}
       {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={()=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}sb.updateUsuario(session.user.id,{onboarding_completado:true},session.access_token).catch(()=>{});setShowOnboarding(false);setOnboardingUpgrade(false);}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
       {showAdmin&&<AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/>}
+      {legalTab&&<LegalModal tab={legalTab} onClose={()=>{setLegalTab(null);window.history.replaceState({},"",window.location.pathname);}}/>}
       <ScrollToTopBtn/>
       {!chatPost&&!detailPost&&!cursoPost&&!showForm&&!notifPanelOpen&&<ChatBotWidget/>}
       <ToastContainer/>
