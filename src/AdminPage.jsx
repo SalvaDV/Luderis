@@ -1804,7 +1804,7 @@ function AlertasContactoTab({ session }) {
   const cargar = async () => {
     setLoading(true);
     try {
-      const data = await sb.getAlertasContacto(soloNoRevisadas);
+      const data = await sb.getAlertasContacto(soloNoRevisadas, session.access_token);
       setAlertas(Array.isArray(data) ? data : []);
     } catch {}
     setLoading(false);

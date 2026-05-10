@@ -838,8 +838,8 @@ export const responderPregunta = (preguntaId, respuesta, token) =>
 export const insertAlertaContacto = (data, token) =>
   db("/alertas_contacto_externo", "POST", data, token, "return=representation");
 
-export const getAlertasContacto = (soloNoRevisadas = false) =>
-  db(`/alertas_contacto_externo?${soloNoRevisadas ? "revisada=eq.false&" : ""}order=created_at.desc&select=*,publicaciones(titulo)`);
+export const getAlertasContacto = (soloNoRevisadas = false, token) =>
+  db(`/alertas_contacto_externo?${soloNoRevisadas ? "revisada=eq.false&" : ""}order=created_at.desc&select=*,publicaciones(titulo)`, "GET", null, token);
 
 export const marcarAlertaRevisada = (alertaId, token) =>
   db(`/alertas_contacto_externo?id=eq.${alertaId}`, "PATCH", { revisada: true }, token);

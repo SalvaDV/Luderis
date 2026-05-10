@@ -98,13 +98,17 @@ export default function PreguntasSection({ publicacionId, session, docenteId, C 
         texto_bloqueado: textoBloqueado,
         razon,
       }, token);
-      await sb.insertNotificacion({
-        usuario_email: "admin",
-        tipo: "alerta_contacto",
-        titulo: "Intento de contacto externo bloqueado",
-        mensaje: `Usuario ${session?.user?.email} intentó compartir contacto externo en publicación ${publicacionId}. Razón: ${razon}`,
-        leida: false,
-      }, token);
+      // Notificar a cada admin del sistema
+      const admins = await sb.db("/usuarios?rol=eq.admin&select=email", "GET", null, token).catch(() => []);
+      for (const admin of (admins || [])) {
+        await sb.insertNotificacion({
+          usuario_email: admin.email,
+          tipo: "alerta_contacto",
+          titulo: "Intento de contacto externo bloqueado",
+          mensaje: `${session?.user?.email} intentó compartir contacto externo. Razón: ${razon}`,
+          leida: false,
+        }, token).catch(() => {});
+      }
     } catch {}
   };
 
