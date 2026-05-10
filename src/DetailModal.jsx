@@ -181,6 +181,8 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 publicacionId={post.id}
                 session={session}
                 docenteId={post.autor_id}
+                docenteEmail={post.autor_email}
+                pubTitulo={post.titulo}
                 C={C}
               />
             )}

@@ -43,6 +43,8 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     pago_aprobado_mp:{icon:"💳",color:"#009EE3",label:"Pago aprobado"},
     sistema:{icon:"📣",color:"#7B3FBE",label:"Anuncio de Luderis"},
     alerta_contacto:{icon:"🔇",color:"#c62828",label:"Alerta de moderación"},
+    nueva_pregunta:{icon:"❓",color:"#1565c0",label:"Nueva pregunta en tu publicación"},
+    pregunta_respondida:{icon:"✅",color:"#2e7d32",label:"Tu pregunta fue respondida"},
   };
 
   const tabs=[
@@ -99,6 +101,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                       sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});
                       setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
                       onClose();
+                      if(window.__openPub)window.__openPub(n.publicacion_id);
                     }
                   }}
                   style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,cursor:n.publicacion_id?"pointer":"default",background:n.leida?"transparent":C.accentDim+"80",display:"flex",gap:12,alignItems:"flex-start",transition:"background .12s"}}

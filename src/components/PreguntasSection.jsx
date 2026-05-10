@@ -6,7 +6,7 @@ const FONT = "'Inter','Segoe UI',sans-serif";
 // Regex pre-filtro: detecta emails, teléfonos, links y menciones a apps externas
 const CONTACT_REGEX = /(\b[\w.+-]+@[\w-]+\.\w{2,}\b)|(\b(?:\+?54\s?)?(?:11|2[0-9]{2}|3[0-9]{2}|4[0-9]{2}|9\s?\d{1,4})[\s-]?\d{3,4}[\s-]?\d{4}\b)|(https?:\/\/[^\s]+)|(wa\.me|t\.me|telegram|whatsapp|instagram|wpp|ws\s|wasap|ig\s|@\w{3,}(?:\s|$)|contactame\s+por|escribime\s+(?:al|por|a\s+mi)|mi\s+(?:mail|correo|cel|celu|numero|numero|whatsapp|insta|telegram)|por\s+(?:whatsapp|telegram|instagram|insta|mail|wpp|afuera\s+de\s+luderis|otro\s+lado)|fuera\s+de\s+(?:la\s+)?(?:plataforma|luderis|app))/i;
 
-export default function PreguntasSection({ publicacionId, session, docenteId, C }) {
+export default function PreguntasSection({ publicacionId, session, docenteId, docenteEmail, pubTitulo, C }) {
   const [preguntas, setPreguntas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [texto, setTexto] = useState("");
@@ -64,6 +64,17 @@ export default function PreguntasSection({ publicacionId, session, docenteId, C 
         autor_nombre: nombreUsuario,
         pregunta: textoTrim,
       }, token);
+      // Notificar al docente
+      if (docenteEmail && docenteEmail !== session.user.email) {
+        sb.insertNotificacion({
+          usuario_id: null,
+          alumno_email: docenteEmail,
+          tipo: "nueva_pregunta",
+          publicacion_id: publicacionId,
+          pub_titulo: `${nombreUsuario} preguntó en "${pubTitulo || "tu publicación"}"`,
+          leida: false,
+        }, token).catch(() => {});
+      }
       setTexto("");
       await cargarPreguntas();
     } catch {}
@@ -83,6 +94,18 @@ export default function PreguntasSection({ publicacionId, session, docenteId, C 
     }
     try {
       await sb.responderPregunta(preguntaId, respTrim, token);
+      // Notificar al alumno que hizo la pregunta
+      const pregunta = preguntas.find(p => p.id === preguntaId);
+      if (pregunta?.autor_email && pregunta.autor_email !== session.user.email) {
+        sb.insertNotificacion({
+          usuario_id: null,
+          alumno_email: pregunta.autor_email,
+          tipo: "pregunta_respondida",
+          publicacion_id: publicacionId,
+          pub_titulo: `Te respondieron en "${pubTitulo || "una publicación"}"`,
+          leida: false,
+        }, token).catch(() => {});
+      }
       setRespTextos(v => ({ ...v, [preguntaId]: "" }));
       await cargarPreguntas();
     } catch {}
