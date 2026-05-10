@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 
 const FONT    = "'Inter','Segoe UI',system-ui,sans-serif";
 const ACCENT  = "#7B3FBE";
@@ -12,10 +12,10 @@ const SUCCESS = "#2E7D52";
 const SECCIONES = [
   { id: "s1",  titulo: "1. Nuestro compromiso" },
   { id: "s2",  titulo: "2. Funciones de accesibilidad" },
-  { id: "s3",  titulo: "3. Navegacion por teclado" },
+  { id: "s3",  titulo: "3. Navegación por teclado" },
   { id: "s4",  titulo: "4. Lectores de pantalla" },
-  { id: "s5",  titulo: "5. Contraste y visualizacion" },
-  { id: "s6",  titulo: "6. Tecnologias de asistencia" },
+  { id: "s5",  titulo: "5. Contraste y visualización" },
+  { id: "s6",  titulo: "6. Tecnologías de asistencia" },
   { id: "s7",  titulo: "7. Limitaciones conocidas" },
   { id: "s8",  titulo: "8. Reportar un problema" },
   { id: "s9",  titulo: "9. Contacto de accesibilidad" },
@@ -208,10 +208,10 @@ export default function AccesibilidadPage() {
               Accesibilidad en Luderis
             </h1>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>
-              <strong>Ultima actualizacion:</strong> Abril de 2026
+              <strong>Última actualización:</strong> Abril de 2026
             </p>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 24 }}>
-              Creemos que la educacion debe ser accesible para todas las personas, sin importar sus capacidades.
+              Creemos que la educación debe ser accesible para todas las personas, sin importar sus capacidades.
             </p>
             <Badge type="info">
               ♿ Luderis trabaja activamente para mejorar la accesibilidad de su plataforma
@@ -237,18 +237,18 @@ export default function AccesibilidadPage() {
           </Seccion>
 
           <Seccion id="s2" titulo="2. Funciones de accesibilidad">
-            <P>Luderis incluye o trabaja en incluir las siguientes caracteristicas:</P>
+            <P>Luderis incluye o trabaja en incluir las siguientes características:</P>
             <FeatureGrid items={[
-              { emoji: "⌨️", titulo: "Navegacion por teclado", desc: "Toda la plataforma puede operarse sin mouse, usando solo el teclado." },
+              { emoji: "⌨️", titulo: "Navegación por teclado", desc: "Toda la plataforma puede operarse sin mouse, usando solo el teclado." },
               { emoji: "🔍", titulo: "Zoom hasta 200%", desc: "El contenido se adapta al zoom del navegador sin perdida de funcionalidad." },
               { emoji: "🌗", titulo: "Modo oscuro / claro", desc: "Seleccionable desde Mi cuenta para reducir fatiga visual." },
-              { emoji: "📱", titulo: "Diseno responsive", desc: "Funciona en celulares y tablets con distintos tamanos de pantalla." },
+              { emoji: "📱", titulo: "Diseño responsive", desc: "Funcióna en celulares y tablets con distintos tamaños de pantalla." },
               { emoji: "🏷️", titulo: "Etiquetas ARIA", desc: "Botones e inputs tienen etiquetas descriptivas para lectores de pantalla." },
               { emoji: "🎨", titulo: "Contraste de color", desc: "Relaciones de contraste de al menos 4.5:1 en texto sobre fondo." },
             ]} />
           </Seccion>
 
-          <Seccion id="s3" titulo="3. Navegacion por teclado">
+          <Seccion id="s3" titulo="3. Navegación por teclado">
             <P>
               Podes navegar toda la plataforma sin usar el mouse. Los atajos de teclado principales son:
             </P>
@@ -288,9 +288,9 @@ export default function AccesibilidadPage() {
             </Badge>
           </Seccion>
 
-          <Seccion id="s5" titulo="5. Contraste y visualizacion">
+          <Seccion id="s5" titulo="5. Contraste y visualización">
             <P>
-              Luderis ofrece dos temas de color diseados para facilitar la lectura:
+              Luderis ofrece dos temas de color diseñados para facilitar la lectura:
             </P>
             <Ul>
               <Li>
@@ -299,7 +299,7 @@ export default function AccesibilidadPage() {
               </Li>
               <Li>
                 <strong>Modo oscuro:</strong> texto claro sobre fondo oscuro (#1A1F2E).
-                Diseado para reducir la fatiga visual en entornos con poca luz.
+                Diseñado para reducir la fatiga visual en entornos con poca luz.
               </Li>
             </Ul>
             <P>
@@ -308,12 +308,12 @@ export default function AccesibilidadPage() {
             <Ul>
               <Li>Usar el zoom del navegador (Ctrl + / Cmd +) hasta el nivel que resulte comodo.</Li>
               <Li>Activar el modo de alto contraste del sistema operativo si lo necesitas.</Li>
-              <Li>Configurar el tamano de fuente base del navegador desde sus ajustes de accesibilidad.</Li>
+              <Li>Configurar el tamaño de fuente base del navegador desde sus ajustes de accesibilidad.</Li>
             </Ul>
           </Seccion>
 
-          <Seccion id="s6" titulo="6. Tecnologias de asistencia">
-            <P>Luderis fue probada con las siguientes tecnologias de asistencia:</P>
+          <Seccion id="s6" titulo="6. Tecnologías de asistencia">
+            <P>Luderis fue probada con las siguientes tecnologías de asistencia:</P>
             <div style={{ overflowX: "auto", marginBottom: 16 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
@@ -349,7 +349,7 @@ export default function AccesibilidadPage() {
               Las limitaciones actualmente conocidas incluyen:
             </P>
             <Ul>
-              <Li>Algunos graficos SVG de estadisticas no tienen descripciones alternativas completas para lectores de pantalla.</Li>
+              <Li>Algunos graficos SVG de estadisticas no tienen descripciónes alternativas completas para lectores de pantalla.</Li>
               <Li>El chat en tiempo real puede no anunciar automaticamente los mensajes nuevos en todos los lectores de pantalla.</Li>
               <Li>Algunos controles personalizados (como el slider de precios) tienen soporte de teclado limitado.</Li>
               <Li>El mapa de ubicaciones no tiene una alternativa textual completa.</Li>
@@ -367,8 +367,8 @@ export default function AccesibilidadPage() {
             </P>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
               {[
-                { n: "1", t: "Describir el problema", d: "Que elemento o funcion no es accesible, y que esperabas que hiciera." },
-                { n: "2", t: "Indicar tu configuracion", d: "Sistema operativo, navegador, version, y tecnologia de asistencia que usas (si aplica)." },
+                { n: "1", t: "Describir el problema", d: "Que elemento o función no es accesible, y que esperabas que hiciera." },
+                { n: "2", t: "Indicar tu configuración", d: "Sistema operativo, navegador, version, y tecnologia de asistencia que usas (si aplica)." },
                 { n: "3", t: "Enviar el reporte", d: "Por email a contacto@luderis.com.ar con el asunto Reporte de accesibilidad." },
                 { n: "4", t: "Seguimiento", d: "Te respondemos en hasta 5 dias habiles con el estado del reporte." },
               ].map(p => (
@@ -426,9 +426,6 @@ export default function AccesibilidadPage() {
 
           <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 32, marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ fontSize: 13, color: MUTED }}>© {new Date().getFullYear()} Luderis. Todos los derechos reservados.</p>
-            <p style={{ fontSize: 12, color: MUTED }}>
-              Este documento es un borrador y puede ser actualizado periodicamente.
-            </p>
           </div>
         </main>
       </div>

@@ -562,9 +562,6 @@ export default function DefensaConsumidorPage() {
           {/* Footer */}
           <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 32, marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ fontSize: 13, color: MUTED }}>© {new Date().getFullYear()} Luderis. Todos los derechos reservados.</p>
-            <p style={{ fontSize: 12, color: MUTED }}>
-              Este documento es un borrador con fines informativos y debe ser revisado por un profesional del derecho antes de su publicación oficial.
-            </p>
           </div>
         </main>
       </div>
