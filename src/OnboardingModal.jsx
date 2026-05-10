@@ -10,6 +10,8 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const [nivelEdu,setNivelEdu]=useState("");
   const [ubicacion,setUbicacion]=useState("");
   const [saving,setSaving]=useState(false);
+  const [nombre,setNombre]=useState("");
+  const [finishDone,setFinishDone]=useState(false);
   // KYC (solo docentes)
   const [dni,setDni]=useState("");
   const [fechaNac,setFechaNac]=useState("");
@@ -88,9 +90,14 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
 
     // Paso 2: Datos básicos
     {id:"datos",title:"Datos básicos",sub:"Para mostrarte contenido relevante.",
-     canNext:true,
+     canNext:nombre.trim().length>0,
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
+        <div>
+          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>Tu nombre *</label>
+          <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="¿Cómo te llamás?"
+            style={{width:"100%",background:C.bg,border:`1px solid ${nombre.trim()?C.success:C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+        </div>
         <div>
           <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿En qué etapa educativa estás?</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -156,15 +163,18 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
         {[
-          {v:"gratis",icon:"🆓",label:"Solo clases gratuitas"},
-          {v:"bajo",icon:"💵",label:"Hasta $5.000 / hora"},
-          {v:"medio",icon:"💴",label:"$5.000 — $15.000 / hora"},
-          {v:"alto",icon:"💎",label:"Más de $15.000 / hora"},
-        ].map(({v,icon,label})=>(
+          {v:"gratis",icon:"🆓",label:"Gratuitas",desc:"Solo clases sin costo"},
+          {v:"bajo",icon:"💵",label:"Económico",desc:"Accesible para cualquier bolsillo"},
+          {v:"medio",icon:"💴",label:"Intermedio",desc:"Precio estándar del mercado"},
+          {v:"alto",icon:"💎",label:"Premium",desc:"Alta especialización o dedicación"},
+        ].map(({v,icon,label,desc})=>(
           <button key={v} onClick={()=>setPresupuesto(v)}
             style={{display:"flex",alignItems:"center",gap:14,padding:"13px 18px",borderRadius:12,border:`2px solid ${presupuesto===v?C.accent:C.border}`,background:presupuesto===v?C.accentDim:C.bg,cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:FONT}}>
             <span style={{fontSize:22,flexShrink:0}}>{icon}</span>
-            <div style={{fontWeight:600,color:C.text,fontSize:14,flex:1}}>{label}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,color:C.text,fontSize:14}}>{label}</div>
+              <div style={{fontSize:11,color:C.muted,marginTop:2}}>{desc}</div>
+            </div>
             {presupuesto===v&&<span style={{color:C.accent,fontSize:18,flexShrink:0}}>✓</span>}
           </button>
         ))}
@@ -204,9 +214,13 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
 
     // Paso KYC 1: Situación fiscal + CUIT
     {id:"kyc_fiscal",title:"Situación fiscal",sub:"¿Cómo vas a facturar tus servicios educativos?",
-     canNext:!!situacionFiscal&&cuit.replace(/-/g,"").length===11,
+     canNext:true,
      body:(
       <div style={{marginTop:8}}>
+        <div style={{background:"#FEF3C710",border:"1px solid #F59E0B50",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#92400E",marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
+          <span style={{flexShrink:0}}>⚠️</span>
+          <span>Podés completar esto después. Pero <strong>no podrás recibir pagos</strong> hasta ingresar tu situación fiscal y CUIT.</span>
+        </div>
         <p style={{color:C.muted,fontSize:12,margin:"0 0 12px",lineHeight:1.6}}>Esta información nos ayuda a cumplir con las regulaciones de AFIP. Podés cambiarla más adelante.</p>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[
@@ -374,6 +388,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       const updates={
         onboarding_completado:true,
         rol,
+        ...(nombre.trim()&&{nombre:nombre.trim()}),
         materias_interes:materias,
         nivel_educativo:nivelEdu||null,
         objetivo:objetivo||null,
@@ -437,8 +452,9 @@ Respondé SOLO JSON.`,
         if(modalidadPref)localStorage.setItem("cl_modalidad_pref_"+session.user.email,modalidadPref);
         if(presupuesto)localStorage.setItem("cl_presupuesto_"+session.user.email,presupuesto);
       }catch{}
-      onClose();
-      if(postAction)postAction();
+      // Alumnos con recomendaciones IA: mostrar resultados antes de cerrar
+      if(!esDocente&&materias.length>0){setFinishDone(true);}
+      else{onClose();if(postAction)postAction();}
     }catch(e){
       console.error("Onboarding error:",e);
       try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}
@@ -448,7 +464,11 @@ Respondé SOLO JSON.`,
   };
 
   const handleNext=()=>{
-    if(isLast){finish();return;}
+    if(isLast){
+      if(finishDone){onClose();return;}
+      finish();
+      return;
+    }
     setStep(s=>s+1);
   };
 
@@ -498,7 +518,7 @@ Respondé SOLO JSON.`,
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <button onClick={handleNext} disabled={!cur.canNext||saving}
               style={{background:isLast?LUD.grad:(cur.canNext?LUD.grad:C.border),border:"none",borderRadius:20,color:"#fff",padding:"10px 28px",fontWeight:700,fontSize:14,cursor:cur.canNext&&!saving?"pointer":"default",fontFamily:FONT,boxShadow:cur.canNext?"0 4px 12px rgba(26,110,216,.3)":"none",transition:"all .2s",opacity:cur.canNext?1:0.5}}>
-              {saving?"Guardando…":isLast?"Empezar →":"Continuar →"}
+              {saving?"Guardando…":isLast&&finishDone?"Ir a explorar →":isLast?"Empezar →":"Continuar →"}
             </button>
           </div>
         </div>

@@ -43,7 +43,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const [iaExplanation,setIaExplanation]=useState("");
   const [iaLoading,setIaLoading]=useState(false);
   const [ordenamiento,setOrdenamiento]=useState("relevancia");
-  const [seccion,setSeccion]=useState(()=>{try{const s=sessionStorage.getItem("cl_seccion_explore");if(s)return s;}catch{}return "cursos";});// "cursos" | "clases" | "pedidos"
+  const [seccion,setSeccion]=useState(()=>{try{const s=sessionStorage.getItem("cl_seccion_explore");if(s){const rol=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";if(s==="pedidos"&&rol==="alumno")return "cursos";return s;}}catch{}return "cursos";});// "cursos" | "clases" | "pedidos"
 
   // Palabras clave de cercanía para el prompt IA
   const PALABRAS_CERCA=["cerca","cercanía","mi zona","mi barrio","mi ciudad","presencial cerca","local"];
@@ -207,12 +207,11 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   },[session]);// eslint-disable-line
   useEffect(()=>{cargar();},[cargar]);
 
-  // Solo cambia a resultados por filtros (no por búsqueda escrita — eso requiere Enter)
   useEffect(()=>{
-    if(filtroTipo!=="all"||filtroModo!=="all"||filtroModalidad!=="all"||filtroMateria||filtroUbicacion){
+    if(filtroTipo!=="all"||filtroModo!=="all"||filtroModalidad!=="all"||filtroMateria||filtroUbicacion||busqueda){
       setModoVista("resultados");
     }
-  },[filtroTipo,filtroModo,filtroModalidad,filtroMateria,filtroUbicacion]);
+  },[filtroTipo,filtroModo,filtroModalidad,filtroMateria,filtroUbicacion,busqueda]);
 
   const goHome=()=>{
     setModoVista("home");
@@ -312,7 +311,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     document.documentElement.style.setProperty('--cl-section-tint', sT.accent+'13');
     document.documentElement.style.setProperty('--cl-section-grad', sT.grad);
   },[sT.accent,sT.grad]);
-  const clearAll=()=>{setFiltroTipo("all");setFiltroModo("all");setFiltroModalidad("all");setFiltroSinc("all");setFiltroMateria("");setSliderMin(precioMin);setSliderMax(precioMax);setFiltroFechaDesde("");setFiltroFechaHasta("");setFiltroDurMin(0);setBusqueda("");setFiltroUbicacion("");setFiltroMoneda("");};
+  const clearAll=()=>{setFiltroTipo("all");setFiltroModo("all");setFiltroModalidad("all");setFiltroSinc("all");setFiltroMateria("");setSliderMin(precioMin);setSliderMax(precioMax);setFiltroFechaDesde("");setFiltroFechaHasta("");setFiltroDurMin(0);setBusqueda("");setFiltroUbicacion("");setFiltroMoneda("");setIaResults(null);setIaQuery("");setIaExplanation("");};
   const selS={width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,cursor:"pointer",boxSizing:"border-box",colorScheme:localStorage.getItem("cl_theme")||"light"};
   const FL=({ch})=><div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:7,letterSpacing:.2}}>{ch}</div>;
   const FC=({label,active,onClick})=>(<button onClick={onClick} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:active?600:400,cursor:"pointer",fontFamily:FONT,background:active?sT.accent:"transparent",color:active?"#fff":C.muted,border:`1px solid ${active?sT.accent:C.border}`,marginBottom:5,marginRight:5,transition:"all .12s"}}>{label}</button>);
@@ -736,16 +735,30 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 style={{width:34,height:34,borderRadius:"50%",background:C.bg,border:`1px solid ${C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:C.text,flexShrink:0,transition:"background .15s"}}
                 onMouseEnter={e=>e.currentTarget.style.background=C.border}
                 onMouseLeave={e=>e.currentTarget.style.background=C.bg}>←</button>
-              {/* Buscador principal — trigger del modal */}
+              {/* Buscador principal — input real */}
+              <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,background:C.bg,border:`2px solid ${busqueda?C.accent:C.border}`,borderRadius:10,padding:"8px 12px",transition:"border-color .15s"}}
+                onFocusCapture={e=>e.currentTarget.style.borderColor=C.accent}
+                onBlurCapture={e=>e.currentTarget.style.borderColor=busqueda?C.accent:C.border}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input
+                  ref={searchInputRef}
+                  value={busqueda}
+                  onChange={e=>setBusqueda(e.target.value)}
+                  onKeyDown={e=>e.key==="Escape"&&setBusqueda("")}
+                  placeholder={seccion==="pedidos"?"Buscar pedidos…":"Buscar clases, cursos, docentes…"}
+                  style={{flex:1,background:"transparent",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,minWidth:0}}
+                />
+                {busqueda&&<button onClick={()=>setBusqueda("")} style={{background:"none",border:"none",color:C.muted,fontSize:16,lineHeight:1,cursor:"pointer",padding:"0 2px",flexShrink:0}}>×</button>}
+              </div>
+              {/* Botón IA — separado y claramente etiquetado */}
               <button onClick={()=>setShowBusquedaIA(true)}
-                style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,background:C.bg,border:`2px solid ${iaQuery?C.accent:C.border}`,borderRadius:10,padding:"10px 12px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"border-color .15s"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-                onMouseLeave={e=>e.currentTarget.style.borderColor=iaQuery?C.accent:C.border}>
-                {!iaQuery&&<span style={{fontSize:13,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700,flexShrink:0}}>✦</span>}
-                <span style={{color:iaQuery?C.text:C.muted,fontSize:13,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {iaQuery?iaQuery:seccion==="pedidos"?"Describí qué querés aprender…":"Describí lo que querés aprender…"}
-                </span>
-                {iaQuery&&<span onClick={e=>{e.stopPropagation();setIaQuery("");setIaResults(null);setIaExplanation("");setPagina(1);}} style={{color:C.muted,fontSize:16,lineHeight:1,flexShrink:0}}>×</span>}
+                title="Búsqueda con inteligencia artificial"
+                style={{display:"flex",alignItems:"center",gap:5,background:iaResults?C.accentDim:"transparent",border:`1.5px solid ${iaResults?C.accent:C.border}`,borderRadius:10,color:iaResults?C.accent:C.muted,padding:"10px 12px",cursor:"pointer",fontFamily:FONT,fontSize:12,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",transition:"all .15s"}}
+                onMouseEnter={e=>{if(!iaResults){e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}}
+                onMouseLeave={e=>{if(!iaResults){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}}>
+                <span style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>✦</span>
+                {iaResults?"IA activa":"IA"}
+                {iaResults&&<span onClick={e=>{e.stopPropagation();setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}} style={{marginLeft:3,color:C.muted,fontSize:14,lineHeight:1,cursor:"pointer"}}>×</span>}
               </button>
               <button onClick={()=>setPanelOpen(v=>!v)}
                 style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 13px",cursor:"pointer",flexShrink:0}}>
