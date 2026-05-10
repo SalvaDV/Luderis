@@ -1853,10 +1853,10 @@ function AlertasContactoTab({ session }) {
       );
       // Notificación campana al usuario
       await sb.insertNotificacion({
-        usuario_email: alerta.autor_email,
+        usuario_id: null,
+        alumno_email: alerta.autor_email,
         tipo: "sistema",
-        titulo: "⚠️ Advertencia recibida",
-        mensaje: "Recibiste una advertencia por intentar compartir información de contacto externo. Recordá que toda la comunicación debe ocurrir dentro de Luderis. Ante reincidencias tu cuenta puede ser suspendida.",
+        pub_titulo: "⚠️ Advertencia: intentaste compartir contacto externo. Toda la comunicación debe ocurrir dentro de Luderis. Ante reincidencias tu cuenta puede ser suspendida.",
         leida: false,
       }, session.access_token);
       // Marcar alerta como revisada

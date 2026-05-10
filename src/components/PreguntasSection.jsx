@@ -102,10 +102,10 @@ export default function PreguntasSection({ publicacionId, session, docenteId, C 
       const admins = await sb.db("/usuarios?rol=eq.admin&select=email", "GET", null, token).catch(() => []);
       for (const admin of (admins || [])) {
         await sb.insertNotificacion({
-          usuario_email: admin.email,
+          usuario_id: null,
+          alumno_email: admin.email,
           tipo: "alerta_contacto",
-          titulo: "Intento de contacto externo bloqueado",
-          mensaje: `${session?.user?.email} intentó compartir contacto externo. Razón: ${razon}`,
+          pub_titulo: `🔇 Contacto externo bloqueado — ${session?.user?.email}. Razón: ${razon}`,
           leida: false,
         }, token).catch(() => {});
       }
