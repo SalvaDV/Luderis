@@ -820,3 +820,26 @@ export const dispararAlertas = async (pub, token) => {
     }
   } catch { /* silencioso */ }
 };
+
+// ── Q&A pública en publicaciones ──────────────────────────────────────────────
+
+export const getPreguntasPublicacion = (publicacionId) =>
+  db(`/preguntas_publicacion?publicacion_id=eq.${publicacionId}&flag_pregunta=eq.false&order=created_at.asc&select=*`);
+
+export const insertPregunta = (data, token) =>
+  db("/preguntas_publicacion", "POST", data, token, "return=representation");
+
+export const responderPregunta = (preguntaId, respuesta, token) =>
+  db(`/preguntas_publicacion?id=eq.${preguntaId}`, "PATCH",
+    { respuesta, respondido_at: new Date().toISOString() }, token, "return=representation");
+
+// ── Alertas contacto externo ──────────────────────────────────────────────────
+
+export const insertAlertaContacto = (data, token) =>
+  db("/alertas_contacto_externo", "POST", data, token, "return=representation");
+
+export const getAlertasContacto = (soloNoRevisadas = false) =>
+  db(`/alertas_contacto_externo?${soloNoRevisadas ? "revisada=eq.false&" : ""}order=created_at.desc&select=*,publicaciones(titulo)`);
+
+export const marcarAlertaRevisada = (alertaId, token) =>
+  db(`/alertas_contacto_externo?id=eq.${alertaId}`, "PATCH", { revisada: true }, token);

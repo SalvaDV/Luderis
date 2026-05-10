@@ -19,17 +19,12 @@ export default function PostChatBtn({post,session,onOpenChat}){
       }).catch(()=>{if(mounted)setPermitido(false);});
       return()=>{mounted=false;};
     }
-    // Permitir a inscriptos Y co-docentes (ayudantes) — sin traer todas las pubs
-    Promise.all([
-      sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
-      sb.getPublicaciones({autor:post.autor_email},session.access_token).catch(()=>[]),
-    ]).then(([ins,pubs])=>{
+    // Permitir a inscriptos Y co-docentes (ayudantes)
+    const esAyud=(post.ayudantes||[]).includes(session.user.id);
+    if(esAyud){setPermitido(true);return()=>{mounted=false;};}
+    sb.getMisInscripciones(miEmail,session.access_token).then(ins=>{
       if(!mounted)return;
-      const estaInscripto=ins.some(i=>i.publicacion_id===post.id);
-      if(estaInscripto){setPermitido(true);return;}
-      const pub=pubs.find(p=>p.id===post.id);
-      const esAyud=(pub?.ayudantes||[]).includes(session.user.id);
-      setPermitido(esAyud);
+      setPermitido(ins.some(i=>i.publicacion_id===post.id));
     }).catch(()=>{if(mounted)setPermitido(false);});
     return()=>{mounted=false;};
   },[post.id,post.tipo,post.autor_email,miEmail,session.access_token]);

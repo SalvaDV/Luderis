@@ -110,7 +110,13 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
   };
 
   const renderCard=(ins)=>{
-    const p=posts[ins.publicacion_id];if(!p)return null;
+    const p=posts[ins.publicacion_id];
+    if(!p)return(
+      <div key={ins.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,opacity:0.6}}>
+        <div style={{width:44,height:44,borderRadius:11,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🗑️</div>
+        <div><p style={{fontFamily:FONT,fontSize:13,fontWeight:600,color:C.muted,margin:0}}>Publicación eliminada</p><p style={{fontFamily:FONT,fontSize:11,color:C.muted,margin:"2px 0 0"}}>Este curso o clase ya no está disponible.</p></div>
+      </div>
+    );
     const finalizado=ins.clase_finalizada||!!p.finalizado;
     const pendienteConfirmacion=!!ins.clase_finalizada&&!ins.alumno_confirmada;
     const ti=tiempoInfo(p,ins);

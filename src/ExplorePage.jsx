@@ -746,7 +746,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <input
                   ref={searchInputRef}
                   value={busqueda}
-                  onChange={e=>setBusqueda(e.target.value)}
+                  onChange={e=>{setBusqueda(e.target.value);if(e.target.value&&iaResults!==null){setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}}}
                   onKeyDown={e=>e.key==="Escape"&&setBusqueda("")}
                   placeholder={seccion==="pedidos"?"Buscar pedidos…":"Buscar clases, cursos, docentes…"}
                   style={{flex:1,background:"transparent",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,minWidth:0}}

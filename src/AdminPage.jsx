@@ -71,6 +71,7 @@ const TABS = [
   { id: "pubs", label: "📋 Publicaciones" },
   { id: "reports", label: "🚨 Denuncias" },
   { id: "quejas", label: "📋 Quejas" },
+  { id: "alertas_contacto", label: "🔇 Anti-puenteo" },
   { id: "payments", label: "💰 Pagos" },
   { id: "escrow", label: "📦 Escrow" },
   { id: "liquidaciones", label: "📄 Liquidaciones" },
@@ -146,6 +147,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
         {tab === "pubs" && <PubsTab session={session} />}
         {tab === "reports" && <ReportsTab session={session} />}
         {tab === "quejas" && <QuejasTab session={session} />}
+        {tab === "alertas_contacto" && <AlertasContactoTab session={session} />}
         {tab === "payments" && <PaymentsTab session={session} />}
         {tab === "escrow" && <EscrowTab session={session} />}
         {tab === "liquidaciones" && <LiquidacionesTab session={session} />}
@@ -1788,6 +1790,97 @@ function ConfigTab({ session }) {
       <Btn onClick={guardar} disabled={saving} style={{ alignSelf: "flex-start" }}>
         {saving ? "Guardando…" : "💾 Guardar configuración"}
       </Btn>
+    </div>
+  );
+}
+
+// ─── TAB: ALERTAS CONTACTO EXTERNO ───────────────────────────────────────────
+function AlertasContactoTab({ session }) {
+  const [alertas, setAlertas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [soloNoRevisadas, setSoloNoRevisadas] = useState(true);
+  const [marcando, setMarcando] = useState(null);
+
+  const cargar = async () => {
+    setLoading(true);
+    try {
+      const data = await sb.getAlertasContacto(soloNoRevisadas);
+      setAlertas(Array.isArray(data) ? data : []);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { cargar(); }, [soloNoRevisadas]);
+
+  const marcar = async (id) => {
+    setMarcando(id);
+    try {
+      await sb.marcarAlertaRevisada(id, session.access_token);
+      setAlertas(v => v.filter(a => a.id !== id));
+    } catch {}
+    setMarcando(null);
+  };
+
+  const fmtFecha = (iso) => iso ? new Date(iso).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <h2 style={{ fontFamily: FONT, fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>🔇 Intentos de contacto externo</h2>
+          <p style={{ fontFamily: FONT, fontSize: 13, color: C.muted, margin: "4px 0 0" }}>Mensajes bloqueados automáticamente por compartir datos de contacto fuera de Luderis.</p>
+        </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: FONT, fontSize: 13, color: C.text, cursor: "pointer" }}>
+          <input type="checkbox" checked={soloNoRevisadas} onChange={e => setSoloNoRevisadas(e.target.checked)} />
+          Solo no revisadas
+        </label>
+      </div>
+
+      {loading ? (
+        <Spinner />
+      ) : alertas.length === 0 ? (
+        <Card><p style={{ fontFamily: FONT, fontSize: 14, color: C.muted, margin: 0 }}>No hay alertas{soloNoRevisadas ? " sin revisar" : ""}.</p></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {alertas.map(a => (
+            <Card key={a.id} style={{ borderLeft: `4px solid ${a.revisada ? C.border : "#c62828"}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                    <Badge color={a.tipo === "pregunta" ? "#1565c0" : "#6a1b9a"}>{a.tipo === "pregunta" ? "Pregunta" : "Respuesta"}</Badge>
+                    {a.revisada && <Badge color={C.muted}>Revisada</Badge>}
+                    <span style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>{fmtFecha(a.created_at)}</span>
+                  </div>
+                  <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted, marginBottom: 4 }}>
+                    <strong>Usuario:</strong> {a.autor_email}
+                  </div>
+                  {a.publicaciones?.titulo && (
+                    <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted, marginBottom: 6 }}>
+                      <strong>Publicación:</strong> {a.publicaciones.titulo}
+                    </div>
+                  )}
+                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px", marginBottom: 6 }}>
+                    <p style={{ fontFamily: FONT, fontSize: 13, color: "#7f1d1d", margin: 0, wordBreak: "break-word" }}>{a.texto_bloqueado}</p>
+                  </div>
+                  {a.razon && (
+                    <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>
+                      <strong>Razón IA:</strong> {a.razon}
+                    </div>
+                  )}
+                </div>
+                {!a.revisada && (
+                  <button
+                    onClick={() => marcar(a.id)}
+                    disabled={marcando === a.id}
+                    style={{ background: "#2e7d32", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: FONT, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, opacity: marcando === a.id ? 0.6 : 1 }}>
+                    {marcando === a.id ? "…" : "Marcar revisada"}
+                  </button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

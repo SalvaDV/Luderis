@@ -362,6 +362,19 @@ export default function App(){
     return () => { mounted = false; };
   }, [session?.access_token]); // eslint-disable-line
 
+  // Set de IDs de publicaciones donde el usuario ya está inscripto (para redirigir directo a CursoPage)
+  const inscritosRef=useRef(new Set());
+  useEffect(()=>{
+    if(!session)return;
+    sb.getMisInscripciones(session.user.email,session.access_token)
+      .then(ins=>{inscritosRef.current=new Set((ins||[]).map(i=>i.publicacion_id));})
+      .catch(()=>{});
+  },[session?.user?.email]);// eslint-disable-line
+  const openDetail=useCallback((post)=>{
+    if(post?.tipo==="oferta"&&inscritosRef.current.has(post.id)){setCursoPost(post);}
+    else{setDetailPost(post);}
+  },[]);// eslint-disable-line
+
   const chatPostRef=useRef(null);
   const refreshUnread=useCallback(()=>{
     if(!session)return;
@@ -607,10 +620,10 @@ export default function App(){
       )}
       <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
-          {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={setDetailPost} onOpenPerfil={setPerfilEmail} onOpenCurso={setCursoPost}/>}
+          {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={setPerfilEmail} onOpenCurso={setCursoPost}/>}
           {page==="agenda"&&<AgendaPage session={session} onOpenCurso={setCursoPost}/>}
           {page==="chats"&&<ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/>}
-          {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={setDetailPost} onOpenChat={openChat} onOpenPerfil={setPerfilEmail}/>}
+          {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={setPerfilEmail}/>}
           {page==="inscripciones"&&<InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>}
           {page==="juegos"&&(
             <React.Suspense fallback={

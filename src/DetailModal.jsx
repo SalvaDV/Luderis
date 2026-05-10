@@ -9,6 +9,7 @@ import {
 } from "./shared";
 import { FavBtn, OfertarBtn, ShareBtn } from "./App";
 import { DescExpandible, InscribirseBtn, RelacionadasSection, ReseñasSeccion } from "./CursoPage";
+import PreguntasSection from "./components/PreguntasSection";
 
 function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpenDetail2}){
   const [reseñas,setReseñas]=useState([]);const [reseñasUsuario,setReseñasUsuario]=useState([]);const [loading,setLoading]=useState(true);
@@ -173,6 +174,16 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
             <div>
               <ReseñasSeccion post={post} session={session} inscripcion={inscripcion} esMio={esMio}/>
             </div>
+
+            {/* ── Preguntas públicas ── */}
+            {post.tipo !== "busqueda" && (
+              <PreguntasSection
+                publicacionId={post.id}
+                session={session}
+                docenteId={post.autor_id}
+                C={C}
+              />
+            )}
 
           </div>
 
