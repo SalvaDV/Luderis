@@ -34,13 +34,18 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
 
   const moderarTexto = async (texto, tipo) => {
     if (CONTACT_REGEX.test(texto)) {
-      return { bloqueado: true, razon: "Contiene información de contacto externo detectada automáticamente." };
+      return { bloqueado: true, tipoInfraccion: "contacto_externo", razon: "Contiene información de contacto externo detectada automáticamente." };
     }
     try {
-      const system = `Sos un moderador de una plataforma educativa. Tu tarea es detectar si el siguiente mensaje intenta compartir información de contacto externo (email, teléfono, redes sociales, apps de mensajería como WhatsApp o Telegram) o invita a continuar la comunicación fuera de la plataforma, de manera directa o indirecta. Respondé SOLO con JSON válido: {"bloqueado":true/false,"razon":"..."} donde razon está vacío si bloqueado es false.`;
-      const respIA = await sb.callIA(system, `Tipo: ${tipo}. Mensaje: "${texto}"`, 150, token);
+      const system = `Sos un moderador de contenido para una plataforma educativa. Analizá el mensaje y detectá si contiene alguna de estas infracciones:
+1. contacto_externo: intenta compartir email, teléfono, redes sociales, apps de mensajería (WhatsApp, Telegram) o invita a comunicarse fuera de la plataforma, de forma directa o indirecta.
+2. lenguaje_agresivo: insultos, groserías, malas palabras, discriminación o lenguaje ofensivo.
+3. violencia: amenazas, intimidación, contenido violento o que incite al daño.
+Respondé SOLO con JSON válido sin markdown: {"bloqueado":true/false,"tipo_infraccion":"contacto_externo"|"lenguaje_agresivo"|"violencia"|null,"razon":"..."}
+Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
+      const respIA = await sb.callIA(system, `Contexto: ${tipo} en publicación educativa. Mensaje: "${texto}"`, 200, token);
       const parsed = JSON.parse(respIA.trim().replace(/^```json\s*/i, "").replace(/```$/i, ""));
-      if (parsed.bloqueado) return { bloqueado: true, razon: parsed.razon || "Posible contacto externo detectado por IA." };
+      if (parsed.bloqueado) return { bloqueado: true, tipoInfraccion: parsed.tipo_infraccion || "lenguaje_agresivo", razon: parsed.razon || "Contenido no permitido detectado por IA." };
     } catch {}
     return { bloqueado: false };
   };
@@ -51,8 +56,8 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
     setSending(true);
     const mod = await moderarTexto(textoTrim, "pregunta");
     if (mod.bloqueado) {
-      await registrarAlerta(textoTrim, "pregunta", mod.razon);
-      setBloqueadoModal(mod.razon);
+      await registrarAlerta(textoTrim, "pregunta", mod.razon, mod.tipoInfraccion);
+      setBloqueadoModal({ tipo: mod.tipoInfraccion, razon: mod.razon });
       setSending(false);
       return;
     }
@@ -93,8 +98,8 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
     setRespondiendo(preguntaId);
     const mod = await moderarTexto(respTrim, "respuesta");
     if (mod.bloqueado) {
-      await registrarAlerta(respTrim, "respuesta", mod.razon);
-      setBloqueadoModal(mod.razon);
+      await registrarAlerta(respTrim, "respuesta", mod.razon, mod.tipoInfraccion);
+      setBloqueadoModal({ tipo: mod.tipoInfraccion, razon: mod.razon });
       setRespondiendo(null);
       return;
     }
@@ -118,14 +123,15 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
     setRespondiendo(null);
   };
 
-  const registrarAlerta = async (textoBloqueado, tipo, razon) => {
+  const registrarAlerta = async (textoBloqueado, tipo, razon, tipoInfraccion) => {
     try {
+      const tipoLabel = { contacto_externo: "Contacto externo", lenguaje_agresivo: "Lenguaje agresivo", violencia: "Violencia/amenaza" }[tipoInfraccion] || "Contenido inapropiado";
       await sb.insertAlertaContacto({
         publicacion_id: publicacionId,
         autor_email: session?.user?.email || "desconocido",
         tipo,
         texto_bloqueado: textoBloqueado,
-        razon,
+        razon: `[${tipoLabel}] ${razon}`,
       }, token);
       // Notificar a cada admin del sistema
       const admins = await sb.db("/usuarios?rol=eq.admin&select=email", "GET", null, token).catch(() => []);
@@ -248,28 +254,41 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
         </div>
       )}
 
-      {/* Modal bloqueo por contacto externo */}
-      {bloqueadoModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
-          onClick={() => setBloqueadoModal(null)}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.25)", textAlign: "center" }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🚫</div>
-            <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: "#c62828", marginBottom: 8 }}>Mensaje no permitido</h3>
-            <p style={{ fontFamily: FONT, fontSize: 14, color: "#444", lineHeight: 1.6, marginBottom: 8 }}>
-              Tu mensaje fue bloqueado porque parece contener información de contacto externo o invitaciones a comunicarse fuera de Luderis.
-            </p>
-            <p style={{ fontFamily: FONT, fontSize: 12, color: "#888", marginBottom: 20 }}>
-              Toda la comunicación debe ocurrir dentro de la plataforma. Un administrador fue notificado.
-            </p>
-            <button
-              onClick={() => setBloqueadoModal(null)}
-              style={{ background: "#c62828", color: "#fff", border: "none", borderRadius: 10, padding: "10px 28px", fontFamily: FONT, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-              Entendido
-            </button>
+      {/* Modal bloqueo por moderación */}
+      {bloqueadoModal && (()=>{
+        const t = bloqueadoModal?.tipo;
+        const cfg = t === "contacto_externo"
+          ? { icon:"🚫", color:"#c62828", titulo:"Contacto externo no permitido",
+              desc:"Tu mensaje fue bloqueado porque parece contener datos de contacto (email, teléfono, redes sociales) o una invitación a comunicarse fuera de Luderis.",
+              sub:"Toda la comunicación debe ocurrir dentro de la plataforma." }
+          : t === "lenguaje_agresivo"
+          ? { icon:"⚠️", color:"#e65100", titulo:"Lenguaje no permitido",
+              desc:"Tu mensaje fue bloqueado por contener insultos, groserías o lenguaje ofensivo. Luderis es una comunidad educativa que requiere un trato respetuoso.",
+              sub:"Mantené un lenguaje apropiado para seguir participando." }
+          : t === "violencia"
+          ? { icon:"🛑", color:"#b71c1c", titulo:"Contenido violento no permitido",
+              desc:"Tu mensaje fue bloqueado por contener amenazas, intimidación o contenido violento. Este tipo de comportamiento está terminantemente prohibido.",
+              sub:"Ante reincidencias tu cuenta puede ser suspendida." }
+          : { icon:"🚫", color:"#c62828", titulo:"Mensaje no permitido",
+              desc:"Tu mensaje fue bloqueado por contener contenido que no está permitido en Luderis.",
+              sub:"Un administrador fue notificado." };
+        return(
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+            onClick={() => setBloqueadoModal(null)}>
+            <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.25)", textAlign: "center" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: 44, marginBottom: 12 }}>{cfg.icon}</div>
+              <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: cfg.color, marginBottom: 10 }}>{cfg.titulo}</h3>
+              <p style={{ fontFamily: FONT, fontSize: 14, color: "#444", lineHeight: 1.6, marginBottom: 8 }}>{cfg.desc}</p>
+              <p style={{ fontFamily: FONT, fontSize: 12, color: "#888", marginBottom: 20 }}>{cfg.sub} Un administrador fue notificado.</p>
+              <button onClick={() => setBloqueadoModal(null)}
+                style={{ background: cfg.color, color: "#fff", border: "none", borderRadius: 10, padding: "10px 28px", fontFamily: FONT, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                Entendido
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
