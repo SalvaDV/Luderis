@@ -1799,26 +1799,94 @@ function AlertasContactoTab({ session }) {
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [soloNoRevisadas, setSoloNoRevisadas] = useState(true);
-  const [marcando, setMarcando] = useState(null);
+  const [accionando, setAccionando] = useState(null); // alertaId + tipo: "revisar"|"advertir"|"bloquear"
+  // advertencias por email cacheadas para no re-fetchear
+  const [advertenciasMap, setAdvertenciasMap] = useState({});
 
   const cargar = async () => {
     setLoading(true);
     try {
       const data = await sb.getAlertasContacto(soloNoRevisadas, session.access_token);
-      setAlertas(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      setAlertas(arr);
+      // Cargar advertencias de todos los usuarios únicos involucrados
+      const emails = [...new Set(arr.map(a => a.autor_email).filter(Boolean))];
+      if (emails.length > 0) {
+        const rows = await adminDb(
+          `usuarios?email=in.(${emails.map(e => encodeURIComponent(e)).join(",")})&select=email,advertencias,bloqueado`,
+          "GET", null, session.access_token
+        ).catch(() => []);
+        const map = {};
+        (rows || []).forEach(r => { map[r.email] = r; });
+        setAdvertenciasMap(map);
+      }
     } catch {}
     setLoading(false);
   };
 
-  useEffect(() => { cargar(); }, [soloNoRevisadas]);
+  useEffect(() => { cargar(); }, [soloNoRevisadas]); // eslint-disable-line
+
+  const setAccion = (id, tipo) => setAccionando(v => v?.id === id && v?.tipo === tipo ? null : { id, tipo });
+  const enAccion = (id, tipo) => accionando?.id === id && accionando?.tipo === tipo;
 
   const marcar = async (id) => {
-    setMarcando(id);
+    setAccionando({ id, tipo: "revisar" });
     try {
       await sb.marcarAlertaRevisada(id, session.access_token);
-      setAlertas(v => v.filter(a => a.id !== id));
+      setAlertas(v => soloNoRevisadas ? v.filter(a => a.id !== id) : v.map(a => a.id === id ? { ...a, revisada: true } : a));
     } catch {}
-    setMarcando(null);
+    setAccionando(null);
+  };
+
+  const advertir = async (alerta) => {
+    setAccionando({ id: alerta.id, tipo: "advertir" });
+    try {
+      // +1 advertencia en DB
+      const rows = await adminDb(
+        `usuarios?email=eq.${encodeURIComponent(alerta.autor_email)}&select=advertencias`,
+        "GET", null, session.access_token
+      ).catch(() => []);
+      const actual = rows?.[0]?.advertencias ?? 0;
+      await adminDb(
+        `usuarios?email=eq.${encodeURIComponent(alerta.autor_email)}`,
+        "PATCH", { advertencias: actual + 1 }, session.access_token
+      );
+      // Notificación campana al usuario
+      await sb.insertNotificacion({
+        usuario_email: alerta.autor_email,
+        tipo: "sistema",
+        titulo: "⚠️ Advertencia recibida",
+        mensaje: "Recibiste una advertencia por intentar compartir información de contacto externo. Recordá que toda la comunicación debe ocurrir dentro de Luderis. Ante reincidencias tu cuenta puede ser suspendida.",
+        leida: false,
+      }, session.access_token);
+      // Marcar alerta como revisada
+      await sb.marcarAlertaRevisada(alerta.id, session.access_token);
+      // Actualizar UI
+      setAdvertenciasMap(v => ({ ...v, [alerta.autor_email]: { ...(v[alerta.autor_email] || {}), advertencias: actual + 1 } }));
+      setAlertas(v => soloNoRevisadas ? v.filter(a => a.id !== alerta.id) : v.map(a => a.id === alerta.id ? { ...a, revisada: true } : a));
+    } catch (e) { console.error(e); }
+    setAccionando(null);
+  };
+
+  const bloquear = async (alerta) => {
+    setAccionando({ id: alerta.id, tipo: "bloquear" });
+    try {
+      // Marcar bloqueado en DB
+      await adminDb(
+        `usuarios?email=eq.${encodeURIComponent(alerta.autor_email)}`,
+        "PATCH", { bloqueado: true }, session.access_token
+      );
+      // Mail de ban
+      await sb.sendEmail("ban_usuario", alerta.autor_email, {
+        razon: "intentos reiterados de compartir información de contacto externo",
+      }, session.access_token);
+      // Marcar alerta como revisada
+      await sb.marcarAlertaRevisada(alerta.id, session.access_token);
+      // Actualizar UI
+      setAdvertenciasMap(v => ({ ...v, [alerta.autor_email]: { ...(v[alerta.autor_email] || {}), bloqueado: true } }));
+      setAlertas(v => soloNoRevisadas ? v.filter(a => a.id !== alerta.id) : v.map(a => a.id === alerta.id ? { ...a, revisada: true } : a));
+    } catch (e) { console.error(e); }
+    setAccionando(null);
   };
 
   const fmtFecha = (iso) => iso ? new Date(iso).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -1842,43 +1910,76 @@ function AlertasContactoTab({ session }) {
         <Card><p style={{ fontFamily: FONT, fontSize: 14, color: C.muted, margin: 0 }}>No hay alertas{soloNoRevisadas ? " sin revisar" : ""}.</p></Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {alertas.map(a => (
-            <Card key={a.id} style={{ borderLeft: `4px solid ${a.revisada ? C.border : "#c62828"}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                    <Badge color={a.tipo === "pregunta" ? "#1565c0" : "#6a1b9a"}>{a.tipo === "pregunta" ? "Pregunta" : "Respuesta"}</Badge>
-                    {a.revisada && <Badge color={C.muted}>Revisada</Badge>}
-                    <span style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>{fmtFecha(a.created_at)}</span>
-                  </div>
-                  <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted, marginBottom: 4 }}>
-                    <strong>Usuario:</strong> {a.autor_email}
-                  </div>
-                  {a.publicaciones?.titulo && (
-                    <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted, marginBottom: 6 }}>
-                      <strong>Publicación:</strong> {a.publicaciones.titulo}
+          {alertas.map(a => {
+            const userInfo = advertenciasMap[a.autor_email] || {};
+            const adv = userInfo.advertencias ?? 0;
+            const estaBloqueado = userInfo.bloqueado ?? false;
+            return (
+              <Card key={a.id} style={{ borderLeft: `4px solid ${a.revisada ? C.border : estaBloqueado ? "#6a1b9a" : "#c62828"}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Badges tipo + estado */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                      <Badge color={a.tipo === "pregunta" ? "#1565c0" : "#6a1b9a"}>{a.tipo === "pregunta" ? "Pregunta" : "Respuesta"}</Badge>
+                      {a.revisada && <Badge color={C.muted}>Revisada</Badge>}
+                      {estaBloqueado && <Badge color="#6a1b9a">Usuario bloqueado</Badge>}
+                      <span style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>{fmtFecha(a.created_at)}</span>
                     </div>
-                  )}
-                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px", marginBottom: 6 }}>
-                    <p style={{ fontFamily: FONT, fontSize: 13, color: "#7f1d1d", margin: 0, wordBreak: "break-word" }}>{a.texto_bloqueado}</p>
-                  </div>
-                  {a.razon && (
-                    <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>
-                      <strong>Razón IA:</strong> {a.razon}
+                    {/* Info usuario con contador de advertencias */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>
+                        <strong>Usuario:</strong> {a.autor_email}
+                      </span>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        background: adv === 0 ? "#f3f4f6" : adv >= 3 ? "#fee2e2" : "#fef3c7",
+                        color: adv === 0 ? C.muted : adv >= 3 ? "#991b1b" : "#92400e",
+                        border: `1px solid ${adv === 0 ? C.border : adv >= 3 ? "#fca5a5" : "#fcd34d"}`,
+                        borderRadius: 20, padding: "2px 8px", fontSize: 11, fontWeight: 700, fontFamily: FONT,
+                      }}>
+                        ⚠️ {adv} advertencia{adv !== 1 ? "s" : ""}
+                      </span>
                     </div>
-                  )}
+                    {a.publicaciones?.titulo && (
+                      <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted, marginBottom: 6 }}>
+                        <strong>Publicación:</strong> {a.publicaciones.titulo}
+                      </div>
+                    )}
+                    {/* Texto bloqueado */}
+                    <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px", marginBottom: 6 }}>
+                      <p style={{ fontFamily: FONT, fontSize: 13, color: "#7f1d1d", margin: 0, wordBreak: "break-word" }}>{a.texto_bloqueado}</p>
+                    </div>
+                    {a.razon && (
+                      <div style={{ fontFamily: FONT, fontSize: 12, color: C.muted }}>
+                        <strong>Razón IA:</strong> {a.razon}
+                      </div>
+                    )}
+                  </div>
+                  {/* Acciones */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+                    {!a.revisada && (
+                      <button onClick={() => marcar(a.id)} disabled={!!accionando}
+                        style={{ background: C.surface, color: C.text, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", fontFamily: FONT, fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: accionando ? 0.5 : 1 }}>
+                        {enAccion(a.id, "revisar") ? "…" : "Marcar revisada"}
+                      </button>
+                    )}
+                    {!estaBloqueado && (
+                      <>
+                        <button onClick={() => advertir(a)} disabled={!!accionando}
+                          style={{ background: "#fff8e1", color: "#e65100", border: "1px solid #ffcc80", borderRadius: 8, padding: "7px 14px", fontFamily: FONT, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: accionando ? 0.5 : 1 }}>
+                          {enAccion(a.id, "advertir") ? "Enviando…" : "⚠️ Advertir"}
+                        </button>
+                        <button onClick={() => bloquear(a)} disabled={!!accionando}
+                          style={{ background: "#fce4ec", color: "#b71c1c", border: "1px solid #ef9a9a", borderRadius: 8, padding: "7px 14px", fontFamily: FONT, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: accionando ? 0.5 : 1 }}>
+                          {enAccion(a.id, "bloquear") ? "Bloqueando…" : "🚫 Bloquear"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                {!a.revisada && (
-                  <button
-                    onClick={() => marcar(a.id)}
-                    disabled={marcando === a.id}
-                    style={{ background: "#2e7d32", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: FONT, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, opacity: marcando === a.id ? 0.6 : 1 }}>
-                    {marcando === a.id ? "…" : "Marcar revisada"}
-                  </button>
-                )}
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
