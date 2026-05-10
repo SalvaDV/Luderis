@@ -444,6 +444,9 @@ export default function App(){
       valorar_curso:{icon:"⭐",label:"Valorar curso",type:"info"},
       pago_aprobado_mp:{icon:"💳",label:"Pago aprobado",type:"success"},
       sistema:{icon:"📣",label:"Anuncio de Luderis",type:"info"},
+      nueva_pregunta:{icon:"❓",label:"Nueva pregunta en tu publicación",type:"info"},
+      pregunta_respondida:{icon:"✅",label:"Tu pregunta fue respondida",type:"success"},
+      alerta_contacto:{icon:"🔇",label:"Alerta de moderación",type:"error"},
     };
     let ws,heartbeat,dead=false,retries=0;
     const MAX_RETRIES=5;

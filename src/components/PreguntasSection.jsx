@@ -64,20 +64,26 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
         autor_nombre: nombreUsuario,
         pregunta: textoTrim,
       }, token);
+      // Resolver email del docente si no vino como prop
+      let emailDocente = docenteEmail;
+      if (!emailDocente && docenteId) {
+        const rows = await sb.db(`/usuarios?id=eq.${docenteId}&select=email`, "GET", null, token).catch(() => []);
+        emailDocente = rows?.[0]?.email;
+      }
       // Notificar al docente
-      if (docenteEmail && docenteEmail !== session.user.email) {
-        sb.insertNotificacion({
+      if (emailDocente && emailDocente !== session.user.email) {
+        await sb.insertNotificacion({
           usuario_id: null,
-          alumno_email: docenteEmail,
+          alumno_email: emailDocente,
           tipo: "nueva_pregunta",
           publicacion_id: publicacionId,
           pub_titulo: `${nombreUsuario} preguntó en "${pubTitulo || "tu publicación"}"`,
           leida: false,
-        }, token).catch(() => {});
+        }, token);
       }
       setTexto("");
       await cargarPreguntas();
-    } catch {}
+    } catch (e) { console.error("[PreguntasSection] error enviando pregunta:", e); }
     setSending(false);
   };
 
@@ -97,18 +103,18 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
       // Notificar al alumno que hizo la pregunta
       const pregunta = preguntas.find(p => p.id === preguntaId);
       if (pregunta?.autor_email && pregunta.autor_email !== session.user.email) {
-        sb.insertNotificacion({
+        await sb.insertNotificacion({
           usuario_id: null,
           alumno_email: pregunta.autor_email,
           tipo: "pregunta_respondida",
           publicacion_id: publicacionId,
           pub_titulo: `Te respondieron en "${pubTitulo || "una publicación"}"`,
           leida: false,
-        }, token).catch(() => {});
+        }, token);
       }
       setRespTextos(v => ({ ...v, [preguntaId]: "" }));
       await cargarPreguntas();
-    } catch {}
+    } catch (e) { console.error("[PreguntasSection] error respondiendo:", e); }
     setRespondiendo(null);
   };
 
