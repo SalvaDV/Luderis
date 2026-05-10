@@ -11,9 +11,31 @@ Sentry.init({
   tracesSampleRate: 0.1,
 });
 
+// Auto-reload once when a new deployment invalidates old JS chunks
+window.addEventListener("error", (e) => {
+  const msg = e?.message || "";
+  if (msg.includes("Loading chunk") || msg.includes("ChunkLoadError")) {
+    const key = "chunk_reload_at";
+    const last = parseInt(sessionStorage.getItem(key) || "0", 10);
+    if (Date.now() - last > 10000) {
+      sessionStorage.setItem(key, String(Date.now()));
+      window.location.reload();
+    }
+  }
+});
+
 const FONT = "'Inter','Segoe UI',sans-serif";
 
+const isChunkError = (err) =>
+  err?.message?.includes("Loading chunk") ||
+  err?.name === "ChunkLoadError" ||
+  err?.message?.includes("Failed to fetch dynamically imported module");
+
 function ErrorFallback({ error, resetError }) {
+  if (isChunkError(error)) {
+    window.location.reload();
+    return null;
+  }
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F6F9FF", fontFamily: FONT, padding: 24 }}>
       <div style={{ background: "#fff", borderRadius: 16, padding: "40px 32px", maxWidth: 440, width: "100%", textAlign: "center", boxShadow: "0 8px 40px rgba(26,110,216,.1)" }}>
