@@ -101,7 +101,9 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                       sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});
                       setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
                       onClose();
-                      if(window.__openPub)window.__openPub(n.publicacion_id);
+                      const fn=(n.tipo==="nueva_pregunta"||n.tipo==="pregunta_respondida")
+                        ?window.__openDetail:window.__openPub;
+                      if(fn)fn(n.publicacion_id);
                     }
                   }}
                   style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,cursor:n.publicacion_id?"pointer":"default",background:n.leida?"transparent":C.accentDim+"80",display:"flex",gap:12,alignItems:"flex-start",transition:"background .12s"}}

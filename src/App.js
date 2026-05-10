@@ -184,7 +184,15 @@ export default function App(){
         else setDetailPost(pub);
       }).catch(()=>{});
     };
-    return()=>{window.__openPub=null;};
+    // Siempre abre DetailModal (para notifs de preguntas/respuestas Q&A)
+    window.__openDetail=(pubId)=>{
+      if(!pubId)return;
+      sb.getPublicacionesByIds([pubId],session?.access_token).then(pubs=>{
+        const pub=pubs?.[0];
+        if(pub)setDetailPost(pub);
+      }).catch(()=>{});
+    };
+    return()=>{window.__openPub=null;window.__openDetail=null;};
   },[session]);//eslint-disable-line
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
