@@ -14,6 +14,7 @@ import PreguntasSection from "./components/PreguntasSection";
 function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpenDetail2}){
   const [reseñas,setReseñas]=useState([]);const [reseñasUsuario,setReseñasUsuario]=useState([]);const [loading,setLoading]=useState(true);
   const [inscripcion,setInscripcion]=useState(null);const [puedeChat,setPuedeChat]=useState(false);const [miOfertaPendiente,setMiOfertaPendiente]=useState(false);
+  const [skills,setSkills]=useState([]);
   const nombre=post.autor_nombre||sb.getDisplayName(post.autor_email)||safeDisplayName(post.autor_nombre,post.autor_email)||"Usuario";
   const esMio=post.autor_email===session.user.email;
   const esAyudante=(post.ayudantes||[]).includes(session.user.id);
@@ -27,10 +28,11 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       sb.getReseñas(post.id,session.access_token),
       sb.getReseñasByAutor(post.autor_email,session.access_token),
       sb.getMisInscripciones(session.user.email,session.access_token),
-      post.tipo==="busqueda"&&!esMio?sb.getMisOfertas(session.user.email,session.access_token).catch(()=>[]):Promise.resolve([])
-    ]).then(([pub,usr,ins,misOfertas])=>{
+      post.tipo==="busqueda"&&!esMio?sb.getMisOfertas(session.user.email,session.access_token).catch(()=>[]):Promise.resolve([]),
+      post.modo==="curso"?sb.getSkillsDB(post.id,session.access_token).catch(()=>[]):Promise.resolve([])
+    ]).then(([pub,usr,ins,misOfertas,sk])=>{
       if(!mounted)return;
-      setReseñas(pub);setReseñasUsuario(usr);
+      setReseñas(pub);setReseñasUsuario(usr);setSkills(sk||[]);
       const insc=ins.find(i=>i.publicacion_id===post.id)||null;
       setInscripcion(insc);
       if(post.tipo==="busqueda"){
@@ -130,6 +132,24 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 10px"}}>Descripción</h2>
               <DescExpandible texto={post.descripcion||""} max={400}/>
             </div>
+
+            {/* Lo que vas a aprender */}
+            {skills.length>0&&(
+              <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
+                <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Lo que vas a aprender</h2>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+                  {skills.map(s=>{
+                    const ICONS={conceptual:"📖",procedimental:"⚙️",practica:"🛠",creativa:"🎨",interpretativa:"🔍",performance:"🎭"};
+                    return(
+                      <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:10,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px"}}>
+                        <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>{ICONS[s.tipo]||"✦"}</span>
+                        <span style={{fontSize:13,color:C.text,fontWeight:500,lineHeight:1.4}}>{s.nombre}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Chips de detalles */}
             {post.tipo==="oferta"&&(
