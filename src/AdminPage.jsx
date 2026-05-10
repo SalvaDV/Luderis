@@ -168,7 +168,7 @@ function OverviewTab({ session }) {
     let mounted=true;
     Promise.all([
       adminDb("usuarios?select=id,created_at,email,rol,bloqueado", "GET", null, session.access_token).catch(e=>{logError("admin/usuarios",e);return[];}),
-      adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda,materia,autor_email,autor_nombre", "GET", null, session.access_token).catch(e=>{logError("admin/publicaciones",e);return[];}),
+      adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda,materia,autor_id,usuarios!publicaciones_autor_id_fkey(email,nombre)", "GET", null, session.access_token).catch(e=>{logError("admin/publicaciones",e);return[];}),
       adminDb("inscripciones?select=id,created_at,publicacion_id", "GET", null, session.access_token).catch(e=>{logError("admin/inscripciones",e);return[];}),
       adminDb("pagos?select=id,monto,estado,created_at", "GET", null, session.access_token).catch(e=>{logError("admin/pagos",e);return[];}),
       adminDb("denuncias?select=id,created_at,revisada", "GET", null, session.access_token).catch(e=>{logError("admin/denuncias",e);return[];}),
@@ -228,7 +228,7 @@ function OverviewTab({ session }) {
 
       // Top docentes por inscripciones
       const pubIdToAutor = {};
-      pubs.forEach(p => { pubIdToAutor[p.id] = { email: p.autor_email, nombre: p.autor_nombre }; });
+      pubs.forEach(p => { pubIdToAutor[p.id] = { email: p.usuarios?.email, nombre: p.usuarios?.nombre }; });
       const inscPorAutor = {};
       insc.forEach(i => {
         const autor = pubIdToAutor[i.publicacion_id];
@@ -573,7 +573,7 @@ function DocentesTab({ session }) {
   useEffect(() => {
     let mounted=true;
     Promise.all([
-      adminDb("publicaciones?select=id,titulo,autor_email,autor_nombre,activo,tipo,precio&tipo=eq.oferta", "GET", null, session.access_token).catch(() => []),
+      adminDb("publicaciones?select=id,titulo,autor_id,activo,tipo,precio,usuarios!publicaciones_autor_id_fkey(email,nombre)&tipo=eq.oferta", "GET", null, session.access_token).catch(() => []),
       adminDb("rese%C3%B1as?select=estrellas,publicacion_id", "GET", null, session.access_token).catch(() => []),
       adminDb("inscripciones?select=id,publicacion_id", "GET", null, session.access_token).catch(() => []),
     ]).then(([pubs, resenas, insc]) => {
@@ -581,12 +581,12 @@ function DocentesTab({ session }) {
       // Build per-docente stats
       const docenteMap = {};
       pubs.forEach(p => {
-        if (!p.autor_email) return;
-        if (!docenteMap[p.autor_email]) docenteMap[p.autor_email] = { email: p.autor_email, nombre: p.autor_nombre, pubs: [], inscCount: 0, ratings: [] };
-        docenteMap[p.autor_email].pubs.push(p);
+        const ae = p.usuarios?.email; if (!ae) return;
+        if (!docenteMap[ae]) docenteMap[ae] = { email: ae, nombre: p.usuarios?.nombre, pubs: [], inscCount: 0, ratings: [] };
+        docenteMap[ae].pubs.push(p);
       });
       const pubIdToAutor = {};
-      pubs.forEach(p => { pubIdToAutor[p.id] = p.autor_email; });
+      pubs.forEach(p => { pubIdToAutor[p.id] = p.usuarios?.email; });
       insc.forEach(i => {
         const ae = pubIdToAutor[i.publicacion_id];
         if (ae && docenteMap[ae]) docenteMap[ae].inscCount++;
