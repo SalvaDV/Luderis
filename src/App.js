@@ -581,10 +581,12 @@ export default function App(){
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {/* Campana notificaciones */}
-              <button onClick={()=>setNotifPanelOpen(v=>!v)} style={{position:"relative",background:"none",border:"none",cursor:"pointer",padding:"6px",borderRadius:"50%",lineHeight:1,color:notifCount>0?C.accent:C.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              {(()=>{const totalNoLeidas=notifs.filter(n=>!n.leida).length;return(
+              <button onClick={()=>setNotifPanelOpen(v=>!v)} style={{position:"relative",background:"none",border:"none",cursor:"pointer",padding:"6px",borderRadius:"50%",lineHeight:1,color:totalNoLeidas>0?C.accent:C.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                {notifCount>0&&<span style={{position:"absolute",top:2,right:2,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"1px 4px",lineHeight:1.4,minWidth:14,textAlign:"center"}}>{notifCount>9?"9+":notifCount}</span>}
+                {totalNoLeidas>0&&<span style={{position:"absolute",top:0,right:0,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"2px 5px",lineHeight:1.3,minWidth:16,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,.25)"}}>{totalNoLeidas>9?"9+":totalNoLeidas}</span>}
               </button>
+              );})()}
               <Btn onClick={()=>{setEditPost(null);setShowForm(true);}} style={{padding:"6px 14px",fontSize:12,borderRadius:16}}>{t("newPost")}</Btn>
             </div>
           </div>

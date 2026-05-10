@@ -42,6 +42,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     alerta_publicacion:{icon:"🔔",color:"#1A6ED8",label:"Alerta de búsqueda"},
     pago_aprobado_mp:{icon:"💳",color:"#009EE3",label:"Pago aprobado"},
     sistema:{icon:"📣",color:"#7B3FBE",label:"Anuncio de Luderis"},
+    alerta_contacto:{icon:"🔇",color:"#c62828",label:"Alerta de moderación"},
   };
 
   const tabs=[
@@ -110,7 +111,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                   {/* Contenido */}
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:n.leida?400:700,color:C.text,fontSize:13,marginBottom:2}}>{info.label}</div>
-                    <div style={{fontSize:12,color:C.muted,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.pub_titulo||""}</div>
+                    <div style={{fontSize:12,color:C.muted,lineHeight:1.5,wordBreak:"break-word"}}>{n.pub_titulo||""}</div>
                     <div style={{fontSize:11,color:C.muted,marginTop:4}}>{fmtRel(n.created_at)}</div>
                   </div>
                   {!n.leida&&<div style={{width:8,height:8,borderRadius:"50%",background:C.accent,flexShrink:0,marginTop:4}}/>}
