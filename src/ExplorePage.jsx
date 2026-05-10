@@ -276,9 +276,12 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     if(seccion==="clases")return p.modo==="particular"||!p.modo;
     return true;
   });
+  const qText=norm(busquedaDebounced.trim());
+  const matchesText=(p)=>!qText||(norm(p.titulo||"").includes(qText)||norm(p.descripcion||"").includes(qText)||norm(p.materia||"").includes(qText)||norm(p.autor_nombre||p.autor_email||"").includes(qText));
+  // IA: busca en todos los posts del rol, sin limitarse a la sección activa
   const filteredConRol=iaResults!==null
-    ?visiblePosts.filter(p=>iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
-    :visiblePosts.filter(p=>(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax));
+    ?postsPorRol.filter(p=>p.tipo!=="busqueda"&&iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
+    :visiblePosts.filter(p=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax));
   const baseList=filteredConRol;
 
   // Aplicar ordenamiento — cómputo directo sin useMemo (posts <500, no necesita memo)
