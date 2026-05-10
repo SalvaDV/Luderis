@@ -77,6 +77,7 @@ export default function FarosPage({ session, onBack, onWin }) {
           setWinTime(result.time_seconds);
           // Show full solution in won state
           setCellState(createCellState(p.grid_size, p.solution));
+          onWin?.();
         } else {
           startTimeRef.current = Date.now();
         }

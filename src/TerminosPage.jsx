@@ -353,19 +353,16 @@ export default function TerminosPage() {
           {/* ── Sección 7 ── */}
           <Seccion id="s7" titulo="7. Sistema de Pagos">
             <P>
-              Luderis facilita el cobro de clases y cursos a través de los siguientes procesadores de pago:
-            </P>
-            <Ul>
-              <Li><strong>MercadoPago</strong> — para pagos en pesos argentinos.</Li>
-              <Li><strong>Stripe</strong> — para pagos en moneda extranjera (USD u otras divisas).</Li>
-            </Ul>
-            <P>
-              Al realizar un pago, el Usuario acepta también los Términos y Condiciones del procesador
-              correspondiente. Luderis no almacena datos de tarjetas de crédito ni débito.
+              Luderis facilita el cobro de clases y cursos a través de MercadoPago, para pagos en pesos
+              argentinos (ARS) y dólares estadounidenses (USD).
             </P>
             <P>
-              Los pagos son procesados de forma segura por los proveedores mencionados. En caso de
-              disputas relacionadas con un pago, el Usuario podrá contactar al soporte de Luderis en
+              Al realizar un pago, el Usuario acepta también los Términos y Condiciones de MercadoPago.
+              Luderis no almacena datos de tarjetas de crédito ni débito.
+            </P>
+            <P>
+              Los pagos son procesados de forma segura. En caso de disputas relacionadas con un pago,
+              el Usuario podrá contactar al soporte de Luderis en
               <a href="mailto:contacto@luderis.com.ar"> contacto@luderis.com.ar</a>.
             </P>
             <Destacado>
@@ -375,7 +372,7 @@ export default function TerminosPage() {
               procesador de pago utilizado.
             </Destacado>
             <P>
-              Las acreditaciones están sujetas a los tiempos de procesamiento de MercadoPago y Stripe,
+              Las acreditaciones están sujetas a los tiempos de procesamiento de MercadoPago,
               que pueden variar según el método de pago utilizado.
             </P>
           </Seccion>
@@ -653,9 +650,6 @@ export default function TerminosPage() {
           }}>
             <p style={{ fontSize: 13, color: MUTED }}>
               © {new Date().getFullYear()} Luderis. Todos los derechos reservados.
-            </p>
-            <p style={{ fontSize: 12, color: MUTED }}>
-              Este documento es un borrador con fines informativos y debe ser revisado por un profesional del derecho antes de su publicación oficial.
             </p>
           </div>
 

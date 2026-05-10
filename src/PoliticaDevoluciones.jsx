@@ -562,9 +562,6 @@ export default function PoliticaDevoluciones() {
             <p style={{ fontSize: 13, color: MUTED }}>
               © {new Date().getFullYear()} Luderis. Todos los derechos reservados.
             </p>
-            <p style={{ fontSize: 12, color: MUTED }}>
-              Esta política es un borrador con fines informativos y debe ser revisada por un profesional del derecho antes de su publicación oficial.
-            </p>
           </div>
 
         </main>

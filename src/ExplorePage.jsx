@@ -345,7 +345,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const cats=(categorias.length>0
     ?categorias.map(c=>({label:c.nombre,slug:c.slug,count:posts.filter(p=>p.materia===c.nombre).length}))
     :MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.materia===m).length}))
-  ).filter(c=>c.count>0||categorias.length===0).slice(0,19);
+  ).filter(c=>c.count>0).slice(0,19);
 
   // Categorías para la sección pedidos (conteo desde busquedas)
   const catsPedidos=MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.tipo==="busqueda"&&p.materia===m&&p.autor_email!==session.user.email).length})).filter(c=>c.count>0).slice(0,19);
@@ -667,18 +667,17 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             {/* 3 pilares */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:0,marginBottom:24}}>
               {[
-                {icon:"🎓",title:"Aprendé sin intermediarios",desc:"Conectate directamente con el docente. Sin comisiones, sin sorpresas.",link:"Ver cómo funciona"},
-                {icon:"🔒",title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos"},
-                {icon:"⭐",title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación"},
+                {icon:"🎓",title:"Aprendé sin intermediarios",desc:"Conectate directamente con el docente. Sin comisiones, sin sorpresas.",link:"Ver cómo funciona",href:"/ayuda"},
+                {icon:"🔒",title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos",href:"/privacidad"},
+                {icon:"⭐",title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación",href:"/terminos"},
               ].map((item,i,arr)=>(
                 <div key={item.title} style={{textAlign:"center",padding:"20px 24px",borderRight:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
                   <div style={{fontSize:36,marginBottom:12}}>{item.icon}</div>
                   <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:8}}>{item.title}</div>
                   <div style={{color:C.muted,fontSize:13,lineHeight:1.6,marginBottom:10}}>{item.desc}</div>
-                  <button style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600,padding:0}}
-                    onClick={()=>setModoVista("resultados")}>
+                  <a href={item.href} target="_blank" rel="noopener noreferrer" style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600,padding:0,textDecoration:"none"}}>
                     {item.link} →
-                  </button>
+                  </a>
                 </div>
               ))}
             </div>

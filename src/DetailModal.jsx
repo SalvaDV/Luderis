@@ -229,7 +229,8 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                     {esAyudante&&<div style={{fontSize:12,color:C.purple,fontWeight:700,background:"#7B5CF010",border:"1px solid #7B5CF030",borderRadius:8,padding:"8px 12px",textAlign:"center"}}>✦ Sos co-docente de este curso</div>}
 
                     {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&(
-                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{display:"flex",flexDirection:"column",gap:8}} className="detail-body-inscribirse">
+                        <style>{`.detail-body-inscribirse{display:flex!important}@media(max-width:768px){.detail-body-inscribirse{display:none!important}}`}</style>
                         <InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>
                         {/* Anti-puenteo */}
                         <div style={{background:C.warn+"10",border:`1px solid ${C.warn}25`,borderRadius:8,padding:"8px 10px",display:"flex",gap:6,alignItems:"flex-start"}}>

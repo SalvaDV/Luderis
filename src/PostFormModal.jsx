@@ -741,7 +741,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 <Label>Precio por clase <span style={{color:C.danger,fontSize:11}}>*</span></Label>
                 <div style={{display:"flex",gap:7}}>
                   <select value={moneda} onChange={e=>setMoneda(e.target.value)} style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
-                    {[["ARS","$ ARS"],["USD","US$"],["EUR","€"],["BRL","R$"],["CLP","CLP"],["MXN","MXN"],["UYU","UYU"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                    {[["ARS","$ ARS"],["USD","US$"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
                   </select>
                   <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:2}}/>
                   <select value={precioTipo} onChange={e=>setPrecioTipo(e.target.value)} style={{...iS,margin:0,flex:1,cursor:"pointer"}}>
@@ -755,7 +755,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 <Label>Precio total del curso <span style={{color:C.danger,fontSize:11}}>*</span></Label>
                 <div style={{display:"flex",gap:7}}>
                   <select value={moneda} onChange={e=>setMoneda(e.target.value)} style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
-                    {[["ARS","$ ARS"],["USD","US$"],["EUR","€"],["BRL","R$"],["CLP","CLP"],["MXN","MXN"],["UYU","UYU"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                    {[["ARS","$ ARS"],["USD","US$"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
                   </select>
                   <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:1}}/>
                 </div>

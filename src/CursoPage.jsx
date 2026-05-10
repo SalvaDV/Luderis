@@ -5075,7 +5075,7 @@ function InscripcionModal({post,session,onClose,onDone}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
             <div>
               <h3 style={{margin:0,color:C.text,fontSize:17,fontWeight:700}}>
-                {paso===1?"Inscribirse":"Elegí cómo pagar"}
+                {paso===1?"Inscribirme":"Elegí cómo pagar"}
               </h3>
               <div style={{color:C.muted,fontSize:12,marginTop:2}}>{post.titulo}</div>
             </div>

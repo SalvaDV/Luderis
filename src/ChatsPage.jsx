@@ -101,7 +101,7 @@ export default function ChatsPage({session,onOpenChat}){
                         <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:1}}>{getNombre(c.otro)}</div>
                         <div style={{color:C.muted,fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                           <span style={{color:c.ultimo.de_nombre===miEmail?C.accent:C.text,fontWeight:600,fontSize:11}}>{c.ultimo.de_nombre===miEmail?"Vos":getNombre(c.otro)}: </span>
-                          {c.ultimo.texto}
+                          {c.ultimo.texto?.startsWith("[img]")?"📷 Imagen":c.ultimo.texto}
                         </div>
                       </div>
                     </div>
