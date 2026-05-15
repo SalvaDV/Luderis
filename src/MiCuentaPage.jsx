@@ -127,10 +127,6 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
   // Clase más reciente
   const claseReciente=todasOfertas.length>0?todasOfertas.reduce((a,b)=>new Date(b.created_at||0)>new Date(a.created_at||0)?b:a):null;
 
-  // Distribución de estrellas
-  const starDist=[5,4,3,2,1].map(n=>({n,count:reseñas.filter(r=>r.estrellas===n).length}));
-  const maxStar=Math.max(...starDist.map(s=>s.count),1);
-
   // Publicaciones por materia (para gráfico de barras)
   const materiaMap={};
   todasOfertas.forEach(p=>{
@@ -168,7 +164,7 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
   },[seccion]);
 
   if(todasOfertas.length===0)return null;
-  const secciones=[{id:"resumen",label:"Resumen"},{id:"ingresos",label:"💰 Ingresos"},{id:"publicaciones",label:"Publicaciones"},{id:"reseñas",label:"Reseñas"}];
+  const secciones=[{id:"resumen",label:"Resumen"},{id:"ingresos",label:"Ingresos"},{id:"publicaciones",label:"Publicaciones"}];
   const statStyle={background:C.surface,borderRadius:12,padding:"12px 14px"};
 
   return(
@@ -410,43 +406,6 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
         </div>
       )}
 
-      {/* ── RESEÑAS ── */}
-      {seccion==="reseñas"&&(
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <div style={{...statStyle,display:"flex",gap:16,alignItems:"center"}}>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:36,fontWeight:700,color:C.accent}}>{avg?avg.toFixed(1):"—"}</div>
-              <div style={{color:C.accent,fontSize:16}}>{"★".repeat(Math.round(avg||0))}</div>
-              <div style={{color:C.muted,fontSize:11,marginTop:2}}>{reseñas.length} reseña{reseñas.length!==1?"s":""}</div>
-            </div>
-            <div style={{flex:1}}>
-              {starDist.map(({n,count})=>(
-                <div key={n} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-                  <span style={{color:C.muted,fontSize:10,width:10,textAlign:"right"}}>{n}</span>
-                  <span style={{color:C.accent,fontSize:10}}>★</span>
-                  <div style={{flex:1,height:6,background:C.border,borderRadius:4,overflow:"hidden"}}>
-                    <div style={{height:"100%",background:C.accent,borderRadius:4,width:`${(count/maxStar)*100}%`,transition:"width .4s"}}/>
-                  </div>
-                  <span style={{color:C.muted,fontSize:10,width:16,textAlign:"right"}}>{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {reseñas.length===0&&<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"20px 0"}}>Todavía no tenés reseñas.</div>}
-
-          {/* Últimas reseñas */}
-          {reseñas.slice(0,3).map(r=>(
-            <div key={r.id} style={{...statStyle}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <div style={{fontWeight:600,color:C.text,fontSize:12}}>{r.autor_nombre||"Alumno"}</div>
-                <span style={{color:C.accent,fontSize:11}}>{"★".repeat(r.estrellas||0)}</span>
-              </div>
-              <p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.5}}>{r.texto}</p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -1669,6 +1628,125 @@ function AlertasTab({session}){
   );
 }
 
+// ─── FINANZAS TAB ─────────────────────────────────────────────────────────────
+function FinanzasTab({session}){
+  const email=session.user.email;
+  const rolLocal=localStorage.getItem("cl_rol_"+email)||"alumno";
+  const esDocente=rolLocal==="docente";
+  const [sub,setSub]=useState(esDocente?"cobros":"billetera");
+  const subs=[
+    ...(esDocente?[{id:"cobros",label:"Cobros MP"}]:[]),
+    {id:"billetera",label:"Billetera"},
+  ];
+  return(
+    <div>
+      {subs.length>1&&(
+        <div style={{display:"flex",gap:2,marginBottom:16,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:3}}>
+          {subs.map(t=>(
+            <button key={t.id} onClick={()=>setSub(t.id)}
+              style={{flex:1,padding:"7px",borderRadius:8,border:"none",fontWeight:sub===t.id?700:400,
+                fontSize:12,cursor:"pointer",fontFamily:FONT,
+                background:sub===t.id?C.accent:"transparent",
+                color:sub===t.id?"#fff":C.muted,transition:"all .15s"}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {sub==="cobros"&&<PagosTab session={session}/>}
+      {sub==="billetera"&&<BilleteraTab session={session}/>}
+    </div>
+  );
+}
+
+// ─── AJUSTES TAB ──────────────────────────────────────────────────────────────
+function AjustesTab({session}){
+  const [confirmDelete,setConfirmDelete]=useState(false);
+  const [deleteText,setDeleteText]=useState("");
+  const iS={background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",width:"100%"};
+  const memberSince=session.user.created_at
+    ?new Date(session.user.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})
+    :"—";
+  const Row=({label,value})=>(
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:C.bg,borderRadius:10}}>
+      <div style={{fontSize:12,color:C.muted,fontWeight:600}}>{label}</div>
+      <div style={{fontSize:13,color:C.text}}>{value}</div>
+    </div>
+  );
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+      {/* Cuenta */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
+        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Información de cuenta</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <Row label="Email" value={session.user.email}/>
+          <Row label="Miembro desde" value={memberSince}/>
+          <Row label="ID de usuario" value={<span style={{fontSize:11,fontFamily:"monospace",color:C.muted}}>{session.user.id.slice(0,18)}…</span>}/>
+        </div>
+      </div>
+
+      {/* Notificaciones */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
+        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:4}}>Notificaciones</div>
+        <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.6}}>Recibís notificaciones dentro de la app y por email para ofertas, mensajes y actualizaciones importantes.</div>
+        <div style={{background:C.bg,borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:10}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Las preferencias de notificación se gestionan desde el panel de notificaciones. Para desuscribirse de emails, respondé cualquier email de Luderis con "Desuscribir".</div>
+        </div>
+      </div>
+
+      {/* Privacidad y legales */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
+        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Privacidad y legales</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {[["Política de privacidad","/privacidad"],["Términos y condiciones","/terminos"],["Política de devoluciones","/devoluciones"],["Libro de quejas","/quejas"],["Accesibilidad","/accesibilidad"]].map(([label,href])=>(
+            <a key={href} href={href}
+              style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:C.bg,borderRadius:10,color:C.text,textDecoration:"none",fontSize:13,cursor:"pointer",transition:"background .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.background=C.accentDim}
+              onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
+              {label}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Zona de peligro */}
+      <div style={{background:C.surface,border:`1px solid ${C.danger}33`,borderRadius:14,padding:"18px 20px"}}>
+        <div style={{fontWeight:700,color:C.danger,fontSize:14,marginBottom:4}}>Zona de peligro</div>
+        <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.6}}>Eliminar tu cuenta borrará permanentemente tu perfil, publicaciones y datos. Esta acción no se puede deshacer.</div>
+        {!confirmDelete?(
+          <button onClick={()=>setConfirmDelete(true)}
+            style={{background:"transparent",border:`1px solid ${C.danger}`,borderRadius:20,color:C.danger,padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background=C.danger;e.currentTarget.style.color="#fff";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.danger;}}>
+            Eliminar mi cuenta
+          </button>
+        ):(
+          <div style={{background:"#EF444410",border:"1px solid #EF444430",borderRadius:12,padding:"14px 16px"}}>
+            <div style={{fontSize:13,color:C.text,marginBottom:10}}>Escribí <strong>ELIMINAR</strong> para confirmar:</div>
+            <input value={deleteText} onChange={e=>setDeleteText(e.target.value)} placeholder="ELIMINAR"
+              style={{...iS,marginBottom:10,borderColor:deleteText==="ELIMINAR"?C.danger:C.border}}/>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button onClick={()=>{setConfirmDelete(false);setDeleteText("");}}
+                style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"8px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>
+                Cancelar
+              </button>
+              <button disabled={deleteText!=="ELIMINAR"}
+                onClick={()=>window.open("/quejas","_self")}
+                style={{background:deleteText==="ELIMINAR"?C.danger:"#EF444440",border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:deleteText==="ELIMINAR"?"pointer":"not-allowed",fontSize:13,fontWeight:700,fontFamily:FONT,opacity:deleteText==="ELIMINAR"?1:0.6,transition:"all .15s"}}>
+                Solicitar eliminación →
+              </button>
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginTop:8}}>Se abrirá el formulario de quejas para enviar tu solicitud a nuestro equipo.</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
   const [secExpanded,setSecExpanded]=useState({pubs:true,inscripciones:true,stats:false,ofertas:true,busquedas:true});
   const toggleSec=(k)=>setSecExpanded(p=>({...p,[k]:!p[k]}));
@@ -1794,10 +1872,26 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:9,fontFamily:FONT};
   const ofertas=pubs.filter(p=>p.tipo==="oferta");
   const busquedas=pubs.filter(p=>p.tipo==="busqueda");
-  const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"pagos";}catch{}return"publicaciones";});
+  const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return"publicaciones";});
   const [filtroPubsTipo,setFiltroPubsTipo]=useState("all");
   const pendientesVal=pubs.filter(p=>p.tipo==="oferta"&&p.activo===false&&p.estado_validacion==="pendiente");
   const totalOfertas=Object.values(ofertasMap).reduce((a,b)=>a+b,0);
+  // ── Tab list role-aware ────────────────────────────────────────────────────
+  const rolLocal=localStorage.getItem("cl_rol_"+email)||"alumno";
+  const esDocente=rolLocal==="docente"||ofertas.length>0;
+  const ofertasVisibles=misOfertasEnv.filter(o=>!descartadas.includes(o.id));
+  const CUENTA_TABS=[
+    {id:"publicaciones",  label:"Publicaciones",  count:pubs.length},
+    ...(esDocente?[{id:"estadisticas",label:"Analytics",   count:null}]:[]),
+    ...(esDocente?[{id:"clases",      label:"Mis clases",  count:null}]:[]),
+    {id:"ofertas",         label:"Negociaciones",  count:ofertasVisibles.length||null},
+    ...(esDocente?[{id:"credenciales",label:"Credenciales",count:docs.length||null}]:[]),
+    ...(esDocente||reseñas.length>0?[{id:"resenas",label:"Reseñas",count:reseñas.length||null}]:[]),
+    {id:"alertas",         label:"Alertas",        count:null},
+    ...(esDocente?[{id:"referidos",   label:"Referidos",   count:null}]:[]),
+    {id:"finanzas",        label:"Finanzas",       count:null},
+    {id:"ajustes",         label:"Ajustes",        count:null},
+  ];
   return(
     <div style={{fontFamily:FONT}}>
 
@@ -2018,18 +2112,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         @media(max-width:768px){.cl-tab-btn{padding:9px 11px!important;font-size:12px!important}}
       `}</style>
       <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",touchAction:"pan-x"}}>
-        {[
-          {id:"publicaciones",label:"Publicaciones",count:pubs.length},
-          {id:"estadisticas",label:"Estadísticas",count:null},
-          {id:"clases",label:"Mis clases",count:null},
-          {id:"ofertas",label:"Actividad",count:(()=>{const visible=misOfertasEnv.filter(o=>!descartadas.includes(o.id));return visible.length||null;})()},
-          {id:"credenciales",label:"Credenciales",count:docs.length||null},
-          {id:"resenas",label:"Reseñas",count:reseñas.length||null},
-          {id:"alertas",label:"🔔 Alertas ✦",count:null},
-          {id:"referidos",label:"🎁 Referidos",count:null},
-          {id:"billetera",label:"💰 Billetera",count:null},
-          {id:"pagos",label:"💳 Cobros",count:null},
-        ].map(tab=>{
+        {CUENTA_TABS.map(tab=>{
           const active=tabCuenta===tab.id;
           return(
             <button key={tab.id} onClick={()=>{setTabCuenta(tab.id);if(tab.id==="ofertas"&&typeof window._resetCuentaBadge==="function")window._resetCuentaBadge();}} className="cl-tab-btn"
@@ -2291,8 +2374,8 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       )}
       {tabCuenta==="alertas"&&<AlertasTab session={session}/>}
       {tabCuenta==="referidos"&&<ReferidosTab session={session}/>}
-      {tabCuenta==="billetera"&&<BilleteraTab session={session}/>}
-      {tabCuenta==="pagos"&&<PagosTab session={session}/>}
+      {tabCuenta==="finanzas"&&<FinanzasTab session={session}/>}
+      {tabCuenta==="ajustes"&&<AjustesTab session={session}/>}
       {ofertasModal&&<OfertasRecibidasModal post={ofertasModal} session={session} onClose={()=>{setOfertasModal(null);cargar();if(onRefreshOfertas)onRefreshOfertas();}} onContactar={onOpenChat}/>}
       {espacioModal&&<EspacioClaseModal oferta={espacioModal} session={session} onClose={()=>setEspacioModal(null)}/>}
       {acuerdoModal&&<AcuerdoModal oferta={acuerdoModal} session={session} onClose={()=>setAcuerdoModal(null)} onConfirmado={()=>{cargar();setAcuerdoModal(null);}}/>}
