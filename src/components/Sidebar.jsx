@@ -92,12 +92,11 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
         <div style={{margin:"10px 8px",height:1,background:C.border}}/>
         {esAdmin&&(
           <button onClick={()=>{if(mobile)onClose();window.__openAdmin&&window.__openAdmin();}}
-            style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 12px",borderRadius:8,border:`1px solid #C80000`,background:"#C8000010",color:"#C80000",fontWeight:700,fontSize:12,cursor:"pointer",marginBottom:4,fontFamily:FONT,textAlign:"left",transition:"all .15s",letterSpacing:.2}}
-            onMouseEnter={e=>{e.currentTarget.style.background="#C8000018";e.currentTarget.style.borderColor="#C80000";}}
-            onMouseLeave={e=>{e.currentTarget.style.background="#C8000010";e.currentTarget.style.borderColor="#C80000";}}>
-            <span style={{width:18,height:18,borderRadius:4,background:"#C80000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",flexShrink:0,fontWeight:900}}>A</span>
-            <span style={{flex:1}}>Admin</span>
-            <span style={{fontSize:9,background:"#C80000",color:"#fff",borderRadius:3,padding:"1px 5px",fontWeight:700}}>LUDERIS</span>
+            style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",background:"transparent",color:C.muted,fontWeight:400,fontSize:13,cursor:"pointer",marginBottom:1,fontFamily:FONT,textAlign:"left",transition:"background .12s,color .12s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background=C.bg;e.currentTarget.style.color=C.text;}}
+            onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.muted;}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style={{flex:1}}>Panel de control</span>
           </button>
         )}
         <button onClick={()=>{onNewPost();if(mobile)onClose();}}
