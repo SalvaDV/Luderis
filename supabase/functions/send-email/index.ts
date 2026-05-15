@@ -430,6 +430,42 @@ Object.assign(TEMPLATES, {
     `, `Nueva publicación: ${data.pub_titulo}`),
   }),
 
+  docente_aprobado: (data: any, appUrl: string) => ({
+    subject: "¡Tu solicitud como docente fue aprobada! 🎉",
+    preheader: "Ya podés publicar clases y cursos en Luderis.",
+    html: emailBase(`
+      <h2>¡Felicitaciones, ${data.nombre}!</h2>
+      <p>Tu solicitud para ser docente en Luderis fue <strong>aprobada</strong>. Ya podés empezar a publicar clases y cursos.</p>
+      <div class="info-box" style="background:#EBF8F4;border-color:#2EC4A040;">
+        <div class="label" style="color:#2EC4A0;">Estado</div>
+        <div class="value" style="color:#0F3F7A;font-weight:800;">✅ Verificado como Docente</div>
+      </div>
+      <p>Desde tu perfil ya podés crear publicaciones, subir contenido y conectar con tus futuros alumnos.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=publicar" class="btn">Crear mi primera clase →</a>
+      </p>
+    `, "¡Tu solicitud como docente fue aprobada!"),
+  }),
+
+  docente_rechazado: (data: any, appUrl: string) => ({
+    subject: "Tu solicitud como docente requiere revisión",
+    preheader: "Recibimos tu solicitud. Hay algo que necesitamos que corrijas.",
+    html: emailBase(`
+      <h2>Hola, ${data.nombre}</h2>
+      <p>Revisamos tu solicitud para ser docente en Luderis y por el momento <strong>no pudimos aprobarla</strong>.</p>
+      ${data.razon ? `
+      <div class="info-box" style="border-color:#F87171;background:#FEF2F2;">
+        <div class="label" style="color:#DC2626;">Motivo</div>
+        <div class="value">${data.razon}</div>
+      </div>` : ""}
+      <p>Si creés que es un error o querés volver a enviar tu solicitud con los datos correctos, podés hacerlo desde tu perfil.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Volver a solicitar →</a>
+      </p>
+      <p style="font-size:13px;color:#5A7294;">¿Tenés dudas? Escribinos a <a href="mailto:contacto@luderis.com" style="color:#1A6ED8;">contacto@luderis.com</a>.</p>
+    `, "Hay algo que necesitamos que corrijas en tu solicitud."),
+  }),
+
   liquidacion_disponible: (data: any, appUrl: string) => ({
     subject: `Tu liquidación de ${data.periodo_label} está disponible 💰`,
     preheader: `Monto neto: $${Number(data.monto_neto).toLocaleString("es-AR")}. Descargá tu PDF.`,

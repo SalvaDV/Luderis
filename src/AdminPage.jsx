@@ -65,7 +65,8 @@ const SearchInput = ({ value, onChange, placeholder }) => (
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "overview", label: "📊 Resumen", },
+  { id: "overview", label: "📊 Resumen" },
+  { id: "verificaciones", label: "✅ Verificaciones" },
   { id: "docentes", label: "🎓 Docentes" },
   { id: "users", label: "👥 Usuarios" },
   { id: "pubs", label: "📋 Publicaciones" },
@@ -81,6 +82,7 @@ const TABS = [
 
 export default function AdminPage({ session, onClose, onChatUser }) {
   const [tab, setTab] = useState("overview");
+  const [pendingVerifCount, setPendingVerifCount] = useState(0);
   const userEmailLc = (session?.user?.email || "").toLowerCase();
   const isFallbackAdmin = !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
   const [isAdmin, setIsAdmin] = React.useState(isFallbackAdmin);
@@ -96,6 +98,13 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       .finally(() => { if(mounted)setCheckingAdmin(false); });
     return()=>{mounted=false;};
   }, [session, isFallbackAdmin]);
+
+  React.useEffect(() => {
+    if (!isAdmin) return;
+    sb.getVerificacionesPendientes(session.access_token)
+      .then(rows => setPendingVerifCount(Array.isArray(rows) ? rows.length : 0))
+      .catch(() => {});
+  }, [isAdmin, session.access_token]);
 
   if (checkingAdmin) return (
     <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -133,8 +142,11 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 8px", display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 10px", fontSize: 12, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s" }}>
+            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 10px", fontSize: 12, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s", display: "flex", alignItems: "center", gap: 5 }}>
             {t.label}
+            {t.id === "verificaciones" && pendingVerifCount > 0 && (
+              <span style={{ background: "#EF4444", color: "#fff", borderRadius: 20, fontSize: 10, fontWeight: 800, padding: "1px 6px", lineHeight: 1.5 }}>{pendingVerifCount}</span>
+            )}
           </button>
         ))}
       </div>
@@ -142,6 +154,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
       {/* Content */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px" }}>
         {tab === "overview" && <OverviewTab session={session} />}
+        {tab === "verificaciones" && <VerificacionesTab session={session} onCountChange={setPendingVerifCount} />}
         {tab === "docentes" && <DocentesTab session={session} />}
         {tab === "users" && <UsersTab session={session} onChatUser={onChatUser} />}
         {tab === "pubs" && <PubsTab session={session} />}
@@ -154,6 +167,150 @@ export default function AdminPage({ session, onClose, onChatUser }) {
         {tab === "notifs" && <NotifsTab session={session} />}
         {tab === "config" && <ConfigTab session={session} />}
       </div>
+    </div>
+  );
+}
+
+// ─── TAB: VERIFICACIONES ──────────────────────────────────────────────────────
+function VerificacionesTab({ session, onCountChange }) {
+  const [verifs, setVerifs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [procesando, setProcesando] = useState(null); // verificacion_id en curso
+  const [razonRechazo, setRazonRechazo] = useState({}); // { [id]: string }
+  const [mostrarRazon, setMostrarRazon] = useState({}); // { [id]: bool }
+
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    const rows = await sb.getVerificacionesPendientes(session.access_token).catch(() => []);
+    setVerifs(rows);
+    onCountChange(rows.length);
+    setLoading(false);
+  }, [session.access_token, onCountChange]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const aprobar = async (v) => {
+    if (procesando) return;
+    setProcesando(v.id);
+    try {
+      await adminAction("aprobar_verificacion", { verificacion_id: v.id, user_id: v.usuario_id }, session.access_token);
+      toast("✅ Docente aprobado. Se envió email de confirmación.");
+      cargar();
+    } catch (e) {
+      toast("Error: " + e.message, "error");
+    } finally { setProcesando(null); }
+  };
+
+  const rechazar = async (v) => {
+    if (procesando) return;
+    const razon = razonRechazo[v.id] || "";
+    if (!razon.trim()) { setMostrarRazon(prev => ({ ...prev, [v.id]: true })); return; }
+    setProcesando(v.id);
+    try {
+      await adminAction("rechazar_verificacion", { verificacion_id: v.id, user_id: v.usuario_id, razon }, session.access_token);
+      toast("❌ Solicitud rechazada. Se notificó al usuario.");
+      cargar();
+    } catch (e) {
+      toast("Error: " + e.message, "error");
+    } finally { setProcesando(null); }
+  };
+
+  const verFoto = async (path) => {
+    if (!path) return;
+    // path es la URL completa devuelta por uploadDniFoto — extraemos el path de storage
+    const storagePath = path.replace(/.*\/object\/sign\/dni-fotos\//, "");
+    const signed = await sb.getSignedDniUrl(storagePath, session.access_token).catch(() => null);
+    if (signed) window.open(signed, "_blank", "noopener,noreferrer");
+    else toast("No se pudo generar el link de la foto.", "error");
+  };
+
+  if (loading) return <div style={{ textAlign: "center", padding: 40 }}><Spinner /></div>;
+
+  if (verifs.length === 0) return (
+    <Card style={{ textAlign: "center", padding: "40px 24px" }}>
+      <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+      <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 6 }}>Sin verificaciones pendientes</div>
+      <div style={{ color: C.muted, fontSize: 13 }}>Todas las solicitudes están procesadas.</div>
+    </Card>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontWeight: 800, color: C.text, fontSize: 17 }}>Verificaciones pendientes ({verifs.length})</div>
+        <button onClick={cargar} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontFamily: FONT }}>↺ Actualizar</button>
+      </div>
+      {verifs.map(v => {
+        const usuario = v.usuarios || {};
+        const fechaSolicitud = v.created_at ? new Date(v.created_at).toLocaleDateString("es-AR") : "—";
+        return (
+          <Card key={v.id}>
+            {/* Usuario */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              <Avatar user={usuario} size={42} />
+              <div>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{usuario.nombre || "Sin nombre"}</div>
+                <div style={{ color: C.muted, fontSize: 12 }}>{usuario.email}</div>
+                <div style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>Solicitó el {fechaSolicitud}</div>
+              </div>
+              <Badge color="#F59E0B" style={{ marginLeft: "auto" }}>Pendiente</Badge>
+            </div>
+
+            {/* Datos KYC */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
+              {[
+                ["DNI", v.dni || "—"],
+                ["Fecha nac.", v.fecha_nacimiento ? new Date(v.fecha_nacimiento + "T12:00:00").toLocaleDateString("es-AR") : "—"],
+                ["CUIT/CUIL", v.cuit || "—"],
+                ["Situación fiscal", v.situacion_fiscal || "—"],
+                ["PEP", v.es_pep ? "Sí" : "No"],
+                ["Términos", v.terminos_aceptados ? "Aceptados" : "No aceptados"],
+              ].map(([label, val]) => (
+                <div key={label} style={{ background: C.bg, borderRadius: 8, padding: "8px 12px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Foto DNI */}
+            {v.foto_dni_frente && (
+              <button onClick={() => verFoto(v.foto_dni_frente)}
+                style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.accent, padding: "7px 16px", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: FONT, marginBottom: 14 }}>
+                🪪 Ver foto del DNI
+              </button>
+            )}
+
+            {/* Razón de rechazo */}
+            {mostrarRazon[v.id] && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: "block", marginBottom: 5 }}>Motivo del rechazo (requerido)</label>
+                <textarea value={razonRechazo[v.id] || ""} onChange={e => setRazonRechazo(prev => ({ ...prev, [v.id]: e.target.value }))}
+                  placeholder="Ej: La foto del DNI no es legible. Por favor volvé a subir una foto más clara."
+                  rows={3}
+                  style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, fontFamily: FONT, resize: "vertical", boxSizing: "border-box", outline: "none" }} />
+              </div>
+            )}
+
+            {/* Acciones */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => aprobar(v)} disabled={!!procesando}
+                style={{ flex: 1, background: "#10B981", border: "none", borderRadius: 10, color: "#fff", padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: FONT, opacity: procesando === v.id ? 0.6 : 1 }}>
+                {procesando === v.id ? "Procesando…" : "✅ Aprobar"}
+              </button>
+              <button
+                onClick={() => {
+                  if (!mostrarRazon[v.id]) { setMostrarRazon(prev => ({ ...prev, [v.id]: true })); return; }
+                  rechazar(v);
+                }}
+                disabled={!!procesando}
+                style={{ flex: 1, background: "#EF4444", border: "none", borderRadius: 10, color: "#fff", padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: FONT, opacity: procesando === v.id ? 0.6 : 1 }}>
+                {procesando === v.id ? "Procesando…" : mostrarRazon[v.id] ? "Confirmar rechazo" : "❌ Rechazar"}
+              </button>
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }

@@ -15,6 +15,8 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   const [reseñas,setReseñas]=useState([]);const [reseñasUsuario,setReseñasUsuario]=useState([]);const [loading,setLoading]=useState(true);
   const [inscripcion,setInscripcion]=useState(null);const [puedeChat,setPuedeChat]=useState(false);const [miOfertaPendiente,setMiOfertaPendiente]=useState(false);
   const [skills,setSkills]=useState([]);
+  const [contenidoCount,setContenidoCount]=useState(null);
+  const [modulosPreview,setModulosPreview]=useState([]);
   const nombre=post.autor_nombre||sb.getDisplayName(post.autor_email)||safeDisplayName(post.autor_nombre,post.autor_email)||"Usuario";
   const esMio=post.autor_email===session.user.email;
   const esAyudante=(post.ayudantes||[]).includes(session.user.id);
@@ -29,10 +31,12 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       sb.getReseñasByAutor(post.autor_email,session.access_token),
       sb.getMisInscripciones(session.user.email,session.access_token),
       post.tipo==="busqueda"&&!esMio?sb.getMisOfertas(session.user.email,session.access_token).catch(()=>[]):Promise.resolve([]),
-      post.modo==="curso"?sb.getSkillsDB(post.id,session.access_token).catch(()=>[]):Promise.resolve([])
-    ]).then(([pub,usr,ins,misOfertas,sk])=>{
+      post.modo==="curso"?sb.getSkillsDB(post.id,session.access_token).catch(()=>[]):Promise.resolve([]),
+      post.modo==="curso"?sb.getContenido(post.id,session.access_token).catch(()=>[]):Promise.resolve([])
+    ]).then(([pub,usr,ins,misOfertas,sk,cont])=>{
       if(!mounted)return;
       setReseñas(pub);setReseñasUsuario(usr);setSkills(sk||[]);
+      if(cont&&cont.length){const mods=cont.filter(c=>!["quiz","flashcards"].includes(c.tipo));setContenidoCount({modulos:mods.length,quizzes:cont.filter(c=>c.tipo==="quiz").length,mazos:cont.filter(c=>c.tipo==="flashcards").length});setModulosPreview(mods.slice(0,2));}
       const insc=ins.find(i=>i.publicacion_id===post.id)||null;
       setInscripcion(insc);
       if(post.tipo==="busqueda"){
@@ -151,6 +155,36 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               </div>
             )}
 
+            {/* Preview de contenido */}
+            {post.modo==="curso"&&modulosPreview.length>0&&!esMio&&!esAyudante&&!inscripcion&&(
+              <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
+                <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Vista previa del contenido</h2>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {modulosPreview.map((c,i)=>{
+                    const TIPO_IC={video:"🎬",archivo:"📁",texto:"📝",aviso:"📢",tarea:"📌",link:"🔗"};
+                    const TIPO_CLR={video:"#1A6ED8",archivo:"#2EC4A0",texto:"#5A7294",aviso:"#E8881A",tarea:"#7B5CF0",link:"#0EA5E9"};
+                    const icon=TIPO_IC[c.tipo]||"📄";const clr=TIPO_CLR[c.tipo]||C.muted;
+                    return(
+                      <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:C.bg,border:`1px solid ${C.border}`,borderLeft:`3px solid ${clr}`,borderRadius:10,padding:"10px 14px"}}>
+                        <span style={{fontSize:17,flexShrink:0}}>{icon}</span>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.titulo}</div>
+                          <div style={{fontSize:11,color:C.muted,textTransform:"capitalize"}}>{c.tipo}</div>
+                        </div>
+                        <span style={{fontSize:11,color:C.muted,flexShrink:0}}>Módulo {i+1}</span>
+                      </div>
+                    );
+                  })}
+                  {contenidoCount&&contenidoCount.modulos>2&&(
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,fontSize:12}}>
+                      <span>🔒</span>
+                      <span>+{contenidoCount.modulos-2} módulos más · Inscribite para acceder</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Chips de detalles */}
             {post.tipo==="oferta"&&(
               <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
@@ -240,6 +274,24 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 </div>}
               </div>
 
+              {/* Contador de módulos */}
+              {post.modo==="curso"&&contenidoCount&&(contenidoCount.modulos>0||contenidoCount.quizzes>0)&&(
+                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12,paddingBottom:12,borderBottom:`1px solid ${C.border}`}}>
+                  {contenidoCount.modulos>0&&<span style={{fontSize:12,color:C.muted}}>📚 <strong>{contenidoCount.modulos}</strong> módulo{contenidoCount.modulos!==1?"s":""}</span>}
+                  {contenidoCount.quizzes>0&&<span style={{fontSize:12,color:C.muted}}>🧩 <strong>{contenidoCount.quizzes}</strong> evaluación{contenidoCount.quizzes!==1?"es":""}</span>}
+                  {contenidoCount.mazos>0&&<span style={{fontSize:12,color:C.muted}}>🃏 <strong>{contenidoCount.mazos}</strong> mazo{contenidoCount.mazos!==1?"s":""}</span>}
+                </div>
+              )}
+              {/* Criterio de certificado */}
+              {post.modo==="curso"&&post.otorga_certificado&&(
+                <div style={{background:"#1A6ED808",border:"1px solid #1A6ED822",borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
+                  <span style={{fontSize:15,flexShrink:0}}>🎓</span>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text}}>Otorga certificado</div>
+                    {post.aprobacion_pct&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>Completá el {post.aprobacion_pct}% de los módulos</div>}
+                  </div>
+                </div>
+              )}
               {/* Acciones */}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {loading?(

@@ -26,10 +26,10 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
       .catch(()=>{if(!mounted)return;setPregunta("Contá brevemente tu experiencia enseñando este tema.");setEstado("esperando");if(onEstadoChange)onEstadoChange("esperando");});
     return()=>{mounted=false;};
   },[tituloDebounced,descripcionDebounced,materia]);// eslint-disable-line
-  const evaluar=async()=>{if(!respuesta.trim())return;setEstado("evaluando");try{const r=await sb.verificarConIA(titulo,materia,descripcion||"",respuesta,token);
+  const evaluar=async()=>{if(!respuesta.trim())return;setEstado("evaluando");if(onEstadoChange)onEstadoChange("evaluando");try{const r=await sb.verificarConIA(titulo,materia,descripcion||"",respuesta,token);
     setFeedback(r.feedback||"");
-    if(r.correcta){setEstado("ok");onVerificado();}
-    else{setEstado("error");}}catch{setEstado("error");setFeedback("No se pudo evaluar.");}};
+    if(r.correcta){setEstado("ok");if(onEstadoChange)onEstadoChange("ok");onVerificado();}
+    else{setEstado("error");if(onEstadoChange)onEstadoChange("error");}}catch{setEstado("error");setFeedback("No se pudo evaluar.");if(onEstadoChange)onEstadoChange("error");}};
   if(estado==="ok")return <div style={{color:C.success,fontSize:12,padding:"7px 11px",background:"#4ECB7115",borderRadius:8,border:"1px solid #4ECB7133"}}>✓ ¡Verificado!</div>;
   return(<div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:12,marginTop:8}}>
     <div style={{color:C.accent,fontSize:10,fontWeight:700,marginBottom:5,letterSpacing:1}}>✓ VERIFICACIÓN (IA)</div>
@@ -374,6 +374,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const [idioma,setIdioma]=useState(postToEdit?.idioma||"");
   const [frecuencia,setFrecuencia]=useState(postToEdit?.frecuencia||"");
   const [otorgaCertificado,setOtorgaCertificado]=useState(postToEdit?.otorga_certificado||false);
+  const [aprobacionPct,setAprobacionPct]=useState(postToEdit?.aprobacion_pct??80);
   const DESC_MAX=2000;
   const addClase=()=>setClasesSinc(prev=>[...prev,{dia:"Lunes",hora_inicio:"09:00",hora_fin:"10:00"}]);
   const updClase=(i,f,v)=>setClasesSinc(prev=>prev.map((c,idx)=>idx===i?{...c,[f]:v}:c));
@@ -408,6 +409,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       if(tipo==="oferta"&&modo!=="particular"&&frecuencia)data.frecuencia=frecuencia;
       if(tipo==="oferta"&&modo==="particular")data.frecuencia=frecuencia||null;// opcional en particulares
       data.otorga_certificado=otorgaCertificado;
+      if(otorgaCertificado&&modo==="curso")data.aprobacion_pct=Math.min(100,Math.max(1,parseInt(aprobacionPct)||80));
       // estado_validacion se maneja localmente (columna pendiente de crear en DB)
       const _estadoLocal=activoInicial===false?"pendiente":undefined;
       if(tipo==="oferta"){data.precio=parseFloat(precio)||null;data.moneda=moneda||"ARS";data.tiene_prueba=tienePrueba;data.precio_prueba=tienePrueba?(parseFloat(precioPrueba)||null):null;if(paquetes.length){
@@ -729,6 +731,21 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 <div style={{fontSize:11,color:C.muted}}>Los alumnos podrán descargarlo al completar el curso</div>
               </div>
             </div>
+            {otorgaCertificado&&modo==="curso"&&(
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"12px 14px"}}>
+                <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:8}}>🎯 Porcentaje mínimo para aprobar</div>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <input type="range" min={10} max={100} step={5} value={aprobacionPct} onChange={e=>setAprobacionPct(Number(e.target.value))}
+                    style={{flex:1,accentColor:C.accent}}/>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <input type="number" min={1} max={100} value={aprobacionPct} onChange={e=>setAprobacionPct(Math.min(100,Math.max(1,Number(e.target.value)||1)))}
+                      style={{...iS,width:60,margin:0,textAlign:"center",padding:"6px 8px"}}/>
+                    <span style={{fontSize:13,color:C.muted,flexShrink:0}}>%</span>
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:C.muted,marginTop:6}}>Los alumnos necesitan completar el {aprobacionPct}% de los módulos para obtener el certificado</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -852,7 +869,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
 
             {/* Verificacion IA */}
             {tipo==="oferta"&&titulo&&materia&&!verificado&&(
-              <VerificacionIA titulo={titulo} materia={materia} descripcion={descripcion} onVerificado={(v)=>{setVerificado(v!==false);setVerificacionPendiente(false);}} onEstadoChange={(e)=>setVerificacionPendiente(e==="cargando")} token={session?.access_token}/>
+              <VerificacionIA titulo={titulo} materia={materia} descripcion={descripcion} onVerificado={(v)=>{setVerificado(v!==false);setVerificacionPendiente(false);}} onEstadoChange={(e)=>setVerificacionPendiente(e==="cargando"||e==="evaluando")} token={session?.access_token}/>
             )}
             {tipo==="oferta"&&verificacionPendiente&&(
               <div style={{color:C.warn,fontSize:11,padding:"5px 10px",background:"#E0955C15",borderRadius:7,border:"1px solid #E0955C33",display:"flex",alignItems:"center",gap:6}}><Spinner small/>Verificando…</div>

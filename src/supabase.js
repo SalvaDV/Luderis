@@ -486,6 +486,24 @@ export const insertEntregaQuiz = (data, token) =>
 export const updateEntregaQuiz = (id, data, token) =>
   db(`quiz_entregas?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
+// ── Progreso de módulos ───────────────────────────────────────────────────────
+
+export const getProgresoModulos = (pubId, email, token) =>
+  db(`progreso_modulos?publicacion_id=eq.${pubId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token)
+    .catch(() => []);
+
+export const upsertProgresoModulo = (data, token) =>
+  db("progreso_modulos", "POST", data, token, "return=representation,resolution=merge-duplicates");
+
+// ── Flashcard SRS revisiones ──────────────────────────────────────────────────
+
+export const getFlashcardRevisiones = (contenidoId, email, token) =>
+  db(`flashcard_revisiones?contenido_id=eq.${contenidoId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token)
+    .catch(() => []);
+
+export const upsertFlashcardRevision = (data, token) =>
+  db("flashcard_revisiones", "POST", data, token, "return=representation,resolution=merge-duplicates");
+
 // ── Tracking de materias vistas (para recomendaciones) ───────────────────────
 
 export const trackMateria = (materia) => {
@@ -658,6 +676,37 @@ export const liberarPagoClase = async (claseId, token) => {
   }
   return res.json().catch(() => null);
 };
+
+// ── Verificaciones docente (KYC) ──────────────────────────────────────────────
+
+export const uploadDniFoto = async (userId, file, token) => {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${userId}/dni_frente_${Date.now()}.${ext}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/dni-fotos/${path}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": file.type || "image/jpeg",
+      "apikey": SUPABASE_KEY,
+    },
+    body: file,
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
+  return `${SUPABASE_URL}/storage/v1/object/sign/dni-fotos/${path}`;
+};
+
+export const getSignedDniUrl = async (path, token) => {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/dni-fotos/${path}`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json", "apikey": SUPABASE_KEY },
+    body: JSON.stringify({ expiresIn: 300 }),
+  });
+  const data = await res.json();
+  return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
+};
+
+export const getVerificacionesPendientes = (token) =>
+  db("verificaciones_usuario?estado=eq.pendiente&order=created_at.asc&select=*,usuarios!verificaciones_usuario_usuario_id_fkey(nombre,email,avatar_url)", "GET", null, token).catch(() => []);
 
 export const getPagosDocente = (email, token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);

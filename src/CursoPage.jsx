@@ -9,6 +9,7 @@ import {
   CalendarioCurso,
   LUD,
   CATEGORIAS_DATA,
+  MATERIAS_CON_DIAGNOSTICO,
   getPubTipo,
   SkeletonList,
 } from "./shared";
@@ -1867,14 +1868,56 @@ function ProgresoCurso({post,session}){
 // Shared deck key in contenido_curso: tipo="flashcards", texto=JSON
 const FC_PRIV_KEY=(postId,email)=>`cl_fc_priv_${postId}_${email}`;
 
-function FlashcardsDeck({cards,onDelete,titulo}){
+function sm2(q,n,ef,interval){
+  if(q<3){return{n:0,ef:Math.max(1.3,ef+0.1-(5-q)*(0.08+(5-q)*0.02)),interval:1};}
+  const newN=n+1;
+  const newInterval=n===0?1:n===1?6:Math.round(interval*ef);
+  const newEf=Math.max(1.3,ef+0.1-(5-q)*(0.08+(5-q)*0.02));
+  return{n:newN,ef:newEf,interval:newInterval};
+}
+function FlashcardsDeck({cards,onDelete,titulo,session,contenidoId}){
   const [idx,setIdx]=useState(0);const [flipped,setFlipped]=useState(false);const [done,setDone]=useState([]);
+  const [revisiones,setRevisiones]=useState({});// cardIndex → {n,ef,interval,proxima_revision}
+  const usaSRS=!!(session&&contenidoId);
+  const today=new Date();today.setHours(0,0,0,0);
+
+  useEffect(()=>{
+    if(!usaSRS)return;
+    sb.getFlashcardRevisiones(contenidoId,session.user.email,session.access_token).then(rows=>{
+      const map={};(rows||[]).forEach(r=>{map[r.card_index]={n:r.repeticiones||0,ef:r.ef||2.5,interval:r.intervalo||1,proxima_revision:r.proxima_revision};});
+      setRevisiones(map);
+    }).catch(()=>{});
+  },[contenidoId,session?.user?.email]);// eslint-disable-line
+
   if(!cards||cards.length===0)return null;
-  const remaining=cards.filter((_,i)=>!done.includes(i));
+
+  const isDue=(i)=>{
+    if(!usaSRS)return true;
+    const r=revisiones[i];
+    if(!r)return true;
+    const prox=new Date(r.proxima_revision);prox.setHours(0,0,0,0);
+    return prox<=today;
+  };
+
+  const dueCount=cards.filter((_,i)=>isDue(i)).length;
+  const remaining=cards.filter((_,i)=>!done.includes(i)&&isDue(i));
+  const responder=async(q)=>{
+    const r=revisiones[realIdx]||{n:0,ef:2.5,interval:1};
+    const{n,ef,interval}=sm2(q,r.n,r.ef,r.interval);
+    const proxDate=new Date();proxDate.setDate(proxDate.getDate()+interval);
+    const nueva={...r,n,ef,interval,proxima_revision:proxDate.toISOString().slice(0,10)};
+    setRevisiones(prev=>({...prev,[realIdx]:nueva}));
+    if(usaSRS){await sb.upsertFlashcardRevision({contenido_id:contenidoId,card_index:realIdx,alumno_email:session.user.email,repeticiones:n,ef,intervalo:interval,proxima_revision:nueva.proxima_revision},session.access_token).catch(()=>{});}
+    if(q>=3){setDone(d=>[...d,realIdx]);}
+    setFlipped(false);
+    setTimeout(()=>setIdx(i=>(i+1)%Math.max(1,remaining.length)),200);
+  };
+
   if(remaining.length===0)return(
     <div style={{textAlign:"center",padding:"32px 0"}}>
       <div style={{fontSize:40,marginBottom:10}}>🎉</div>
-      <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:6}}>¡Completaste todas!</div>
+      <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:6}}>¡Completaste la sesión de hoy!</div>
+      {usaSRS&&<div style={{fontSize:12,color:C.muted,marginBottom:12}}>Las tarjetas volverán según el espaciado de repetición</div>}
       <button onClick={()=>{setDone([]);setIdx(0);setFlipped(false);}} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 22px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT}}>Volver a empezar</button>
     </div>
   );
@@ -1882,6 +1925,12 @@ function FlashcardsDeck({cards,onDelete,titulo}){
   const card=cards[realIdx];
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,padding:"10px 0"}}>
+      {usaSRS&&dueCount<cards.length&&(
+        <div style={{display:"flex",gap:8,alignSelf:"flex-start"}}>
+          <span style={{background:C.accentDim,border:`1px solid ${C.accent}40`,borderRadius:20,fontSize:11,fontWeight:700,color:C.accent,padding:"2px 10px"}}>📅 {dueCount} a repasar hoy</span>
+          <span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,fontSize:11,color:C.muted,padding:"2px 10px"}}>{cards.length-dueCount} programadas</span>
+        </div>
+      )}
       <style>{`
         .fc-scene{width:100%;max-width:min(460px,100%);height:clamp(160px,45vw,210px);perspective:900px;cursor:pointer;}
         .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);}
@@ -1903,17 +1952,19 @@ function FlashcardsDeck({cards,onDelete,titulo}){
         </div>
       </div>
       {/* Progreso */}
-      <div style={{fontSize:11,color:C.muted}}>{done.length}/{cards.length} completadas · {remaining.length} restantes</div>
+      <div style={{fontSize:11,color:C.muted}}>{done.length}/{remaining.length+done.length} vistas · {remaining.length-1} restantes</div>
       <div style={{width:"100%",maxWidth:460,height:4,background:C.border,borderRadius:2}}>
-        <div style={{height:"100%",width:`${(done.length/cards.length)*100}%`,background:C.accent,borderRadius:2,transition:"width .5s"}}/>
+        <div style={{height:"100%",width:`${remaining.length+done.length>0?(done.length/(remaining.length+done.length))*100:0}%`,background:C.accent,borderRadius:2,transition:"width .5s"}}/>
       </div>
       {/* Botones */}
       {flipped&&(
-        <div style={{display:"flex",gap:10,marginTop:4}}>
-          <button onClick={()=>{setDone(d=>[...d,realIdx]);setFlipped(false);if(idx>=remaining.length-1)setIdx(0);else setIdx(i=>i);}}
-            style={{background:"#2EC4A018",border:"1px solid #2EC4A055",borderRadius:10,color:"#0F6E56",padding:"9px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✓ La sabía</button>
-          <button onClick={()=>{setFlipped(false);setTimeout(()=>setIdx(i=>(i+1)%remaining.length),200);}}
-            style={{background:"#E53E3E12",border:"1px solid #E53E3E44",borderRadius:10,color:C.danger,padding:"9px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>✗ Repasar</button>
+        <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap",justifyContent:"center"}}>
+          <button onClick={()=>responder(1)}
+            style={{background:"#E53E3E12",border:"1px solid #E53E3E44",borderRadius:10,color:C.danger,padding:"9px 18px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>😣 Difícil</button>
+          <button onClick={()=>responder(3)}
+            style={{background:"#F5C84212",border:"1px solid #F5C84244",borderRadius:10,color:"#8B6914",padding:"9px 18px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>😐 Normal</button>
+          <button onClick={()=>responder(5)}
+            style={{background:"#2EC4A018",border:"1px solid #2EC4A055",borderRadius:10,color:"#0F6E56",padding:"9px 18px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>😄 Fácil</button>
         </div>
       )}
       {!flipped&&(
@@ -2097,7 +2148,7 @@ function Flashcards({post,session,esMio,esAyudante}){
     return(
       <div>
         <button onClick={()=>setVista("lista")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,marginBottom:10,fontWeight:700}}>← Volver</button>
-        <FlashcardsDeck cards={deck.cards} titulo={deck.titulo}/>
+        <FlashcardsDeck cards={deck.cards} titulo={deck.titulo} session={session} contenidoId={deck.id}/>
       </div>
     );
   }
@@ -2457,8 +2508,14 @@ function ForoCurso({post,session,esMio,esAyudante}){
 }
 
 // ─── GENERADOR DE CERTIFICADO ─────────────────────────────────────────────────
-function CertificadoBtn({post,session,inscripcion}){
+function CertificadoBtn({post,session,inscripcion,progresoModulos=[],contenido=[]}){
   const [generando,setGenerando]=useState(false);
+  const esCurso=post.modo==="grupal";
+  const aprobacionPct=post.aprobacion_pct||80;
+  const modulos=contenido.filter(c=>c.tipo!=="quiz");
+  const completados=progresoModulos.filter(p=>p.completado&&modulos.some(m=>m.id===p.contenido_id)).length;
+  const pctActual=modulos.length>0?Math.round((completados/modulos.length)*100):0;
+  const superaUmbral=!esCurso||modulos.length===0||(pctActual>=aprobacionPct);
 
   const generar=()=>{
     setGenerando(true);
@@ -2594,17 +2651,38 @@ function CertificadoBtn({post,session,inscripcion}){
 
   if(!post.finalizado&&!inscripcion?.clase_finalizada)return null;
 
+  if(esCurso&&modulos.length>0&&!superaUmbral){
+    return(
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginTop:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          <span style={{fontSize:18}}>🎓</span>
+          <span style={{fontWeight:700,color:C.text,fontSize:13}}>Certificado de aprobación</span>
+        </div>
+        <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Necesitás completar el <strong>{aprobacionPct}%</strong> de los módulos ({Math.ceil(modulos.length*aprobacionPct/100)} de {modulos.length})</div>
+        <div style={{height:6,background:C.border,borderRadius:3,marginBottom:6}}>
+          <div style={{height:"100%",width:`${pctActual}%`,background:C.accent,borderRadius:3,transition:"width .5s"}}/>
+        </div>
+        <div style={{fontSize:11,color:C.muted}}>{completados}/{modulos.length} completados · {pctActual}%</div>
+      </div>
+    );
+  }
+
   return(
-    <button onClick={generar} disabled={generando}
-      style={{display:"flex",alignItems:"center",gap:8,background:"linear-gradient(135deg,#1A6ED815,#2EC4A015)",
-        border:"1px solid #2EC4A040",borderRadius:12,padding:"12px 18px",cursor:"pointer",fontFamily:FONT,
-        color:C.success,fontSize:14,fontWeight:700,width:"100%",justifyContent:"center",marginTop:10,
-        transition:"all .15s",boxShadow:"0 2px 8px rgba(46,196,160,.1)"}}
-      onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED825,#2EC4A025)"}
-      onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED815,#2EC4A015)"}>
-      <span style={{fontSize:18}}>🎓</span>
-      {generando?"Generando certificado…":"Descargar certificado"}
-    </button>
+    <>
+      {esCurso&&modulos.length>0&&(
+        <div style={{fontSize:11,color:C.success,marginBottom:6,marginTop:10,textAlign:"center"}}>✓ Completaste el {pctActual}% del curso</div>
+      )}
+      <button onClick={generar} disabled={generando}
+        style={{display:"flex",alignItems:"center",gap:8,background:"linear-gradient(135deg,#1A6ED815,#2EC4A015)",
+          border:"1px solid #2EC4A040",borderRadius:12,padding:"12px 18px",cursor:"pointer",fontFamily:FONT,
+          color:C.success,fontSize:14,fontWeight:700,width:"100%",justifyContent:"center",marginTop:10,
+          transition:"all .15s",boxShadow:"0 2px 8px rgba(46,196,160,.1)"}}
+        onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED825,#2EC4A025)"}
+        onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED815,#2EC4A015)"}>
+        <span style={{fontSize:18}}>🎓</span>
+        {generando?"Generando certificado…":"Descargar certificado"}
+      </button>
+    </>
   );
 }
 
@@ -2808,7 +2886,7 @@ function SkillManager({post,session,onSkillsChange}){
 }
 
 // ─── SKILL PROGRESS VIEWER (alumno) ───────────────────────────────────────────
-function SkillProgressViewer({post,session,esMio,esAyudante}){
+function SkillProgressViewer({post,session,esMio,esAyudante,readonly=false}){
   const pubId=post.id;
   const miEmail=session.user.email;
   const token=session.access_token;
@@ -2856,14 +2934,14 @@ function SkillProgressViewer({post,session,esMio,esAyudante}){
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div style={{fontWeight:700,color:C.text,fontSize:14}}>Mi perfil de habilidades</div>
-        <button onClick={()=>setEditing(v=>!v)}
+        {!readonly&&<button onClick={()=>setEditing(v=>!v)}
           style={{background:editing?C.accent:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:editing?"#fff":C.accent,padding:"4px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600}}>
-          {editing?"Listo ✓":"Actualizar"}
-        </button>
+          {editing?"Listo ✓":"Actualizar autopercepción"}
+        </button>}
       </div>
 
-      {/* Stats de progreso */}
-      {promActual>0&&(
+      {/* Stats de progreso — solo para materias con diagnóstico */}
+      {promActual>0&&MATERIAS_CON_DIAGNOSTICO.has(post.materia)&&(
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
           <div style={{background:C.surface,borderRadius:10,padding:"10px",textAlign:"center"}}>
             <div style={{fontSize:18,fontWeight:700,color:C.info}}>{promActual.toFixed(1)}</div>
@@ -2900,8 +2978,8 @@ function SkillProgressViewer({post,session,esMio,esAyudante}){
                 {/* Marcador nivel inicial */}
                 {inicial>0&&<div style={{position:"absolute",top:-2,left:`${(inicial/5)*100}%`,width:2,height:12,background:C.muted,borderRadius:1}} title={`Inicio: ${SKILL_LEVELS[inicial]}`}/>}
               </div>
-              {/* Selector de nivel cuando editing */}
-              {editing&&(
+              {/* Selector de nivel cuando editing (solo modo no-readonly) */}
+              {!readonly&&editing&&(
                 <div style={{display:"flex",gap:4,marginTop:6}}>
                   {SKILL_LEVELS.map((l,li)=>(
                     <button key={li} onClick={()=>setLevel(s.id,li)}
@@ -3491,7 +3569,10 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
       const resp=JSON.parse(entrega.respuesta_json);
       const pregs=contenido.preguntas||[];
       if(!pregs.length)return null;
-      const correctas=pregs.filter((p,i)=>resp[i]===p.correcta).length;
+      const correctas=pregs.filter((p,i)=>{
+        const corrArr=Array.isArray(p.correctas)?p.correctas:[p.correcta].filter(x=>x!=null);
+        return corrArr.includes(resp[i]);
+      }).length;
       return Math.round((correctas/pregs.length)*100);
     }catch{return null;}
   };
@@ -3655,22 +3736,34 @@ function EntregaEvalRow({entrega,evaluacion,session,onUpdate}){
 // ─── EXAMEN FINAL MODAL — se muestra cuando el docente marca clase finalizada ──
 function ExamenFinalModal({post,session,onClose}){
   const [evaluacion,setEvaluacion]=useState(null);
+  const [yaCompletado,setYaCompletado]=useState(false);
   const [loading,setLoading]=useState(true);
   const miEmail=session.user.email;
 
   useEffect(()=>{
-    // Verificar si ya entregó el examen final
     sb.getEvaluaciones(post.id,session.access_token)
       .then(async evs=>{
         const fin=evs?.find(e=>e.tipo==="final"&&e.activo);
         if(!fin){setLoading(false);return;}
         const misEntregas=await sb.getMiEntregaEval(fin.id,miEmail,session.access_token).catch(()=>[]);
-        if(misEntregas?.length>0){setLoading(false);onClose();return;}// ya lo rindió
+        if(misEntregas?.length>0){setYaCompletado(true);setLoading(false);return;}
         setEvaluacion(fin);setLoading(false);
       }).catch(()=>setLoading(false));
   },[post.id]);// eslint-disable-line
 
   if(loading)return null;
+
+  if(yaCompletado)return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:16}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"32px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>✅</div>
+        <div style={{fontWeight:700,color:C.text,fontSize:17,marginBottom:8}}>Examen final ya completado</div>
+        <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Ya rendiste el examen final de este curso. Podés ver tu resultado en la pestaña Aprender.</div>
+        <button onClick={onClose} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"10px 28px",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:FONT}}>Cerrar</button>
+      </div>
+    </div>
+  );
+
   if(!evaluacion)return null;
 
   return <DiagnosticoModal post={post} session={session} onClose={onClose} evaluacion={evaluacion} titulo="Examen final" subtitulo="¡El docente finalizó el curso! Completá el examen final para registrar tu progreso."/>;
@@ -3688,7 +3781,14 @@ function DiagnosticoModal({post,session,onClose,evaluacion:evalOverride,titulo:t
 
   useEffect(()=>{
     sb.getEvaluaciones(post.id,session.access_token)
-      .then(evs=>{const d=evalOverride||evs?.find(e=>e.tipo==="diagnostico"&&e.activo);setEvaluacion(d||null);})
+      .then(async evs=>{
+        const d=evalOverride||evs?.find(e=>e.tipo==="diagnostico"&&e.activo);
+        if(!d){setEvaluacion(null);return;}
+        // No mostrar si ya lo completó
+        const prev=await sb.getMiEntregaEval(d.id,miEmail,session.access_token).catch(()=>[]);
+        if(prev?.length>0){setEvaluacion(null);return;}
+        setEvaluacion(d);
+      })
       .catch(()=>{})
       .finally(()=>setLoading(false));
   },[post.id]);// eslint-disable-line
@@ -3815,8 +3915,18 @@ function DiagnosticoInicial({post,session,skills}){
   const [step,setStep]=useState(0);
   const [niveles,setNiveles]=useState({});
   const [mostrar,setMostrar]=useState(false);
+  const [tieneFormal,setTieneFormal]=useState(false);
+
+  useEffect(()=>{
+    if(!MATERIAS_CON_DIAGNOSTICO.has(post.materia))return;
+    sb.getEvaluaciones(post.id,session.access_token)
+      .then(evs=>{if(evs?.some(e=>e.tipo==="diagnostico"&&e.activo))setTieneFormal(true);})
+      .catch(()=>{});
+  },[post.id]);// eslint-disable-line
 
   if(!skills||skills.length===0)return null;
+  if(!MATERIAS_CON_DIAGNOSTICO.has(post.materia))return null;
+  if(tieneFormal)return null;// el test formal tiene prioridad
   // Ya completado: mostrar resumen compacto
   if(estado){
     return(
@@ -4093,13 +4203,30 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
       </div>
       <div style={{marginBottom:12}}>
         <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>TIPO</div>
-        <div style={{background:C.bg,border:`1px solid ${C.warn}`,borderRadius:9,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>📍</span>
-          <div>
-            <div style={{fontWeight:700,color:C.warn,fontSize:13}}>Checkpoint</div>
-            <div style={{fontSize:11,color:C.muted}}>Evaluación intermedia del curso. El diagnóstico y el examen final se configuran durante la validación inicial.</div>
-          </div>
-        </div>
+        {(()=>{
+          const tienesDiag=MATERIAS_CON_DIAGNOSTICO.has(post.materia);
+          const tipos=[
+            tienesDiag&&{id:"diagnostico",icon:"🔍",label:"Diagnóstico inicial",color:C.info,desc:"Se toma al inscribirse. Mide el nivel de partida."},
+            {id:"checkpoint",icon:"📍",label:"Checkpoint",color:C.warn,desc:"Evaluación intermedia del curso."},
+            tienesDiag&&{id:"final",icon:"🏁",label:"Examen final",color:C.success,desc:"Se activa al finalizar el curso. Mide el progreso total."},
+          ].filter(Boolean);
+          return(
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {tipos.map(tp=>(
+                <div key={tp.id} onClick={()=>setEvalTipo(tp.id)}
+                  style={{background:evalTipo===tp.id?`${tp.color}12`:C.bg,border:`1.5px solid ${evalTipo===tp.id?tp.color:C.border}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",transition:"all .12s"}}>
+                  <span style={{fontSize:16}}>{tp.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,color:evalTipo===tp.id?tp.color:C.text,fontSize:12}}>{tp.label}</div>
+                    <div style={{fontSize:10,color:C.muted}}>{tp.desc}</div>
+                  </div>
+                  <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${evalTipo===tp.id?tp.color:C.border}`,background:evalTipo===tp.id?tp.color:"transparent",flexShrink:0}}/>
+                </div>
+              ))}
+              {!tienesDiag&&<div style={{fontSize:11,color:C.muted,background:C.surface,borderRadius:8,padding:"8px 10px"}}>ℹ️ Para esta materia el progreso se mide con reseñas — el diagnóstico escrito no aplica.</div>}
+            </div>
+          );
+        })()}
       </div>
       <div style={{marginBottom:12}}>
         <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>FORMATO</div>
@@ -4240,6 +4367,210 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
 }
 
 
+// ─── Progreso de evaluaciones formales (alumno) ──────────────────────────────
+function ProgresoEvaluaciones({post,session}){
+  const [data,setData]=useState(null);// {diag:{ev,score}, final:{ev,score}}
+  const [loading,setLoading]=useState(true);
+  const miEmail=session.user.email;
+
+  const calcScore=(ev,entrega)=>{
+    if(!entrega?.respuesta_json)return entrega?.nota??null;
+    if(ev.formato==="multiple_choice"){
+      try{
+        const resp=JSON.parse(entrega.respuesta_json);
+        const pregs=(JSON.parse(ev.contenido_json||"{}")).preguntas||[];
+        if(!pregs.length)return entrega.nota??null;
+        const ok=pregs.filter((p,i)=>{
+          const corrArr=Array.isArray(p.correctas)?p.correctas:[p.correcta].filter(x=>x!=null);
+          return corrArr.includes(resp[i]);
+        }).length;
+        return Math.round((ok/pregs.length)*100);
+      }catch{return entrega.nota??null;}
+    }
+    return entrega.nota??null;
+  };
+
+  useEffect(()=>{
+    if(!MATERIAS_CON_DIAGNOSTICO.has(post.materia)){setLoading(false);return;}
+    sb.getEvaluaciones(post.id,session.access_token).then(async evs=>{
+      const evDiag=evs?.find(e=>e.tipo==="diagnostico"&&e.activo);
+      const evFinal=evs?.find(e=>e.tipo==="final"&&e.activo);
+      const [entDiag,entFinal]=await Promise.all([
+        evDiag?sb.getMiEntregaEval(evDiag.id,miEmail,session.access_token).catch(()=>[]):Promise.resolve([]),
+        evFinal?sb.getMiEntregaEval(evFinal.id,miEmail,session.access_token).catch(()=>[]):Promise.resolve([]),
+      ]);
+      setData({
+        diag:evDiag&&entDiag?.[0]?{ev:evDiag,entrega:entDiag[0],score:calcScore(evDiag,entDiag[0])}:evDiag?{ev:evDiag,entrega:null,score:null}:null,
+        final:evFinal&&entFinal?.[0]?{ev:evFinal,entrega:entFinal[0],score:calcScore(evFinal,entFinal[0])}:evFinal?{ev:evFinal,entrega:null,score:null}:null,
+      });
+    }).catch(()=>{}).finally(()=>setLoading(false));
+  },[post.id,miEmail]);// eslint-disable-line
+
+  if(loading||!data)return null;
+  if(!data.diag&&!data.final)return null;
+
+  const diagScore=data.diag?.score;
+  const finalScore=data.final?.score;
+  const delta=diagScore!=null&&finalScore!=null?finalScore-diagScore:null;
+
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:14}}>
+      <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>📊 Mi progreso en el curso</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center",marginBottom:delta!=null?14:0}}>
+        {/* Diagnóstico inicial */}
+        <div style={{background:C.surface,borderRadius:12,padding:"14px",textAlign:"center",border:`1px solid ${C.border}`}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.info,letterSpacing:.8,marginBottom:6}}>🔍 DIAGNÓSTICO INICIAL</div>
+          {diagScore!=null?(
+            <><div style={{fontSize:28,fontWeight:800,color:C.info}}>{diagScore}<span style={{fontSize:14,fontWeight:400}}>%</span></div>
+            <div style={{fontSize:10,color:C.muted,marginTop:2}}>al inscribirse</div></>
+          ):(
+            <div style={{fontSize:12,color:C.muted,fontStyle:"italic"}}>{data.diag?'Pendiente':'No disponible'}</div>
+          )}
+        </div>
+        {/* Flecha central */}
+        <div style={{textAlign:"center",color:C.muted,fontSize:20,padding:"0 4px"}}>→</div>
+        {/* Examen final */}
+        <div style={{background:C.surface,borderRadius:12,padding:"14px",textAlign:"center",border:`1px solid ${C.border}`}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.success,letterSpacing:.8,marginBottom:6}}>🏁 EXAMEN FINAL</div>
+          {finalScore!=null?(
+            <><div style={{fontSize:28,fontWeight:800,color:C.success}}>{finalScore}<span style={{fontSize:14,fontWeight:400}}>%</span></div>
+            <div style={{fontSize:10,color:C.muted,marginTop:2}}>al finalizar</div></>
+          ):(
+            <div style={{fontSize:12,color:C.muted,fontStyle:"italic"}}>{data.final?'Pendiente':'Aún no disponible'}</div>
+          )}
+        </div>
+      </div>
+      {/* Delta */}
+      {delta!=null&&(
+        <div style={{background:delta>=0?"#2EC4A012":"#E53E3E08",border:`1px solid ${delta>=0?"#2EC4A040":"#E53E3E30"}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:22}}>{delta>0?"📈":delta<0?"📉":"➡️"}</span>
+          <div>
+            <div style={{fontWeight:700,fontSize:14,color:delta>=0?C.success:C.danger}}>
+              {delta>0?"+":""}{delta} puntos {delta>0?"de mejora":delta<0?"de baja":"sin cambio"}
+            </div>
+            <div style={{fontSize:11,color:C.muted}}>
+              {delta>0?`Pasaste de ${diagScore}% a ${finalScore}% — ¡bien hecho!`:delta<0?`Pasaste de ${diagScore}% a ${finalScore}%`:`Mantuviste tu nivel de ${diagScore}%`}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Progreso grupal (docente) ────────────────────────────────────────────────
+function ProgresoGrupal({post,session,inscripciones}){
+  const [stats,setStats]=useState(null);
+
+  useEffect(()=>{
+    if(!MATERIAS_CON_DIAGNOSTICO.has(post.materia)||!inscripciones.length)return;
+    sb.getEvaluaciones(post.id,session.access_token).then(async evs=>{
+      const evDiag=evs?.find(e=>e.tipo==="diagnostico"&&e.activo);
+      const evFinal=evs?.find(e=>e.tipo==="final"&&e.activo);
+      if(!evDiag&&!evFinal)return;
+      const [entDiag,entFinal]=await Promise.all([
+        evDiag?sb.getEvaluacionEntregas(evDiag.id,session.access_token).catch(()=>[]):Promise.resolve([]),
+        evFinal?sb.getEvaluacionEntregas(evFinal.id,session.access_token).catch(()=>[]):Promise.resolve([]),
+      ]);
+      const scoreEv=(ev,entries)=>{
+        if(!ev||!entries.length)return null;
+        if(ev.formato==="multiple_choice"){
+          const pregs=(JSON.parse(ev.contenido_json||"{}")).preguntas||[];
+          if(!pregs.length)return null;
+          const scores=entries.map(e=>{
+            try{
+              const r=JSON.parse(e.respuesta_json);
+              const ok=pregs.filter((p,i)=>{const c=Array.isArray(p.correctas)?p.correctas:[p.correcta].filter(x=>x!=null);return c.includes(r[i]);}).length;
+              return Math.round((ok/pregs.length)*100);
+            }catch{return e.nota??null;}
+          }).filter(x=>x!=null);
+          return scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+        }
+        const notas=entries.map(e=>e.nota).filter(x=>x!=null);
+        return notas.length?Math.round(notas.reduce((a,b)=>a+b,0)/notas.length):null;
+      };
+      setStats({
+        total:inscripciones.length,
+        diagCount:entDiag.length,diagAvg:scoreEv(evDiag,entDiag),
+        finalCount:entFinal.length,finalAvg:scoreEv(evFinal,entFinal),
+        tieneDiag:!!evDiag,tieneFinal:!!evFinal,
+      });
+    }).catch(()=>{});
+  },[post.id,inscripciones.length]);// eslint-disable-line
+
+  if(!stats)return null;
+
+  const delta=stats.diagAvg!=null&&stats.finalAvg!=null?stats.finalAvg-stats.diagAvg:null;
+
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:14}}>
+      <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>📊 Progreso del grupo</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:delta!=null?10:0}}>
+        {stats.tieneDiag&&(
+          <div style={{background:C.surface,borderRadius:10,padding:"12px",textAlign:"center",border:`1px solid ${C.border}`}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.info,letterSpacing:.8,marginBottom:4}}>🔍 DIAGNÓSTICO INICIAL</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.info}}>{stats.diagCount}<span style={{fontSize:12,color:C.muted,fontWeight:400}}>/{stats.total}</span></div>
+            <div style={{fontSize:10,color:C.muted,marginBottom:4}}>alumnos completaron</div>
+            {stats.diagAvg!=null&&<div style={{fontSize:13,fontWeight:700,color:C.info}}>Promedio: {stats.diagAvg}%</div>}
+          </div>
+        )}
+        {stats.tieneFinal&&(
+          <div style={{background:C.surface,borderRadius:10,padding:"12px",textAlign:"center",border:`1px solid ${C.border}`}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.success,letterSpacing:.8,marginBottom:4}}>🏁 EXAMEN FINAL</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.success}}>{stats.finalCount}<span style={{fontSize:12,color:C.muted,fontWeight:400}}>/{stats.total}</span></div>
+            <div style={{fontSize:10,color:C.muted,marginBottom:4}}>alumnos completaron</div>
+            {stats.finalAvg!=null&&<div style={{fontSize:13,fontWeight:700,color:C.success}}>Promedio: {stats.finalAvg}%</div>}
+          </div>
+        )}
+      </div>
+      {delta!=null&&(
+        <div style={{background:delta>=0?"#2EC4A010":"#E53E3E08",border:`1px solid ${delta>=0?"#2EC4A033":"#E53E3E25"}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:18}}>{delta>0?"📈":delta<0?"📉":"➡️"}</span>
+          <div style={{fontSize:13,fontWeight:700,color:delta>=0?C.success:C.danger}}>
+            Mejora promedio del grupo: {delta>0?"+":""}{delta} puntos
+          </div>
+        </div>
+      )}
+      {!stats.tieneDiag&&!stats.tieneFinal&&(
+        <div style={{fontSize:12,color:C.muted}}>Creá un diagnóstico inicial y un examen final para ver el progreso del grupo acá.</div>
+      )}
+    </div>
+  );
+}
+
+// ─── Certificado Pct Editor (docente) ────────────────────────────────────────
+function CertificadoPctEditor({post,session,onUpdatePost}){
+  const [pct,setPct]=useState(post.aprobacion_pct||80);
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
+  const dirty=pct!==(post.aprobacion_pct||80);
+  const guardar=async()=>{
+    setSaving(true);
+    try{
+      await sb.updatePublicacion(post.id,{aprobacion_pct:Math.min(100,Math.max(1,pct))},session.access_token);
+      if(onUpdatePost)onUpdatePost({...post,aprobacion_pct:pct});
+      setSaved(true);setTimeout(()=>setSaved(false),2000);
+    }catch(e){alert("Error: "+e.message);}
+    finally{setSaving(false);}
+  };
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginTop:12}}>
+      <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:10}}>🎓 Criterio de certificación</div>
+      <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Porcentaje mínimo de módulos completados para obtener el certificado</div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+        <input type="range" min={10} max={100} step={5} value={pct} onChange={e=>setPct(Number(e.target.value))} style={{flex:1,accentColor:C.accent}}/>
+        <div style={{display:"flex",alignItems:"center",gap:4}}>
+          <input type="number" min={1} max={100} value={pct} onChange={e=>setPct(Math.min(100,Math.max(1,Number(e.target.value)||1)))}
+            style={{width:56,background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"5px 7px",color:C.text,fontSize:13,outline:"none",textAlign:"center",fontFamily:"inherit"}}/>
+          <span style={{fontSize:13,color:C.muted}}>%</span>
+        </div>
+      </div>
+      {dirty&&<button onClick={guardar} disabled={saving} style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>{saving?"Guardando…":"Guardar cambio"}</button>}
+      {saved&&<span style={{fontSize:12,color:C.success,marginLeft:8}}>✓ Guardado</span>}
+    </div>
+  );
+}
+
 // ─── CURSO PAGE ───────────────────────────────────────────────────────────────
 function CursoPage({post,session,onClose,onUpdatePost}){
   const [contenido,setContenido]=useState([]);const [loading,setLoading]=useState(true);
@@ -4286,6 +4617,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     finally{setIniciandoClase(false);}
   };
   const [needsValoracion,setNeedsValoracion]=useState(false);
+  const [progresoModulos,setProgresoModulos]=useState([]);
   // ayudantes es uuid[] — comparar con el UUID del usuario actual
   const esAyudante=(post.ayudantes||[]).includes(miUid);
   // Resolver UUIDs→emails para ChatCurso (que trabaja con emails en mensajes)
@@ -4300,8 +4632,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const pageRef=useRef(null);
   useEffect(()=>{
     if(pageRef.current)pageRef.current.scrollTop=0;
-    Promise.all([sb.getContenido(post.id,session.access_token),sb.getMisInscripciones(miEmail,session.access_token),(esMio||esAyudante)?sb.getInscripciones(post.id,session.access_token):Promise.resolve([])]).then(([cont,misIns,todos])=>{
-      setContenido(cont);const miInsc=misIns.find(i=>i.publicacion_id===post.id)||null;setInscripcion(miInsc);if(esMio||esAyudante)setInscripciones(todos);
+    Promise.all([sb.getContenido(post.id,session.access_token),sb.getMisInscripciones(miEmail,session.access_token),(esMio||esAyudante)?sb.getInscripciones(post.id,session.access_token):Promise.resolve([]),sb.getProgresoModulos(post.id,miEmail,session.access_token)]).then(([cont,misIns,todos,prog])=>{
+      setContenido(cont);const miInsc=misIns.find(i=>i.publicacion_id===post.id)||null;setInscripcion(miInsc);if(esMio||esAyudante)setInscripciones(todos);setProgresoModulos(prog||[]);
       if(miInsc?.clase_finalizada&&!miInsc?.valorado)setNeedsValoracion(true);
     }).finally(()=>{setLoading(false);setInscLoading(false);});
   },[post.id,miEmail,esMio,session]);
@@ -4337,7 +4669,13 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);
       setInscripcion(r[0]);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
-      if(post.modo==="grupal"||post.modo==="curso")setTimeout(()=>setTab("aprender"),400);
+      if(post.modo==="grupal"||post.modo==="curso"){
+        setTimeout(()=>setTab("aprender"),400);
+        // Mostrar diagnóstico inicial si el docente creó uno y la materia aplica
+        if(MATERIAS_CON_DIAGNOSTICO.has(post.materia)){
+          setTimeout(()=>setShowDiagnostico(true),700);
+        }
+      }
     }catch(e){
       if(e.message?.includes("uq_inscripcion"))toast("Ya estás inscripto a esta clase.","info");
       else toast("Error al inscribirse: "+e.message,"error");
@@ -4383,6 +4721,12 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     }finally{setSavingC(false);}
   };
   const removeContenido=async(id)=>{await sb.deleteContenido(id,session.access_token);setContenido(prev=>prev.filter(c=>c.id!==id));};
+  const toggleProgresoModulo=async(contenidoId)=>{
+    const yaCompletado=progresoModulos.some(p=>p.contenido_id===contenidoId&&p.completado);
+    const nuevo={publicacion_id:post.id,contenido_id:contenidoId,alumno_email:miEmail,completado:!yaCompletado,updated_at:new Date().toISOString()};
+    setProgresoModulos(prev=>{const filtered=prev.filter(p=>p.contenido_id!==contenidoId);return[...filtered,nuevo];});
+    await sb.upsertProgresoModulo(nuevo,session.access_token).catch(()=>{});
+  };
   const tieneAcceso=esMio||esAyudante||!!inscripcion;const duracion=calcDuracion(post.fecha_inicio,post.fecha_fin);const hasCal=post.sinc==="sinc"&&post.clases_sinc;
   const esPendienteValidacion=(esMio||esAyudante)&&(post.activo===false||post.estado_validacion==="pendiente");
   // Gate: if not owner and not inscribed, show access wall
@@ -4393,6 +4737,12 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       <div style={{fontSize:48,marginBottom:8,color:C.muted,fontWeight:300}}>·</div>
       <h2 style={{color:C.text,fontSize:20,fontWeight:700,margin:0}}>{cerrado?"Inscripciones cerradas":"Contenido restringido"}</h2>
       <p style={{color:C.muted,fontSize:14,textAlign:"center",maxWidth:360,margin:0}}>{cerrado?"El docente ya cerró las inscripciones para este curso.":"Inscribite gratis para acceder a todo el contenido."}</p>
+      {post.otorga_certificado&&post.modo==="grupal"&&(
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 16px",maxWidth:340,textAlign:"center"}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>🎓 Otorga certificado</div>
+          {post.aprobacion_pct&&<div style={{fontSize:12,color:C.muted}}>Necesitás completar el <strong>{post.aprobacion_pct}%</strong> de los módulos para obtenerlo</div>}
+        </div>
+      )}
       {!cerrado&&(inscLoading?<Spinner/>:<Btn onClick={inscribirse} variant="success" style={{padding:"10px 28px",fontSize:14}}>Inscribirme →</Btn>)}
       <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>Volver atrás</button>
     </div>);
@@ -4573,6 +4923,17 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                 <div style={{display:"flex",gap:8}}><Btn onClick={addContenido} disabled={savingC||!nuevoTitulo.trim()} style={{padding:"7px 14px",fontSize:12}}>{savingC?"...":"Guardar"}</Btn><button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Cancelar</button></div>
               </div>
             )}
+            {(()=>{const modCount=contenido.filter(c=>c.tipo!=="quiz").length;const complCount=progresoModulos.filter(p=>p.completado&&contenido.some(c=>c.id===p.contenido_id&&c.tipo!=="quiz")).length;const pct=modCount>0?Math.round((complCount/modCount)*100):0;return(!esMio&&!esAyudante&&inscripcion&&modCount>0)&&(
+              <div style={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <span style={{fontSize:11,fontWeight:700,color:C.text}}>{complCount}/{modCount} módulos completados</span>
+                  <span style={{fontSize:11,fontWeight:700,color:pct>=100?C.success:C.accent}}>{pct}%</span>
+                </div>
+                <div style={{height:6,background:C.border,borderRadius:3}}>
+                  <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#2EC4A0,#1A6ED8)":C.accent,borderRadius:3,transition:"width .5s"}}/>
+                </div>
+              </div>
+            );})()}
             {loading?<SkeletonList n={4}/>:contenido.length===0?(
               <div style={{textAlign:"center",padding:"36px 20px",color:C.muted}}>
                 <div style={{fontSize:36,marginBottom:10,opacity:.4}}>{esMio?"📤":"📭"}</div>
@@ -4622,6 +4983,11 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                             </a>
                           )}
                           {!tieneAcceso&&<div style={{color:C.muted,fontSize:11,marginTop:3}}>🔒 Inscribite para acceder</div>}
+                          {!esMio&&!esAyudante&&inscripcion&&c.tipo!=="quiz"&&(()=>{const completado=progresoModulos.some(p=>p.contenido_id===c.id&&p.completado);return(
+                            <button onClick={()=>toggleProgresoModulo(c.id)} style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,background:completado?"#2EC4A015":"transparent",border:`1px solid ${completado?"#2EC4A040":C.border}`,borderRadius:7,padding:"4px 10px",cursor:"pointer",fontSize:11,color:completado?C.success:C.muted,fontFamily:FONT,transition:"all .15s"}}>
+                              <span style={{fontSize:13}}>{completado?"✓":"○"}</span>{completado?"Completado":"Marcar como completado"}
+                            </button>
+                          );})()}
                           {(esMio||esAyudante)&&editingContenidoId===c.id&&(
                             <InlineContenidoEditor item={c} session={session} onSaved={(updated)=>{setContenido(prev=>prev.map(x=>x.id===c.id?{...x,...updated}:x));setEditingContenidoId(null);}} onCancel={()=>setEditingContenidoId(null)}/>
                           )}
@@ -4673,22 +5039,47 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                   <><SafeWrapper><TablaNotas contenido={contenido} inscripciones={inscripciones} session={session} publicacionId={post.id}/></SafeWrapper>
                   <SkillOverview post={post} session={session} inscripciones={inscripciones}/></>
                 )}
+                {/* Progreso grupal diagnóstico */}
+                <ProgresoGrupal post={post} session={session} inscripciones={inscripciones}/>
                 {/* Progreso del curso */}
                 <ProgresoCurso post={post} session={session}/>
+                {/* Criterio de certificado editable */}
+                {post.otorga_certificado&&post.modo==="grupal"&&(
+                  <CertificadoPctEditor post={post} session={session} onUpdatePost={onUpdatePost}/>
+                )}
               </>
             ):(
               /* Vista alumno */
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
                 <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Mi aprendizaje</div>
+                <ProgresoEvaluaciones post={post} session={session}/>
                 <DiagnosticoInicial post={post} session={session} skills={getSkills(post.id)}/>
-                <SkillProgressViewer post={post} session={session}/>
+                <SkillProgressViewer post={post} session={session} readonly/>
                 {loading?<Spinner small/>:contenido.filter(c=>c.tipo==="quiz").length>0&&(
                   <>
                     <SafeWrapper><NotasAlumno contenido={contenido} session={session} publicacionId={post.id}/></SafeWrapper>
                     <NotasPad publicacionId={post.id} session={session}/>
-                    <CertificadoBtn post={post} session={session} inscripcion={inscripcion}/>
                   </>
                 )}
+                {post.otorga_certificado&&post.modo==="grupal"&&!post.finalizado&&!inscripcion?.clase_finalizada&&(()=>{
+                  const mods=contenido.filter(c=>c.tipo!=="quiz");const pct=post.aprobacion_pct||80;
+                  const comp=progresoModulos.filter(p=>p.completado&&mods.some(m=>m.id===p.contenido_id)).length;
+                  const pctAct=mods.length>0?Math.round((comp/mods.length)*100):0;
+                  return(
+                    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",marginTop:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                        <span style={{fontSize:16}}>🎓</span>
+                        <span style={{fontWeight:700,color:C.text,fontSize:13}}>Criterio de certificación</span>
+                      </div>
+                      <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Completá el <strong>{pct}%</strong> de los módulos ({Math.ceil(mods.length*pct/100)} de {mods.length}) para obtener tu certificado</div>
+                      {mods.length>0&&<><div style={{height:6,background:C.border,borderRadius:3,marginBottom:4}}>
+                        <div style={{height:"100%",width:`${pctAct}%`,background:C.accent,borderRadius:3,transition:"width .5s"}}/>
+                      </div>
+                      <div style={{fontSize:11,color:C.muted}}>{comp}/{mods.length} módulos completados · {pctAct}%</div></>}
+                    </div>
+                  );
+                })()}
+                {!loading&&<CertificadoBtn post={post} session={session} inscripcion={inscripcion} progresoModulos={progresoModulos} contenido={contenido}/>}
                 <NotasPrivadas storageKey={`cl_nota_${post.id}_${miEmail}`} session={session} post={post}/>
               </div>
             )}

@@ -20,6 +20,8 @@ const ADMIN_ONLY_ACTIONS = new Set([
   "enviar_anuncio",
   "aprobar_docente",
   "rechazar_docente",
+  "aprobar_verificacion",
+  "rechazar_verificacion",
   // Escrow & liquidaciones
   "liberar_pago_manual",
   "resolver_disputa",
@@ -154,6 +156,72 @@ serve(async (req) => {
       const { user_id } = params;
       if (!user_id) throw new Error("user_id requerido");
       await adminClient.from("usuarios").update({ rol: "alumno", verificado: false }).eq("id", user_id);
+
+    } else if (action === "aprobar_verificacion") {
+      const { verificacion_id, user_id } = params;
+      if (!verificacion_id || !user_id) throw new Error("verificacion_id y user_id requeridos");
+
+      // Obtener datos del usuario para el email
+      const { data: usuarioData } = await adminClient
+        .from("usuarios")
+        .select("nombre, email")
+        .eq("id", user_id)
+        .single();
+
+      // Actualizar verificacion
+      await adminClient.from("verificaciones_usuario").update({
+        estado: "aprobada",
+        revisado_por: user.id,
+        revisado_at: new Date().toISOString(),
+      }).eq("id", verificacion_id);
+
+      // Promover a docente
+      await adminClient.from("usuarios").update({ rol: "docente", verificado: true }).eq("id", user_id);
+
+      // Enviar email de aprobación
+      if (usuarioData?.email) {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+          body: JSON.stringify({
+            to: usuarioData.email,
+            template: "docente_aprobado",
+            data: { nombre: usuarioData.nombre ?? "Docente" },
+          }),
+        }).catch(() => null);
+      }
+
+    } else if (action === "rechazar_verificacion") {
+      const { verificacion_id, user_id, razon } = params;
+      if (!verificacion_id || !user_id) throw new Error("verificacion_id y user_id requeridos");
+
+      // Obtener datos del usuario para el email
+      const { data: usuarioData } = await adminClient
+        .from("usuarios")
+        .select("nombre, email")
+        .eq("id", user_id)
+        .single();
+
+      // Actualizar verificacion
+      await adminClient.from("verificaciones_usuario").update({
+        estado: "rechazada",
+        razon_rechazo: razon ?? null,
+        revisado_por: user.id,
+        revisado_at: new Date().toISOString(),
+      }).eq("id", verificacion_id);
+
+      // Enviar email de rechazo
+      if (usuarioData?.email) {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+          body: JSON.stringify({
+            to: usuarioData.email,
+            template: "docente_rechazado",
+            data: { nombre: usuarioData.nombre ?? "Usuario", razon: razon ?? "No se especificó motivo." },
+          }),
+        }).catch(() => null);
+      }
 
     // ── Escrow: liberar un pago manualmente ─────────────────────────────────
     } else if (action === "liberar_pago_manual") {

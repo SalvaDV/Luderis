@@ -36,6 +36,9 @@ export function ToastContainer(){
 // ─── DATOS DE CATEGORÍAS ──────────────────────────────────────────────────────
 export const MATERIAS=["Idiomas","Arte y Creatividad","Música","Deportes y Actividad Física","Cocina y Gastronomía","Desarrollo Personal y Bienestar","Negocios y Finanzas","Marketing y Comunicación","Programación y Tecnología","Diseño y Multimedia","Ciencia y Matemática","Humanidades y Ciencias Sociales","Oficios y Manualidades","Educación y Tutorías","Conducción y Manejo","Animales y Cuidado","Hobbies y Tiempo Libre","Viajes y Cultura","Otros"];
 
+// Materias donde tiene sentido medir progreso con diagnóstico escrito
+export const MATERIAS_CON_DIAGNOSTICO=new Set(["Idiomas","Programación y Tecnología","Ciencia y Matemática","Humanidades y Ciencias Sociales","Negocios y Finanzas","Marketing y Comunicación","Educación y Tutorías"]);
+
 export const CATEGORIAS_DATA={
   "Idiomas":              {emoji:"🌍",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"},
   "Arte y Creatividad":   {emoji:"🎨",grad:"linear-gradient(135deg,#E05C9A,#F5A623)",bg:"#E05C9A"},

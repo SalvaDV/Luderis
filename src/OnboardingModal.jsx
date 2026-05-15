@@ -19,7 +19,9 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const [cuit,setCuit]=useState("");
   const [esPep,setEsPep]=useState(false);
   const [terminosAceptados,setTerminosAceptados]=useState(false);
-  const [kycStep,setKycStep]=useState(0);// 0=datos 1=fiscal 2=terminos
+  const [kycStep,setKycStep]=useState(0);// 0=datos 1=foto 2=fiscal 3=terminos
+  const [fotoDniFrente,setFotoDniFrente]=useState(null);
+  const [fotoDniPreview,setFotoDniPreview]=useState(null);
 
   const [modalidadPref,setModalidadPref]=useState(""); // "virtual" | "presencial" | "ambas"
   const [presupuesto,setPresupuesto]=useState(""); // "gratis" | "bajo" | "medio" | "alto"
@@ -212,7 +214,48 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       </div>
     )},
 
-    // Paso KYC 1: Situación fiscal + CUIT
+    // Paso KYC 1: Foto del DNI
+    {id:"kyc_foto_dni",title:"Foto del frente de tu DNI",sub:"Necesitamos verificar tu identidad con una imagen.",
+     canNext:!!fotoDniFrente,
+     body:(
+      <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
+        <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:"10px 14px",fontSize:12,color:C.accent,display:"flex",gap:8,alignItems:"flex-start"}}>
+          <span>🔒</span>
+          <span>La foto se almacena de forma segura y solo la ve el equipo de Luderis para verificar tu identidad.</span>
+        </div>
+        {/* Drop zone / preview */}
+        <label style={{display:"block",cursor:"pointer"}}>
+          <input type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}}
+            onChange={e=>{
+              const f=e.target.files?.[0];
+              if(!f)return;
+              setFotoDniFrente(f);
+              const reader=new FileReader();
+              reader.onload=ev=>setFotoDniPreview(ev.target.result);
+              reader.readAsDataURL(f);
+            }}/>
+          {fotoDniPreview?(
+            <div style={{position:"relative",borderRadius:12,overflow:"hidden",border:`2px solid ${C.accent}`}}>
+              <img src={fotoDniPreview} alt="DNI frente" style={{width:"100%",display:"block",maxHeight:200,objectFit:"cover"}}/>
+              <div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600}}>✓ Foto cargada — tocá para cambiar</div>
+            </div>
+          ):(
+            <div style={{border:`2px dashed ${C.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",background:C.bg,transition:"border-color .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+              <div style={{fontSize:36,marginBottom:8}}>📷</div>
+              <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:4}}>Seleccioná una foto del frente de tu DNI</div>
+              <div style={{color:C.muted,fontSize:11}}>JPG, PNG o WEBP · Máx. 5 MB</div>
+            </div>
+          )}
+        </label>
+        <p style={{color:C.muted,fontSize:11,margin:0,lineHeight:1.5}}>
+          Asegurate de que el número de DNI, nombre y apellido sean legibles. Podés usar la foto de tu cámara o galería.
+        </p>
+      </div>
+    )},
+
+    // Paso KYC 2: Situación fiscal + CUIT
     {id:"kyc_fiscal",title:"Situación fiscal",sub:"¿Cómo vas a facturar tus servicios educativos?",
      canNext:true,
      body:(
@@ -314,27 +357,27 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
 
   // ── Paso final ──────────────────────────────────────────────────────────────
   const PASO_FINAL={
-    id:"listo",title:"¡Todo listo!",sub:esDocente?"Tu cuenta docente está siendo procesada.":"Ya podés empezar a explorar Luderis.",
+    id:"listo",title:"¡Todo listo!",sub:esDocente?"Tu solicitud está en revisión.":"Ya podés empezar a explorar Luderis.",
     canNext:true,
     body:(
       <div style={{textAlign:"center",padding:"20px 0"}}>
-        <div style={{fontSize:56,marginBottom:16,animation:"fadeUp .3s ease"}}>{esDocente?"🎓":"🚀"}</div>
+        <div style={{fontSize:56,marginBottom:16,animation:"fadeUp .3s ease"}}>{esDocente?"⏳":"🚀"}</div>
         <div style={{fontWeight:700,color:C.text,fontSize:17,marginBottom:10}}>
-          {esDocente?"¡Ya sos parte de Luderis como docente!":"¡Bienvenido/a a Luderis!"}
+          {esDocente?"¡Solicitud enviada!":"¡Bienvenido/a a Luderis!"}
         </div>
         <p style={{color:C.muted,fontSize:13,lineHeight:1.8,margin:"0 0 16px"}}>
           {esDocente
-            ?"Tu verificación fue enviada. Ya podés empezar a publicar — una vez aprobada, tus clases quedarán visibles para todos."
+            ?"Recibimos tu solicitud para ser docente. La revisaremos en las próximas 24-48 hs y te avisamos por email cuando esté aprobada."
             :"Explorá publicaciones, inscribite en cursos, y cuando quieras podés completar la verificación para enseñar también."}
         </p>
-        {esDocente&&onPublicar&&(
-          <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 20px",marginBottom:16,textAlign:"left"}}>
-            <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>🚀 Siguiente paso recomendado</div>
-            <p style={{color:C.muted,fontSize:12,margin:"0 0 12px",lineHeight:1.5}}>Publicá tu primera clase ahora. Solo tarda 2 minutos y empezás a aparecer en los resultados.</p>
-            <button onClick={()=>finish(onPublicar)} disabled={saving}
-              style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(26,110,216,.3)"}}>
-              {saving?"Guardando…":"Publicar mi primera clase →"}
-            </button>
+        {esDocente&&(
+          <div style={{background:"#FEF3C710",border:"1px solid #F59E0B30",borderRadius:14,padding:"14px 18px",marginBottom:16,textAlign:"left"}}>
+            <div style={{fontWeight:700,color:"#92400E",fontSize:13,marginBottom:4}}>⏱ ¿Qué pasa ahora?</div>
+            <ul style={{color:"#92400E",fontSize:12,margin:0,paddingLeft:18,lineHeight:1.8}}>
+              <li>El equipo de Luderis revisa tu DNI e información en 24-48 hs.</li>
+              <li>Te enviamos un email cuando tu cuenta sea aprobada.</li>
+              <li>Podés seguir usando Luderis como alumno mientras tanto.</li>
+            </ul>
           </div>
         )}
         {materias.length>0&&(
@@ -387,7 +430,8 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       // Guardar preferencias en tabla usuarios
       const updates={
         onboarding_completado:true,
-        rol,
+        // Docentes quedan como "alumno" hasta aprobación de admin
+        rol:esDocente?"alumno":rol,
         ...(nombre.trim()&&{nombre:nombre.trim()}),
         materias_interes:materias,
         nivel_educativo:nivelEdu||null,
@@ -398,8 +442,12 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       if(ubicacion.trim())updates.ubicacion=ubicacion.trim();
       await sb.updateUsuario(session.user.id,updates,session.access_token).catch(()=>{});
 
-      // Si es docente, guardar verificación KYC
+      // Si es docente, subir foto DNI y guardar verificación KYC
       if(esDocente){
+        let fotoDniUrl=null;
+        if(fotoDniFrente){
+          fotoDniUrl=await sb.uploadDniFoto(session.user.id,fotoDniFrente,session.access_token).catch(()=>null);
+        }
         await sb.db("verificaciones_usuario","POST",{
           usuario_id:session.user.id,
           usuario_email:session.user.email,
@@ -411,6 +459,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           terminos_aceptados:terminosAceptados,
           terminos_fecha:new Date().toISOString(),
           estado:"pendiente",
+          foto_dni_frente:fotoDniUrl,
         },session.access_token,"return=minimal").catch(()=>{});
       }
 
@@ -447,7 +496,8 @@ Respondé SOLO JSON.`,
       try{
         localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");
         if(materias.length)localStorage.setItem("cl_materias_pref_"+session.user.email,JSON.stringify(materias));
-        if(rol)localStorage.setItem("cl_rol_"+session.user.email,rol);
+        // Docentes quedan como alumno hasta aprobación
+        if(rol)localStorage.setItem("cl_rol_"+session.user.email,esDocente?"alumno":rol);
         if(ubicacion)localStorage.setItem("cl_user_city",ubicacion);
         if(modalidadPref)localStorage.setItem("cl_modalidad_pref_"+session.user.email,modalidadPref);
         if(presupuesto)localStorage.setItem("cl_presupuesto_"+session.user.email,presupuesto);

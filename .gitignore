@@ -36,3 +36,5 @@ src/IMG_*.PNG
 src/IMG_*.png
 src/*.pdf
 src/insert_helper.py
+
+.vercel
