@@ -2,6 +2,17 @@ import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
 import { SUPABASE_URL as SUPA_URL, SUPABASE_KEY as ANON_KEY } from "./supabase";
 import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from "recharts";
+import {
+  LayoutDashboard, ShieldCheck, GraduationCap, Users, BookOpen,
+  AlertTriangle, MessageSquare, BellOff, CreditCard, Package,
+  FileText, Megaphone, Settings, TrendingUp, TrendingDown,
+  DollarSign, UserCheck, BookMarked, BarChart2, RefreshCw,
+  ChevronRight, LogOut, Activity
+} from "lucide-react";
 
 // Admin fallback email (optional, only for bootstrapping). Set REACT_APP_ADMIN_EMAIL in env to use.
 const FALLBACK_ADMIN = (process.env.REACT_APP_ADMIN_EMAIL || "").toLowerCase();
@@ -29,23 +40,34 @@ const adminAction = async (action, params, token) => {
 const getConfig = () => { try { return JSON.parse(localStorage.getItem("ldrs_admin_cfg") || "{}"); } catch { return {}; } };
 const saveConfig = (cfg) => { try { localStorage.setItem("ldrs_admin_cfg", JSON.stringify({ ...getConfig(), ...cfg })); } catch {} };
 
+// ─── ADMIN DESIGN TOKENS ─────────────────────────────────────────────────────
+const A = {
+  bg:      "var(--cl-bg, #F6F9FF)",
+  surface: "var(--cl-surface, #FFFFFF)",
+  card:    "var(--cl-surface, #FFFFFF)",
+  border:  "var(--cl-border, #DDE5F5)",
+  text:    "var(--cl-text, #0D1F3C)",
+  muted:   "var(--cl-muted, #5A7294)",
+  accent:  "#1A6ED8",
+  success: "#10B981",
+  warn:    "#F59E0B",
+  danger:  "#EF4444",
+  purple:  "#8B5CF6",
+  info:    "#3B82F6",
+  sidebar: "#0F1E3C",
+  sidebarBorder: "rgba(255,255,255,0.08)",
+  sidebarText: "rgba(255,255,255,0.65)",
+  sidebarActive: "rgba(255,255,255,0.12)",
+};
+
 // ─── COMPONENTES UI ───────────────────────────────────────────────────────────
 const Card = ({ children, style = {} }) => (
-  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 22px", ...style }}>
+  <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 14, padding: "20px 22px", ...style }}>
     {children}
   </div>
 );
 
-const StatBox = ({ label, value, sub, color = C.accent, icon }) => (
-  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-    <div style={{ fontSize: 22 }}>{icon}</div>
-    <div style={{ fontSize: 28, fontWeight: 800, color, fontFamily: FONT, lineHeight: 1 }}>{value ?? "—"}</div>
-    <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>{label}</div>
-    {sub && <div style={{ fontSize: 11, color: C.muted, fontFamily: FONT }}>{sub}</div>}
-  </div>
-);
-
-const Badge = ({ children, color = C.accent }) => (
+const Badge = ({ children, color = A.accent }) => (
   <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: color + "18", color, border: `1px solid ${color}40`, whiteSpace: "nowrap", fontFamily: FONT }}>
     {children}
   </span>
@@ -53,36 +75,180 @@ const Badge = ({ children, color = C.accent }) => (
 
 const Pill = ({ label, active, onClick }) => (
   <button onClick={onClick}
-    style={{ background: active ? C.accent : "transparent", color: active ? "#fff" : C.muted, border: `1px solid ${active ? C.accent : C.border}`, borderRadius: 20, padding: "6px 14px", fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer", fontFamily: FONT, transition: "all .15s" }}>
+    style={{ background: active ? A.accent : "transparent", color: active ? "#fff" : A.muted, border: `1px solid ${active ? A.accent : A.border}`, borderRadius: 20, padding: "6px 14px", fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer", fontFamily: FONT, transition: "all .15s" }}>
     {label}
   </button>
 );
 
 const SearchInput = ({ value, onChange, placeholder }) => (
   <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-    style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", fontFamily: FONT, width: "100%", boxSizing: "border-box" }} />
+    style={{ background: A.bg, border: `1px solid ${A.border}`, borderRadius: 8, padding: "8px 12px", color: A.text, fontSize: 13, outline: "none", fontFamily: FONT, width: "100%", boxSizing: "border-box" }} />
 );
 
-// ─── TABS ─────────────────────────────────────────────────────────────────────
-const TABS = [
-  { id: "overview", label: "📊 Resumen" },
-  { id: "verificaciones", label: "✅ Verificaciones" },
-  { id: "docentes", label: "🎓 Docentes" },
-  { id: "users", label: "👥 Usuarios" },
-  { id: "pubs", label: "📋 Publicaciones" },
-  { id: "reports", label: "🚨 Denuncias" },
-  { id: "quejas", label: "📋 Quejas" },
-  { id: "alertas_contacto", label: "🔇 Anti-puenteo" },
-  { id: "payments", label: "💰 Pagos" },
-  { id: "escrow", label: "📦 Escrow" },
-  { id: "liquidaciones", label: "📄 Liquidaciones" },
-  { id: "notifs", label: "📣 Anuncios" },
-  { id: "config", label: "⚙️ Configuración" },
+const StatBox = ({ label, value, sub, color = A.accent, icon }) => (
+  <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 14, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, color: A.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+    <div style={{ fontSize: 26, fontWeight: 800, color, fontFamily: FONT, lineHeight: 1 }}>{value ?? "—"}</div>
+    {sub && <div style={{ fontSize: 11, color: A.muted, fontFamily: FONT }}>{sub}</div>}
+  </div>
+);
+
+// ─── KPI CARD ─────────────────────────────────────────────────────────────────
+function KpiCard({ label, value, sub, trend, trendLabel, color = A.accent, Icon, sparkData }) {
+  const trendUp = trend >= 0;
+  return (
+    <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 16, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {Icon && <Icon size={18} color={color} strokeWidth={2} />}
+        </div>
+        {trend != null && (
+          <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: trendUp ? A.success : A.danger, background: (trendUp ? A.success : A.danger) + "15", padding: "3px 8px", borderRadius: 20 }}>
+            {trendUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {trendUp ? "+" : ""}{trend}%
+          </span>
+        )}
+      </div>
+      <div>
+        <div style={{ fontSize: 30, fontWeight: 800, color: A.text, lineHeight: 1, fontFamily: FONT, letterSpacing: "-1px" }}>{value ?? "—"}</div>
+        <div style={{ fontSize: 13, color: A.muted, marginTop: 4, fontFamily: FONT }}>{label}</div>
+      </div>
+      {sparkData && sparkData.length > 0 && (
+        <div style={{ height: 36 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="count" stroke={color} strokeWidth={1.5} fill={`url(#spark-${label})`} dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {sub && <div style={{ fontSize: 11, color: A.muted, fontFamily: FONT }}>{sub}</div>}
+      {trendLabel && <div style={{ fontSize: 11, color: A.muted, fontFamily: FONT }}>{trendLabel}</div>}
+    </div>
+  );
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+const SIDEBAR_GROUPS = [
+  {
+    label: "Plataforma",
+    items: [
+      { id: "overview",       label: "Dashboard",      Icon: LayoutDashboard },
+      { id: "verificaciones", label: "Verificaciones", Icon: ShieldCheck, badge: "verif" },
+      { id: "pubs",           label: "Publicaciones",  Icon: BookOpen },
+    ],
+  },
+  {
+    label: "Usuarios",
+    items: [
+      { id: "docentes", label: "Docentes", Icon: GraduationCap },
+      { id: "users",    label: "Usuarios", Icon: Users },
+    ],
+  },
+  {
+    label: "Finanzas",
+    items: [
+      { id: "payments",      label: "Pagos",        Icon: CreditCard },
+      { id: "escrow",        label: "Escrow",        Icon: Package },
+      { id: "liquidaciones", label: "Liquidaciones", Icon: FileText },
+    ],
+  },
+  {
+    label: "Moderación",
+    items: [
+      { id: "reports",         label: "Denuncias",    Icon: AlertTriangle, badge: "reports" },
+      { id: "quejas",          label: "Quejas",       Icon: MessageSquare },
+      { id: "alertas_contacto",label: "Anti-puenteo", Icon: BellOff },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { id: "notifs", label: "Anuncios",      Icon: Megaphone },
+      { id: "config", label: "Configuración", Icon: Settings },
+    ],
+  },
 ];
+
+function Sidebar({ tab, setTab, pendingVerifCount, pendingReportsCount, onClose }) {
+  return (
+    <div style={{
+      width: 220, minHeight: "100vh", background: A.sidebar, display: "flex", flexDirection: "column",
+      position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 100, overflowY: "auto",
+      borderRight: `1px solid ${A.sidebarBorder}`,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${A.sidebarBorder}`, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <img src="/logo.png" alt="Luderis" style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 6 }} onError={e => e.target.style.display = "none"} />
+          <div>
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, fontFamily: FONT, letterSpacing: "-0.3px" }}>Luderis</div>
+            <div style={{ color: A.sidebarText, fontSize: 10, fontFamily: FONT, fontWeight: 500, textTransform: "uppercase", letterSpacing: 1 }}>Admin Panel</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav groups */}
+      <div style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 20 }}>
+        {SIDEBAR_GROUPS.map(group => (
+          <div key={group.label}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: 1.2, textTransform: "uppercase", padding: "0 10px", marginBottom: 4, fontFamily: FONT }}>
+              {group.label}
+            </div>
+            {group.items.map(item => {
+              const active = tab === item.id;
+              const badgeCount = item.badge === "verif" ? pendingVerifCount : item.badge === "reports" ? pendingReportsCount : 0;
+              return (
+                <button key={item.id} onClick={() => setTab(item.id)}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8,
+                    background: active ? A.sidebarActive : "transparent",
+                    border: "none", cursor: "pointer", fontFamily: FONT, transition: "background .15s",
+                    marginBottom: 1,
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+                  <item.Icon size={15} color={active ? "#fff" : A.sidebarText} strokeWidth={active ? 2.5 : 1.8} />
+                  <span style={{ flex: 1, fontSize: 13, color: active ? "#fff" : A.sidebarText, fontWeight: active ? 700 : 400, textAlign: "left" }}>
+                    {item.label}
+                  </span>
+                  {badgeCount > 0 && (
+                    <span style={{ background: "#EF4444", color: "#fff", borderRadius: 20, fontSize: 10, fontWeight: 800, padding: "1px 6px", lineHeight: 1.5, minWidth: 18, textAlign: "center" }}>
+                      {badgeCount}
+                    </span>
+                  )}
+                  {active && <ChevronRight size={12} color="rgba(255,255,255,0.4)" />}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "12px 10px", borderTop: `1px solid ${A.sidebarBorder}`, flexShrink: 0 }}>
+        <button onClick={onClose}
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+          <LogOut size={15} color={A.sidebarText} />
+          <span style={{ fontSize: 13, color: A.sidebarText }}>Salir del panel</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage({ session, onClose, onChatUser }) {
   const [tab, setTab] = useState("overview");
   const [pendingVerifCount, setPendingVerifCount] = useState(0);
+  const [pendingReportsCount, setPendingReportsCount] = useState(0);
   const userEmailLc = (session?.user?.email || "").toLowerCase();
   const isFallbackAdmin = !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
   const [isAdmin, setIsAdmin] = React.useState(isFallbackAdmin);
@@ -90,13 +256,12 @@ export default function AdminPage({ session, onClose, onChatUser }) {
 
   React.useEffect(() => {
     if (isFallbackAdmin) { setIsAdmin(true); setCheckingAdmin(false); return; }
-    let mounted=true;
-    // Check rol in DB
+    let mounted = true;
     adminDb(`usuarios?email=eq.${encodeURIComponent(session.user.email)}&select=rol`, "GET", null, session.access_token)
-      .then(rows => { if(mounted)setIsAdmin(rows?.[0]?.rol === "admin"); })
-      .catch(() => { if(mounted)setIsAdmin(false); })
-      .finally(() => { if(mounted)setCheckingAdmin(false); });
-    return()=>{mounted=false;};
+      .then(rows => { if (mounted) setIsAdmin(rows?.[0]?.rol === "admin"); })
+      .catch(() => { if (mounted) setIsAdmin(false); })
+      .finally(() => { if (mounted) setCheckingAdmin(false); });
+    return () => { mounted = false; };
   }, [session, isFallbackAdmin]);
 
   React.useEffect(() => {
@@ -104,68 +269,79 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     sb.getVerificacionesPendientes(session.access_token)
       .then(rows => setPendingVerifCount(Array.isArray(rows) ? rows.length : 0))
       .catch(() => {});
+    adminDb("denuncias?select=id&revisada=eq.false", "GET", null, session.access_token)
+      .then(rows => setPendingReportsCount(Array.isArray(rows) ? rows.length : 0))
+      .catch(() => {});
   }, [isAdmin, session.access_token]);
 
+  const TAB_LABELS = {
+    overview: "Dashboard", verificaciones: "Verificaciones", docentes: "Docentes",
+    users: "Usuarios", pubs: "Publicaciones", reports: "Denuncias", quejas: "Quejas",
+    alertas_contacto: "Anti-puenteo", payments: "Pagos", escrow: "Escrow",
+    liquidaciones: "Liquidaciones", notifs: "Anuncios", config: "Configuración",
+  };
+
   if (checkingAdmin) return (
-    <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ position: "fixed", inset: 0, background: A.bg, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Spinner />
     </div>
   );
 
   if (!isAdmin) return (
-    <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+    <div style={{ position: "fixed", inset: 0, background: A.bg, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-        <div style={{ color: C.text, fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Acceso restringido</div>
-        <div style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>No tenés permisos para ver este panel.</div>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: A.danger + "18", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <ShieldCheck size={28} color={A.danger} />
+        </div>
+        <div style={{ color: A.text, fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Acceso restringido</div>
+        <div style={{ color: A.muted, fontSize: 14, marginBottom: 24 }}>No tenés permisos para ver este panel.</div>
         <Btn onClick={onClose}>Volver</Btn>
       </div>
     </div>
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 500, overflowY: "auto", fontFamily: FONT }}>
-      {/* Header */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "12px 14px", display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10 }}>
-        <button onClick={onClose} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: FONT }}>← Salir</button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/logo.png" alt="Luderis" style={{ width: 24, height: 24, objectFit: "contain" }} onError={e=>e.target.style.display="none"}/>
-          <div style={{ fontWeight: 800, fontSize: 17, color: C.text }}>Panel de Administración</div>
-        </div>
-          <div style={{ fontSize: 11, color: C.muted }}>Luderis · {session.user.email}</div>
-        </div>
-        <div style={{ fontSize: 11, color: C.muted, background: C.bg, padding: "4px 10px", borderRadius: 20, border: `1px solid ${C.border}` }}>🟢 En vivo</div>
-      </div>
+    <div style={{ position: "fixed", inset: 0, background: A.bg, zIndex: 500, fontFamily: FONT, display: "flex" }}>
+      {/* Sidebar */}
+      <Sidebar
+        tab={tab} setTab={setTab}
+        pendingVerifCount={pendingVerifCount}
+        pendingReportsCount={pendingReportsCount}
+        onClose={onClose}
+      />
 
-      {/* Tab bar */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 8px", display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none" }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ background: "none", border: "none", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", color: tab === t.id ? C.accent : C.muted, padding: "12px 10px", fontSize: 12, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: FONT, whiteSpace: "nowrap", transition: "all .15s", display: "flex", alignItems: "center", gap: 5 }}>
-            {t.label}
-            {t.id === "verificaciones" && pendingVerifCount > 0 && (
-              <span style={{ background: "#EF4444", color: "#fff", borderRadius: 20, fontSize: 10, fontWeight: 800, padding: "1px 6px", lineHeight: 1.5 }}>{pendingVerifCount}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* Main */}
+      <div style={{ marginLeft: 220, flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", overflowY: "auto" }}>
+        {/* Topbar */}
+        <div style={{ background: A.surface, borderBottom: `1px solid ${A.border}`, padding: "0 28px", height: 56, display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10, flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: A.text, letterSpacing: "-0.3px" }}>{TAB_LABELS[tab] || tab}</div>
+            <div style={{ fontSize: 11, color: A.muted }}>Luderis Admin · {session.user.email}</div>
+          </div>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: A.success + "15", border: `1px solid ${A.success}40`, borderRadius: 20, padding: "4px 12px" }}>
+              <Activity size={11} color={A.success} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: A.success, fontFamily: FONT }}>En vivo</span>
+            </div>
+          </div>
+        </div>
 
-      {/* Content */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px" }}>
-        {tab === "overview" && <OverviewTab session={session} />}
-        {tab === "verificaciones" && <VerificacionesTab session={session} onCountChange={setPendingVerifCount} />}
-        {tab === "docentes" && <DocentesTab session={session} />}
-        {tab === "users" && <UsersTab session={session} onChatUser={onChatUser} />}
-        {tab === "pubs" && <PubsTab session={session} />}
-        {tab === "reports" && <ReportsTab session={session} />}
-        {tab === "quejas" && <QuejasTab session={session} />}
-        {tab === "alertas_contacto" && <AlertasContactoTab session={session} />}
-        {tab === "payments" && <PaymentsTab session={session} />}
-        {tab === "escrow" && <EscrowTab session={session} />}
-        {tab === "liquidaciones" && <LiquidacionesTab session={session} />}
-        {tab === "notifs" && <NotifsTab session={session} />}
-        {tab === "config" && <ConfigTab session={session} />}
+        {/* Content */}
+        <div style={{ flex: 1, padding: "28px 32px", maxWidth: 1280, width: "100%", boxSizing: "border-box" }}>
+          {tab === "overview"         && <OverviewTab session={session} />}
+          {tab === "verificaciones"   && <VerificacionesTab session={session} onCountChange={setPendingVerifCount} />}
+          {tab === "docentes"         && <DocentesTab session={session} />}
+          {tab === "users"            && <UsersTab session={session} onChatUser={onChatUser} />}
+          {tab === "pubs"             && <PubsTab session={session} />}
+          {tab === "reports"          && <ReportsTab session={session} />}
+          {tab === "quejas"           && <QuejasTab session={session} />}
+          {tab === "alertas_contacto" && <AlertasContactoTab session={session} />}
+          {tab === "payments"         && <PaymentsTab session={session} />}
+          {tab === "escrow"           && <EscrowTab session={session} />}
+          {tab === "liquidaciones"    && <LiquidacionesTab session={session} />}
+          {tab === "notifs"           && <NotifsTab session={session} />}
+          {tab === "config"           && <ConfigTab session={session} />}
+        </div>
       </div>
     </div>
   );
@@ -315,6 +491,22 @@ function VerificacionesTab({ session, onCountChange }) {
   );
 }
 
+// ─── CUSTOM TOOLTIP RECHARTS ──────────────────────────────────────────────────
+const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 10, padding: "8px 12px", boxShadow: "0 4px 16px rgba(0,0,0,.08)", fontFamily: FONT }}>
+      <div style={{ fontSize: 11, color: A.muted, marginBottom: 4 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: p.color || A.text }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, display: "inline-block" }} />
+          {prefix}{typeof p.value === "number" ? p.value.toLocaleString("es-AR") : p.value}{suffix}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ─── TAB: RESUMEN ─────────────────────────────────────────────────────────────
 function OverviewTab({ session }) {
   const [stats, setStats] = useState(null);
@@ -447,273 +639,306 @@ function OverviewTab({ session }) {
     return()=>{mounted=false;};
   }, [session]);
 
-  if (loading) return <div style={{ padding: 40 }}><Spinner /></div>;
+  if (loading) return <div style={{ padding: 60, display: "flex", justifyContent: "center" }}><Spinner /></div>;
   if (!stats) return null;
 
-  const ICON = { usuario: "👤", inscripcion: "🎓", pago: "💰", denuncia: "🚨", queja: "📋" };
-  const COLOR = { usuario: C.info, inscripcion: C.success, pago: "#F59E0B", denuncia: C.danger, queja: "#3B82F6" };
+  const COLOR_ACT = { usuario: A.info, inscripcion: A.success, pago: A.warn, denuncia: A.danger, queja: A.accent };
+  const ICON_ACT = {
+    usuario: <UserCheck size={13} />, inscripcion: <BookMarked size={13} />,
+    pago: <CreditCard size={13} />, denuncia: <AlertTriangle size={13} />, queja: <MessageSquare size={13} />
+  };
+
+  const convRate = stats.totalInscripciones > 0 ? Math.round((stats.totalPagos / stats.totalInscripciones) * 100) : 0;
+  const comisionTotal = Math.round(stats.ingresoTotal * (stats.comisionPct / 100));
+  const ticketProm = stats.totalPagos > 0 ? Math.round(stats.ingresoTotal / stats.totalPagos) : 0;
+
+  // Datos para gráfico de área — 30 días de usuarios
+  const mesData = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (29 - i));
+    const next = new Date(d); next.setDate(next.getDate() + 1);
+    return {
+      dia: d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }),
+      usuarios: 0, inscripciones: 0,
+      _d: d, _next: next,
+    };
+  });
+
+  // Donut data para roles
+  const rolesData = Object.entries(stats.usuariosPorRol).map(([rol, count]) => ({
+    name: rol === "admin" ? "Admin" : rol === "docente" ? "Docentes" : "Alumnos",
+    value: count,
+    color: rol === "admin" ? A.purple : rol === "docente" ? A.accent : A.success,
+  }));
+
+  const PIE_COLORS = [A.success, A.accent, A.purple, A.warn];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {stats.denunciasPendientes > 0 && (
-        <div style={{ background: C.danger + "15", border: `1px solid ${C.danger}40`, borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 20 }}>🚨</span>
-          <div>
-            <div style={{ fontWeight: 700, color: C.danger, fontSize: 14 }}>{stats.denunciasPendientes} denuncia{stats.denunciasPendientes > 1 ? "s" : ""} pendiente{stats.denunciasPendientes > 1 ? "s" : ""} de revisión</div>
-            <div style={{ color: C.muted, fontSize: 12 }}>Revisalas en la pestaña Denuncias</div>
-          </div>
-        </div>
-      )}
-      {stats.quejasSinAtender > 0 && (
-        <div style={{ background: "#3B82F615", border: "1px solid #3B82F640", borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 20 }}>📋</span>
-          <div>
-            <div style={{ fontWeight: 700, color: "#3B82F6", fontSize: 14 }}>{stats.quejasSinAtender} queja{stats.quejasSinAtender > 1 ? "s" : ""} nueva{stats.quejasSinAtender > 1 ? "s" : ""} sin revisar</div>
-            <div style={{ color: C.muted, fontSize: 12 }}>Revisalas en la pestaña Quejas · <button onClick={() => {}} style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer", padding: 0, fontSize: 12, fontFamily: FONT, textDecoration: "underline" }}>Ir a Quejas</button></div>
-          </div>
+
+      {/* Alertas */}
+      {(stats.denunciasPendientes > 0 || stats.quejasSinAtender > 0) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {stats.denunciasPendientes > 0 && (
+            <div style={{ background: A.danger + "10", border: `1px solid ${A.danger}30`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+              <AlertTriangle size={16} color={A.danger} />
+              <span style={{ fontWeight: 700, color: A.danger, fontSize: 13 }}>{stats.denunciasPendientes} denuncia{stats.denunciasPendientes > 1 ? "s" : ""} pendiente{stats.denunciasPendientes > 1 ? "s" : ""} de revisión</span>
+              <span style={{ color: A.muted, fontSize: 12 }}>→ Revisalas en Moderación</span>
+            </div>
+          )}
+          {stats.quejasSinAtender > 0 && (
+            <div style={{ background: A.info + "10", border: `1px solid ${A.info}30`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+              <MessageSquare size={16} color={A.info} />
+              <span style={{ fontWeight: 700, color: A.info, fontSize: 13 }}>{stats.quejasSinAtender} queja{stats.quejasSinAtender > 1 ? "s" : ""} sin revisar</span>
+            </div>
+          )}
         </div>
       )}
 
-      {/* KPIs principales */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 14 }}>
-        <StatBox icon="👥" label="Usuarios totales" value={stats.totalUsuarios} sub={`+${stats.nuevosHoy} hoy · +${stats.nuevosSemana} esta semana`} color={C.info} />
-        <StatBox icon="📋" label="Publicaciones" value={stats.totalPubs} sub={`${stats.pubsActivas} activas`} color={C.accent} />
-        <StatBox icon="🎓" label="Inscripciones" value={stats.totalInscripciones} sub={`+${stats.inscSemana} esta semana`} color={C.success} />
-        <StatBox icon="💰" label="Ingresos totales" value={`$${stats.ingresoTotal.toLocaleString("es-AR")}`} sub={`${stats.totalPagos} pagos aprobados`} color="#F59E0B" />
-        <StatBox icon="🏦" label="Comisión Luderis" value={`$${Math.round(stats.ingresoTotal * (stats.comisionPct/100)).toLocaleString("es-AR")}`} sub={`${stats.comisionPct}% del total`} color="#8B5CF6" />
-        <StatBox icon="📈" label="Ticket promedio" value={stats.totalPagos > 0 ? `$${Math.round(stats.ingresoTotal / stats.totalPagos).toLocaleString("es-AR")}` : "—"} sub="por transacción" color={C.accent} />
-        <StatBox icon="🔄" label="Tasa conversión" value={stats.totalInscripciones > 0 ? `${Math.round((stats.totalPagos/stats.totalInscripciones)*100)}%` : "—"} sub="inscriptos que pagaron" color={C.success} />
-        <StatBox icon="🚨" label="Denuncias pend." value={stats.denunciasPendientes} color={stats.denunciasPendientes > 0 ? C.danger : C.muted} />
-        <StatBox icon="📋" label="Quejas sin revisar" value={stats.quejasSinAtender} sub={`${stats.quejasTotal} en total`} color={stats.quejasSinAtender > 0 ? "#3B82F6" : C.muted} />
+      {/* KPI Cards — fila 1 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+        <KpiCard
+          label="Usuarios totales" value={stats.totalUsuarios.toLocaleString("es-AR")}
+          trend={stats.nuevosUltimoMes > 0 ? Math.round((stats.nuevosHoy / Math.max(stats.totalUsuarios - stats.nuevosUltimoMes, 1)) * 100) : null}
+          trendLabel={`+${stats.nuevosHoy} hoy · +${stats.nuevosSemana} esta semana`}
+          color={A.info} Icon={Users} sparkData={stats.cohortUsuarios}
+        />
+        <KpiCard
+          label="Ingresos totales" value={`$${stats.ingresoTotal.toLocaleString("es-AR")}`}
+          sub={`${stats.totalPagos} pagos aprobados`}
+          trendLabel={`Comisión Luderis: $${comisionTotal.toLocaleString("es-AR")} (${stats.comisionPct}%)`}
+          color={A.warn} Icon={DollarSign} sparkData={stats.cohortInscripciones}
+        />
+        <KpiCard
+          label="Inscripciones" value={stats.totalInscripciones.toLocaleString("es-AR")}
+          trend={stats.inscSemana > 0 ? null : null}
+          trendLabel={`+${stats.inscSemana} esta semana · ${stats.inscPorPub} por publicación`}
+          color={A.success} Icon={BookMarked} sparkData={stats.cohortInscripciones}
+        />
+        <KpiCard
+          label="Tasa de conversión" value={`${convRate}%`}
+          sub="inscriptos que pagaron"
+          trendLabel={`Ticket promedio: $${ticketProm.toLocaleString("es-AR")}`}
+          color={A.purple} Icon={TrendingUp}
+        />
+        <KpiCard
+          label="Publicaciones activas" value={stats.pubsActivas.toLocaleString("es-AR")}
+          sub={`${stats.pubsInactivas} inactivas`}
+          color={A.accent} Icon={BookOpen}
+        />
+        <KpiCard
+          label="Rating promedio" value={stats.ratingPromedio ? `${stats.ratingPromedio} ★` : "—"}
+          sub="Sobre todas las reseñas"
+          color={A.warn} Icon={BarChart2}
+        />
       </div>
 
-      {/* KPIs de denuncias */}
-      {stats.topMotivos !== undefined && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
-          <Card>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🚨 Motivos más frecuentes</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {stats.topMotivos.length === 0 ? <div style={{ color: C.muted, fontSize: 13 }}>Sin denuncias aún</div> :
-                stats.topMotivos.map(([motivo, count]) => (
-                  <div key={motivo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 13, color: C.text }}>{motivo}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ height: 6, borderRadius: 3, background: C.danger, width: Math.max(16, (count/stats.topMotivos[0]?.[1])*60) }} />
-                      <span style={{ fontSize: 12, color: C.muted }}>{count}</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </Card>
-          <Card>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>📊 Estadísticas de moderación</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: C.muted }}>Tasa de resolución</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: stats.tasaResolucion >= 80 ? C.success : C.warn }}>{stats.tasaResolucion}%</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: C.muted }}>Resueltas / Total</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{stats.denResueltas} / {stats.denunciasPendientes + stats.denResueltas}</span>
-              </div>
-              {Object.entries(stats.accionesMap).map(([accion, count]) => (
-                <div key={accion} style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 12, color: C.muted }}>{accion}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{count}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* KPIs por categoría */}
-      {stats.ingresosPorTipo && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
-          <Card>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>💰 Ingresos por tipo de clase</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {Object.entries(stats.ingresosPorTipo).map(([tipo, data]) => (
-                <div key={tipo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{tipo === "particular" ? "🎯 Clases particulares" : tipo === "curso" ? "📚 Cursos" : `📋 ${tipo}`}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{data.count} inscripciones</div>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#F59E0B" }}>${data.monto.toLocaleString("es-AR")}</div>
-                </div>
-              ))}
-              {Object.keys(stats.ingresosPorTipo).length === 0 && <div style={{ color: C.muted, fontSize: 13 }}>Sin datos aún</div>}
-            </div>
-          </Card>
-          <Card>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>📚 Top materias por inscripciones</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {stats.topMaterias.map(([materia, count], i) => (
-                <div key={materia} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: C.muted, fontWeight: 700, minWidth: 16 }}>#{i+1}</span>
-                    <span style={{ fontSize: 13, color: C.text }}>{materia}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ height: 6, borderRadius: 3, background: C.accent, width: Math.max(20, (count / stats.topMaterias[0]?.[1]) * 80) }} />
-                    <span style={{ fontSize: 12, color: C.muted, minWidth: 20, textAlign: "right" }}>{count}</span>
-                  </div>
-                </div>
-              ))}
-              {stats.topMaterias.length === 0 && <div style={{ color: C.muted, fontSize: 13 }}>Sin datos aún</div>}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* KPIs de denuncias */}
-      {stats.kpiDenuncias && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
-          <Card>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🚨 Métricas de denuncias</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ background: C.bg, borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.danger }}>{stats.kpiDenuncias.total}</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Total denuncias</div>
-              </div>
-              <div style={{ background: C.bg, borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.success }}>{stats.kpiDenuncias.tasaResolucion}%</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Tasa resolución</div>
-              </div>
-              <div style={{ background: C.bg, borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.warn }}>{stats.kpiDenuncias.pendientes}</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Pendientes</div>
-              </div>
-              <div style={{ background: C.bg, borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#8B5CF6" }}>{stats.kpiDenuncias.bloqueados}</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Usuarios bloqueados</div>
-              </div>
-            </div>
-          </Card>
-          <Card>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>📋 Motivos más frecuentes</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {stats.kpiDenuncias.topMotivos.map(([motivo, count]) => (
-                <div key={motivo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 12, color: C.text }}>{motivo || "Sin especificar"}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ height: 6, borderRadius: 3, background: C.danger, width: Math.max(20, (count / (stats.kpiDenuncias.topMotivos[0]?.[1] || 1)) * 60) }} />
-                    <span style={{ fontSize: 12, color: C.muted, minWidth: 16, textAlign: "right" }}>{count}</span>
-                  </div>
-                </div>
-              ))}
-              {stats.kpiDenuncias.topMotivos.length === 0 && <div style={{ color: C.muted, fontSize: 13 }}>Sin denuncias aún</div>}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Tendencia 7 días */}
-      <Card>
-        <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>📈 Tendencia 7 días</div>
-        {[
-          { label: "Nuevos usuarios", data: stats.cohortUsuarios, color: C.info },
-          { label: "Nuevas inscripciones", data: stats.cohortInscripciones, color: C.success },
-        ].map(({ label, data, color }) => {
-          const maxVal = Math.max(...data.map(d => d.count), 1);
-          return (
-            <div key={label} style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 6, fontWeight: 600 }}>{label}</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 44 }}>
-                {data.map((d, i) => (
-                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <div style={{ fontSize: 9, color: C.muted }}>{d.count > 0 ? d.count : ""}</div>
-                    <div style={{ width: "100%", background: color, borderRadius: "3px 3px 0 0", height: Math.max(3, (d.count / maxVal) * 34), opacity: d.count > 0 ? 0.85 : 0.15 }} />
-                    <div style={{ fontSize: 9, color: C.muted }}>{d.dia}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </Card>
-
-      {/* Top docentes + Funnel conversión */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
+      {/* Gráfico de área — crecimiento 7 días */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
         <Card>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🏆 Top docentes</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {stats.topDocentes.length === 0 ? <div style={{ color: C.muted, fontSize: 13 }}>Sin datos aún</div> :
-              stats.topDocentes.map((d, i) => (
-                <div key={d.email} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 11, color: C.muted, fontWeight: 700, minWidth: 16 }}>#{i+1}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre || d.email.split("@")[0]}</div>
-                    <div style={{ fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.email}</div>
-                  </div>
-                  <span style={{ fontSize: 12, color: C.info, fontWeight: 700, flexShrink: 0 }}>{d.count} insc.</span>
-                </div>
-              ))}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <div>
+              <div style={{ fontWeight: 700, color: A.text, fontSize: 15 }}>Actividad — últimos 7 días</div>
+              <div style={{ fontSize: 12, color: A.muted, marginTop: 2 }}>Nuevos usuarios e inscripciones</div>
+            </div>
+          </div>
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stats.cohortUsuarios.map((u, i) => ({ ...u, inscripciones: stats.cohortInscripciones[i]?.count || 0 }))} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <defs>
+                  <linearGradient id="gradUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={A.info} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={A.info} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradInsc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={A.success} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={A.success} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={A.border} vertical={false} />
+                <XAxis dataKey="dia" tick={{ fontSize: 11, fill: A.muted }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: A.muted }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: A.muted }} />
+                <Area type="monotone" dataKey="count" name="Usuarios" stroke={A.info} strokeWidth={2} fill="url(#gradUsers)" dot={false} />
+                <Area type="monotone" dataKey="inscripciones" name="Inscripciones" stroke={A.success} strokeWidth={2} fill="url(#gradInsc)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </Card>
+
+        {/* Donut — distribución de roles */}
         <Card>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>🎯 Funnel de conversión</div>
+          <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 4 }}>Distribución de roles</div>
+          <div style={{ fontSize: 12, color: A.muted, marginBottom: 16 }}>{stats.totalUsuarios} usuarios en total</div>
+          <div style={{ height: 140 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={rolesData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={3} dataKey="value">
+                  {rolesData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color || PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [value, name]} contentStyle={{ fontFamily: FONT, fontSize: 12, borderRadius: 8, border: `1px solid ${A.border}` }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+            {rolesData.map(r => (
+              <div key={r.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: r.color, display: "inline-block" }} />
+                  <span style={{ fontSize: 12, color: A.muted }}>{r.name}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: A.text }}>{r.value}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Fila: Top materias (barras) + Funnel conversión */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <Card>
+          <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 4 }}>Top materias</div>
+          <div style={{ fontSize: 12, color: A.muted, marginBottom: 16 }}>Por cantidad de publicaciones</div>
+          {stats.topMaterias.length === 0 ? (
+            <div style={{ color: A.muted, fontSize: 13 }}>Sin datos aún</div>
+          ) : (
+            <div style={{ height: 180 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.topMaterias.map(([m, c]) => ({ name: m.length > 14 ? m.slice(0, 14) + "…" : m, count: c }))} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
+                  <XAxis type="number" tick={{ fontSize: 11, fill: A.muted }} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: A.text }} axisLine={false} tickLine={false} width={90} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="count" name="Publicaciones" fill={A.accent} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 4 }}>Funnel de conversión</div>
+          <div style={{ fontSize: 12, color: A.muted, marginBottom: 20 }}>Del registro al pago</div>
           {[
-            { label: "Usuarios registrados", value: stats.totalUsuarios, pct: 100, color: C.info },
-            { label: "Inscripciones totales", value: stats.totalInscripciones, pct: stats.totalUsuarios > 0 ? Math.round((stats.totalInscripciones / stats.totalUsuarios) * 100) : 0, color: C.success },
-            { label: "Pagos aprobados", value: stats.totalPagos, pct: stats.totalInscripciones > 0 ? Math.round((stats.totalPagos / stats.totalInscripciones) * 100) : 0, color: "#F59E0B" },
-          ].map(({ label, value, pct, color }) => (
-            <div key={label} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 12, color: C.text }}>{label}</span>
-                <span style={{ fontSize: 12, color, fontWeight: 700 }}>{value} <span style={{ color: C.muted, fontWeight: 400 }}>({pct}%)</span></span>
+            { label: "Usuarios registrados", value: stats.totalUsuarios, color: A.info },
+            { label: "Con inscripción", value: stats.totalInscripciones, color: A.success },
+            { label: "Con pago aprobado", value: stats.totalPagos, color: A.warn },
+          ].map(({ label, value, color }, i, arr) => {
+            const pct = arr[0].value > 0 ? Math.round((value / arr[0].value) * 100) : 0;
+            return (
+              <div key={label} style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: A.text }}>{label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color }}>{value.toLocaleString("es-AR")}</span>
+                    <span style={{ fontSize: 11, color: A.muted }}>({pct}%)</span>
+                  </div>
+                </div>
+                <div style={{ height: 8, background: A.border, borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", background: color, borderRadius: 4, width: `${pct}%`, transition: "width .6s ease" }} />
+                </div>
               </div>
-              <div style={{ height: 6, background: C.border, borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ height: "100%", background: color, borderRadius: 4, width: `${pct}%`, transition: "width .4s" }} />
-              </div>
-            </div>
-          ))}
-          <div style={{ marginTop: 8, fontSize: 12, color: C.muted }}>Insc. por usuario: <span style={{ color: C.text, fontWeight: 700 }}>{stats.inscPorPub}</span></div>
+            );
+          })}
+          <div style={{ marginTop: 8, padding: "10px 14px", background: A.bg, borderRadius: 10, display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, color: A.muted }}>Insc. por publicación</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: A.text }}>{stats.inscPorPub}</span>
+          </div>
         </Card>
       </div>
+
+      {/* Fila: Top docentes + Moderación */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <Card>
+          <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 16 }}>Top docentes</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {stats.topDocentes.length === 0 ? <div style={{ color: A.muted, fontSize: 13 }}>Sin datos aún</div> :
+              stats.topDocentes.map((d, i) => (
+                <div key={d.email} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: A.muted, minWidth: 20 }}>#{i + 1}</span>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: A.accent + "22", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: A.accent, fontSize: 13, flexShrink: 0 }}>
+                    {(d.nombre || d.email)[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: A.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre || d.email.split("@")[0]}</div>
+                    <div style={{ fontSize: 11, color: A.muted }}>{d.email}</div>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: A.success, flexShrink: 0 }}>{d.count} insc.</span>
+                </div>
+              ))}
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 16 }}>Moderación</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            {[
+              { label: "Total denuncias", value: stats.kpiDenuncias.total, color: A.danger },
+              { label: "Tasa resolución", value: `${stats.kpiDenuncias.tasaResolucion}%`, color: stats.kpiDenuncias.tasaResolucion >= 80 ? A.success : A.warn },
+              { label: "Pendientes", value: stats.kpiDenuncias.pendientes, color: A.warn },
+              { label: "Bloqueados", value: stats.kpiDenuncias.bloqueados, color: A.purple },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ background: A.bg, borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
+                <div style={{ fontSize: 11, color: A.muted, marginTop: 3 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          {stats.kpiDenuncias.topMotivos.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: A.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>Motivos frecuentes</div>
+              {stats.kpiDenuncias.topMotivos.slice(0, 3).map(([motivo, count]) => (
+                <div key={motivo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: A.text }}>{motivo || "Sin especificar"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ height: 5, borderRadius: 3, background: A.danger, width: Math.max(20, (count / (stats.kpiDenuncias.topMotivos[0]?.[1] || 1)) * 60) }} />
+                    <span style={{ fontSize: 11, color: A.muted, minWidth: 14 }}>{count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Feed de actividad */}
+      <Card>
+        <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 18 }}>Actividad reciente</div>
+        {actividad.length === 0 ? (
+          <div style={{ color: A.muted, fontSize: 13 }}>Sin actividad reciente</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {actividad.map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: 12, paddingBottom: i < actividad.length - 1 ? 14 : 0, marginBottom: i < actividad.length - 1 ? 14 : 0, borderBottom: i < actividad.length - 1 ? `1px solid ${A.border}` : "none" }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: COLOR_ACT[item.tipo] + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: COLOR_ACT[item.tipo] }}>
+                  {ICON_ACT[item.tipo]}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: A.text, lineHeight: 1.4 }}>{item.texto}</div>
+                </div>
+                <div style={{ fontSize: 11, color: A.muted, whiteSpace: "nowrap", flexShrink: 0 }}>{fmtRel(item.time)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* Plataforma en números */}
       <Card>
-        <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>💤 Plataforma en números</div>
+        <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 14 }}>Plataforma en números</div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: C.danger }}>{stats.usuariosBloqueados}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>Bloqueados</div>
-          </div>
-          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: C.warn }}>{stats.pubsInactivas}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>Pubs. inactivas</div>
-          </div>
-          {stats.ratingPromedio && (
-            <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#F59E0B" }}>★ {stats.ratingPromedio}</div>
-              <div style={{ fontSize: 11, color: C.muted }}>Rating promedio</div>
-            </div>
-          )}
-          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 100 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: C.info }}>{stats.nuevosUltimoMes}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>Nuevos (30d)</div>
-          </div>
-          {Object.entries(stats.usuariosPorRol).map(([rol, count]) => (
-            <div key={rol} style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", minWidth: 90 }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: C.accent }}>{count}</div>
-              <div style={{ fontSize: 11, color: C.muted }}>{rol === "admin" ? "Admins" : rol === "docente" ? "Docentes" : "Alumnos"}</div>
+          {[
+            { label: "Bloqueados", value: stats.usuariosBloqueados, color: A.danger },
+            { label: "Pubs. inactivas", value: stats.pubsInactivas, color: A.warn },
+            { label: "Nuevos (30d)", value: stats.nuevosUltimoMes, color: A.info },
+            ...(stats.ratingPromedio ? [{ label: "Rating promedio", value: `★ ${stats.ratingPromedio}`, color: A.warn }] : []),
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ background: A.bg, border: `1px solid ${A.border}`, borderRadius: 12, padding: "14px 18px", minWidth: 100 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: FONT }}>{value}</div>
+              <div style={{ fontSize: 11, color: A.muted, marginTop: 4 }}>{label}</div>
             </div>
           ))}
-        </div>
-      </Card>
-
-      <Card>
-        <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Actividad reciente</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {actividad.length === 0 ? <div style={{ color: C.muted, fontSize: 13 }}>Sin actividad reciente</div> :
-            actividad.map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: COLOR[item.tipo], flexShrink: 0 }} />
-                <div style={{ flex: 1, fontSize: 13, color: C.text }}>{item.texto}</div>
-                <div style={{ fontSize: 11, color: C.muted, whiteSpace: "nowrap" }}>{fmtRel(item.time)}</div>
-              </div>
-            ))}
         </div>
       </Card>
     </div>
