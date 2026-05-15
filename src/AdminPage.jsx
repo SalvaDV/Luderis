@@ -155,7 +155,7 @@ const SIDEBAR_GROUPS = [
     label: "Finanzas",
     items: [
       { id: "payments",      label: "Pagos",        Icon: CreditCard },
-      { id: "escrow",        label: "Escrow",        Icon: Package },
+      { id: "escrow",        label: "Escrow",        Icon: Package,   badge: "escrow" },
       { id: "liquidaciones", label: "Liquidaciones", Icon: FileText },
     ],
   },
@@ -163,8 +163,8 @@ const SIDEBAR_GROUPS = [
     label: "Moderación",
     items: [
       { id: "reports",         label: "Denuncias",    Icon: AlertTriangle, badge: "reports" },
-      { id: "quejas",          label: "Quejas",       Icon: MessageSquare },
-      { id: "alertas_contacto",label: "Anti-puenteo", Icon: BellOff },
+      { id: "quejas",          label: "Quejas",       Icon: MessageSquare, badge: "quejas" },
+      { id: "alertas_contacto",label: "Anti-puenteo", Icon: BellOff,       badge: "alertas" },
     ],
   },
   {
@@ -176,7 +176,7 @@ const SIDEBAR_GROUPS = [
   },
 ];
 
-function Sidebar({ tab, setTab, pendingVerifCount, pendingReportsCount, onClose }) {
+function Sidebar({ tab, setTab, badgeCounts = {}, onClose }) {
   return (
     <div style={{
       width: 220, minHeight: "100vh", background: A.sidebar, display: "flex", flexDirection: "column",
@@ -203,7 +203,7 @@ function Sidebar({ tab, setTab, pendingVerifCount, pendingReportsCount, onClose 
             </div>
             {group.items.map(item => {
               const active = tab === item.id;
-              const badgeCount = item.badge === "verif" ? pendingVerifCount : item.badge === "reports" ? pendingReportsCount : 0;
+              const badgeCount = item.badge ? (badgeCounts[item.badge] || 0) : 0;
               return (
                 <button key={item.id} onClick={() => setTab(item.id)}
                   style={{
@@ -249,6 +249,9 @@ export default function AdminPage({ session, onClose, onChatUser }) {
   const [tab, setTab] = useState("overview");
   const [pendingVerifCount, setPendingVerifCount] = useState(0);
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
+  const [pendingQuejasCount, setPendingQuejasCount] = useState(0);
+  const [pendingAlertasCount, setPendingAlertasCount] = useState(0);
+  const [pendingEscrowCount, setPendingEscrowCount] = useState(0);
   const userEmailLc = (session?.user?.email || "").toLowerCase();
   const isFallbackAdmin = !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
   const [isAdmin, setIsAdmin] = React.useState(isFallbackAdmin);
@@ -272,7 +275,33 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     adminDb("denuncias?select=id&revisada=eq.false", "GET", null, session.access_token)
       .then(rows => setPendingReportsCount(Array.isArray(rows) ? rows.length : 0))
       .catch(() => {});
+    adminDb("quejas?select=id&estado=eq.recibida", "GET", null, session.access_token)
+      .then(rows => setPendingQuejasCount(Array.isArray(rows) ? rows.length : 0))
+      .catch(() => {});
+    adminDb("alertas_contacto_externo?select=id&revisada=eq.false", "GET", null, session.access_token)
+      .then(rows => setPendingAlertasCount(Array.isArray(rows) ? rows.length : 0))
+      .catch(() => {});
+    adminDb("disputas?select=id&estado=eq.abierta", "GET", null, session.access_token)
+      .then(rows => setPendingEscrowCount(Array.isArray(rows) ? rows.length : 0))
+      .catch(() => {});
   }, [isAdmin, session.access_token]);
+
+  const handleSetTab = (id) => {
+    setTab(id);
+    if (id === "verificaciones") setPendingVerifCount(0);
+    if (id === "reports")        setPendingReportsCount(0);
+    if (id === "quejas")         setPendingQuejasCount(0);
+    if (id === "alertas_contacto") setPendingAlertasCount(0);
+    if (id === "escrow")         setPendingEscrowCount(0);
+  };
+
+  const badgeCounts = {
+    verif:   pendingVerifCount,
+    reports: pendingReportsCount,
+    quejas:  pendingQuejasCount,
+    alertas: pendingAlertasCount,
+    escrow:  pendingEscrowCount,
+  };
 
   const TAB_LABELS = {
     overview: "Dashboard", verificaciones: "Verificaciones", docentes: "Docentes",
@@ -304,9 +333,8 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     <div style={{ position: "fixed", inset: 0, background: A.bg, zIndex: 500, fontFamily: FONT, display: "flex" }}>
       {/* Sidebar */}
       <Sidebar
-        tab={tab} setTab={setTab}
-        pendingVerifCount={pendingVerifCount}
-        pendingReportsCount={pendingReportsCount}
+        tab={tab} setTab={handleSetTab}
+        badgeCounts={badgeCounts}
         onClose={onClose}
       />
 
