@@ -198,8 +198,10 @@ export const getPublicaciones = (filtros = {}, token) => {
     }, token);
   }
   let q = "publicaciones_con_autor?select=*&order=created_at.desc";
-  if (filtros.tipo)  q += `&tipo=eq.${filtros.tipo}`;
-  if (filtros.autor) q += `&autor_email=eq.${encodeURIComponent(filtros.autor)}`;
+  if (filtros.tipo)   q += `&tipo=eq.${filtros.tipo}`;
+  if (filtros.autor)  q += `&autor_email=eq.${encodeURIComponent(filtros.autor)}`;
+  if (filtros.limite) q += `&limit=${filtros.limite}`;
+  if (filtros.offset) q += `&offset=${filtros.offset}`;
   return db(q, "GET", null, token);
 };
 

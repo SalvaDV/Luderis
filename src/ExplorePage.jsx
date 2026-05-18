@@ -146,11 +146,42 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const busquedaDebounced=useDebounce(busqueda,280);
   const searchInputRef=useRef(null);
 
+  // Paginación server-side: cada "página de carga" trae LOAD_SIZE publicaciones
+  const LOAD_SIZE=60;
+  const [loadOffset,setLoadOffset]=useState(0);
+  const [hasMore,setHasMore]=useState(true);
+  const [loadingMore,setLoadingMore]=useState(false);
+
+  // Cargar más publicaciones cuando el sentinel es visible y no hay filtros activos
+  useEffect(()=>{
+    if(!isSentinelVisible||loadingMore||!hasMore)return;
+    if(busquedaDebounced||filtroTipo!=="all"||filtroModo!=="all"||filtroModalidad!=="all"||filtroMateria||filtroUbicacion||iaResults)return;
+    const nextOffset=loadOffset+LOAD_SIZE;
+    setLoadingMore(true);
+    sb.getPublicaciones({limite:LOAD_SIZE,offset:nextOffset},session.access_token)
+      .then(nuevos=>{
+        const activos=(nuevos||[]).filter(p=>{
+          if(p.activo===false||p.finalizado)return false;
+          if(p.tipo==='busqueda'&&p.expires_at&&new Date(p.expires_at)<new Date())return false;
+          return true;
+        });
+        if(activos.length<LOAD_SIZE)setHasMore(false);
+        if(activos.length>0){
+          setPosts(prev=>[...prev,...activos.filter(np=>!prev.some(ep=>ep.id===np.id))]);
+          setLoadOffset(nextOffset);
+        }else{setHasMore(false);}
+      })
+      .catch(()=>setHasMore(false))
+      .finally(()=>setLoadingMore(false));
+  },[isSentinelVisible]);// eslint-disable-line
+
   const cargar=useCallback(async()=>{
     setLoading(true);
+    setLoadOffset(0);
+    setHasMore(true);
     try{
       const [d,misOfertas,favs,cats]=await Promise.all([
-        sb.getPublicaciones({},session.access_token),
+        sb.getPublicaciones({limite:LOAD_SIZE,offset:0},session.access_token),
         sb.getMisOfertas(session.user.email,session.access_token).catch(()=>[]),
         sb.getFavoritos(session.user.email,session.access_token).catch(()=>[]),
         sb.getCategorias(session.access_token).catch(()=>[]),

@@ -299,19 +299,32 @@ serve(async (req) => {
       const { pub_id, email_a, email_b } = params;
       if (!pub_id || !email_a || !email_b) throw new Error("pub_id, email_a y email_b requeridos");
 
-      // CRÍTICO: verificar que el usuario que llama es uno de los participantes
-      if (user.email !== email_a && user.email !== email_b) {
+      // CRÍTICO: verificar desde la DB que el usuario autenticado es participante real del chat.
+      // No alcanza con chequear contra email_a/email_b del body (son user-supplied y podrían
+      // ser manipulados para borrar chats ajenos).
+      const { data: participacion } = await adminClient
+        .from("mensajes")
+        .select("id")
+        .eq("publicacion_id", pub_id)
+        .or(`de_nombre.eq.${user.email},para_nombre.eq.${user.email}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!participacion) {
         return new Response(JSON.stringify({ error: "No autorizado: no eres participante de este chat" }), {
           status: 403, headers: { ...CORS, "Content-Type": "application/json" },
         });
       }
 
-      // Borrar mensajes del chat
+      // Borrar todos los mensajes 1:1 del chat (excluye mensajes grupales __grupo__)
       await adminClient
         .from("mensajes")
         .delete()
-        .eq("pub_id", pub_id)
-        .or(`and(emisor_email.eq.${email_a},receptor_email.eq.${email_b}),and(emisor_email.eq.${email_b},receptor_email.eq.${email_a})`);
+        .eq("publicacion_id", pub_id)
+        .or(
+          `and(de_nombre.eq.${email_a},para_nombre.eq.${email_b}),` +
+          `and(de_nombre.eq.${email_b},para_nombre.eq.${email_a})`
+        );
     }
 
     return new Response(JSON.stringify(result), {

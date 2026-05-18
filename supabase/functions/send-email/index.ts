@@ -223,126 +223,6 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
     `, `Nuevo mensaje de ${data.de_nombre}.`),
   }),
 
-  comprobante_inscripcion: (data, appUrl) => ({
-    subject: `Comprobante de inscripción — ${data.pub_titulo}`,
-    preheader: "Tu inscripción fue registrada exitosamente.",
-    html: emailBase(`
-      <h2>¡Te inscribiste exitosamente!</h2>
-      <p>Tu inscripción fue registrada. Ya tenés acceso a la clase.</p>
-      <div class="info-box">
-        <div class="label">Clase / Curso</div>
-        <div class="value">${data.pub_titulo}</div>
-      </div>
-      <div class="info-box">
-        <div class="label">Docente</div>
-        <div class="value">${data.docente_nombre}</div>
-      </div>
-      ${data.modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.modalidad}</div></div>` : ""}
-      ${data.precio ? `<div class="info-box"><div class="label">Precio acordado</div><div class="value">${data.moneda || "ARS"} ${Number(data.precio).toLocaleString("es-AR")}</div></div>` : ""}
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : appUrl}" class="btn">Ver mi clase →</a>
-      </p>
-      <p style="font-size:12px;color:#A0AEC0;text-align:center;">Guardá este email como comprobante de tu inscripción.</p>
-    `, "Tu inscripción fue registrada exitosamente."),
-  }),
-
-  contraoferta: (data, appUrl) => ({
-    subject: `Nueva contraoferta en "${data.pub_titulo}"`,
-    preheader: `${data.de_nombre} te hizo una contraoferta.`,
-    html: emailBase(`
-      <h2>Recibiste una contraoferta</h2>
-      <p><strong>${data.de_nombre}</strong> ${data.mi_rol === "alumno" ? "(el alumno)" : "(el docente)"} te hizo una contraoferta.</p>
-      <div class="info-box">
-        <div class="label">Publicación</div>
-        <div class="value">${data.pub_titulo}</div>
-      </div>
-      <div class="info-box">
-        <div class="label">Nuevo precio propuesto</div>
-        <div class="value" style="font-size:20px;color:${BRAND.blue};font-weight:800;">$${Number(data.precio_nuevo).toLocaleString("es-AR")} / ${data.tipo_precio || "hora"}</div>
-      </div>
-      ${data.mensaje ? `<div class="info-box"><div class="label">Mensaje</div><div class="value" style="font-style:italic">"${data.mensaje}"</div></div>` : ""}
-      <p>Entrá para aceptar, rechazar o hacer tu propia contraoferta.</p>
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${appUrl}?page=cuenta&tab=ofertas" class="btn">Ver contraoferta →</a>
-      </p>
-    `, `${data.de_nombre} te hizo una contraoferta.`),
-  }),
-
-  nueva_evaluacion: (data, appUrl) => ({
-    subject: `Nueva evaluación en "${data.curso_titulo}"`,
-    preheader: "Hay una nueva evaluación disponible en tu curso.",
-    html: emailBase(`
-      <h2>Nueva evaluación disponible</h2>
-      <p>Tu docente publicó una nueva evaluación en el curso.</p>
-      <div class="info-box">
-        <div class="label">Evaluación</div>
-        <div class="value">${data.pub_titulo}</div>
-      </div>
-      <div class="info-box">
-        <div class="label">Tipo</div>
-        <div class="value">${data.tipo_eval === "diagnostico" ? "🔍 Diagnóstico" : data.tipo_eval === "checkpoint" ? "📍 Checkpoint" : "🏁 Evaluación final"}</div>
-      </div>
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : appUrl}" class="btn">Ir a la evaluación →</a>
-      </p>
-    `, "Hay una nueva evaluación disponible."),
-  }),
-
-  alerta_coincidencia: (data, appUrl) => ({
-    subject: `🔔 Nueva clase que puede interesarte — ${data.pub_titulo}`,
-    preheader: "Encontramos una publicación que coincide con tu alerta.",
-    html: emailBase(`
-      <h2>¡Encontramos algo para vos!</h2>
-      <p>Apareció una publicación que coincide con tu alerta.</p>
-      <div class="info-box">
-        <div class="label">Tu alerta</div>
-        <div class="value" style="font-style:italic">"${data.alerta_descripcion}"</div>
-      </div>
-      <div class="divider"/>
-      <div class="info-box">
-        <div class="label">Nueva publicación</div>
-        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
-      </div>
-      ${data.pub_materia ? `<div class="info-box"><div class="label">Materia</div><div class="value">${data.pub_materia}</div></div>` : ""}
-      <div class="info-box">
-        <div class="label">Tipo</div>
-        <div class="value">${data.pub_tipo}</div>
-      </div>
-      ${data.pub_precio ? `<div class="info-box"><div class="label">Precio</div><div class="value" style="color:${BRAND.blue};font-weight:700;">${data.pub_precio}</div></div>` : ""}
-      ${data.pub_modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.pub_modalidad}</div></div>` : ""}
-      ${data.razon ? `<div class="info-box" style="background:#EBF8F4;border-color:#2EC4A040;"><div class="label" style="color:#2EC4A0;">¿Por qué coincide?</div><div class="value">${data.razon}</div></div>` : ""}
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${data.pub_url || appUrl}" class="btn">Ver publicación →</a>
-      </p>
-      <p style="font-size:12px;color:#A0AEC0;text-align:center;">Podés pausar o eliminar esta alerta desde Mi Cuenta → Alertas.</p>
-    `, "Encontramos una publicación que coincide con tu alerta."),
-  }),
-
-  nuevo_ayudante: (data: any, appUrl: string) => ({
-    subject: `Ahora sos co-docente de "${data.pub_titulo}"`,
-    preheader: `${data.docente_nombre} te agregó como co-docente.`,
-    html: emailBase(`
-      <h2>¡Sos co-docente!</h2>
-      <p><strong>${data.docente_nombre}</strong> te agregó como co-docente en su publicación. Ahora podés subir contenido y ver los alumnos inscriptos.</p>
-      <div class="info-box">
-        <div class="label">Publicación</div>
-        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
-      </div>
-      <div class="info-box">
-        <div class="label">Docente principal</div>
-        <div class="value">${data.docente_nombre}</div>
-      </div>
-      <p>Como co-docente podés agregar contenido, responder en el foro y ver la lista de alumnos inscriptos.</p>
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : appUrl}" class="btn">Ir a la clase →</a>
-      </p>
-    `, `${data.docente_nombre} te agregó como co-docente.`),
-  }),
-};
-
-// ── Templates adicionales ──────────────────────────────────────────────────────
-Object.assign(TEMPLATES, {
-
   comprobante_inscripcion: (data: any, appUrl: string) => ({
     subject: `Inscripción confirmada — ${data.pub_titulo}`,
     preheader: "Tu inscripción fue registrada exitosamente.",
@@ -407,6 +287,36 @@ Object.assign(TEMPLATES, {
         <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : appUrl}" class="btn">Ir a la evaluación →</a>
       </p>
     `, "Tu docente publicó una nueva evaluación."),
+  }),
+
+  alerta_coincidencia: (data, appUrl) => ({
+    subject: `🔔 Nueva clase que puede interesarte — ${data.pub_titulo}`,
+    preheader: "Encontramos una publicación que coincide con tu alerta.",
+    html: emailBase(`
+      <h2>¡Encontramos algo para vos!</h2>
+      <p>Apareció una publicación que coincide con tu alerta.</p>
+      <div class="info-box">
+        <div class="label">Tu alerta</div>
+        <div class="value" style="font-style:italic">"${data.alerta_descripcion}"</div>
+      </div>
+      <div class="divider"/>
+      <div class="info-box">
+        <div class="label">Nueva publicación</div>
+        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
+      </div>
+      ${data.pub_materia ? `<div class="info-box"><div class="label">Materia</div><div class="value">${data.pub_materia}</div></div>` : ""}
+      <div class="info-box">
+        <div class="label">Tipo</div>
+        <div class="value">${data.pub_tipo}</div>
+      </div>
+      ${data.pub_precio ? `<div class="info-box"><div class="label">Precio</div><div class="value" style="color:${BRAND.blue};font-weight:700;">${data.pub_precio}</div></div>` : ""}
+      ${data.pub_modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.pub_modalidad}</div></div>` : ""}
+      ${data.razon ? `<div class="info-box" style="background:#EBF8F4;border-color:#2EC4A040;"><div class="label" style="color:#2EC4A0;">¿Por qué coincide?</div><div class="value">${data.razon}</div></div>` : ""}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${data.pub_url || appUrl}" class="btn">Ver publicación →</a>
+      </p>
+      <p style="font-size:12px;color:#A0AEC0;text-align:center;">Podés pausar o eliminar esta alerta desde Mi Cuenta → Alertas.</p>
+    `, "Encontramos una publicación que coincide con tu alerta."),
   }),
 
   alerta_publicacion: (data: any, appUrl: string) => ({
@@ -507,7 +417,28 @@ Object.assign(TEMPLATES, {
     `, `Liquidación ${data.periodo_label} — Neto: $${Number(data.monto_neto).toLocaleString("es-AR")}`),
   }),
 
-});
+  nuevo_ayudante: (data: any, appUrl: string) => ({
+    subject: `Ahora sos co-docente de "${data.pub_titulo}"`,
+    preheader: `${data.docente_nombre} te agregó como co-docente.`,
+    html: emailBase(`
+      <h2>¡Sos co-docente!</h2>
+      <p><strong>${data.docente_nombre}</strong> te agregó como co-docente en su publicación. Ahora podés subir contenido y ver los alumnos inscriptos.</p>
+      <div class="info-box">
+        <div class="label">Publicación</div>
+        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Docente principal</div>
+        <div class="value">${data.docente_nombre}</div>
+      </div>
+      <p>Como co-docente podés agregar contenido, responder en el foro y ver la lista de alumnos inscriptos.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : appUrl}" class="btn">Ir a la clase →</a>
+      </p>
+    `, `${data.docente_nombre} te agregó como co-docente.`),
+  }),
+};
+
 
 // ── Handler principal ──────────────────────────────────────────────────────────
 Deno.serve(async (req) => {

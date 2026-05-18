@@ -214,8 +214,10 @@ serve(async (req) => {
 
   } catch (err) {
     console.error("mp-webhook error:", err);
+    // Devolver 500 para que MercadoPago reintente el webhook automáticamente.
+    // Devolver 200 en errores causa que MP asuma entrega exitosa y nunca reintente.
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 200, headers: { ...CORS, "Content-Type": "application/json" },
+      status: 500, headers: { ...CORS, "Content-Type": "application/json" },
     });
   }
 });

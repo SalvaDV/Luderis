@@ -7,7 +7,7 @@ import {
   Avatar,
 } from "../shared";
 
-export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,totalNotifsUnread,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin,juegosBadge}){
+export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,totalNotifsUnread,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin,juegosBadge,onOpenAdmin,onOpenNotifPanel}){
   const nombre=sb.getDisplayName(session.user.email);
   const nav=[
     {id:"explore",icon:"🔍",label:t("explore")},
@@ -91,7 +91,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
         })}
         <div style={{margin:"10px 8px",height:1,background:C.border}}/>
         {esAdmin&&(
-          <button onClick={()=>{if(mobile)onClose();window.__openAdmin&&window.__openAdmin();}}
+          <button onClick={()=>{if(mobile)onClose();onOpenAdmin&&onOpenAdmin();}}
             style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",background:"transparent",color:C.muted,fontWeight:400,fontSize:13,cursor:"pointer",marginBottom:1,fontFamily:FONT,textAlign:"left",transition:"background .12s,color .12s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=C.bg;e.currentTarget.style.color=C.text;}}
             onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.muted;}}>
@@ -110,7 +110,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
       {/* Footer */}
       <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
         {/* Campana notificaciones */}
-        <button onClick={()=>{if(typeof window._openNotifPanel==="function")window._openNotifPanel();}}
+        <button onClick={()=>{onOpenNotifPanel&&onOpenNotifPanel();}}
           style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,border:`1px solid ${(totalNotifsUnread??notifCount)>0?C.accent+"40":C.border}`,background:(totalNotifsUnread??notifCount)>0?C.accentDim:"none",cursor:"pointer",fontFamily:FONT,fontSize:12,color:(totalNotifsUnread??notifCount)>0?C.accent:C.muted,width:"100%",transition:"all .15s"}}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=(totalNotifsUnread??notifCount)>0?C.accent+"40":C.border;e.currentTarget.style.color=(totalNotifsUnread??notifCount)>0?C.accent:C.muted;}}>
