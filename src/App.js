@@ -44,6 +44,7 @@ import Sidebar from "./components/Sidebar";
 import CertificadoPage from "./components/CertificadoPage";
 import ChatModal from "./components/ChatModal";
 import ScrollToTopBtn from "./components/ScrollToTopBtn";
+import CookieBanner from "./components/CookieBanner";
 import ChatBotWidget from "./components/ChatBotWidget";
 import BusquedaIA from "./components/BusquedaIA";
 import MiniDropdown from "./components/MiniDropdown";
@@ -694,6 +695,7 @@ export default function App(){
       <ScrollToTopBtn/>
       {!chatPost&&!detailPost&&!cursoPost&&!showForm&&!notifPanelOpen&&<ChatBotWidget/>}
       <ToastContainer/>
+      <CookieBanner/>
       <NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost}/>
     </div>
   );

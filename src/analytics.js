@@ -1,6 +1,37 @@
 import ReactGA from "react-ga4";
 
 const GA_ID = "G-8736B9HZGL";
+const CONSENT_KEY = "cl_cookie_consent";
+
+// Debe llamarse ANTES de initGA para que GA4 respete el estado desde el inicio
+export const initConsentMode = () => {
+  window.dataLayer = window.dataLayer || [];
+  if (!window.gtag) {
+    window.gtag = function(){ window.dataLayer.push(arguments); };
+  }
+  const stored = localStorage.getItem(CONSENT_KEY);
+  window.gtag("consent", "default", {
+    analytics_storage: stored === "granted" ? "granted" : "denied",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+    wait_for_update: 500,
+  });
+};
+
+export const grantConsent = () => {
+  try { localStorage.setItem(CONSENT_KEY, "granted"); } catch {}
+  window.gtag?.("consent", "update", { analytics_storage: "granted" });
+};
+
+export const denyConsent = () => {
+  try { localStorage.setItem(CONSENT_KEY, "denied"); } catch {}
+  window.gtag?.("consent", "update", { analytics_storage: "denied" });
+};
+
+export const getConsentStatus = () => {
+  try { return localStorage.getItem(CONSENT_KEY); } catch { return null; }
+};
 
 export const initGA = () => {
   ReactGA.initialize(GA_ID);
