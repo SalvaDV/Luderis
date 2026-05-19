@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 
 import * as Sentry from "@sentry/react";
+import { initGA } from './analytics';
+
+initGA();
 
 Sentry.init({
   dsn: "https://7048964b77b715c46288eb43fddb4129@o4511175376437248.ingest.us.sentry.io/4511175379517440",
