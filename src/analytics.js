@@ -14,6 +14,18 @@ export const trackEvent = (category, action, label) => {
   ReactGA.event({ category, action, label });
 };
 
+// ── Identidad ─────────────────────────────────────────────────────────────
+export const setUserId = (id) => {
+  if (id) ReactGA.set({ user_id: id });
+};
+
+export const setUserProperties = ({ rol, city } = {}) => {
+  const props = {};
+  if (rol) props.rol = rol;
+  if (city) props.ciudad = city;
+  if (Object.keys(props).length) ReactGA.set(props);
+};
+
 // ── Adquisición ────────────────────────────────────────────────────────────
 export const trackRegister = () =>
   ReactGA.event({ category: "adquisicion", action: "registro" });
@@ -52,6 +64,28 @@ export const trackCheckoutStart = (post) =>
 
 export const trackInscripcion = (post) =>
   ReactGA.event({ category: "conversion", action: "inscripcion_completada", label: `${post.materia || "sin_materia"}|${post.modo || post.tipo}` });
+
+// Evento estándar GA4 e-commerce — alimenta el reporte de ingresos automáticamente
+export const trackPurchase = (post, precioFinal) => {
+  const precio = precioFinal || post.precio || 0;
+  ReactGA.event("purchase", {
+    transaction_id: `${post.id}_${Date.now()}`,
+    value: Number(precio),
+    currency: post.moneda || "ARS",
+    items: [{
+      item_id: post.id,
+      item_name: post.titulo,
+      item_category: post.materia || "sin_materia",
+      item_category2: post.tipo,
+      price: Number(precio),
+      quantity: 1,
+    }],
+  });
+};
+
+// ── Favoritos ──────────────────────────────────────────────────────────────
+export const trackFavoriteAdd = (post) =>
+  ReactGA.event({ category: "engagement", action: "favorito_agregado", label: post.materia || post.titulo?.slice(0, 40) });
 
 // ── Docente ────────────────────────────────────────────────────────────────
 export const trackPublicacionCreada = (tipo, materia) =>

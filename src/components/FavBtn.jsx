@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "../supabase";
 import { C } from "../shared";
+import { trackFavoriteAdd } from "../analytics";
 
 export default function FavBtn({post,session,onFavChange,isFav,favId:favIdProp}){
   const [favId,setFavId]=useState(favIdProp||null);
@@ -18,7 +19,7 @@ export default function FavBtn({post,session,onFavChange,isFav,favId:favIdProp})
     e.stopPropagation();if(loading)return;setLoading(true);
     try{
       if(favId){await sb.deleteFavorito(favId,session.access_token);setFavId(null);}
-      else{const r=await sb.insertFavorito({publicacion_id:post.id,usuario_email:session.user.email,usuario_id:session.user.id},session.access_token);setFavId(r?.[0]?.id||null);}
+      else{const r=await sb.insertFavorito({publicacion_id:post.id,usuario_email:session.user.email,usuario_id:session.user.id},session.access_token);setFavId(r?.[0]?.id||null);trackFavoriteAdd(post);}
       if(onFavChange)onFavChange();
     }catch{}finally{setLoading(false);}
   };

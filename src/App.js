@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
-import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay } from "./analytics";
+import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
   C, FONT, LUD, _themeKey,
   applyTheme, toast, ToastContainer, logError,
@@ -144,7 +144,7 @@ export default function App(){
       if(!meta){meta=document.createElement("meta");meta.name="description";document.head.appendChild(meta);}
       meta.content=((pub.descripcion||"").slice(0,155))||`Clases de ${pub.materia||"educación"} en Luderis`;
     }
-  },[cursoPost,detailPost]);const [perfilEmail,setPerfilEmail]=useState(null);const [certVerifId,setCertVerifId]=useState(null);const [chatsKey,setChatsKey]=useState(0);
+  },[cursoPost,detailPost]);const [perfilEmail,setPerfilEmail]=useState(null);const openPerfil=useCallback((email)=>{if(email)trackPerfilView();setPerfilEmail(email);},[]);const [certVerifId,setCertVerifId]=useState(null);const [chatsKey,setChatsKey]=useState(0);
   const [page,setPageRaw]=useState(()=>{try{return sessionStorage.getItem("cl_page")||"explore";}catch{return "explore";}});
   const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
@@ -206,7 +206,10 @@ export default function App(){
     try{
       const pubs=await sb.getPublicaciones({},session.access_token);
       const pub=pubs.find(p=>p.id===pubId);
-      if(pub){setDetailPost(pub);setPage("inscripciones");}
+      if(pub){
+        trackPurchase(pub);
+        setDetailPost(pub);setPage("inscripciones");
+      }
     }catch{}
   });
   const sessionRef=useRef(session);useEffect(()=>{sessionRef.current=session;},[session]);
@@ -231,6 +234,8 @@ export default function App(){
           try{localStorage.setItem("cl_rol_"+session.user.email,u.rol);}catch{}
           setRolSesion(u.rol);
           setEsAdmin(u.rol==="admin"||session.user.email==="salvadordevedia@gmail.com");
+          setUserId(session.user.id);
+          setUserProperties({rol:u.rol,city:u.ubicacion||localStorage.getItem("cl_user_city")||""});
         }
       }).catch(()=>{});
     };
@@ -512,7 +517,7 @@ export default function App(){
       const params=new URLSearchParams(window.location.search);
       // Abrir perfil de docente si viene ?perfil=email en la URL
       const perfilParam=params.get("perfil");
-      if(perfilParam){setPerfilEmail(decodeURIComponent(perfilParam));setPage("explore");}
+      if(perfilParam){openPerfil(decodeURIComponent(perfilParam));setPage("explore");}
       // Abrir verificación de certificado si viene ?certificado=ID
       const certParam=params.get("certificado");
       if(certParam){setCertVerifId(certParam);}
@@ -642,10 +647,10 @@ export default function App(){
       )}
       <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
-          {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={setPerfilEmail} onOpenCurso={setCursoPost}/>}
+          {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/>}
           {page==="agenda"&&<AgendaPage session={session} onOpenCurso={setCursoPost}/>}
           {page==="chats"&&<ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/>}
-          {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={setPerfilEmail}/>}
+          {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={openPerfil}/>}
           {page==="inscripciones"&&<InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>}
           {page==="juegos"&&(
             <React.Suspense fallback={
@@ -669,7 +674,7 @@ export default function App(){
         </div>
       </main>
       {chatPost&&<ChatModal post={chatPost} session={session} onClose={closeChat} onUnreadChange={refreshUnread}/>}
-      {detailPost&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando publicación…</div></div>}><DetailModal post={detailPost} session={session} onClose={()=>setDetailPost(null)} onChat={p=>{setDetailPost(null);openChat(p);}} onOpenCurso={p=>{setDetailPost(null);setCursoPost(p);}} onOpenPerfil={setPerfilEmail} onOpenDetail2={p=>{setDetailPost(null);setTimeout(()=>setDetailPost(p),80);}}/></React.Suspense>}
+      {detailPost&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando publicación…</div></div>}><DetailModal post={detailPost} session={session} onClose={()=>setDetailPost(null)} onChat={p=>{setDetailPost(null);openChat(p);}} onOpenCurso={p=>{setDetailPost(null);setCursoPost(p);}} onOpenPerfil={openPerfil} onOpenDetail2={p=>{setDetailPost(null);setTimeout(()=>setDetailPost(p),80);}}/></React.Suspense>}
       {cursoPost&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando curso…</div></div>}><CursoPage post={cursoPost} session={session} onClose={()=>setCursoPost(null)} onUpdatePost={p=>setCursoPost(p)}/></React.Suspense>}
       {certVerifId&&<CertificadoPage certId={certVerifId} onClose={()=>setCertVerifId(null)}/>}
       {perfilEmail&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando perfil…</div></div>}><PerfilPage autorEmail={perfilEmail} session={session} onClose={()=>setPerfilEmail(null)} onOpenDetail={(p)=>{setPerfilEmail(null);setTimeout(()=>setDetailPost(p),80);}} onOpenChat={(p)=>{setPerfilEmail(null);setTimeout(()=>openChat(p),80);}}/></React.Suspense>}
