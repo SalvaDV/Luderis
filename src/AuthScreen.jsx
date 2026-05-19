@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import * as sb from "./supabase";
 import { C, FONT, LUD, t, Btn, logError } from "./shared";
+import { trackRegister, trackLogin } from "./analytics";
 
 function AuthScreen({onLogin}){
   const [mode,setMode]=useState("login");const [email,setEmail]=useState("");const [pass,setPass]=useState("");const [pass2,setPass2]=useState("");
@@ -41,13 +42,13 @@ function AuthScreen({onLogin}){
               }
             }
           }catch(e){logError("bloque referidos",e);}
-          sb.saveSession(r);onLogin(r);
+          trackRegister();sb.saveSession(r);onLogin(r);
         }else setOk("Revisá tu email para confirmar tu cuenta.");
       }else{
         const r=await sb.signIn(email,pass);
         const uid=r.user?.id;
         if(uid){try{await sb.upsertUsuario({id:uid,email,nombre:email.split("@")[0]},r.access_token);}catch{}}
-        sb.saveSession(r);onLogin(r);
+        trackLogin("email");sb.saveSession(r);onLogin(r);
       }
     }catch(e){setErr(e.message||"Error al iniciar sesión");}finally{setLoading(false);}
   };

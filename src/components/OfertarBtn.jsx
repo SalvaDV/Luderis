@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "../supabase";
 import { C, FONT, Label, Btn } from "../shared";
+import { trackOfertaEnviada } from "../analytics";
 
 export default function OfertarBtn({post,session}){
   const [open,setOpen]=useState(false);const [precio,setPrecio]=useState("");const [tipo,setTipo]=useState("hora");const [msg,setMsg]=useState("");const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
@@ -42,6 +43,7 @@ export default function OfertarBtn({post,session}){
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_oferta",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       // Email al dueño de la búsqueda
       sb.sendEmail("oferta_recibida",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,docente_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0],mensaje:msg},session.access_token).catch(()=>{});
+      trackOfertaEnviada(post);
       setOk(true);
       // Actualizar estado local y cerrar el popup
       setMiOferta({busqueda_id:post.id,estado:"pendiente",created_at:new Date().toISOString()});

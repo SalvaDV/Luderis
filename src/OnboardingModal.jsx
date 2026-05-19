@@ -504,18 +504,18 @@ Respondé SOLO JSON.`,
       }catch{}
       // Alumnos con recomendaciones IA: mostrar resultados antes de cerrar
       if(!esDocente&&materias.length>0){setFinishDone(true);}
-      else{onClose();if(postAction)postAction();}
+      else{onClose(esDocente?"docente":rol);if(postAction)postAction();}
     }catch(e){
       console.error("Onboarding error:",e);
       try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}
-      onClose();
+      onClose(rol);
       if(postAction)postAction();
     }finally{setSaving(false);}
   };
 
   const handleNext=()=>{
     if(isLast){
-      if(finishDone){onClose();return;}
+      if(finishDone){onClose(esDocente?"docente":rol);return;}
       finish();
       return;
     }

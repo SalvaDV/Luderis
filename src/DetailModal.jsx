@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
+import { trackPostView, trackChatStart } from "./analytics";
 import {
   C, FONT,
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
@@ -25,6 +26,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
     // Bloquear scroll del body mientras la página está abierta
     document.body.style.overflow="hidden";
     let mounted=true;
+    trackPostView(post);
     try{sb.incrementarVistas(post.id,session.access_token);}catch{}
     Promise.all([
       sb.getReseñas(post.id,session.access_token),
@@ -320,7 +322,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                       </button>
                     )}
                     {!esMio&&puedeChat&&(
-                      <button onClick={()=>{onClose();onChat(post);}} style={{width:"100%",background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)"}}>
+                      <button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{width:"100%",background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)"}}>
                         Chatear con el docente
                       </button>
                     )}
@@ -371,7 +373,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
         <style>{`.detail-cta-mobile{display:none!important}@media(max-width:768px){.detail-cta-mobile{display:flex!important}}`}</style>
         {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:C.text,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.success}}>Gratis</div>}
         <div style={{display:"flex",gap:8}}>
-          {!esMio&&puedeChat&&<button onClick={()=>{onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
+          {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
           {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}
           {post.tipo==="oferta"&&(esMio||esAyudante||inscripcion)&&<button onClick={()=>{onClose();onOpenCurso(post);}} style={{background:C.success+"15",color:C.success,border:`1px solid ${C.success}44`,borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Ver curso</button>}
           {post.tipo==="busqueda"&&!esMio&&<OfertarBtn post={post} session={session}/>}

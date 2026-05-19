@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
-import { trackPage, trackEvent } from "./analytics";
+import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay } from "./analytics";
 import {
   C, FONT, LUD, _themeKey,
   applyTheme, toast, ToastContainer, logError,
@@ -323,6 +323,7 @@ export default function App(){
       if(!s)return;
       window.location.hash="";
       sb.saveSession(s);
+      trackLogin("google");
       try{
         await sb.upsertUsuario({
           id:s.user.id,email:s.user.email,
@@ -539,7 +540,10 @@ export default function App(){
     return()=>{clearInterval(t);document.removeEventListener("visibilitychange",onVisibility);};
   },[refreshUnread]);
   // ── Google Analytics: track page navigation ──────────────────────────────
-  useEffect(()=>{ trackPage(page); },[page]);
+  useEffect(()=>{
+    trackPage(page);
+    if(page==="juegos")trackFarosPlay();
+  },[page]);// eslint-disable-line
 
   const PAGE_TITLES={explore:"Explorar — Luderis",chats:"Mis chats — Luderis",favoritos:"Favoritos — Luderis",inscripciones:"Mis inscripciones — Luderis",cuenta:"Mi cuenta — Luderis"};
   useEffect(()=>{
@@ -580,7 +584,7 @@ export default function App(){
     const showAuth=window.location.hash==="#auth"||sessionStorage.getItem("ld_auth")==="1";
     const goAuth=()=>{sessionStorage.setItem("ld_auth","1");window.location.hash="#auth";forceThemeRender(n=>n+1);};
     if(!showAuth)return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}`}</style><LandingPage onEnter={goAuth}/></>);
-    return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);trackEvent("auth","login",s.user?.email?.split("@")[1]||"unknown");setSession(s);}}/></>);
+    return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);setSession(s);}}/></>);
   }
   const SW=isMobile?0:224;
   return(
@@ -672,14 +676,14 @@ export default function App(){
       {showForm&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando formulario…</div></div>}><PostFormModal session={session} postToEdit={editPost} modoInicial={editPost?undefined:(()=>{try{return sessionStorage.getItem("cl_seccion")||"curso";}catch{return"curso";}})()  } onClose={()=>{setShowForm(false);setEditPost(null);}}
   onSave={(newPub,meta)=>{
     setMyPostsKey(k=>k+1);
-    if(newPub)trackEvent("publicacion","crear",newPub.tipo||"desconocido");
+    if(newPub)trackPublicacionCreada(newPub.tipo||"desconocido",newPub.materia);
     if(newPub&&(meta?.esCursoNuevo||meta?.esParticularNuevo)){
       // Abrir CursoPage directo en tab validación
       setTimeout(()=>setCursoPost({...newPub,_openValidacion:true}),200);
     }
   }}/>
       </React.Suspense>}
-      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={()=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}sb.updateUsuario(session.user.id,{onboarding_completado:true},session.access_token).catch(()=>{});setShowOnboarding(false);setOnboardingUpgrade(false);}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
+      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={(rol)=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}sb.updateUsuario(session.user.id,{onboarding_completado:true},session.access_token).catch(()=>{});if(rol)trackOnboardingComplete(rol);setShowOnboarding(false);setOnboardingUpgrade(false);}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
       {showAdmin&&<AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/>}
       {legalTab&&<LegalModal tab={legalTab} onClose={()=>{setLegalTab(null);window.history.replaceState({},"",window.location.pathname);}}/>}
       <ScrollToTopBtn/>

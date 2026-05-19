@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
+import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
   C, FONT, LUD,
   Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect, Btn, Chip,
@@ -54,6 +55,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     if(!q.trim()||iaLoading)return;
     setIaLoading(true);setIaResults(null);setIaExplanation("");setIaQuery(q);
     setModoVista("resultados");
+    trackSearchIA(q,filtroMateria);
     // Guardar en historial local
     try{
       const prev=JSON.parse(localStorage.getItem("cl_busq_recientes")||"[]");
@@ -242,7 +244,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     if(filtroTipo!=="all"||filtroModo!=="all"||filtroModalidad!=="all"||filtroMateria||filtroUbicacion||busqueda){
       setModoVista("resultados");
     }
-  },[filtroTipo,filtroModo,filtroModalidad,filtroMateria,filtroUbicacion,busqueda]);
+    if(filtroModalidad!=="all")trackFilterApplied("modalidad",filtroModalidad);
+    if(filtroModo!=="all")trackFilterApplied("modo",filtroModo);
+  },[filtroTipo,filtroModo,filtroModalidad,filtroMateria,filtroUbicacion,busqueda]);// eslint-disable-line
 
   const goHome=()=>{
     setModoVista("home");
@@ -336,7 +340,10 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   })();
 
 
-  useEffect(()=>{setPagina(1);},[busquedaDebounced,filtroTipo,filtroModo,filtroModalidad,filtroSinc,filtroMateria,sliderMin,sliderMax,filtroFechaDesde,filtroFechaHasta,filtroDurMin,iaResults]);// eslint-disable-line
+  useEffect(()=>{
+    setPagina(1);
+    if(busquedaDebounced)trackSearchManual(busquedaDebounced);
+  },[busquedaDebounced,filtroTipo,filtroModo,filtroModalidad,filtroSinc,filtroMateria,sliderMin,sliderMax,filtroFechaDesde,filtroFechaHasta,filtroDurMin,iaResults]);// eslint-disable-line
   useEffect(()=>{if(isSentinelVisible&&!loading)setPagina(p=>p+1);},[isSentinelVisible]);// eslint-disable-line
   // Propagate section accent to CSS custom properties so the entire app page reflects it
   const sT=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;
@@ -467,7 +474,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   {id:"clases",icon:"👤",label:"Clases"},
                   ...(esDocente?[{id:"pedidos",icon:"📣",label:"Pedidos"}]:[]),
                 ].map(tab=>(
-                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
+                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
                     style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
                       background:seccion===tab.id?"#fff":"transparent",
                       color:seccion===tab.id?(tab.id==="cursos"?LUD.blue:tab.id==="clases"?"#C8660A":"#7B5CF0"):"rgba(255,255,255,.8)",
@@ -548,7 +555,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 {catsActivas.map(cat=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
-                    <button key={cat.label} onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");}}
+                    <button key={cat.label} onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");trackFilterApplied("materia",cat.label);}}
                       style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",transition:"transform .2s",textAlign:"left",display:"flex",flexDirection:"column"}}
                       onMouseEnter={e=>e.currentTarget.style.transform="translateY(-4px) scale(1.02)"}
                       onMouseLeave={e=>e.currentTarget.style.transform="none"}>

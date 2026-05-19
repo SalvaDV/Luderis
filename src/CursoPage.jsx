@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
+import { trackInscripcion } from "./analytics";
 import {
   C, FONT, toast, t,
   Avatar, Spinner, Btn, Input, Modal, Label, ErrMsg, Chip,
@@ -4668,6 +4669,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     try{
       const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);
       setInscripcion(r[0]);
+      trackInscripcion(post);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       if(post.modo==="grupal"||post.modo==="curso"){
         setTimeout(()=>setTab("aprender"),400);
