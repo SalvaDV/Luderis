@@ -11,7 +11,7 @@ import {
   AlertTriangle, MessageSquare, BellOff, CreditCard, Package,
   FileText, Megaphone, Settings, TrendingUp, TrendingDown,
   DollarSign, UserCheck, BookMarked, BarChart2, RefreshCw,
-  ChevronRight, LogOut, Activity
+  ChevronRight, LogOut, Activity, Menu, X, BarChart3
 } from "lucide-react";
 
 // Admin fallback email (optional, only for bootstrapping). Set REACT_APP_ADMIN_EMAIL in env to use.
@@ -176,12 +176,19 @@ const SIDEBAR_GROUPS = [
   },
 ];
 
-function Sidebar({ tab, setTab, badgeCounts = {}, onClose }) {
+function Sidebar({ tab, setTab, badgeCounts = {}, onClose, open, isMobile }) {
   return (
+    <>
+      {isMobile && open && (
+        <div onClick={() => onClose("close")} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 99,
+        }} />
+      )}
     <div style={{
       width: 220, minHeight: "100vh", background: A.sidebar, display: "flex", flexDirection: "column",
-      position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 100, overflowY: "auto",
+      position: "fixed", top: 0, left: isMobile ? (open ? 0 : -240) : 0, bottom: 0, zIndex: 100, overflowY: "auto",
       borderRight: `1px solid ${A.sidebarBorder}`,
+      transition: isMobile ? "left .25s ease" : "none",
     }}>
       {/* Logo */}
       <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${A.sidebarBorder}`, flexShrink: 0 }}>
@@ -205,7 +212,7 @@ function Sidebar({ tab, setTab, badgeCounts = {}, onClose }) {
               const active = tab === item.id;
               const badgeCount = item.badge ? (badgeCounts[item.badge] || 0) : 0;
               return (
-                <button key={item.id} onClick={() => setTab(item.id)}
+                <button key={item.id} onClick={() => { setTab(item.id); if (isMobile) onClose("close"); }}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8,
                     background: active ? A.sidebarActive : "transparent",
@@ -233,7 +240,7 @@ function Sidebar({ tab, setTab, badgeCounts = {}, onClose }) {
 
       {/* Footer */}
       <div style={{ padding: "12px 10px", borderTop: `1px solid ${A.sidebarBorder}`, flexShrink: 0 }}>
-        <button onClick={onClose}
+        <button onClick={() => onClose("exit")}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
@@ -242,11 +249,21 @@ function Sidebar({ tab, setTab, badgeCounts = {}, onClose }) {
         </button>
       </div>
     </div>
+    </>
   );
 }
 
+const GA4_URL = "https://analytics.google.com/analytics/web/#/a395228467p538298721/reports/intelligenthome?params=_u..nav%3Dmaui&collectionId=business-objectives";
+
 export default function AdminPage({ session, onClose, onChatUser }) {
   const [tab, setTab] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
   const [pendingVerifCount, setPendingVerifCount] = useState(0);
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
   const [pendingQuejasCount, setPendingQuejasCount] = useState(0);
@@ -329,33 +346,50 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     </div>
   );
 
+  const handleSidebarClose = (reason) => {
+    if (reason === "exit") onClose();
+    else setSidebarOpen(false);
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, background: A.bg, zIndex: 500, fontFamily: FONT, display: "flex" }}>
       {/* Sidebar */}
       <Sidebar
         tab={tab} setTab={handleSetTab}
         badgeCounts={badgeCounts}
-        onClose={onClose}
+        onClose={handleSidebarClose}
+        open={sidebarOpen}
+        isMobile={isMobile}
       />
 
       {/* Main */}
-      <div style={{ marginLeft: 220, flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", overflowY: "auto" }}>
+      <div style={{ marginLeft: isMobile ? 0 : 220, flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", overflowY: "auto" }}>
         {/* Topbar */}
-        <div style={{ background: A.surface, borderBottom: `1px solid ${A.border}`, padding: "0 28px", height: 56, display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 10, flexShrink: 0 }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: A.text, letterSpacing: "-0.3px" }}>{TAB_LABELS[tab] || tab}</div>
-            <div style={{ fontSize: 11, color: A.muted }}>Luderis Admin · {session.user.email}</div>
+        <div style={{ background: A.surface, borderBottom: `1px solid ${A.border}`, padding: isMobile ? "0 12px" : "0 28px", height: 56, display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 10, flexShrink: 0 }}>
+          {isMobile && (
+            <button onClick={() => setSidebarOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, display: "flex", alignItems: "center", borderRadius: 8, color: A.text }}>
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 800, color: A.text, letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{TAB_LABELS[tab] || tab}</div>
+            {!isMobile && <div style={{ fontSize: 11, color: A.muted }}>Luderis Admin · {session.user.email}</div>}
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            <a href={GA4_URL} target="_blank" rel="noopener noreferrer"
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "#E3711415", border: "1px solid #E3711440", borderRadius: 20, padding: "4px 12px", textDecoration: "none", cursor: "pointer" }}>
+              <BarChart3 size={11} color="#E37114" />
+              {!isMobile && <span style={{ fontSize: 11, fontWeight: 700, color: "#E37114", fontFamily: FONT }}>GA4</span>}
+            </a>
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: A.success + "15", border: `1px solid ${A.success}40`, borderRadius: 20, padding: "4px 12px" }}>
               <Activity size={11} color={A.success} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: A.success, fontFamily: FONT }}>En vivo</span>
+              {!isMobile && <span style={{ fontSize: 11, fontWeight: 700, color: A.success, fontFamily: FONT }}>En vivo</span>}
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, padding: "28px 32px", maxWidth: 1280, width: "100%", boxSizing: "border-box" }}>
+        <div style={{ flex: 1, padding: isMobile ? "16px 12px" : "28px 32px", maxWidth: 1280, width: "100%", boxSizing: "border-box" }}>
           {tab === "overview"         && <OverviewTab session={session} />}
           {tab === "verificaciones"   && <VerificacionesTab session={session} onCountChange={setPendingVerifCount} />}
           {tab === "docentes"         && <DocentesTab session={session} />}

@@ -390,7 +390,7 @@ export const getUsuarioById = (id, token) =>
     .then(r => r?.[0] || null).catch(() => null);
 
 export const getUsuarioByEmail = (email, token) =>
-  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
+  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes`, "GET", null, token)
     .then(r => r?.[0] || null).catch(() => null);
 
 // ── IA helper — llama a la Supabase Edge Function "ai-proxy" ─────────────────
