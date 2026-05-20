@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://hptdyehzqfpgtrpuydny.supabase.co/functions/v1/sitemap"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
