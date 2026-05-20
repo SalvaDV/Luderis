@@ -85,6 +85,12 @@ const SearchInput = ({ value, onChange, placeholder }) => (
     style={{ background: A.bg, border: `1px solid ${A.border}`, borderRadius: 8, padding: "8px 12px", color: A.text, fontSize: 13, outline: "none", fontFamily: FONT, width: "100%", boxSizing: "border-box" }} />
 );
 
+function useMobile(bp = 768) {
+  const [m, setM] = useState(() => window.innerWidth < bp);
+  useEffect(() => { const fn = () => setM(window.innerWidth < bp); window.addEventListener("resize", fn); return () => window.removeEventListener("resize", fn); }, [bp]);
+  return m;
+}
+
 const StatBox = ({ label, value, sub, color = A.accent, icon }) => (
   <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 14, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
     <div style={{ fontSize: 11, fontWeight: 700, color: A.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
@@ -571,6 +577,7 @@ const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => {
 
 // ─── TAB: RESUMEN ─────────────────────────────────────────────────────────────
 function OverviewTab({ session }) {
+  const mob = useMobile();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actividad, setActividad] = useState([]);
@@ -795,7 +802,7 @@ function OverviewTab({ session }) {
       </div>
 
       {/* Gráfico de área — crecimiento 7 días */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 280px", gap: 16 }}>
         <Card>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
             <div>
@@ -859,7 +866,7 @@ function OverviewTab({ session }) {
       </div>
 
       {/* Fila: Top materias (barras) + Funnel conversión */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card>
           <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 4 }}>Top materias</div>
           <div style={{ fontSize: 12, color: A.muted, marginBottom: 16 }}>Por cantidad de publicaciones</div>
@@ -911,7 +918,7 @@ function OverviewTab({ session }) {
       </div>
 
       {/* Fila: Top docentes + Moderación */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card>
           <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 16 }}>Top docentes</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -934,7 +941,7 @@ function OverviewTab({ session }) {
 
         <Card>
           <div style={{ fontWeight: 700, color: A.text, fontSize: 15, marginBottom: 16 }}>Moderación</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "1fr 1fr", gap: 10, marginBottom: 16 }}>
             {[
               { label: "Total denuncias", value: stats.kpiDenuncias.total, color: A.danger },
               { label: "Tasa resolución", value: `${stats.kpiDenuncias.tasaResolucion}%`, color: stats.kpiDenuncias.tasaResolucion >= 80 ? A.success : A.warn },
