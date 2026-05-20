@@ -13,7 +13,7 @@ export function register() {
           if (!sw) return;
           sw.onstatechange = () => {
             if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[SW] Nueva versión disponible. Recargá para actualizar.');
+              window.dispatchEvent(new Event('sw-update-available'));
             }
           };
         };

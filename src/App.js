@@ -19,19 +19,7 @@ import {
   useIntersectionObserver,
   LegalModal,
 } from "./shared";
-import LandingPage from "./LandingPage";
-import TerminosPage from "./TerminosPage";
-import PoliticaDevoluciones from "./PoliticaDevoluciones";
-import DefensaConsumidorPage from "./DefensaConsumidorPage";
-import AyudaPage from "./AyudaPage";
-import LibroQuejasPage from "./LibroQuejasPage";
-import AccesibilidadPage from "./AccesibilidadPage";
-import PrivacidadPage from "./PrivacidadPage";
-import AuthScreen from "./AuthScreen";
-import { PriceSlider } from "./PostFormModal";
-import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
-import AgendaPage, { DocentesDestacados } from "./AgendaPage";
-import AdminPage from "./AdminPage";
+// ─── EAGER IMPORTS (shell crítico) ────────────────────────────────────────────
 import FavBtn from "./components/FavBtn";
 import DocBadge from "./components/DocBadge";
 import DenunciaModal from "./components/DenunciaModal";
@@ -39,23 +27,35 @@ import PostChatBtn from "./components/PostChatBtn";
 import ShareBtn, { useShareToast } from "./components/ShareBtn";
 import OfertarBtn from "./components/OfertarBtn";
 import PostCard from "./components/PostCard";
-import LeaderboardView from "./components/LeaderboardView";
 import Sidebar from "./components/Sidebar";
-import CertificadoPage from "./components/CertificadoPage";
-import ChatModal from "./components/ChatModal";
 import ScrollToTopBtn from "./components/ScrollToTopBtn";
 import CookieBanner from "./components/CookieBanner";
+import UpdateBanner from "./components/UpdateBanner";
 import ChatBotWidget from "./components/ChatBotWidget";
 import BusquedaIA from "./components/BusquedaIA";
 import MiniDropdown from "./components/MiniDropdown";
 import FinalizarClaseModal from "./components/FinalizarClaseModal";
-import NotifPanel from "./components/NotifPanel";
 import MyPostsPage, { MyPostCard, ContraofertaModal, OfertasRecibidasModal } from "./MyPostsPage";
-import InscripcionesPage from "./InscripcionesPage";
-import ChatsPage from "./ChatsPage";
-import FavoritosPage from "./FavoritosPage";
-
 import ExplorePage from "./ExplorePage";
+
+// ─── LAZY IMPORTS (páginas y modales que no se necesitan en el primer render) ──
+const LandingPage       = React.lazy(() => import('./LandingPage'));
+const AuthScreen        = React.lazy(() => import('./AuthScreen'));
+const TerminosPage      = React.lazy(() => import('./TerminosPage'));
+const PoliticaDevoluciones   = React.lazy(() => import('./PoliticaDevoluciones'));
+const DefensaConsumidorPage  = React.lazy(() => import('./DefensaConsumidorPage'));
+const AyudaPage         = React.lazy(() => import('./AyudaPage'));
+const LibroQuejasPage   = React.lazy(() => import('./LibroQuejasPage'));
+const AccesibilidadPage = React.lazy(() => import('./AccesibilidadPage'));
+const PrivacidadPage    = React.lazy(() => import('./PrivacidadPage'));
+const AgendaPage        = React.lazy(() => import('./AgendaPage'));
+const AdminPage         = React.lazy(() => import('./AdminPage'));
+const InscripcionesPage = React.lazy(() => import('./InscripcionesPage'));
+const ChatsPage         = React.lazy(() => import('./ChatsPage'));
+const FavoritosPage     = React.lazy(() => import('./FavoritosPage'));
+const ChatModal         = React.lazy(() => import('./components/ChatModal'));
+const CertificadoPage   = React.lazy(() => import('./components/CertificadoPage'));
+const NotifPanel        = React.lazy(() => import('./components/NotifPanel'));
 
 // CursoPage ecosystem — lazy loaded (solo se descarga al abrir un curso)
 const CursoPage = React.lazy(() => import('./CursoPage'));
@@ -579,18 +579,19 @@ export default function App(){
   const [currentTheme,setCurrentTheme]=useState(_themeKey());
   const toggleTheme=()=>{const next=currentTheme==="light"?"dark":"light";applyTheme(next);setCurrentTheme(next);forceThemeRender(n=>n+1);};
   // Rutas públicas sin autenticación
-  if(window.location.pathname==="/terminos")return <TerminosPage/>;
-  if(window.location.pathname==="/devoluciones")return <PoliticaDevoluciones/>;
-  if(window.location.pathname==="/consumidor")return <DefensaConsumidorPage/>;
-  if(window.location.pathname==="/ayuda")return <AyudaPage/>;
-  if(window.location.pathname==="/quejas")return <LibroQuejasPage/>;
-  if(window.location.pathname==="/accesibilidad")return <AccesibilidadPage/>;
-  if(window.location.pathname==="/privacidad")return <PrivacidadPage/>;
+  const _SF=<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,color:C.muted}}></div>;
+  if(window.location.pathname==="/terminos")return <React.Suspense fallback={_SF}><TerminosPage/></React.Suspense>;
+  if(window.location.pathname==="/devoluciones")return <React.Suspense fallback={_SF}><PoliticaDevoluciones/></React.Suspense>;
+  if(window.location.pathname==="/consumidor")return <React.Suspense fallback={_SF}><DefensaConsumidorPage/></React.Suspense>;
+  if(window.location.pathname==="/ayuda")return <React.Suspense fallback={_SF}><AyudaPage/></React.Suspense>;
+  if(window.location.pathname==="/quejas")return <React.Suspense fallback={_SF}><LibroQuejasPage/></React.Suspense>;
+  if(window.location.pathname==="/accesibilidad")return <React.Suspense fallback={_SF}><AccesibilidadPage/></React.Suspense>;
+  if(window.location.pathname==="/privacidad")return <React.Suspense fallback={_SF}><PrivacidadPage/></React.Suspense>;
   if(!session){
     const showAuth=window.location.hash==="#auth"||sessionStorage.getItem("ld_auth")==="1";
     const goAuth=()=>{sessionStorage.setItem("ld_auth","1");window.location.hash="#auth";forceThemeRender(n=>n+1);};
-    if(!showAuth)return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}`}</style><LandingPage onEnter={goAuth}/></>);
-    return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);setSession(s);}}/></>);
+    if(!showAuth)return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}`}</style><React.Suspense fallback={null}><LandingPage onEnter={goAuth}/></React.Suspense></>);
+    return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><React.Suspense fallback={null}><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);setSession(s);}}/></React.Suspense></>);
   }
   const SW=isMobile?0:224;
   return(
@@ -649,10 +650,11 @@ export default function App(){
       <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
           {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/>}
-          {page==="agenda"&&<AgendaPage session={session} onOpenCurso={setCursoPost}/>}
-          {page==="chats"&&<ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/>}
-          {page==="favoritos"&&<FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={openPerfil}/>}
-          {page==="inscripciones"&&<InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>}
+          {page==="agenda"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><AgendaPage session={session} onOpenCurso={setCursoPost}/></React.Suspense>}
+          {page==="chats"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/></React.Suspense>}
+          {page==="favoritos"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={openPerfil}/></React.Suspense>}
+          {page==="inscripciones"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>
+          </React.Suspense>}
           {page==="juegos"&&(
             <React.Suspense fallback={
               <div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>
@@ -674,10 +676,10 @@ export default function App(){
           </React.Suspense>}
         </div>
       </main>
-      {chatPost&&<ChatModal post={chatPost} session={session} onClose={closeChat} onUnreadChange={refreshUnread}/>}
+      {chatPost&&<React.Suspense fallback={null}><ChatModal post={chatPost} session={session} onClose={closeChat} onUnreadChange={refreshUnread}/></React.Suspense>}
       {detailPost&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando publicación…</div></div>}><DetailModal post={detailPost} session={session} onClose={()=>setDetailPost(null)} onChat={p=>{setDetailPost(null);openChat(p);}} onOpenCurso={p=>{setDetailPost(null);setCursoPost(p);}} onOpenPerfil={openPerfil} onOpenDetail2={p=>{setDetailPost(null);setTimeout(()=>setDetailPost(p),80);}}/></React.Suspense>}
       {cursoPost&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando curso…</div></div>}><CursoPage post={cursoPost} session={session} onClose={()=>setCursoPost(null)} onUpdatePost={p=>setCursoPost(p)}/></React.Suspense>}
-      {certVerifId&&<CertificadoPage certId={certVerifId} onClose={()=>setCertVerifId(null)}/>}
+      {certVerifId&&<React.Suspense fallback={null}><CertificadoPage certId={certVerifId} onClose={()=>setCertVerifId(null)}/></React.Suspense>}
       {perfilEmail&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando perfil…</div></div>}><PerfilPage autorEmail={perfilEmail} session={session} onClose={()=>setPerfilEmail(null)} onOpenDetail={(p)=>{setPerfilEmail(null);setTimeout(()=>setDetailPost(p),80);}} onOpenChat={(p)=>{setPerfilEmail(null);setTimeout(()=>openChat(p),80);}}/></React.Suspense>}
       {showForm&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando formulario…</div></div>}><PostFormModal session={session} postToEdit={editPost} modoInicial={editPost?undefined:(()=>{try{return sessionStorage.getItem("cl_seccion")||"curso";}catch{return"curso";}})()  } onClose={()=>{setShowForm(false);setEditPost(null);}}
   onSave={(newPub,meta)=>{
@@ -690,13 +692,14 @@ export default function App(){
   }}/>
       </React.Suspense>}
       {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={(rol)=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}sb.updateUsuario(session.user.id,{onboarding_completado:true},session.access_token).catch(()=>{});if(rol)trackOnboardingComplete(rol);setShowOnboarding(false);setOnboardingUpgrade(false);}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
-      {showAdmin&&<AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/>}
+      {showAdmin&&<React.Suspense fallback={null}><AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/></React.Suspense>}
       {legalTab&&<LegalModal tab={legalTab} onClose={()=>{setLegalTab(null);window.history.replaceState({},"",window.location.pathname);}}/>}
       <ScrollToTopBtn/>
       {!chatPost&&!detailPost&&!cursoPost&&!showForm&&!notifPanelOpen&&<ChatBotWidget/>}
       <ToastContainer/>
+      <UpdateBanner/>
       <CookieBanner/>
-      <NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost}/>
+      <React.Suspense fallback={null}><NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost}/></React.Suspense>
     </div>
   );
 }
