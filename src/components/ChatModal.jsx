@@ -117,6 +117,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
       await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:mensajeTexto,leido:false,pub_titulo:post.titulo},session.access_token);
       sb.insertNotificacion({usuario_id:null,alumno_email:otroEmail,tipo:"nuevo_mensaje",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       (()=>{const ck=`cl_email_sent_${post.id}_${otroEmail}`;const last=parseInt(localStorage.getItem(ck)||"0");if(Date.now()-last>2*60*60*1000){sb.sendEmail("nuevo_mensaje",otroEmail,{pub_titulo:post.titulo,de_nombre:sb.getDisplayName(miEmail)||miEmail.split("@")[0],preview:imagenPrevia?"[Imagen]":txt},session.access_token).catch(()=>{});try{localStorage.setItem(ck,Date.now());}catch{}}})();
+      sb.sendPush(otroEmail,`Nuevo mensaje — ${post.titulo}`,imagenPrevia?"[Imagen]":txt.slice(0,80)||"…",`/?chat=${post.id}`,"nuevo_mensaje").catch(()=>{});
       cargar();
     }catch(e){alert("Error al enviar: "+e.message);}
     finally{setEnviando(false);}

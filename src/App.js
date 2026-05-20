@@ -31,6 +31,8 @@ import Sidebar from "./components/Sidebar";
 import ScrollToTopBtn from "./components/ScrollToTopBtn";
 import CookieBanner from "./components/CookieBanner";
 import UpdateBanner from "./components/UpdateBanner";
+import PushPermissionBanner from "./components/PushPermissionBanner";
+import usePushSubscription from "./hooks/usePushSubscription";
 import ChatBotWidget from "./components/ChatBotWidget";
 import BusquedaIA from "./components/BusquedaIA";
 import MiniDropdown from "./components/MiniDropdown";
@@ -83,6 +85,7 @@ export default function App(){
   const [,forceThemeRender]=useState(0);
   // Exponer setter global para que MiCuentaPage lo llame
   window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};
+  const { showBanner: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushSubscription(session);
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
@@ -698,6 +701,7 @@ export default function App(){
       <ToastContainer/>
       <UpdateBanner/>
       <CookieBanner/>
+      {showPushBanner&&<PushPermissionBanner onAccept={subscribePush} onDismiss={dismissPush}/>}
       <React.Suspense fallback={null}><NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost}/></React.Suspense>
     </div>
   );

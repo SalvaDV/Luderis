@@ -3427,6 +3427,7 @@ JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
               tipo_eval:evalTipo,
               curso_titulo:evalTitulo,
             },session.access_token).catch(()=>{});
+            sb.sendPush(insc.alumno_email,`Nueva evaluación — ${post.titulo}`,`Hay una nueva evaluación disponible`,`/?curso=${post.id}`,"nueva_evaluacion").catch(()=>{});
           }
         });
       }).catch(()=>{});
@@ -4177,6 +4178,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
               tipo_eval:evalTipo,
               curso_titulo:evalTitulo,
             },session.access_token).catch(()=>{});
+            sb.sendPush(insc.alumno_email,`Nueva evaluación — ${post.titulo}`,`Hay una nueva evaluación disponible`,`/?curso=${post.id}`,"nueva_evaluacion").catch(()=>{});
           }
         });
       }).catch(()=>{});
@@ -5276,6 +5278,7 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
+      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion").catch(()=>{});
       toast("¡Pago exitoso! Ya tenés acceso","success",4000);
       setEstado("done");
       setTimeout(()=>{onClose();onDone();},800);
@@ -5356,6 +5359,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
+      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion").catch(()=>{});
       // Info del mail según lo que eligió
       const paqueteInfo=paqueteElegido&&!esPruebaLocal?`${paqueteElegido.nombre||paqueteElegido.clases+" clases"}`:null;
       const precioMail=esPruebaLocal?(parseFloat(post.precio_prueba)||0):precioEfectivo;

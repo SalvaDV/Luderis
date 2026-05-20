@@ -640,6 +640,22 @@ export const sendEmail = async (template, to, data = {}, token = "") => {
   return json;
 };
 
+// ── Web Push (via Edge Function send-push) ────────────────────────────────────
+
+export const sendPush = async (to, title, body, url = "/", tag = "default") => {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({ to, title, body, url, tag }),
+    });
+  } catch {}
+};
+
 // ── Mercado Pago ──────────────────────────────────────────────────────────────
 
 export const createMPCheckout = async (data, token) => {

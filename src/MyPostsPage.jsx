@@ -123,6 +123,7 @@ export function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
         tipo_precio:tipo,
         mensaje:msg,
       },session.access_token).catch(e=>logError("email contraoferta",e));
+      sb.sendPush(destinatario,`Nueva contraoferta — ${oferta.busqueda_titulo}`,`${miNombreContra} hizo una contraoferta`,"/?cuenta","contraoferta").catch(()=>{});
       onEnviada();
     }catch(e){alert(e.message);}finally{setSaving(false);}
   };
@@ -179,12 +180,14 @@ export function OfertasRecibidasModal({post,session,onClose,onContactar}){
         sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_aceptada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(e=>logError("notif oferta_aceptada",e));
         // Email al docente cuya oferta fue aceptada
         sb.sendEmail("oferta_aceptada",o.ofertante_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]},session.access_token).catch(e=>logError("email oferta_aceptada",e));
+        sb.sendPush(o.ofertante_email,`¡Oferta aceptada! — ${post.titulo}`,`${sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]} aceptó tu oferta`,"/?cuenta","oferta_aceptada").catch(()=>{});
         const ofertaActualizada={...o,estado:"aceptada",busqueda_titulo:post.titulo,busqueda_autor_email:session.user.email};
         setAcuerdoOferta(ofertaActualizada);
         await cargar();
       } else {
         if(estado==="rechazada"){
           sb.insertNotificacion({usuario_id:null,alumno_email:o.ofertante_email,tipo:"oferta_rechazada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(e=>logError("notif oferta_rechazada",e));
+          sb.sendPush(o.ofertante_email,`Oferta rechazada — ${post.titulo}`,"Tu oferta no fue aceptada esta vez","/?cuenta","oferta_rechazada").catch(()=>{});
         }
         await cargar();
       }
