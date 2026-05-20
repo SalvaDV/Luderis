@@ -190,11 +190,48 @@ REGLAS DE COMPORTAMIENTO
 • Nunca compartás información personal de otros usuarios.
 • Si el usuario usa lenguaje agresivo, respondé con calma y ofrecé derivarlo al representante.`;
 
+const MAX_TOKENS_CAP = 600; // nunca dejar que el cliente infle esto
+
+// Verifica que el token es un JWT Supabase válido (anon o usuario) sin llamar a getUser
+// (getUser solo funciona con user session tokens, no con el anon key)
+function isValidSupabaseJwt(token: string, projectRef: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
+    const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
+    // El iss debe referenciar el proyecto Supabase correcto
+    if (!payload.iss || !payload.iss.includes(projectRef)) return false;
+    // Solo acepta role anon o authenticated (bloquea service_role)
+    if (!["anon", "authenticated"].includes(payload.role)) return false;
+    // No expirado
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
+    return true;
+  } catch { return false; }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    const { messages, max_tokens = 600 } = await req.json();
+    // ── Verificar que viene un JWT Supabase válido (anon key o user JWT) ──
+    const SUPA_URL   = Deno.env.get("SUPABASE_URL") ?? "";
+    // Extraer el project ref del URL: https://xyzxyz.supabase.co → xyzxyz
+    const projectRef = SUPA_URL.replace(/^https?:\/\//, "").split(".")[0];
+
+    const authHeader = req.headers.get("Authorization") ??
+                       req.headers.get("apikey") ?? "";
+    const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    if (!jwtToken || !isValidSupabaseJwt(jwtToken, projectRef)) {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    // max_tokens del cliente se ignora — siempre usamos el cap del servidor
+    const { messages } = await req.json();
+    const max_tokens = MAX_TOKENS_CAP;
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "messages requerido" }), {

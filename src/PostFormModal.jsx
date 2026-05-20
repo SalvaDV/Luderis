@@ -510,6 +510,16 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
         {/* ── PASO 1: Tipo + Formato ── */}
         {paso===1&&(
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {/* Banner informativo para alumnos sin rol docente */}
+            {soloAlumno&&(
+              <div style={{background:"#F59E0B10",border:"1px solid #F59E0B50",borderRadius:10,padding:"10px 14px",display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:18,flexShrink:0}}>⏳</span>
+                <div style={{fontSize:12,color:"#92400E",lineHeight:1.5}}>
+                  <strong style={{display:"block",marginBottom:2}}>¿Querés publicar como docente?</strong>
+                  Si ya enviaste tu solicitud de verificación, está siendo revisada por el equipo de Luderis. Una vez aprobada podrás publicar clases y cursos.
+                </div>
+              </div>
+            )}
             {/* Rol selector — solo para docentes/ambos */}
             {!soloAlumno&&(
               <div>

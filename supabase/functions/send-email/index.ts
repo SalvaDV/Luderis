@@ -4,7 +4,8 @@
  * Templates: bienvenida, nueva_inscripcion, oferta_aceptada, pago_aprobado, etc.
  *
  * Deploy:
- *   supabase functions deploy send-email --no-verify-jwt
+ *   supabase functions deploy send-email
+ *   (JWT verification habilitado — se requiere token de usuario o service role key)
  *
  * Secrets a configurar en Supabase Dashboard → Edge Functions → Secrets:
  *   RESEND_API_KEY   → tu API key de resend.com (re_xxxx)
@@ -12,11 +13,39 @@
  *   APP_URL          → https://classelink.vercel.app
  */
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// ── Seguridad: escape HTML para prevenir inyección en templates ───────────────
+const esc = (s: unknown): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+// Solo permite URLs con esquema https?:// (bloquea javascript:, data:, etc.)
+const safeUrl = (u: unknown, fallback = "#"): string => {
+  const s = String(u ?? "").trim();
+  return /^https?:\/\//i.test(s) ? s : fallback;
+};
+
+// Escapa todos los valores string del objeto data antes de pasar a los templates
+const URL_KEYS = new Set(["pdf_url", "pub_url"]);
+function escapeData(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [
+      k,
+      typeof v === "string" ? (URL_KEYS.has(k) ? safeUrl(v) : esc(v)) : v,
+    ])
+  );
+}
 
 // ── Paleta de colores Luderis ──────────────────────────────────────────────────
 const BRAND = {
@@ -445,6 +474,29 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
+    // ── Autenticación: requiere JWT de usuario o service role key ──────────────
+    const SUPA_URL  = Deno.env.get("SUPABASE_URL")!;
+    const SUPA_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    // Permite: service role key (llamadas internas) O JWT de usuario válido
+    if (token !== SUPA_KEY) {
+      const supaAuth = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
+      const { data: { user }, error: authErr } = await supaAuth.auth.getUser(token);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: "No autorizado" }), {
+          status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
     const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "hola@luderis.com";
     const APP_URL    = Deno.env.get("APP_URL")    ?? "https://classelink.vercel.app";
@@ -474,7 +526,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { subject, html } = tplFn(data, APP_URL);
+    // Escapar todos los datos del usuario antes de pasarlos al template
+    const safeData = escapeData(data as Record<string, unknown>);
+    const { subject, html } = tplFn(safeData, APP_URL);
     const htmlFinal = html.replace(/\{APP_URL\}/g, APP_URL);
 
     const res = await fetch("https://api.resend.com/emails", {

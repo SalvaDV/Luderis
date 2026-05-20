@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { C, FONT } from "../shared";
 
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || "https://hptdyehzqfpgtrpuydny.supabase.co";
-const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
 
 export default function CertificadoPage({certId,onClose}){
   const [cert,setCert]=useState(null);

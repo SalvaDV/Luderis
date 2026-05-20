@@ -1871,8 +1871,9 @@ function LiquidacionesTab({ session }) {
   const [docenteGen, setDocenteGen] = useState("");
   const [filtroP, setFiltroP] = useState("");
 
-  const SUPA_URL_LIQ = "https://hptdyehzqfpgtrpuydny.supabase.co";
-  const ANON_LIQ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
+  // Usando las constantes importadas de supabase.js (no más keys hardcodeadas)
+  const SUPA_URL_LIQ = SUPA_URL;
+  const ANON_LIQ = ANON_KEY;
 
   const cargar = useCallback(() => {
     setLoading(true);

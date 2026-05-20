@@ -8,7 +8,7 @@ const CORS = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FALLBACK_ADMIN_EMAIL = "salvadordevedia@gmail.com";
+// FALLBACK_ADMIN_EMAIL eliminado por seguridad — el rol admin se valida solo desde la DB
 
 // ── Acciones que SOLO puede ejecutar un admin ─────────────────────────────────
 const ADMIN_ONLY_ACTIONS = new Set([
@@ -78,7 +78,7 @@ serve(async (req) => {
         .eq("id", user.id)
         .single();
 
-      const esAdmin = usuarioData?.rol === "admin" || user.email === FALLBACK_ADMIN_EMAIL;
+      const esAdmin = usuarioData?.rol === "admin";
       if (!esAdmin) {
         return new Response(JSON.stringify({ error: "No autorizado: se requiere rol admin" }), {
           status: 403, headers: { ...CORS, "Content-Type": "application/json" },
@@ -296,17 +296,23 @@ serve(async (req) => {
 
     // ── Acciones de usuario (con verificación de ownership) ─────────────────
     } else if (action === "borrar_chat") {
-      const { pub_id, email_a, email_b } = params;
-      if (!pub_id || !email_a || !email_b) throw new Error("pub_id, email_a y email_b requeridos");
+      const { pub_id, email_b } = params;
+      if (!pub_id || !email_b) throw new Error("pub_id y email_b requeridos");
 
-      // CRÍTICO: verificar desde la DB que el usuario autenticado es participante real del chat.
-      // No alcanza con chequear contra email_a/email_b del body (son user-supplied y podrían
-      // ser manipulados para borrar chats ajenos).
+      // email_a siempre viene del JWT (no del body) — el usuario solo puede borrar sus propios chats
+      const myEmail = user.email!;
+
+      // Verificar que email_b tiene un formato válido (evita inyección PostgREST)
+      if (!/^[^\s@,()]+@[^\s@,()]+\.[^\s@,()]+$/.test(email_b)) {
+        throw new Error("email_b inválido");
+      }
+
+      // Verificar que el usuario es participante real del chat leyendo desde la DB
       const { data: participacion } = await adminClient
         .from("mensajes")
         .select("id")
         .eq("publicacion_id", pub_id)
-        .or(`de_nombre.eq.${user.email},para_nombre.eq.${user.email}`)
+        .or(`de_nombre.eq.${myEmail},para_nombre.eq.${myEmail}`)
         .limit(1)
         .maybeSingle();
 
@@ -316,15 +322,18 @@ serve(async (req) => {
         });
       }
 
-      // Borrar todos los mensajes 1:1 del chat (excluye mensajes grupales __grupo__)
-      await adminClient
-        .from("mensajes")
-        .delete()
+      // Borrar usando .eq() (parametrizado) en lugar de .or() con interpolación:
+      // Mensajes enviados por el usuario al otro
+      await adminClient.from("mensajes").delete()
         .eq("publicacion_id", pub_id)
-        .or(
-          `and(de_nombre.eq.${email_a},para_nombre.eq.${email_b}),` +
-          `and(de_nombre.eq.${email_b},para_nombre.eq.${email_a})`
-        );
+        .eq("de_nombre",     myEmail)
+        .eq("para_nombre",   email_b);
+
+      // Mensajes recibidos por el usuario del otro
+      await adminClient.from("mensajes").delete()
+        .eq("publicacion_id", pub_id)
+        .eq("de_nombre",     email_b)
+        .eq("para_nombre",   myEmail);
     }
 
     return new Response(JSON.stringify(result), {

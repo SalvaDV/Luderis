@@ -34,22 +34,38 @@ Deno.serve(async (req) => {
   // ── GET: authorize — redirige al login de MP ────────────────────────────
   if (req.method === "GET" && action === "authorize") {
     const userId = url.searchParams.get("user_id");
+    const jwtParam = url.searchParams.get("token") ?? url.searchParams.get("jwt") ?? "";
     if (!userId) return new Response("Falta user_id", { status: 400 });
+
+    // Verificar que el JWT pertenece al user_id (evita CSRF / account-linking)
+    if (!jwtParam) {
+      return Response.redirect(`${APP_URL}?mp_connect=error&reason=no_auth`, 302);
+    }
+    const { data: { user: jwtUser }, error: jwtErr } = await supabase.auth.getUser(jwtParam);
+    if (jwtErr || !jwtUser || jwtUser.id !== userId) {
+      return Response.redirect(`${APP_URL}?mp_connect=error&reason=auth_mismatch`, 302);
+    }
+
+    // Nonce aleatorio anti-CSRF incluido en state
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    const state = `${userId}:${nonce}`;
 
     const authUrl = new URL("https://auth.mercadopago.com/authorization");
     authUrl.searchParams.set("client_id",    MP_CLIENT_ID);
     authUrl.searchParams.set("response_type","code");
     authUrl.searchParams.set("platform_id",  "mp");
     authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
-    authUrl.searchParams.set("state",        userId); // usamos state para pasar el user_id
+    authUrl.searchParams.set("state",        state);
 
     return Response.redirect(authUrl.toString(), 302);
   }
 
   // ── GET: callback — MP redirige acá con el code ─────────────────────────
   if (req.method === "GET" && action === "callback") {
-    const code   = url.searchParams.get("code");
-    const userId = url.searchParams.get("state");
+    const code      = url.searchParams.get("code");
+    const stateRaw  = url.searchParams.get("state") ?? "";
+    // state puede ser "userId:nonce" (nuevo) o "userId" (retrocompat)
+    const userId    = stateRaw.includes(":") ? stateRaw.split(":")[0] : stateRaw;
 
     if (!code || !userId) {
       return Response.redirect(`${APP_URL}?mp_connect=error`, 302);
@@ -116,6 +132,21 @@ Deno.serve(async (req) => {
 
   // ── POST: status / disconnect ────────────────────────────────────────────
   if (req.method === "POST") {
+    // Verificar JWT del usuario
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!jwtToken) {
+      return new Response(JSON.stringify({ error: "No autorizado: token requerido" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+    const { data: { user: jwtUser }, error: jwtErr } = await supabase.auth.getUser(jwtToken);
+    if (jwtErr || !jwtUser) {
+      return new Response(JSON.stringify({ error: "No autorizado: token inválido" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     let body: { action: string; user_id: string };
     try { body = await req.json(); } catch {
       return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400, headers: CORS });
@@ -123,6 +154,13 @@ Deno.serve(async (req) => {
 
     const { action: postAction, user_id } = body;
     if (!user_id) return new Response(JSON.stringify({ error: "Falta user_id" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
+
+    // El usuario solo puede consultar/modificar su propia conexión
+    if (jwtUser.id !== user_id) {
+      return new Response(JSON.stringify({ error: "No autorizado: user_id no coincide" }), {
+        status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
 
     // ── status ──────────────────────────────────────────────────────────────
     if (postAction === "status") {

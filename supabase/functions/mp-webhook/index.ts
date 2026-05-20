@@ -42,8 +42,15 @@ serve(async (req) => {
       throw new Error("Variables de entorno faltantes");
     }
 
-    // ── Validar firma de Mercado Pago (x-signature) ────────────────────────
-    if (MP_WEBHOOK_SECRET) {
+    // ── Validar firma de Mercado Pago (x-signature) — OBLIGATORIO ─────────
+    // Si MP_WEBHOOK_SECRET no está configurado, rechazar todos los webhooks
+    // para evitar que cualquiera pueda acreditar pagos falsos.
+    if (!MP_WEBHOOK_SECRET) {
+      console.error("mp-webhook: MP_WEBHOOK_SECRET no configurado — rechazando request por seguridad");
+      return new Response("Service unavailable: webhook secret not configured", { status: 503, headers: CORS });
+    }
+
+    {
       const xSignature = req.headers.get("x-signature");
       const xRequestId = req.headers.get("x-request-id");
       if (!xSignature || !xRequestId) {

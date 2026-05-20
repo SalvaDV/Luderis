@@ -461,6 +461,22 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           estado:"pendiente",
           foto_dni_frente:fotoDniUrl,
         },session.access_token,"return=minimal").catch(()=>{});
+
+        // Notificar a todos los admins que hay un nuevo docente pendiente de verificación
+        try{
+          const admins=await sb.db("usuarios?rol=eq.admin&select=id","GET",null,session.access_token).catch(()=>[]);
+          if(admins?.length){
+            await sb.db("notificaciones","POST",
+              admins.map(a=>({
+                usuario_id:a.id,
+                tipo:"sistema",
+                pub_titulo:`Nuevo docente pendiente: ${session.user.email}`,
+                alumno_email:session.user.email,
+                leida:false,
+              })),
+              session.access_token,"return=minimal");
+          }
+        }catch{}
       }
 
       // Matching con IA para alumnos — buscar clases recomendadas

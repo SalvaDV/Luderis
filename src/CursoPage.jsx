@@ -379,8 +379,8 @@ function JitsiModal({roomName,displayName,onClose}){
 }
 
 // ─── CHAT CURSO — chat grupal estilo WhatsApp ────────────────────────────────
-const SUPABASE_URL_CHAT=process.env.REACT_APP_SUPABASE_URL||"https://hptdyehzqfpgtrpuydny.supabase.co";
-const ANON_KEY_CHAT=process.env.REACT_APP_SUPABASE_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g";
+const SUPABASE_URL_CHAT=process.env.REACT_APP_SUPABASE_URL;
+const ANON_KEY_CHAT=process.env.REACT_APP_SUPABASE_KEY;
 
 function fmtMsgTime(ts){
   if(!ts)return"";
@@ -5226,9 +5226,9 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
     setEstado("loading"); setErrorMsg("");
     try{
       const moneda = (post.moneda||"ARS").toLowerCase()==="usd"?"usd":"ars";
-      const res = await fetch("https://hptdyehzqfpgtrpuydny.supabase.co/functions/v1/stripe-checkout",{
+      const res = await fetch(`${sb.SUPABASE_URL}/functions/v1/stripe-checkout`,{
         method:"POST",
-        headers:{"Content-Type":"application/json","apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g"},
+        headers:{"Content-Type":"application/json","apikey":sb.SUPABASE_KEY,"Authorization":`Bearer ${session.access_token}`},
         body: JSON.stringify({
           action:"create_payment_intent",
           publicacion_id:post.id, titulo:post.titulo,

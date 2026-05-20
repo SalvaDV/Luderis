@@ -234,7 +234,7 @@ export default function App(){
         if(u?.rol){
           try{localStorage.setItem("cl_rol_"+session.user.email,u.rol);}catch{}
           setRolSesion(u.rol);
-          setEsAdmin(u.rol==="admin"||session.user.email==="salvadordevedia@gmail.com");
+          setEsAdmin(u.rol==="admin");
           setUserId(session.user.id);
           setUserProperties({rol:u.rol,city:u.ubicacion||localStorage.getItem("cl_user_city")||""});
         }
@@ -331,11 +331,10 @@ export default function App(){
       sb.saveSession(s);
       trackLogin("google");
       try{
-        await sb.upsertUsuario({
-          id:s.user.id,email:s.user.email,
-          nombre:s.user.user_metadata?.full_name||s.user.email.split("@")[0],
-          avatar_url:s.user.user_metadata?.avatar_url||null,
-        },s.access_token);
+        // Fix #10: no sobreescribir avatar con null si Google no lo provee
+        const _uData={id:s.user.id,email:s.user.email,nombre:s.user.user_metadata?.full_name||s.user.email.split("@")[0]};
+        if(s.user.user_metadata?.avatar_url)_uData.avatar_url=s.user.user_metadata.avatar_url;
+        await sb.upsertUsuario(_uData,s.access_token);
         const nombre=s.user.user_metadata?.full_name||s.user.email.split("@")[0];
         try{localStorage.setItem("dn_"+s.user.email,nombre);}catch{}
       }catch{}

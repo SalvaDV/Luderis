@@ -30,9 +30,15 @@ Deno.serve(async (req) => {
   const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")!; // token de Luderis
   const INTERNAL_SECRET = Deno.env.get("LIBERAR_PAGO_SECRET") ?? "";
 
+  // LIBERAR_PAGO_SECRET es obligatorio — si no está configurado, rechazar todo
+  if (!INTERNAL_SECRET) {
+    console.error("liberar-pago: LIBERAR_PAGO_SECRET no configurado — rechazando request por seguridad");
+    return new Response(JSON.stringify({ error: "Servicio no disponible: secret no configurado" }), { status: 503, headers: CORS });
+  }
+
   // Validar que el caller es interno (pg_net o admin)
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (INTERNAL_SECRET && authHeader !== `Bearer ${INTERNAL_SECRET}`) {
+  if (authHeader !== `Bearer ${INTERNAL_SECRET}`) {
     return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: CORS });
   }
 
@@ -60,12 +66,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Buscar conexión MP del docente
-    const { data: mpConn } = await supabase
-      .from("mp_conexiones")
-      .select("mp_user_id, mp_email, mp_access_token")
-      .eq("usuario_email", pago.docente_email)
-      .single();
+    // 2. Buscar conexión MP y usuario_id del docente
+    const [{ data: mpConn }, { data: docenteUser }] = await Promise.all([
+      supabase
+        .from("mp_conexiones")
+        .select("mp_user_id, mp_email, mp_access_token")
+        .eq("usuario_email", pago.docente_email)
+        .single(),
+      supabase
+        .from("usuarios")
+        .select("id")
+        .eq("email", pago.docente_email)
+        .single(),
+    ]);
 
     const montoTotal  = Number(pago.monto);
     const comision    = Math.round(montoTotal * COMISION_LUDERIS);
@@ -140,9 +153,24 @@ Deno.serve(async (req) => {
 
     if (updateErr) throw updateErr;
 
-    // 5. Notificar al docente
+    // 5. Registrar movimiento en billetera del docente
+    if (docenteUser?.id) {
+      await supabase.from("billetera_movimientos").insert({
+        usuario_id:       docenteUser.id,
+        tipo:             "ingreso",
+        monto:            montoNeto,
+        descripcion:      `Clase liberada — alumno: ${pago.alumno_email}`,
+        publicacion_id:   pago.publicacion_id,
+        mp_payment_id:    mpTransferId ?? pago.mp_payment_id,
+        comision_luderis: comision,
+        estado:           "liberado",
+      }).catch((e: Error) => console.error("billetera insert error:", e.message));
+    }
+
+    // 6. Notificar al docente (Fix #6: alumno_email = email real del alumno, no del docente)
     await supabase.from("notificaciones").insert({
-      alumno_email:   pago.docente_email,
+      usuario_id:     docenteUser?.id ?? null,
+      alumno_email:   pago.alumno_email,
       tipo:           "pago_liberado",
       publicacion_id: pago.publicacion_id,
       leida:          false,

@@ -64,10 +64,10 @@ export default function ChatsPage({session,onOpenChat}){
     if(!await confirm({msg:"¿Borrar esta conversación? Se eliminarán todos los mensajes.",confirmLabel:"Borrar",danger:true}))return;
     try{
       // Use admin-actions edge function which has service role to bypass RLS
-      const res=await fetch("https://hptdyehzqfpgtrpuydny.supabase.co/functions/v1/admin-actions",{
+      const res=await fetch(`${sb.SUPABASE_URL}/functions/v1/admin-actions`,{
         method:"POST",
-        headers:{"Content-Type":"application/json","apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwdGR5ZWh6cWZwZ3RycHV5ZG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MzYyODIsImV4cCI6MjA4ODQxMjI4Mn0.apesTxMiG-WJbhtfpxorLPagiDAnFH826wR0CuZ4y_g","x-user-token":session.access_token},
-        body:JSON.stringify({action:"borrar_chat",pub_id:pubId,email_a:miEmail,email_b:otroEmail})
+        headers:{"Content-Type":"application/json","apikey":sb.SUPABASE_KEY,"x-user-token":session.access_token,"Authorization":`Bearer ${session.access_token}`},
+        body:JSON.stringify({action:"borrar_chat",pub_id:pubId,email_b:otroEmail})
       });
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"Error al borrar");

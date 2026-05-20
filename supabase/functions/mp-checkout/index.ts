@@ -20,8 +20,34 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ── Verificar JWT del alumno ───────────────────────────────────────────
+    const SUPABASE_URL_AUTH = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_KEY_AUTH = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    if (!jwtToken) {
+      return new Response(JSON.stringify({ error: "No autorizado: se requiere sesión activa" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+    const supaAuth = createClient(SUPABASE_URL_AUTH, SUPABASE_KEY_AUTH, { auth: { persistSession: false } });
+    const { data: { user: jwtUser }, error: jwtErr } = await supaAuth.auth.getUser(jwtToken);
+    if (jwtErr || !jwtUser) {
+      return new Response(JSON.stringify({ error: "No autorizado: token inválido" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { publicacion_id, titulo, descripcion, precio, modo, cantidad = 1, clases_cantidad, alumno_email, alumno_nombre, docente_email, tipo } = body;
+
+    // El alumno_email del body debe coincidir con el JWT (evita pagar en nombre de otro)
+    if (alumno_email && alumno_email !== jwtUser.email) {
+      return new Response(JSON.stringify({ error: "No autorizado: alumno_email no coincide con la sesión activa" }), {
+        status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
 
     if (!publicacion_id || !precio || !alumno_email) {
       return new Response(

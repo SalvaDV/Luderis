@@ -905,7 +905,7 @@ function PagosTab({session}){
     try{
       const res=await fetch(`${sb.SUPABASE_URL}/functions/v1/mp-oauth`,{
         method:"POST",
-        headers:{"Content-Type":"application/json","apikey":sb.SUPABASE_KEY},
+        headers:{"Content-Type":"application/json","apikey":sb.SUPABASE_KEY,"Authorization":`Bearer ${session.access_token}`},
         body:JSON.stringify({action:"status",user_id:session.user.id}),
       });
       setStatus(await res.json());
@@ -920,14 +920,14 @@ function PagosTab({session}){
     if(r==="error"){toast("Error al conectar Mercado Pago. Intentá de nuevo.","error");}
     if(r){const u=new URL(window.location.href);u.searchParams.delete("mp_connect");window.history.replaceState({},"",u);}
   },[]);// eslint-disable-line
-  const conectar=()=>window.open(`${sb.SUPABASE_URL}/functions/v1/mp-oauth?action=authorize&user_id=${session.user.id}`,"_self");
+  const conectar=()=>window.open(`${sb.SUPABASE_URL}/functions/v1/mp-oauth?action=authorize&user_id=${session.user.id}&token=${encodeURIComponent(session.access_token)}`,"_self");
   const desconectar=async()=>{
     if(!window.confirm("¿Desconectar tu cuenta de Mercado Pago? Los pagos futuros usarán el sistema de Luderis."))return;
     setDisconnecting(true);
     try{
       await fetch(`${sb.SUPABASE_URL}/functions/v1/mp-oauth`,{
         method:"POST",
-        headers:{"Content-Type":"application/json","apikey":sb.SUPABASE_KEY},
+        headers:{"Content-Type":"application/json","apikey":sb.SUPABASE_KEY,"Authorization":`Bearer ${session.access_token}`},
         body:JSON.stringify({action:"disconnect",user_id:session.user.id}),
       });
       toast("Cuenta de MP desconectada","info");
