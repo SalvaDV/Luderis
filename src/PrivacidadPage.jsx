@@ -245,37 +245,37 @@ export default function PrivacidadPage() {
               Política de Privacidad
             </h1>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>
-              <strong>Última actualización:</strong> Abril de 2026
+              <strong>Última actualización:</strong> Mayo de 2026
             </p>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 24 }}>
               <strong>Aplica a:</strong> todos los usuarios de luderis.com.ar
             </p>
             <Badge type="info">
               🔒 Luderis cumple con la <strong>Ley N° 25.326 de Protección de Datos Personales</strong> de
-              la Republica Argentina. Tus datos son tuyos: solo los usamos para brindarte el servicio
+              la República Argentina. Tus datos son tuyos: solo los usamos para brindarte el servicio
               y nunca los vendemos a terceros.
             </Badge>
           </div>
 
           <Seccion id="s1" titulo="1. Qué datos recopilamos">
-            <P>Recopilamos distintos tipos de datos segun como uses la plataforma:</P>
+            <P>Recopilamos distintos tipos de datos según cómo uses la plataforma:</P>
 
             <DatoCard
               emoji="👤" categoria="Datos de cuenta"
-              base="Ejecucion del contrato"
+              base="Ejecución del contrato"
               items={[
                 "Nombre completo y email (requeridos para el registro)",
                 "Contraseña (almacenada con hash bcrypt, nunca en texto plano)",
                 "Foto de perfil (opcional)",
-                "Biografia y ubicacion (opcionales)",
+                "Biografía y ubicación (opcionales)",
                 "Rol en la plataforma (alumno, docente, ambos)",
               ]}
             />
             <DatoCard
               emoji="🎓" categoria="Datos de actividad"
-              base="Ejecucion del contrato"
+              base="Ejecución del contrato"
               items={[
-                "Publicaciones creadas (cursos, clases, busquedas)",
+                "Publicaciones creadas (cursos, clases, búsquedas)",
                 "Inscripciones a clases y cursos",
                 "Reseñas y calificaciones enviadas",
                 "Mensajes en el chat interno",
@@ -284,19 +284,19 @@ export default function PrivacidadPage() {
             />
             <DatoCard
               emoji="💳" categoria="Datos de pago"
-              base="Ejecucion del contrato / Obligación legal"
+              base="Ejecución del contrato / Obligación legal"
               items={[
-                "Historial de transacciónes (monto, fecha, estado)",
-                "Datos bancarios para cobros (docentes): procesados y almacenados por MercadoPago o Stripe",
-                "Luderis NO almacena numeros de tarjeta ni CVV",
+                "Historial de transacciones (monto, fecha, estado)",
+                "Datos bancarios para cobros (docentes): procesados y almacenados por MercadoPago",
+                "Luderis NO almacena números de tarjeta ni CVV",
               ]}
             />
             <DatoCard
               emoji="📊" categoria="Datos técnicos"
-              base="Interes legitimo"
+              base="Interés legítimo"
               items={[
-                "Direccion IP y tipo de navegador",
-                "Paginas visitadas y tiempo de sesion",
+                "Dirección IP y tipo de navegador",
+                "Páginas visitadas y tiempo de sesión (via Google Analytics)",
                 "Errores y logs (via Sentry, anonimizados)",
                 "Preferencias de tema (claro/oscuro) y configuraciones",
               ]}
@@ -307,11 +307,11 @@ export default function PrivacidadPage() {
             <P>Usamos tus datos exclusivamente para los siguientes fines:</P>
             <Ul>
               <Li><strong>Brindarte el servicio:</strong> autenticación, publicaciones, inscripciones, pagos y chat.</Li>
-              <Li><strong>Personalizar tu experiencia:</strong> recomendaciones de cursos, resultados de busqueda relevantes.</Li>
-              <Li><strong>Mejorar la plataforma:</strong> analisis anonimizado de uso para detectar problemas y priorizar mejoras.</Li>
-              <Li><strong>Comunicaciones transacciónales:</strong> emails de confirmacion, recuperacion de contraseña, notificaciones de clases.</Li>
-              <Li><strong>Seguridad y prevencion de fraude:</strong> deteccion de comportamientos anomalos o usos indebidos.</Li>
-              <Li><strong>Cumplimiento legal:</strong> conservacion de registros de transacciónes segun la normativa fiscal y financiera argentina.</Li>
+              <Li><strong>Personalizar tu experiencia:</strong> recomendaciones de cursos, resultados de búsqueda relevantes.</Li>
+              <Li><strong>Mejorar la plataforma:</strong> análisis anónimo de uso para detectar problemas y priorizar mejoras.</Li>
+              <Li><strong>Comunicaciones transaccionales:</strong> emails de confirmación, recuperación de contraseña, notificaciones de clases.</Li>
+              <Li><strong>Seguridad y prevención de fraude:</strong> detección de comportamientos anómalos o usos indebidos.</Li>
+              <Li><strong>Cumplimiento legal:</strong> conservación de registros de transacciones según la normativa fiscal y financiera argentina.</Li>
             </Ul>
             <Badge type="warn">
               No usamos tus datos para publicidad de terceros ni para perfilado automatizado con efectos significativos sobre vos.
@@ -321,31 +321,31 @@ export default function PrivacidadPage() {
           <Seccion id="s3" titulo="3. Con quién compartimos datos">
             <P>
               Solo compartimos datos con terceros en la medida necesaria para brindarte el servicio.
-              Todos nuestros proveedores estan obligados contractualmente a proteger tus datos:
+              Todos nuestros proveedores están obligados contractualmente a proteger tus datos:
             </P>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 16 }}>
               <TerceroCard emoji="🗄️" nombre="Supabase"
-                uso="Base de datos y autenticación. Almacena todos los datos de la plataforma con encriptacion en reposo."
+                uso="Base de datos y autenticación. Almacena todos los datos de la plataforma con encriptación en reposo."
                 url="https://supabase.com/privacy" />
               <TerceroCard emoji="💳" nombre="MercadoPago"
                 uso="Procesamiento de pagos en pesos argentinos. Maneja datos de tarjeta de forma independiente."
                 url="https://www.mercadopago.com.ar/privacidad" />
-              <TerceroCard emoji="💸" nombre="Stripe"
-                uso="Procesamiento de pagos internacionales. Certificado PCI DSS nivel 1."
-                url="https://stripe.com/es-419-ar/privacy" />
+              <TerceroCard emoji="📊" nombre="Google Analytics (GA4)"
+                uso="Analítica de uso de la plataforma: páginas visitadas, duración de sesión, tráfico. Los datos se procesan de forma anónima y agregada."
+                url="https://policies.google.com/privacy" />
               <TerceroCard emoji="🔍" nombre="Sentry"
-                uso="Monitoreo de errores en produccion. Los datos se anonomizan antes de enviarlos."
+                uso="Monitoreo de errores en producción. Los datos se anonimizan antes de enviarlos."
                 url="https://sentry.io/privacy/" />
               <TerceroCard emoji="📧" nombre="Resend"
-                uso="Envio de emails transacciónales (confirmaciones, recuperacion de contraseña)."
+                uso="Envío de emails transaccionales (confirmaciones, recuperación de contraseña)."
                 url="https://resend.com/privacy" />
               <TerceroCard emoji="🤖" nombre="Anthropic (Claude API)"
-                uso="Busqueda inteligente y verificacion de docentes. Solo procesa el texto de busqueda, sin datos personales."
+                uso="Búsqueda inteligente y verificación de docentes. Solo procesa el texto de búsqueda, sin datos personales identificables."
                 url="https://www.anthropic.com/privacy" />
             </div>
             <P>
               Luderis puede divulgar datos personales si es requerido por orden judicial, autoridad
-              competente o para cumplir con obligaciónes legales vigentes en Argentina.
+              competente o para cumplir con obligaciones legales vigentes en Argentina.
             </P>
           </Seccion>
 
@@ -357,20 +357,20 @@ export default function PrivacidadPage() {
             </P>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
               <DerechoCard emoji="👁️" titulo="Acceso"
-                desc="Podes solicitar una copia completa de todos los datos personales que tenemos sobre vos."
-                como="Email a contacto@luderis.com.ar. Respondemos en 30 dias habiles." />
+                desc="Podés solicitar una copia completa de todos los datos personales que tenemos sobre vos."
+                como="Email a contacto@luderis.com.ar. Respondemos en 30 días hábiles." />
               <DerechoCard emoji="✏️" titulo="Rectificación"
-                desc="Podes corregir datos incorrectos o incompletos. Muchos datos podes editarlos directamente desde Mi cuenta."
+                desc="Podés corregir datos incorrectos o incompletos. Muchos datos podés editarlos directamente desde Mi cuenta."
                 como="Desde Mi cuenta o por email." />
               <DerechoCard emoji="🗑️" titulo="Cancelación (supresión)"
-                desc="Podes solicitar la eliminación de tus datos. Algunos datos deben conservarse por obligaciónes legales (ej: registros de pagos)."
-                como="Desde Mi cuenta o por email. Procesamos en 30 dias habiles." />
+                desc="Podés solicitar la eliminación de tus datos. Algunos datos deben conservarse por obligaciones legales (ej: registros de pagos)."
+                como="Desde Mi cuenta o por email. Procesamos en 30 días hábiles." />
               <DerechoCard emoji="🚫" titulo="Oposición"
-                desc="Podes oponerte al uso de tus datos para fines especificos (ej: analisis de uso)."
-                como="Por email indicando el tratamiento al que te opones." />
+                desc="Podés oponerte al uso de tus datos para fines específicos (ej: análisis de uso)."
+                como="Por email indicando el tratamiento al que te oponés." />
             </div>
             <Badge type="neutral">
-              La DNPDP (Direccion Nacional de Protección de Datos Personales) es el organismo
+              La DNPDP (Dirección Nacional de Protección de Datos Personales) es el organismo
               de control al que podes recurrir si consideras que tus derechos no fueron respetados.
               {" "}<a href="https://www.argentina.gob.ar/aaip/datospersonales" target="_blank" rel="noopener noreferrer">
                 argentina.gob.ar/datospersonales
@@ -380,40 +380,41 @@ export default function PrivacidadPage() {
 
           <Seccion id="s5" titulo="5. Cookies y rastreo">
             <P>
-              Luderis usa cookies y tecnologias similares para el funcionamiento de la plataforma.
-              A continuacion el detalle de las cookies que utilizamos:
+              Luderis usa cookies y tecnologías similares para el funcionamiento de la plataforma.
+              A continuación el detalle de las cookies que utilizamos:
             </P>
             <div style={{ overflowX: "auto", marginBottom: 16 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: "#F3EEFF" }}>
-                    {["Nombre", "Tipo", "Proposito", "Duracion"].map(h => (
+                    {["Nombre", "Tipo", "Propósito", "Duración"].map(h => (
                       <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: "#4A1D96", fontWeight: 700, border: `1px solid ${BORDER}` }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <CookieRow nombre="classelink_session" tipo="Esencial"   proposito="Mantiene la sesion iniciada" duracion="7 dias" />
-                  <CookieRow nombre="cl_rol_*"           tipo="Esencial"   proposito="Preferencias de rol de usuario" duracion="Persistente" />
-                  <CookieRow nombre="cl_theme"           tipo="Esencial"   proposito="Preferencia de tema (claro/oscuro)" duracion="Persistente" />
-                  <CookieRow nombre="ld_auth"            tipo="Esencial"   proposito="Flujo de autenticación" duracion="Sesion" />
-                  <CookieRow nombre="sentry-*"           tipo="Analitica"  proposito="Monitoreo de errores (anonimizado)" duracion="1 ano" />
+                  <CookieRow nombre="sb-auth-token"  tipo="Esencial"   proposito="Mantiene la sesión iniciada (Supabase Auth)" duracion="7 días" />
+                  <CookieRow nombre="luderis-theme"  tipo="Esencial"   proposito="Preferencia de tema (claro/oscuro)" duracion="Persistente" />
+                  <CookieRow nombre="luderis-rol"    tipo="Esencial"   proposito="Preferencias de rol de usuario" duracion="Persistente" />
+                  <CookieRow nombre="_ga"            tipo="Analitica"  proposito="Google Analytics: distingue usuarios únicos" duracion="2 años" />
+                  <CookieRow nombre="_ga_*"          tipo="Analitica"  proposito="Google Analytics: almacena estado de sesión" duracion="2 años" />
+                  <CookieRow nombre="sentry-*"       tipo="Analitica"  proposito="Monitoreo de errores (anonimizado)" duracion="1 año" />
                 </tbody>
               </table>
             </div>
             <P>
               No utilizamos cookies de publicidad ni de rastreo entre sitios.
-              Podes limpiar las cookies de Luderis desde la configuracion de tu navegador en cualquier momento.
+              Podés limpiar las cookies de Luderis desde la configuración de tu navegador en cualquier momento.
             </P>
           </Seccion>
 
           <Seccion id="s6" titulo="6. Retención de datos">
             <P>Conservamos tus datos durante los siguientes periodos:</P>
             <Ul>
-              <Li><strong>Datos de cuenta activa:</strong> mientras la cuenta este activa.</Li>
-              <Li><strong>Tras la eliminación de cuenta:</strong> 30 dias en backups, luego se eliminan permanentemente.</Li>
-              <Li><strong>Registros de transacciónes:</strong> 10 anos segun la normativa fiscal argentina (Ley 11.683).</Li>
-              <Li><strong>Logs de errores:</strong> 90 dias (luego son eliminados automaticamente).</Li>
+              <Li><strong>Datos de cuenta activa:</strong> mientras la cuenta esté activa.</Li>
+              <Li><strong>Tras la eliminación de cuenta:</strong> 30 días en backups, luego se eliminan permanentemente.</Li>
+              <Li><strong>Registros de transacciones:</strong> 10 años según la normativa fiscal argentina (Ley 11.683).</Li>
+              <Li><strong>Logs de errores:</strong> 90 días (luego son eliminados automáticamente).</Li>
               <Li><strong>Mensajes de chat:</strong> se eliminan junto con la cuenta, salvo que haya una disputa activa.</Li>
             </Ul>
           </Seccion>
@@ -421,12 +422,12 @@ export default function PrivacidadPage() {
           <Seccion id="s7" titulo="7. Seguridad">
             <P>Implementamos las siguientes medidas para proteger tus datos:</P>
             <Ul>
-              <Li><strong>Encriptacion en transito:</strong> toda la comunicacion usa TLS 1.2+.</Li>
-              <Li><strong>Encriptacion en reposo:</strong> los datos en Supabase se almacenan encriptados.</Li>
+              <Li><strong>Encriptación en tránsito:</strong> toda la comunicación usa TLS 1.2+.</Li>
+              <Li><strong>Encriptación en reposo:</strong> los datos en Supabase se almacenan encriptados.</Li>
               <Li><strong>Contraseñas hasheadas:</strong> usamos bcrypt con salt aleatorio.</Li>
               <Li><strong>Row Level Security (RLS):</strong> cada usuario solo puede acceder a sus propios datos en la base de datos.</Li>
-              <Li><strong>Tokens de acceso de corta duracion:</strong> las sesiones expiran automaticamente por inactividad.</Li>
-              <Li><strong>Monitoreo de errores:</strong> Sentry detecta comportamientos anomalos en tiempo real.</Li>
+              <Li><strong>Tokens de acceso de corta duración:</strong> las sesiones expiran automáticamente por inactividad.</Li>
+              <Li><strong>Monitoreo de errores:</strong> Sentry detecta comportamientos anómalos en tiempo real.</Li>
             </Ul>
             <P>
               En caso de una brecha de seguridad que afecte datos personales, notificaremos a los
@@ -437,41 +438,46 @@ export default function PrivacidadPage() {
           <Seccion id="s8" titulo="8. Transferencias internacionales">
             <P>
               Algunos de nuestros proveedores operan fuera de Argentina. En esos casos,
-              nos aseguramos de que cuenten con garantias adecuadas:
+              nos aseguramos de que cuenten con garantías adecuadas:
             </P>
             <Ul>
               <Li><strong>Supabase:</strong> servidores en us-east-1 (Virginia, EEUU). Cumple con SOC 2 Type II.</Li>
-              <Li><strong>Stripe:</strong> opera globalmente con certificacion PCI DSS nivel 1.</Li>
-              <Li><strong>Sentry:</strong> datos anonimizados antes del envio.</Li>
-              <Li><strong>Anthropic:</strong> solo procesa texto de busqueda, sin datos identificables.</Li>
+              <Li><strong>Google Analytics:</strong> opera globalmente con certificaciones de privacidad. Los datos se procesan de forma anónima y agregada.</Li>
+              <Li><strong>Sentry:</strong> datos anonimizados antes del envío.</Li>
+              <Li><strong>Anthropic:</strong> solo procesa texto de búsqueda, sin datos identificables.</Li>
             </Ul>
             <P>
-              Todas las transferencias internacionales se realizan bajo el marco del articulo 12
-              de la Ley 25.326 (paises con nivel de protección adecuado o con garantias contractuales).
+              Todas las transferencias internacionales se realizan bajo el marco del artículo 12
+              de la Ley 25.326 (países con nivel de protección adecuado o con garantías contractuales).
             </P>
           </Seccion>
 
           <Seccion id="s9" titulo="9. Menores de edad">
             <P>
-              Luderis no esta dirigido a menores de 13 anos. Los menores entre 13 y 17 anos
-              pueden usar la plataforma con consentimiento verificable de su representante legal,
-              quien es responsable de supervisar el uso.
+              Luderis da la bienvenida a estudiantes menores de edad que buscan clases para el colegio
+              o la universidad. La Plataforma acepta usuarios a partir de los <strong>13 años</strong>.
             </P>
             <P>
-              Si detectamos que un menor de 13 anos se registro sin consentimiento parental,
-              eliminaremos la cuenta y todos los datos asociados de forma inmediata.
+              Los menores de entre 13 y 17 años pueden usar la plataforma únicamente como Alumnos,
+              con consentimiento verificable de su representante legal, quien es responsable de
+              supervisar el uso de la Plataforma por parte del menor.
+            </P>
+            <P>
+              No recopilamos intencionalmente datos personales de menores de 13 años. Si detectamos
+              que un menor de 13 años se registró sin consentimiento parental, eliminaremos la
+              cuenta y todos los datos asociados de forma inmediata.
             </P>
           </Seccion>
 
           <Seccion id="s10" titulo="10. Cambios a esta política">
             <P>
-              Podemos actualizar esta Política de Privacidad periodicamente. Cuando los cambios
-              sean significativos, te notificaremos con al menos <strong>15 dias de anticipacion</strong> por email
+              Podemos actualizar esta Política de Privacidad periódicamente. Cuando los cambios
+              sean significativos, te notificaremos con al menos <strong>15 días de anticipación</strong> por email
               y con un aviso destacado en la plataforma.
             </P>
             <P>
-              La version vigente siempre estara disponible en <a href="/privacidad">luderis.com.ar/privacidad</a>.
-              El uso continuado de la plataforma tras los cambios implica la aceptacion de la nueva política.
+              La versión vigente siempre estará disponible en <a href="/privacidad">luderis.com.ar/privacidad</a>.
+              El uso continuado de la plataforma tras los cambios implica la aceptación de la nueva política.
             </P>
           </Seccion>
 
@@ -481,9 +487,9 @@ export default function PrivacidadPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {[
                   { emoji: "📧", label: "Email de privacidad", valor: "contacto@luderis.com.ar", href: "mailto:contacto@luderis.com.ar" },
-                  { emoji: "⏱️", label: "Tiempo de respuesta", valor: "30 dias habiles (plazo legal)" },
-                  { emoji: "📍", label: "Domicilio", valor: "Ciudad Autonoma de Buenos Aires, Argentina" },
-                  { emoji: "⚖️", label: "Organismo de control", valor: "DNPDP — Direccion Nacional de Protección de Datos Personales" },
+                  { emoji: "⏱️", label: "Tiempo de respuesta", valor: "30 días hábiles (plazo legal)" },
+                  { emoji: "📍", label: "Domicilio", valor: "Ciudad Autónoma de Buenos Aires, Argentina" },
+                  { emoji: "⚖️", label: "Organismo de control", valor: "DNPDP — Dirección Nacional de Protección de Datos Personales" },
                 ].map(({ emoji, label, valor, href }) => (
                   <div key={label} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                     <span style={{ fontSize: 22 }}>{emoji}</span>

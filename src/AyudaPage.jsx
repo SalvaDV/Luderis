@@ -46,15 +46,15 @@ const CATEGORIAS = [
     preguntas: [
       {
         q: "¿Qué métodos de pago aceptan?",
-        a: "Aceptamos pagos a través de MercadoPago (tarjetas, débito, Mercado Crédito, transferencia bancaria) y Stripe (tarjetas de crédito/débito internacionales). El docente puede ofrecer ambas opciones o solo una.",
+        a: "Actualmente aceptamos pagos a través de MercadoPago (tarjetas de crédito y débito, Mercado Crédito, transferencia bancaria). El pago con tarjeta internacional vía Stripe estará disponible próximamente.",
       },
       {
         q: "¿Los precios incluyen impuestos?",
-        a: "Sí. El precio que ves en cada publicación es el precio final. No hay cargos adicionales ocultos al momento de pagar.",
+        a: "Sí. El precio que ves en cada publicación es el precio final para el alumno. No hay cargos adicionales ocultos al momento de pagar.",
       },
       {
         q: "¿Cuándo se acredita el cobro al docente?",
-        a: "Los tiempos de acreditación dependen del procesador de pago. Con MercadoPago suele ser entre 2 y 14 días hábiles según el método. Con Stripe, entre 2 y 7 días hábiles.",
+        a: "Los tiempos de acreditación dependen del método de pago. Con MercadoPago suele ser entre 2 y 14 días hábiles según el medio utilizado.",
       },
       {
         q: "¿Puedo pedir una devolución?",
@@ -62,15 +62,15 @@ const CATEGORIAS = [
       },
       {
         q: "¿Qué comisión cobra Luderis?",
-        a: "Luderis cobra una comisión por cada transacción procesada a través de la plataforma. El porcentaje exacto se muestra al momento de publicar o contratar un servicio.",
+        a: "Luderis cobra una comisión sobre cada transacción procesada a través de la plataforma. El porcentaje exacto está siempre visible antes de confirmar cualquier pago o publicación, sin cargos ocultos.",
       },
       {
         q: "¿Es seguro pagar en Luderis?",
-        a: "Sí. Los pagos son procesados por MercadoPago y Stripe, que cuentan con encriptación TLS y certificaciones de seguridad internacionales. Luderis nunca almacena datos de tarjetas.",
+        a: "Sí. Los pagos son procesados por MercadoPago, que cuenta con encriptación TLS y certificaciones de seguridad internacionales. Luderis nunca almacena datos de tarjetas.",
       },
       {
         q: "El pago fue rechazado, ¿qué hago?",
-        a: "Verificá que los datos de la tarjeta sean correctos, que tengas fondos suficientes y que la tarjeta no esté vencida. Si el problema persiste, intentá con otro método de pago o contactá a tu banco.",
+        a: "Verificá que los datos de la tarjeta sean correctos, que tengas fondos suficientes y que la tarjeta no esté vencida. Si el problema persiste, intentá con otro método de pago (ej: transferencia bancaria) o contactá a tu banco.",
       },
     ],
   },

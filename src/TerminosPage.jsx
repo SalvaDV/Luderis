@@ -210,7 +210,7 @@ export default function TerminosPage() {
               Términos y Condiciones de Uso
             </h1>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>
-              <strong>Última actualización:</strong> Abril de 2026
+              <strong>Última actualización:</strong> Mayo de 2026
             </p>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 24 }}>
               <strong>Vigencia:</strong> A partir de la fecha de publicación
@@ -226,7 +226,8 @@ export default function TerminosPage() {
           <Seccion id="s1" titulo="1. Aceptación de los Términos">
             <P>
               Estos Términos y Condiciones (en adelante, "los Términos") regulan el acceso y uso de la
-              plataforma Luderis (en adelante, "la Plataforma"), operada por su titular (persona física),
+              plataforma Luderis (en adelante, "la Plataforma"), operada por{" "}
+              <strong>Salvador Ignacio De Vedia</strong> (en adelante, "el Titular"),
               con domicilio en la Ciudad Autónoma de Buenos Aires, República Argentina.
             </P>
             <P>
@@ -264,7 +265,7 @@ export default function TerminosPage() {
             </P>
             <Ul>
               <Li>La información que proporcionás es verdadera, precisa y actualizada.</Li>
-              <Li>Sos mayor de 18 años, o contás con autorización de tu padre, madre o tutor legal (ver Sección 11).</Li>
+              <Li>Sos mayor de 18 años; o tenés entre 13 y 17 años y contás con autorización de tu padre, madre o tutor legal (ver Sección 11); o tenés menos de 13 años, en cuyo caso no podés usar la Plataforma.</Li>
               <Li>No tenés una cuenta previamente suspendida o inhabilitada por Luderis.</Li>
               <Li>Sos responsable de mantener la confidencialidad de tu contraseña y de toda actividad que ocurra bajo tu cuenta.</Li>
             </Ul>
@@ -380,17 +381,19 @@ export default function TerminosPage() {
           {/* ── Sección 8 ── */}
           <Seccion id="s8" titulo="8. Comisiones y Tarifas">
             <P>
-              Luderis puede cobrar una comisión por los servicios de intermediación prestados.
-              Los porcentajes de comisión vigentes serán informados en la Plataforma al momento
-              de crear o gestionar una publicación.
+              Luderis cobra una comisión sobre cada transacción procesada a través de la Plataforma
+              por los servicios de intermediación prestados. El porcentaje de comisión vigente es
+              variable y es regulado desde el panel de administración de la Plataforma.
             </P>
             <P>
-              El uso de determinadas funcionalidades de la Plataforma puede requerir el pago de
-              tarifas adicionales, que serán claramente informadas antes de cualquier transacción.
+              El porcentaje exacto aplicable a cada transacción es informado claramente al Docente
+              en el momento de crear o gestionar una publicación, y al Alumno antes de confirmar
+              cualquier pago. No existen cargos ocultos.
             </P>
             <P>
-              Luderis se reserva el derecho de modificar las comisiones con un preaviso mínimo de
-              15 (quince) días, notificando a los usuarios afectados por correo electrónico.
+              Luderis se reserva el derecho de modificar el porcentaje de comisión con un preaviso
+              mínimo de <strong>15 (quince) días corridos</strong>, notificando a los Docentes afectados
+              por correo electrónico y mediante aviso destacado dentro de la Plataforma.
             </P>
           </Seccion>
 
@@ -438,22 +441,27 @@ export default function TerminosPage() {
           {/* ── Sección 11 ── */}
           <Seccion id="s11" titulo="11. Menores de Edad">
             <P>
-              Luderis está dirigido a personas mayores de 18 años. Los menores de edad podrán usar
-              la Plataforma únicamente con el consentimiento expreso, verificable y previo de su padre,
-              madre o tutor legal.
+              Luderis da la bienvenida a estudiantes que buscan clases particulares para el colegio y
+              la universidad. La Plataforma acepta usuarios según la siguiente clasificación etaria:
             </P>
+            <Ul>
+              <Li><strong>Mayores de 18 años:</strong> pueden usar la Plataforma sin restricciones adicionales.</Li>
+              <Li><strong>Entre 13 y 17 años:</strong> pueden usar la Plataforma como Alumnos únicamente, con el consentimiento expreso y verificable de su padre, madre o tutor legal. No pueden actuar como Docentes ni realizar pagos de forma autónoma.</Li>
+              <Li><strong>Menores de 13 años:</strong> no pueden registrarse ni usar la Plataforma bajo ninguna circunstancia.</Li>
+            </Ul>
             <P>
-              Al registrar a un menor de edad, el representante legal declara que:
+              Al registrar a un usuario de entre 13 y 17 años, el representante legal declara que:
             </P>
             <Ul>
               <Li>Es el padre, madre o tutor legal del menor.</Li>
               <Li>Ha leído y acepta estos Términos en nombre del menor.</Li>
               <Li>Asume plena responsabilidad por el uso que el menor haga de la Plataforma.</Li>
-              <Li>Comprende que el menor no podrá actuar como Docente ni realizar pagos de forma autónoma.</Li>
+              <Li>Supervisará el uso que el menor haga de la Plataforma, incluyendo los contenidos a los que accede y las comunicaciones que realiza.</Li>
             </Ul>
             <P>
               Luderis se reserva el derecho de solicitar documentación que acredite el vínculo familiar
-              o la tutela legal en caso de duda razonable.
+              o la tutela legal en caso de duda razonable, y de cancelar cuentas de menores de 13 años
+              junto con todos los datos asociados.
             </P>
           </Seccion>
 

@@ -127,7 +127,7 @@ function AuthScreen({onLogin}){
             Aprendé lo que quieras, enseñá lo que sabés.
           </h2>
           <p style={{color:"rgba(255,255,255,.7)",fontSize:14,lineHeight:1.75,margin:0}}>
-            Conectamos personas para compartir conocimiento. Sin intermediarios ni comisiones.
+            Conectamos personas para compartir conocimiento. Transparente, seguro y sin cargos ocultos.
           </p>
         </div>
 

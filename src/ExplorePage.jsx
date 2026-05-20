@@ -705,7 +705,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             {/* 3 pilares */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:0,marginBottom:24}}>
               {[
-                {icon:"🎓",title:"Aprendé sin intermediarios",desc:"Conectate directamente con el docente. Sin comisiones, sin sorpresas.",link:"Ver cómo funciona",href:"/ayuda"},
+                {icon:"🎓",title:"Conectate directamente",desc:"Elegí tu docente y coordiná en la plataforma. Comisión transparente, sin cargos ocultos.",link:"Ver cómo funciona",href:"/ayuda"},
                 {icon:"🔒",title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos",href:"/privacidad"},
                 {icon:"⭐",title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación",href:"/terminos"},
               ].map((item,i,arr)=>(
@@ -758,7 +758,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={{width:1,height:14,background:C.border}}/>
               <div style={{display:"flex",alignItems:"center",gap:6,color:C.muted,fontSize:12}}>
                 <span>🔒</span>
-                <span>Plataforma segura · Sin comisiones</span>
+                <span>Plataforma segura · Sin cargos ocultos</span>
               </div>
             </div>
           </div>

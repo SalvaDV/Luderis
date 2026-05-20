@@ -365,7 +365,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Info extra */}
               <div style={{marginTop:8,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
                 {[
-                  {icon:"✓",txt:"Sin intermediarios ni comisiones"},
+                  {icon:"✓",txt:"Pago seguro · sin cargos ocultos"},
                   post.tipo==="oferta"&&{icon:"🔒",txt:"Pago acordado directamente"},
                   post.tipo==="busqueda"&&{icon:"📩",txt:"Recibís ofertas de docentes"},
                 ].filter(Boolean).map(({icon,txt})=>(
