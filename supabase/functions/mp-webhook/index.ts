@@ -74,6 +74,8 @@ serve(async (req) => {
         console.warn("mp-webhook: firma inválida, rechazando request");
         return new Response("Invalid signature", { status: 401, headers: CORS });
       }
+    } else {
+      console.warn("mp-webhook: MP_WEBHOOK_SECRET no configurado — verificación de firma omitida");
     }
 
     // ── Obtener detalle del pago desde MP ────────────────────────────────
