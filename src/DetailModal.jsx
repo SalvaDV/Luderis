@@ -23,6 +23,24 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   const esAyudante=(post.ayudantes||[]).includes(session.user.id);
 
   useEffect(()=>{
+    // JSON-LD Course schema para SEO
+    const schema={
+      "@context":"https://schema.org",
+      "@type":"Course",
+      "name":post.titulo,
+      "description":post.descripcion||post.titulo,
+      "provider":{"@type":"Person","name":post.autor_nombre||post.autor_email},
+      ...(post.precio>0&&{"offers":{"@type":"Offer","price":post.precio,"priceCurrency":post.moneda||"ARS","availability":"https://schema.org/InStock"}}),
+      ...(post.materia&&{"about":{"@type":"Thing","name":post.materia}}),
+    };
+    const tag=document.createElement("script");
+    tag.type="application/ld+json";tag.id="course-schema";
+    tag.textContent=JSON.stringify(schema);
+    document.head.appendChild(tag);
+    return()=>{document.getElementById("course-schema")?.remove();};
+  },[post.id]);// eslint-disable-line
+
+  useEffect(()=>{
     // Bloquear scroll del body mientras la página está abierta
     document.body.style.overflow="hidden";
     let mounted=true;

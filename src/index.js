@@ -4,6 +4,7 @@ import App from './App';
 
 import * as Sentry from "@sentry/react";
 import { initConsentMode, initGA } from './analytics';
+import { register as registerSW } from './serviceWorkerRegistration';
 
 initConsentMode(); // debe ir antes de initGA
 initGA();
@@ -67,6 +68,8 @@ function ErrorFallback({ error, resetError }) {
     </div>
   );
 }
+
+registerSW();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
