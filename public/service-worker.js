@@ -29,7 +29,10 @@ self.addEventListener('fetch', (e) => {
       caches.match(request).then((hit) => {
         if (hit) return hit;
         return fetch(request).then((res) => {
-          if (res.ok) caches.open(CACHE).then((c) => c.put(request, res.clone()));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, clone));
+          }
           return res;
         }).catch(() => hit);
       })
