@@ -19,7 +19,18 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const COMISION_PCT = () => parseFloat(Deno.env.get("LUDERIS_COMISION_PCT") ?? "10") / 100;
+// Lee la comisión desde la tabla config de DB; fallback a env var o 10%
+async function getComisionPct(supabase: ReturnType<typeof createClient>): Promise<number> {
+  try {
+    const { data } = await supabase
+      .from("config")
+      .select("valor")
+      .eq("clave", "comision_pct")
+      .single();
+    if (data?.valor) return parseFloat(data.valor) / 100;
+  } catch {}
+  return parseFloat(Deno.env.get("LUDERIS_COMISION_PCT") ?? "10") / 100;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -110,6 +121,8 @@ serve(async (req) => {
     }, { onConflict: "mp_payment_id" });
 
     // ── Si el pago fue aprobado ───────────────────────────────────────────
+    const comisionPctValue = await getComisionPct(supabase);
+
     if (estado === "approved" && meta.publicacion_id && meta.alumno_email) {
 
       // ── 1. Obtener user_id del alumno ──────────────────────────────────
@@ -147,14 +160,13 @@ serve(async (req) => {
       const ES_PAQUETE = tipo === "paquete_clase";
 
       if (!ES_RECARGA && meta.docente_email && monto > 0) {
-        const comision  = parseFloat((monto * COMISION_PCT()).toFixed(2));
-        const montoNeto = parseFloat((monto - comision).toFixed(2));
-
         const { data: docente } = await supabase
           .from("usuarios").select("id")
           .eq("email", meta.docente_email).single();
 
         if (docente?.id) {
+          const comision  = parseFloat((monto * comisionPctValue).toFixed(2));
+          const montoNeto = parseFloat((monto - comision).toFixed(2));
           if (ES_PAQUETE) {
             // ── RETENCIÓN: registrar como pendiente, NO sumar al saldo ──
             await supabase.from("billetera_movimientos").insert({
