@@ -146,7 +146,7 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
         publicacion_id:post.id,
         autor_id:session.user.id,
         autor_nombre:sb.getDisplayName(session.user.email),
-        autor_pub_email:post.autor_email,
+        autor_email:post.autor_email,
         texto:texto.trim(),
         estrellas:Math.round(promedio),
       };
