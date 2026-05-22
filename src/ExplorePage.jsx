@@ -313,10 +313,16 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   });
   const qText=norm(busquedaDebounced.trim());
   const matchesText=(p)=>!qText||(norm(p.titulo||"").includes(qText)||norm(p.descripcion||"").includes(qText)||norm(p.materia||"").includes(qText)||norm(p.autor_nombre||p.autor_email||"").includes(qText));
+  // En modo resultados no filtramos por sección — el usuario ve todo lo que matchea
+  const noSeccionBase=postsPorRol.filter(p=>p.tipo!=="busqueda");
+  const _filtroBase=modoVista==="resultados"?noSeccionBase:visiblePosts;
+  const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax);
   // IA: busca en todos los posts del rol, sin limitarse a la sección activa
   const filteredConRol=iaResults!==null
     ?postsPorRol.filter(p=>p.tipo!=="busqueda"&&iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
-    :visiblePosts.filter(p=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax));
+    :_filtroBase.filter(_filtroCriteria);
+  // Conteo para el botón del panel (siempre sin filtro de sección para mostrar el total real)
+  const countForPanel=noSeccionBase.filter(_filtroCriteria).length;
   const baseList=filteredConRol;
 
   // Aplicar ordenamiento — cómputo directo sin useMemo (posts <500, no necesita memo)
@@ -398,13 +404,11 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const busquedasClases=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="particular"||!p.modo)).slice(0,8);
 
   return(<>
-    <div style={{fontFamily:FONT,animation:"fadeUp .2s ease"}}>
-
-      {/* Drawer de filtros — siempre disponible */}
-      {panelOpen&&(
+    {/* Drawer de filtros — fuera del div animado para evitar z-index scoping por animation */}
+    {panelOpen&&(
         <>
-          <div onClick={()=>setPanelOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:150,animation:"fadeIn .15s ease"}}/>
-          <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(320px,90vw)",background:C.surface,zIndex:151,boxShadow:"-4px 0 24px rgba(0,0,0,.12)",overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"slideInRight .2s ease",display:"flex",flexDirection:"column",fontFamily:FONT}}>
+          <div onClick={()=>setPanelOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:1100,animation:"fadeIn .15s ease"}}/>
+          <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(320px,90vw)",background:C.surface,zIndex:1101,boxShadow:"-4px 0 24px rgba(0,0,0,.12)",overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"slideInRight .2s ease",display:"flex",flexDirection:"column",fontFamily:FONT}}>
             <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,background:C.surface,zIndex:1}}>
               <span style={{fontWeight:700,color:C.text,fontSize:16}}>Filtros</span>
@@ -448,13 +452,14 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             </div>
             <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,position:"sticky",bottom:0,background:C.surface}}>
               <button onClick={()=>{setPanelOpen(false);setModoVista("resultados");}} style={{width:"100%",background:sT.grad,border:"none",borderRadius:20,color:"#fff",padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:`0 4px 14px ${sT.accent}40`}}>
-                Ver {filtered.length} resultado{filtered.length!==1?"s":""}
+                Ver {countForPanel} resultado{countForPanel!==1?"s":""}
               </button>
             </div>
           </div>
         </>
       )}
-            {/* ══ VISTA HOME ══ */}
+    <div style={{fontFamily:FONT,animation:"fadeUp .2s ease"}}>
+      {/* ══ VISTA HOME ══ */}
       {modoVista==="home"&&(
         <div>
           {/* Hero con búsqueda grande */}
