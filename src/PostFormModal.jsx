@@ -632,17 +632,6 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                   <option value="Otro">Otro</option>
                 </select>
               </div>
-              <div>
-                <Label>Frecuencia {modo==="particular"&&<span style={{color:C.muted,fontSize:11}}>(opcional)</span>}</Label>
-                <select value={frecuencia} onChange={e=>setFrecuencia(e.target.value)} style={{...iS,marginBottom:0,cursor:"pointer"}}>
-                  <option value="">Sin especificar</option>
-                  <option value="1 vez por semana">1 vez por semana</option>
-                  <option value="2 veces por semana">2 veces por semana</option>
-                  <option value="3 veces por semana">3 veces por semana</option>
-                  <option value="Diaria">Diaria</option>
-                  <option value="A convenir">A convenir</option>
-                </select>
-              </div>
             </div>
             {modo==="curso"&&(
               <>
@@ -732,7 +721,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               </div>
             )}
 
-            <div onClick={()=>setOtorgaCertificado(v=>!v)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.accentDim,borderRadius:8,cursor:"pointer"}}>
+            {modo!=="particular"&&<><div onClick={()=>setOtorgaCertificado(v=>!v)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.accentDim,borderRadius:8,cursor:"pointer"}}>
               <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${otorgaCertificado?C.accent:C.border}`,background:otorgaCertificado?C.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
                 {otorgaCertificado&&<span style={{color:"#fff",fontSize:13,fontWeight:700}}>✓</span>}
               </div>
@@ -755,7 +744,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 </div>
                 <div style={{fontSize:11,color:C.muted,marginTop:6}}>Los alumnos necesitan completar el {aprobacionPct}% de los módulos para obtener el certificado</div>
               </div>
-            )}
+            )}</>}
           </div>
         )}
 
