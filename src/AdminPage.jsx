@@ -11,7 +11,7 @@ import {
   AlertTriangle, MessageSquare, BellOff, CreditCard, Package,
   FileText, Megaphone, Settings, TrendingUp, TrendingDown,
   DollarSign, UserCheck, BookMarked, BarChart2, RefreshCw,
-  ChevronRight, LogOut, Activity, Menu, X, BarChart3
+  ChevronRight, LogOut, Activity, Menu, X, BarChart3, Wallet
 } from "lucide-react";
 
 // Admin fallback email (optional, only for bootstrapping). Set REACT_APP_ADMIN_EMAIL in env to use.
@@ -162,6 +162,7 @@ const SIDEBAR_GROUPS = [
     items: [
       { id: "payments",      label: "Pagos",        Icon: CreditCard },
       { id: "escrow",        label: "Escrow",        Icon: Package,   badge: "escrow" },
+      { id: "retiros",       label: "Retiros",       Icon: Wallet,    badge: "retiros" },
       { id: "liquidaciones", label: "Liquidaciones", Icon: FileText },
     ],
   },
@@ -275,6 +276,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
   const [pendingQuejasCount, setPendingQuejasCount] = useState(0);
   const [pendingAlertasCount, setPendingAlertasCount] = useState(0);
   const [pendingEscrowCount, setPendingEscrowCount] = useState(0);
+  const [pendingRetirosCount, setPendingRetirosCount] = useState(0);
   const userEmailLc = (session?.user?.email || "").toLowerCase();
   const isFallbackAdmin = !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
   const [isAdmin, setIsAdmin] = React.useState(isFallbackAdmin);
@@ -307,6 +309,9 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     adminDb("disputas?select=id&estado=eq.abierta", "GET", null, session.access_token)
       .then(rows => setPendingEscrowCount(Array.isArray(rows) ? rows.length : 0))
       .catch(() => {});
+    adminDb("solicitudes_retiro?select=id&estado=eq.pendiente", "GET", null, session.access_token)
+      .then(rows => setPendingRetirosCount(Array.isArray(rows) ? rows.length : 0))
+      .catch(() => {});
   }, [isAdmin, session.access_token]);
 
   const handleSetTab = (id) => {
@@ -316,6 +321,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     if (id === "quejas")         setPendingQuejasCount(0);
     if (id === "alertas_contacto") setPendingAlertasCount(0);
     if (id === "escrow")         setPendingEscrowCount(0);
+    if (id === "retiros")        setPendingRetirosCount(0);
   };
 
   const badgeCounts = {
@@ -324,13 +330,14 @@ export default function AdminPage({ session, onClose, onChatUser }) {
     quejas:  pendingQuejasCount,
     alertas: pendingAlertasCount,
     escrow:  pendingEscrowCount,
+    retiros: pendingRetirosCount,
   };
 
   const TAB_LABELS = {
     overview: "Dashboard", verificaciones: "Verificaciones", docentes: "Docentes",
     users: "Usuarios", pubs: "Publicaciones", reports: "Denuncias", quejas: "Quejas",
     alertas_contacto: "Anti-puenteo", payments: "Pagos", escrow: "Escrow",
-    liquidaciones: "Liquidaciones", notifs: "Anuncios", config: "Configuración",
+    retiros: "Retiros", liquidaciones: "Liquidaciones", notifs: "Anuncios", config: "Configuración",
   };
 
   if (checkingAdmin) return (
@@ -406,6 +413,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
           {tab === "alertas_contacto" && <AlertasContactoTab session={session} />}
           {tab === "payments"         && <PaymentsTab session={session} />}
           {tab === "escrow"           && <EscrowTab session={session} />}
+          {tab === "retiros"          && <RetiroTab session={session} onCountChange={setPendingRetirosCount} />}
           {tab === "liquidaciones"    && <LiquidacionesTab session={session} />}
           {tab === "notifs"           && <NotifsTab session={session} />}
           {tab === "config"           && <ConfigTab session={session} />}
@@ -1895,6 +1903,152 @@ function EscrowTab({ session }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── TAB: RETIROS ─────────────────────────────────────────────────────────────
+function RetiroTab({ session, onCountChange }) {
+  const [retiros, setRetiros] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState("pendiente");
+  const [procesando, setProcesando] = useState(null);
+  const [notas, setNotas] = useState({});
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    const q = filtro === "todos"
+      ? "solicitudes_retiro?select=*&order=created_at.desc&limit=100"
+      : `solicitudes_retiro?select=*&estado=eq.${filtro}&order=created_at.desc&limit=100`;
+    adminDb(q, "GET", null, session.access_token)
+      .then(data => {
+        setRetiros(data || []);
+        if (filtro === "pendiente") onCountChange?.(data?.length || 0);
+      })
+      .catch(() => toast("Error cargando retiros", "error"))
+      .finally(() => setLoading(false));
+  }, [session, filtro, onCountChange]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const procesar = async (r, nuevoEstado) => {
+    setProcesando(r.id);
+    try {
+      await adminDb(`solicitudes_retiro?id=eq.${r.id}`, "PATCH", {
+        estado: nuevoEstado,
+        notas_admin: notas[r.id] || null,
+        procesado_at: new Date().toISOString(),
+      }, session.access_token);
+      const msg = nuevoEstado === "procesado"
+        ? "Tu retiro fue procesado. El dinero debería estar en tu cuenta en las próximas horas."
+        : `Tu solicitud de retiro fue rechazada.${notas[r.id] ? ` Motivo: ${notas[r.id]}` : ""}`;
+      await adminDb("notificaciones", "POST", {
+        alumno_email: r.email,
+        tipo: nuevoEstado === "procesado" ? "retiro_procesado" : "retiro_rechazado",
+        pub_titulo: msg,
+        leida: false,
+      }, session.access_token);
+      toast(`✓ Retiro ${nuevoEstado}`, "success");
+      cargar();
+    } catch(e) { toast("Error: " + e.message, "error"); }
+    finally { setProcesando(null); }
+  };
+
+  const pendientes = retiros.filter(r => r.estado === "pendiente");
+
+  const ESTADO_COLOR = {
+    pendiente: A.warn,
+    procesado: A.success,
+    rechazado: A.danger,
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {pendientes.length > 0 && (
+        <div style={{ background: `${A.warn}18`, border: `1px solid ${A.warn}50`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: A.warn, flexShrink: 0 }} />
+          <div style={{ fontSize: 13, fontWeight: 600, color: A.text }}>
+            {pendientes.length} solicitud{pendientes.length !== 1 ? "es" : ""} pendiente{pendientes.length !== 1 ? "s" : ""} de retiro
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {["pendiente", "procesado", "rechazado", "todos"].map(f => (
+          <button key={f} onClick={() => setFiltro(f)}
+            style={{ padding: "6px 14px", borderRadius: 20, border: `1px solid ${filtro === f ? A.accent : A.border}`,
+              background: filtro === f ? A.accent : A.surface, color: filtro === f ? "#fff" : A.muted,
+              cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: FONT }}>
+            {f === "todos" ? "Todos" : f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      <Card>
+        {loading ? <Spinner small /> : retiros.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: A.muted, fontSize: 13 }}>
+            No hay retiros {filtro === "todos" ? "" : filtro + "s"}.
+          </div>
+        ) : retiros.map((r, i) => (
+          <div key={r.id} style={{ padding: "16px 0", borderBottom: i < retiros.length - 1 ? `1px solid ${A.border}` : "none", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: A.text }}>{r.email}</div>
+                {r.nombre && <div style={{ fontSize: 12, color: A.muted }}>{r.nombre}</div>}
+                <div style={{ fontSize: 11, color: A.muted, marginTop: 2 }}>
+                  {new Date(r.created_at).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontWeight: 800, fontSize: 20, color: A.text }}>${Number(r.monto).toLocaleString("es-AR")}</div>
+                <div style={{ fontSize: 11, padding: "2px 10px", borderRadius: 20,
+                  background: `${ESTADO_COLOR[r.estado]}18`, color: ESTADO_COLOR[r.estado],
+                  fontWeight: 700, display: "inline-block", marginTop: 4 }}>
+                  {r.estado.toUpperCase()}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ background: A.bg, borderRadius: 8, padding: "8px 12px" }}>
+                <div style={{ fontSize: 10, color: A.muted, fontWeight: 700, letterSpacing: 0.5 }}>CBU / ALIAS</div>
+                <div style={{ fontSize: 13, color: A.text, fontWeight: 600, marginTop: 2 }}>{r.cbu_alias}</div>
+              </div>
+              <div style={{ background: A.bg, borderRadius: 8, padding: "8px 12px" }}>
+                <div style={{ fontSize: 10, color: A.muted, fontWeight: 700, letterSpacing: 0.5 }}>TITULAR</div>
+                <div style={{ fontSize: 13, color: A.text, fontWeight: 600, marginTop: 2 }}>{r.titular}</div>
+              </div>
+            </div>
+            {r.estado === "pendiente" && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input value={notas[r.id] || ""} onChange={e => setNotas(n => ({ ...n, [r.id]: e.target.value }))}
+                  placeholder="Nota interna (opcional)"
+                  style={{ flex: 1, minWidth: 160, background: A.bg, border: `1px solid ${A.border}`, borderRadius: 8,
+                    padding: "7px 10px", color: A.text, fontSize: 12, outline: "none", fontFamily: FONT }} />
+                <button onClick={() => procesar(r, "procesado")} disabled={procesando === r.id}
+                  style={{ background: A.success, color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px",
+                    fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: FONT, opacity: procesando === r.id ? 0.6 : 1 }}>
+                  {procesando === r.id ? "…" : "✓ Procesado"}
+                </button>
+                <button onClick={() => procesar(r, "rechazado")} disabled={procesando === r.id}
+                  style={{ background: A.danger, color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px",
+                    fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: FONT, opacity: procesando === r.id ? 0.6 : 1 }}>
+                  Rechazar
+                </button>
+              </div>
+            )}
+            {r.notas_admin && (
+              <div style={{ fontSize: 12, color: A.muted, fontStyle: "italic", padding: "4px 8px", background: A.bg, borderRadius: 6 }}>
+                Nota: {r.notas_admin}
+              </div>
+            )}
+            {r.procesado_at && (
+              <div style={{ fontSize: 11, color: A.muted }}>
+                Procesado: {new Date(r.procesado_at).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </div>
+            )}
+          </div>
+        ))}
+      </Card>
     </div>
   );
 }

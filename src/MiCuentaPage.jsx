@@ -1076,25 +1076,39 @@ function PagosTab({session}){
 // Sistema de alertas por email: el usuario define criterios con lenguaje natural
 // y cuando se publica algo similar, recibe un email automático.
 function BilleteraTab({session}){
+  const esDocente=(localStorage.getItem("cl_rol_"+session.user.email)||"alumno")==="docente";
   const [saldo,setSaldo]=useState(null);
   const [movimientos,setMovimientos]=useState([]);
   const [loading,setLoading]=useState(true);
   const [monto,setMonto]=useState("");
   const [cargando,setCargando]=useState(false);
+  // Retiros (solo docentes)
+  const [retiros,setRetiros]=useState([]);
+  const [showRetiroForm,setShowRetiroForm]=useState(false);
+  const [retiroMonto,setRetiroMonto]=useState("");
+  const [retiroCbu,setRetiroCbu]=useState("");
+  const [retiroTitular,setRetiroTitular]=useState("");
+  const [enviandoRetiro,setEnviandoRetiro]=useState(false);
 
   const cargar=useCallback(async()=>{
     try{
-      const [bil,movs]=await Promise.all([
+      const reqs=[
         sb.db(`billetera?usuario_id=eq.${session.user.id}&select=saldo`,
           "GET",null,session.access_token).then(r=>r?.[0]||{saldo:0}).catch(()=>({saldo:0})),
         sb.db(`billetera_movimientos?usuario_id=eq.${session.user.id}&order=created_at.desc&limit=20`,
           "GET",null,session.access_token).catch(()=>[]),
-      ]);
+      ];
+      if(esDocente) reqs.push(
+        sb.db(`solicitudes_retiro?usuario_id=eq.${session.user.id}&order=created_at.desc&limit=10`,
+          "GET",null,session.access_token).catch(()=>[])
+      );
+      const [bil,movs,retirosData]=await Promise.all(reqs);
       setSaldo(parseFloat(bil.saldo)||0);
       setMovimientos(movs||[]);
+      if(esDocente) setRetiros(retirosData||[]);
     }catch{setSaldo(0);setMovimientos([]);}
     finally{setLoading(false);}
-  },[session]);
+  },[session,esDocente]);
 
   useEffect(()=>{cargar();},[cargar]);
 
@@ -1121,6 +1135,39 @@ function BilleteraTab({session}){
     finally{setCargando(false);}
   };
 
+  const solicitarRetiro=async()=>{
+    const n=parseFloat(retiroMonto);
+    if(!n||n<500){toast("Monto mínimo de retiro: $500","error");return;}
+    if(n>(saldo||0)){toast("No podés retirar más de tu saldo disponible","error");return;}
+    if(!retiroCbu.trim()){toast("Ingresá tu CBU o alias","error");return;}
+    if(!retiroTitular.trim()){toast("Ingresá el nombre del titular","error");return;}
+    setEnviandoRetiro(true);
+    try{
+      const usrRows=await sb.db(`usuarios?email=eq.${encodeURIComponent(session.user.email)}&select=nombre,display_name`,"GET",null,session.access_token).catch(()=>[]);
+      const usr=usrRows?.[0]||{};
+      await sb.db("solicitudes_retiro","POST",{
+        usuario_id:session.user.id,
+        email:session.user.email,
+        nombre:usr?.display_name||usr?.nombre||session.user.email.split("@")[0],
+        monto:n,
+        cbu_alias:retiroCbu.trim(),
+        titular:retiroTitular.trim(),
+        estado:"pendiente",
+      },session.access_token);
+      await sb.insertNotificacion({
+        alumno_email:session.user.email,
+        tipo:"retiro_solicitado",
+        pub_titulo:"Solicitud de retiro recibida. Tu saldo será acreditado en 24 a 48 horas hábiles.",
+        leida:false,
+      },session.access_token);
+      toast("✓ Solicitud enviada. Acreditamos en 24–48 hs hábiles.","success");
+      setRetiroMonto(""); setRetiroCbu(""); setRetiroTitular(""); setShowRetiroForm(false);
+      cargar();
+    }catch(e){toast("Error: "+e.message,"error");}
+    finally{setEnviandoRetiro(false);}
+  };
+
+  const ESTADO_RETIRO={pendiente:{label:"Pendiente",color:"#F59E0B"},procesado:{label:"Acreditado",color:"#10B981"},rechazado:{label:"Rechazado",color:"#EF4444"}};
   const TIPO_ICONS={recarga:"⬆️",pago:"⬇️",reembolso:"↩️",bono:"🎁"};
   const TIPO_LABELS={recarga:"Recarga",pago:"Pago de clase",reembolso:"Reembolso",bono:"Bono"};
 
@@ -1159,6 +1206,65 @@ function BilleteraTab({session}){
         </div>
         <div style={{fontSize:11,color:C.muted,marginTop:8}}>Pagá con Mercado Pago · Los créditos se acreditan al instante</div>
       </div>
+
+      {/* Solicitar retiro — solo docentes */}
+      {esDocente&&(
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showRetiroForm?12:0}}>
+            <div>
+              <div style={{fontWeight:700,color:C.text,fontSize:14}}>Solicitar retiro</div>
+              {!showRetiroForm&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>Transferimos a tu CBU en 24–48 hs hábiles</div>}
+            </div>
+            <button onClick={()=>setShowRetiroForm(v=>!v)}
+              style={{background:showRetiroForm?C.bg:C.accent,border:`1px solid ${showRetiroForm?C.border:"transparent"}`,borderRadius:9,color:showRetiroForm?C.muted:"#fff",padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
+              {showRetiroForm?"Cancelar":"Retirar fondos"}
+            </button>
+          </div>
+          {showRetiroForm&&(
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{display:"flex",gap:8}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:4}}>MONTO A RETIRAR</div>
+                  <input value={retiroMonto} onChange={e=>setRetiroMonto(e.target.value)} type="number" min="500" placeholder={`Máx. $${(saldo||0).toLocaleString("es-AR")}`}
+                    style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:4}}>CBU O ALIAS</div>
+                <input value={retiroCbu} onChange={e=>setRetiroCbu(e.target.value)} placeholder="22-digit CBU o alias de tu cuenta"
+                  style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:4}}>TITULAR DE LA CUENTA</div>
+                <input value={retiroTitular} onChange={e=>setRetiroTitular(e.target.value)} placeholder="Nombre completo del titular"
+                  style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+              </div>
+              <button onClick={solicitarRetiro} disabled={enviandoRetiro||!retiroMonto||!retiroCbu||!retiroTitular}
+                style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,opacity:(enviandoRetiro||!retiroMonto||!retiroCbu||!retiroTitular)?.5:1}}>
+                {enviandoRetiro?"Enviando…":"Confirmar solicitud de retiro"}
+              </button>
+              <div style={{fontSize:11,color:C.muted}}>Al confirmar, Luderis procesará la transferencia a tu cuenta bancaria en 24–48 horas hábiles.</div>
+            </div>
+          )}
+          {/* Historial de retiros */}
+          {retiros.length>0&&(
+            <div style={{marginTop:showRetiroForm?16:12}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:8}}>SOLICITUDES ANTERIORES</div>
+              {retiros.map((r,i)=>(
+                <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderTop:`1px solid ${C.border}`}}>
+                  <div>
+                    <div style={{fontSize:13,color:C.text,fontWeight:500}}>${Number(r.monto).toLocaleString("es-AR")} → {r.cbu_alias}</div>
+                    <div style={{fontSize:11,color:C.muted}}>{new Date(r.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"})}</div>
+                  </div>
+                  <div style={{fontSize:11,padding:"2px 10px",borderRadius:20,background:`${ESTADO_RETIRO[r.estado]?.color}18`,color:ESTADO_RETIRO[r.estado]?.color,fontWeight:700}}>
+                    {ESTADO_RETIRO[r.estado]?.label||r.estado}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Movimientos */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
