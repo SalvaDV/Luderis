@@ -401,7 +401,7 @@ export const callIA = async (system, userMsg, maxTokens = 600, userToken = "") =
     headers: {
       "Content-Type": "application/json",
       "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Authorization": `Bearer ${userToken || SUPABASE_KEY}`,
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
