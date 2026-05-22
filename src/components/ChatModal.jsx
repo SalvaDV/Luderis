@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "../supabase";
-import { C, FONT, safeDisplayName, sanitizeContactInfo, Avatar, Spinner, toast } from "../shared";
+import { C, FONT, safeDisplayName, sanitizeContactInfo, moderarMensaje, Avatar, Spinner, toast } from "../shared";
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
@@ -110,6 +110,13 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     const txt=(overrideQ||input).trim();
     if(!txt&&!imagenPrevia)return;
     if(enviando)return;
+    if(txt){
+      const mod=moderarMensaje(txt);
+      if(mod.advertencia){
+        toast(mod.advertencia,mod.block?"error":"warn",5000);
+        if(mod.block)return;
+      }
+    }
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
     setInput("");setImagenPrevia(null);setEnviando(true);
     try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}

@@ -4,7 +4,7 @@ import {
   C, FONT, toast,
   Avatar, Spinner, Btn, Label, Modal, StatusBadge, Tag,
   fmt, fmtRel, fmtPrice, calcAvg,
-  safeDisplayName, sanitizeContactInfo, avatarColor,
+  safeDisplayName, sanitizeContactInfo, moderarMensaje, avatarColor,
   LUD,
   _avatarCache,
   MATERIAS,
@@ -539,7 +539,11 @@ function EspacioChat({pubId,miEmail,miId,otroEmail,otroNombre,session}){
   },[cargar]);
   useEffect(()=>{if(bottomRef.current)bottomRef.current.scrollIntoView({behavior:"smooth"});},[msgs]);
   const enviar=async()=>{
-    if(!texto.trim())return;setSending(true);const txt=texto.trim();setTexto("");
+    if(!texto.trim())return;
+    const txt=texto.trim();
+    const mod=moderarMensaje(txt);
+    if(mod.advertencia){toast(mod.advertencia,mod.block?"error":"warn",5000);if(mod.block)return;}
+    setSending(true);setTexto("");
     try{
       await sb.insertMensaje({publicacion_id:pubId,de_usuario:miId,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:txt,leido:false},session.access_token);
       await cargar();

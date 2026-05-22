@@ -167,7 +167,7 @@ export const safeDisplayName=(nombre,email)=>{
   if(email)return maskEmail(email);
   return"Usuario";
 };
-export const CONTACT_REGEX=/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(\+?[\d\s\-().]{8,15}\d)|(instagram|ig|wa|whatsapp|telegram|tg|signal)\s*[:=@]?\s*\w+)/gi;
+export const CONTACT_REGEX=/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(\+?[\d\s\-().]{8,15}\d)|(instagram|ig|wa|whatsapp|telegram|tg|signal|facebook|fb|twitter|tiktok|snapchat|discord)\s*[:=@\/]?\s*[\w.]+)/gi;
 export const sanitizeContactInfo=(text)=>{
   if(!text)return text;
   return text.replace(CONTACT_REGEX,(match)=>{
@@ -175,6 +175,31 @@ export const sanitizeContactInfo=(text)=>{
     if(match.includes("@"))return"[📧 email oculto]";
     return"[📵 contacto externo oculto]";
   });
+};
+
+// ─── MODERACIÓN DE MENSAJES ───────────────────────────────────────────────────
+const BYPASS_PATTERNS=[
+  /\b(\+?[\d][\d\s\-().]{6,14}\d)\b/,// teléfonos
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,// emails
+  /\b(instagram|ig|whatsapp|wa\.me|telegram|tg|facebook|fb\.com|twitter|x\.com|tiktok|snapchat|discord)\b/i,// redes
+  /\bbit\.ly\b|\btinyurl\b|\bwa\.me\/\b/i,// links cortos y wa.me
+];
+const OFENSIVO_BLOQUEAR=[
+  /\bputa\s*madre\b|\bhijo\s*de\s*puta\b|\bconcha\s*(de\s*tu)?\s*madre\b/i,
+  /\bvoy\s*a\s*(matarte|hacerte\s*da[nñ]o|buscarte|encontrarte)\b/i,
+  /\bte\s*(mato|killo|kill|voy\s*a\s*matar)\b/i,
+];
+const OFENSIVO_ADVERTIR=[
+  /\bputo\b|\bhijodeputa\b|\bboludo\b|\bpelotudo\b|\bforro\b|\bgil\b|\bimbecil\b|\bestupido\b|\bidiota\b|\bconcha\b/i,
+];
+// Retorna {ok:boolean, block:boolean, advertencia:string|null}
+export const moderarMensaje=(texto)=>{
+  if(!texto)return{ok:true,block:false,advertencia:null};
+  const t=texto.trim();
+  for(const p of OFENSIVO_BLOQUEAR){if(p.test(t))return{ok:false,block:true,advertencia:"Tu mensaje contiene lenguaje amenazante o muy agresivo y no puede enviarse."};}
+  for(const p of BYPASS_PATTERNS){if(p.test(t))return{ok:false,block:true,advertencia:"No podés compartir datos de contacto en el chat. Realizá todos los pagos y acuerdos a través de Luderis para estar protegido."};}
+  for(const p of OFENSIVO_ADVERTIR){if(p.test(t))return{ok:false,block:false,advertencia:"Tu mensaje contiene lenguaje ofensivo. Por favor mantené un trato respetuoso."};}
+  return{ok:true,block:false,advertencia:null};
 };
 
 // ─── AVATAR CACHE + HOOK ──────────────────────────────────────────────────────

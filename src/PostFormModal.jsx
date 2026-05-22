@@ -6,6 +6,7 @@ import {
   StarRating, Tag, VerifiedBadge, SearchableSelect,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, avatarColor, MATERIAS,
+  getPubTipo, TIPO_PUB,
 } from "./shared";
 
 function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,token}){
@@ -1087,23 +1088,26 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
             pubs.length===0
               ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin clases activas</div>
               :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {pubs.map(p=>(
+                {pubs.map(p=>{const T=getPubTipo(p);return(
                   <div key={p.id} onClick={()=>onOpenDetail&&onOpenDetail(p)}
-                    style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .15s",display:"flex",gap:12,alignItems:"center"}}
-                    onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.1)";e.currentTarget.style.borderColor=C.accent+"44";}}
-                    onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=C.border;}}>
+                    style={{background:C.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .15s",display:"flex",gap:12,alignItems:"center",borderLeft:`3px solid ${T.accent}`}}
+                    onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 4px 14px ${T.dim}`;e.currentTarget.style.borderColor=T.accent+"44";}}
+                    onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=T.border;}}>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:3}}>{p.titulo}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                        <span style={{fontSize:10,fontWeight:700,color:T.accent,background:T.dim,borderRadius:20,padding:"1px 8px",flexShrink:0}}>{(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase"}</span>
+                        <div style={{fontWeight:700,color:C.text,fontSize:14,lineHeight:1.3}}>{p.titulo}</div>
+                      </div>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                        {p.precio&&<span style={{fontSize:12,color:C.accent,fontWeight:700}}>${Number(p.precio).toLocaleString("es-AR")}/{p.precio_tipo||"hora"}</span>}
+                        {p.precio&&<span style={{fontSize:12,color:T.accent,fontWeight:700}}>${Number(p.precio).toLocaleString("es-AR")}/{p.precio_tipo||"hora"}</span>}
                         {p.modalidad&&<span style={{fontSize:11,color:C.muted,background:C.surface,borderRadius:6,padding:"1px 7px"}}>{p.modalidad}</span>}
-                        {p.tiene_prueba&&<span style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:20,padding:"1px 8px"}}>✓ Prueba</span>}
-                        {p.sinc==="sinc"&&p.clases_sinc&&<span style={{fontSize:10,color:C.accent,fontWeight:700,background:C.accentDim,borderRadius:20,padding:"1px 8px"}}>📅 Recurrente</span>}
+                        {p.tiene_prueba&&<span style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:20,padding:"1px 8px"}}>Prueba gratis</span>}
+                        {p.sinc==="sinc"&&p.clases_sinc&&<span style={{fontSize:10,color:T.accent,fontWeight:700,background:T.dim,borderRadius:20,padding:"1px 8px"}}>Recurrente</span>}
                       </div>
                     </div>
                     <span style={{color:C.muted,fontSize:18,flexShrink:0}}>›</span>
                   </div>
-                ))}
+                );})}
               </div>
           )}
 
@@ -1171,15 +1175,6 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               </div>
           )}
 
-          {/* CTA consultar — sticky bottom si no es propio */}
-          {autorEmail!==session.user.email&&onOpenChat&&(
-            <div style={{position:"sticky",bottom:0,background:C.bg,paddingTop:12,marginTop:20,borderTop:`1px solid ${C.border}`}}>
-              <button onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
-                style={{width:"100%",background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:14,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 16px rgba(26,110,216,.3)"}}>
-                💬 Consultarle a {displayNombre.split(" ")[0]}
-              </button>
-            </div>
-          )}
 
         </div>
       </div>

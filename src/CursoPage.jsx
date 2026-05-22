@@ -6,7 +6,7 @@ import {
   Avatar, Spinner, Btn, Input, Modal, Label, ErrMsg, Chip,
   MiniStars, StarRating, StatusBadge, VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
-  safeDisplayName, sanitizeContactInfo, useConfirm,
+  safeDisplayName, sanitizeContactInfo, moderarMensaje, useConfirm,
   CalendarioCurso,
   LUD,
   CATEGORIAS_DATA,
@@ -529,6 +529,13 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
     const txt=input.trim();
     if(!txt&&!imagenPrevia)return;
     if(sending)return;
+    if(txt){
+      const mod=moderarMensaje(txt);
+      if(mod.advertencia){
+        toast(mod.advertencia,mod.block?"error":"warn",5000);
+        if(mod.block)return;
+      }
+    }
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
     setInput("");setImagenPrevia(null);setSending(true);
     try{localStorage.removeItem(`cl_typing_grupo_${post.id}`);}catch{}

@@ -270,7 +270,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Precio */}
               {post.precio?(
                 <div style={{marginBottom:16}}>
-                  <span style={{fontSize:26,fontWeight:800,color:C.text}}>{fmtPrice(post.precio,post.moneda)}</span>
+                  <span style={{fontSize:26,fontWeight:800,color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>
                   <span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo||"hora"}</span>
                 </div>
               ):(
@@ -389,7 +389,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,zIndex:20,boxShadow:"0 -2px 16px rgba(0,0,0,.08)"}}
         className="detail-cta-mobile">
         <style>{`.detail-cta-mobile{display:none!important}@media(max-width:768px){.detail-cta-mobile{display:flex!important}}`}</style>
-        {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:C.text,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.success}}>Gratis</div>}
+        {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:getPubTipo(post).accent,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.success}}>Gratis</div>}
         <div style={{display:"flex",gap:8}}>
           {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
           {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}
