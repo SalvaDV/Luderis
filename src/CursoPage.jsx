@@ -4702,7 +4702,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [showDiagnostico,setShowDiagnostico]=useState(false);
   const [showExamenFinal,setShowExamenFinal]=useState(()=>false);
   const esParticular=post.modo==="particular"||post.modo==="particulares";
-  const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"aprender";try{const t=sessionStorage.getItem("curso_tab_"+post.id);const validos=["contenido","aprender","agenda",...(esParticular?[]:["comunidad"])];return validos.includes(t)?t:"contenido";}catch{return "contenido";}});
+  const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"aprender";try{const t=sessionStorage.getItem("curso_tab_"+post.id);const validos=["contenido","aprender","agenda","comunidad"];return validos.includes(t)?t:"contenido";}catch{return "contenido";}});
   const setTab=(t)=>{try{sessionStorage.setItem("curso_tab_"+post.id,t);}catch{}if(t==="chat"||t==="comunidad"){setMensajesNuevos(0);try{sessionStorage.setItem("chat_seen_"+post.id,Date.now());}catch{}}setTabActivo(t);};const [nuevoTipo,setNuevoTipo]=useState("video");const [nuevoTitulo,setNuevoTitulo]=useState("");const [nuevoUrl,setNuevoUrl]=useState("");const [nuevoTexto,setNuevoTexto]=useState("");const [savingC,setSavingC]=useState(false);
   const [calExpanded,setCalExpanded]=useState(false);const [showEditCal,setShowEditCal]=useState(false);const [showFinalizar,setShowFinalizar]=useState(false);const [showDenuncia,setShowDenuncia]=useState(false);const [showCerrarInsc,setShowCerrarInsc]=useState(false);const [localFinalizado,setLocalFinalizado]=useState(!!post.finalizado);const [localCerrado,setLocalCerrado]=useState(!!post.inscripciones_cerradas);
   const [claseActiva,setClaseActiva]=useState(false);const [iniciandoClase,setIniciandoClase]=useState(false);
@@ -5005,7 +5005,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
               {id:"contenido",label:"Contenido"},
               {id:"aprender",label:"Aprender",pendiente:esPendienteValidacion},
               ...(hasCal||esMio?[{id:"agenda",label:"Agenda"}]:[]),
-              ...(post.modo!=="particular"&&post.modo!=="particulares"?[{id:"comunidad",label:mensajesNuevos>0?`Comunidad (${mensajesNuevos})`:"Comunidad"}]:[]),
+              {id:"comunidad",label:mensajesNuevos>0?(esParticular?`Chat (${mensajesNuevos})`:`Comunidad (${mensajesNuevos})`):(esParticular?"Chat":"Comunidad")},
             ].map(tab=>(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
                 style={{flex:1,padding:"6px 4px",borderRadius:8,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
@@ -5242,17 +5242,18 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             );
           })()}
 
-          {/* ── TAB: Comunidad (Foro + Chat) ── */}
+          {/* ── TAB: Comunidad (Foro + Chat) / Chat particular ── */}
           {tabActivo==="comunidad"&&<div style={{marginBottom:18}}>
             {tieneAcceso?(
               <>
-                <ForoCurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>
-                <div style={{marginTop:14}}>
+                {!esParticular&&<ForoCurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>}
+                <div style={{marginTop:esParticular?0:14}}>
+                  {esParticular&&<div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>💬 CHAT CON EL DOCENTE</div>}
                   <ChatCurso post={post} session={session} ayudantes={post.ayudantes||[]} ayudanteEmails={ayudanteEmails} esMio={esMio} esAyudante={esAyudante} onNewMessages={(n)=>{if(tabActivo!=="comunidad")setMensajesNuevos(prev=>prev+n);}}/>
                 </div>
               </>
             ):(
-              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>Inscribite para participar en el foro y el chat.</div>
+              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>{esParticular?"Inscribite para chatear con el docente.":"Inscribite para participar en el foro y el chat."}</div>
             )}
           </div>}
 
