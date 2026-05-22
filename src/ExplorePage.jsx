@@ -16,6 +16,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
+import { Zap, PlayCircle, Globe, MapPin, User, Package, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, CheckCircle, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight } from "lucide-react";
 
 export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);
@@ -593,28 +594,30 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           {/* Accesos rápidos — distintos según sección */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:24}}>
             {(seccion==="pedidos"?[
-              {icon:"📣",title:"Recientes",desc:"Pedidos publicados hoy",onClick:()=>setModoVista("resultados")},
-              {icon:"🌐",title:"Online",desc:"Clases a distancia",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
-              {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
-              {icon:"✦",title:"Buscar con IA",desc:"Encontrá pedidos afines",onClick:()=>setShowBusquedaIA(true)},
+              {Icon:Bell,title:"Recientes",desc:"Pedidos publicados hoy",onClick:()=>setModoVista("resultados")},
+              {Icon:Globe,title:"Online",desc:"Clases a distancia",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
+              {Icon:MapPin,title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
+              {Icon:null,title:"Buscar con IA",desc:"Encontrá pedidos afines",onClick:()=>setShowBusquedaIA(true),isIA:true},
             ]:seccion==="cursos"?[
-              {icon:"⚡",title:"Sincrónicos",desc:"Con docente en vivo",onClick:()=>{setFiltroSinc("sinc");setModoVista("resultados");}},
-              {icon:"🎬",title:"A tu ritmo",desc:"Grabados, cuando quieras",onClick:()=>{setFiltroSinc("asinc");setModoVista("resultados");}},
-              {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
-              {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
+              {Icon:Zap,title:"En vivo",desc:"Con docente en tiempo real",onClick:()=>{setFiltroSinc("sinc");setModoVista("resultados");}},
+              {Icon:PlayCircle,title:"A tu ritmo",desc:"Grabados, cuando quieras",onClick:()=>{setFiltroSinc("asinc");setModoVista("resultados");}},
+              {Icon:Globe,title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
+              {Icon:MapPin,title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
             ]:[
-              {icon:"👤",title:"Uno a uno",desc:"Atención personalizada",onClick:()=>{setFiltroModalidad("all");setModoVista("resultados");}},
-              {icon:"🌐",title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
-              {icon:"📍",title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
-              {icon:"📦",title:"Por paquete",desc:"Comprá varias clases",onClick:()=>{setModoVista("resultados");}},
+              {Icon:User,title:"Uno a uno",desc:"Atención personalizada",onClick:()=>{setFiltroModalidad("all");setModoVista("resultados");}},
+              {Icon:Globe,title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
+              {Icon:MapPin,title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
+              {Icon:Package,title:"Por paquete",desc:"Comprá varias clases",onClick:()=>{setModoVista("resultados");}},
             ]).map(item=>(
               <button key={item.title} onClick={item.onClick}
                 style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 14px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s"}}
                 onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 20px rgba(0,0,0,.08)`;}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
-                <div style={{fontSize:24,marginBottom:8}}>{item.icon}</div>
+                <div style={{width:36,height:36,borderRadius:10,background:item.isIA?`linear-gradient(135deg,#7B3FBE20,#1A6ED820)`:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10,color:item.isIA?C.purple:C.accent}}>
+                  {item.isIA?<span style={{fontSize:16,fontWeight:700,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>✦</span>:<item.Icon size={18} strokeWidth={2}/>}
+                </div>
                 <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:2}}>{item.title}</div>
-                <div style={{fontSize:11,color:C.muted}}>{item.desc}</div>
+                <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{item.desc}</div>
               </button>
             ))}
           </div>
@@ -654,10 +657,10 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       {/* Tags */}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                         <Tag tipo={p.tipo}/>
-                        {(p.modo==="curso"||p.modo==="grupal")&&<span style={{fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:20,padding:"2px 8px",fontWeight:600}}>🎓 Curso</span>}
-                        {p.modo==="particular"&&<span style={{fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:20,padding:"2px 8px",fontWeight:600}}>👤 Clase</span>}
-                        {p.modalidad==="virtual"&&<span style={{fontSize:10,color:C.info,background:C.info+"12",borderRadius:20,padding:"2px 8px",fontWeight:600}}>🌐 Virtual</span>}
-                        {p.modalidad==="presencial"&&<span style={{fontSize:10,color:C.muted,background:C.bg,borderRadius:20,padding:"2px 8px",border:`1px solid ${C.border}`}}>📍 Presencial</span>}
+                        {(p.modo==="curso"||p.modo==="grupal")&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:6,padding:"2px 8px",fontWeight:600}}><GraduationCap size={9} strokeWidth={2.5}/>Curso</span>}
+                        {p.modo==="particular"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:6,padding:"2px 8px",fontWeight:600}}><User size={9} strokeWidth={2.5}/>Clase</span>}
+                        {p.modalidad==="virtual"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:C.muted,background:C.bg,borderRadius:6,padding:"2px 8px",border:`1px solid ${C.border}`}}><Monitor size={9} strokeWidth={2.5}/>Virtual</span>}
+                        {p.modalidad==="presencial"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:C.muted,background:C.bg,borderRadius:6,padding:"2px 8px",border:`1px solid ${C.border}`}}><MapPin size={9} strokeWidth={2.5}/>Presencial</span>}
                       </div>
                       {/* Rating + verificado */}
                       <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
@@ -686,7 +689,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             const T=seccion==="cursos"?TIPO_PUB.curso:TIPO_PUB.particular;
             return(
             <div style={{background:`linear-gradient(135deg,${T.dim},${T.border})`,border:`1px solid ${T.border}`,borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-              <div style={{fontSize:36}}>{seccion==="cursos"?"🎓":"👤"}</div>
+              <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#fff"}}>{seccion==="cursos"?<GraduationCap size={22} strokeWidth={1.8}/>:<User size={22} strokeWidth={1.8}/>}</div>
               <div style={{flex:1,minWidth:200}}>
                 <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:4}}>
                   {seccion==="cursos"?"¿No encontrás el curso que buscás?":"¿No encontrás el docente ideal?"}
@@ -710,12 +713,12 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             {/* 3 pilares */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:0,marginBottom:24}}>
               {[
-                {icon:"🎓",title:"Conectate directamente",desc:"Elegí tu docente y coordiná en la plataforma. Comisión transparente, sin cargos ocultos.",link:"Ver cómo funciona",href:"/ayuda"},
-                {icon:"🔒",title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos",href:"/privacidad"},
-                {icon:"⭐",title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación",href:"/terminos"},
+                {Icon:GraduationCap,title:"Conectate directamente",desc:"Elegí tu docente y coordiná en la plataforma. Comisión transparente, sin cargos ocultos.",link:"Ver cómo funciona",href:"/ayuda"},
+                {Icon:Shield,title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos",href:"/privacidad"},
+                {Icon:BadgeCheck,title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación",href:"/terminos"},
               ].map((item,i,arr)=>(
                 <div key={item.title} style={{textAlign:"center",padding:"20px 24px",borderRight:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
-                  <div style={{fontSize:36,marginBottom:12}}>{item.icon}</div>
+                  <div style={{width:48,height:48,borderRadius:14,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.accent}}><item.Icon size={22} strokeWidth={1.8}/></div>
                   <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:8}}>{item.title}</div>
                   <div style={{color:C.muted,fontSize:13,lineHeight:1.6,marginBottom:10}}>{item.desc}</div>
                   <a href={item.href} target="_blank" rel="noopener noreferrer" style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600,padding:0,textDecoration:"none"}}>
@@ -728,7 +731,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             {/* Banners informativos */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12,marginBottom:20}}>
               <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:24}}>🤝</span>
+                <div style={{width:36,height:36,borderRadius:10,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",color:C.accent,flexShrink:0}}><Users size={18} strokeWidth={2}/></div>
                 <div>
                   <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Querés enseñar?</div>
                   <button style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:0,fontWeight:600}}
@@ -738,7 +741,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 </div>
               </div>
               {esDocente&&<div style={{border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:24}}>📣</span>
+                <div style={{width:36,height:36,borderRadius:10,background:TIPO_PUB.pedido.dim,display:"flex",alignItems:"center",justifyContent:"center",color:TIPO_PUB.pedido.accent,flexShrink:0}}><Megaphone size={18} strokeWidth={2}/></div>
                 <div>
                   <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Querés ver pedidos de alumnos?</div>
                   <button style={{background:"none",border:"none",color:TIPO_PUB.pedido.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:0,fontWeight:600}}
@@ -844,8 +847,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               ]}/>
               <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
               <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",flexShrink:0}}>
-                {[["cards","▦"],["lista","≡"],["ranking","🏆"]].map(([m,icon])=>(
-                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
+                {[["cards",<LayoutGrid size={14} strokeWidth={2}/>],["lista",<List size={14} strokeWidth={2}/>],["ranking",<Trophy size={14} strokeWidth={2}/>]].map(([m,icon])=>(
+                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
                 ))}
               </div>
             </div>
@@ -883,7 +886,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             return(
               <div data-docwelcome="1" style={{background:`linear-gradient(135deg,${C.accentDim},${C.bg})`,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 18px",marginBottom:14,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:200}}>
-                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:4}}>📢 ¿Querés aparecer acá?</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:700,color:C.text,fontSize:13,marginBottom:4}}><Megaphone size={14} strokeWidth={2} color={C.accent}/>¿Querés aparecer acá?</div>
                   <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Publicá tu primera clase y empezá a recibir alumnos. Solo tarda 2 minutos.</div>
                 </div>
                 <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
@@ -901,19 +904,19 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           {/* Lista de resultados */}
           {loading?<SkeletonList n={7}/>:sorted.length===0?(
             <div style={{textAlign:"center",color:C.muted,padding:"48px 16px",fontSize:13}}>
-              <div style={{fontSize:36,marginBottom:10}}>🔍</div>
+              <Search size={36} color={C.muted} style={{marginBottom:10}}/>
               <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:6}}>
                 {hasFilters||iaQuery?"Sin resultados con esos filtros.":posts.length===0?"Todavía no hay publicaciones.":"Sin resultados."}
               </div>
               {iaResults!==null&&iaResults.length===0&&(
                 <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",maxWidth:380,margin:"16px auto 0",textAlign:"left"}}>
-                  <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:6}}>🔔 ¿Querés que te avisemos?</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:700,color:C.text,fontSize:14,marginBottom:6}}><Bell size={14} strokeWidth={2} color={C.accent}/>¿Querés que te avisemos?</div>
                   <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.5}}>
                     Creá una alerta y te notificamos cuando aparezca algo relacionado con <strong style={{color:C.text}}>"{iaQuery}"</strong>.
                   </div>
-                  <button onClick={()=>{toast("Función de alertas próximamente 🔔","info",4000);}}
-                    style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%"}}>
-                    🔔 Crear alerta para "{iaQuery}"
+                  <button onClick={()=>{toast("Función de alertas próximamente","info",4000);}}
+                    style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    <Bell size={14} strokeWidth={2}/> Crear alerta para "{iaQuery}"
                   </button>
                 </div>
               )}
