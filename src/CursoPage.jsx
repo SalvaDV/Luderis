@@ -397,35 +397,65 @@ function fmtMsgDate(ts){
   return d.toLocaleDateString("es-AR",{day:"numeric",month:"long"});
 }
 
-function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,esMio,esAyudante:soyAyudante}){
+function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,esMio,esAyudante:soyAyudante,esParticular:esChatParticular}){
   const [msgs,setMsgs]=useState([]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(true);
-  const [escribiendo,setEscribiendo]=useState([]);// emails escribiendo
+  const [escribiendo,setEscribiendo]=useState([]);
   const [imagenPrevia,setImagenPrevia]=useState(null);
   const [showJitsi,setShowJitsi]=useState(false);
   const [resumen,setResumen]=useState(null);const [loadingResumen,setLoadingResumen]=useState(false);
+  const [sending,setSending]=useState(false);
+  const [chatNotif,setChatNotif]=useState(null);// {name,text,email,id}
+  const [newMsgCount,setNewMsgCount]=useState(0);
   const miEmail=session.user.email;
   const bottomRef=useRef(null);
+  const msgsContainerRef=useRef(null);
   const didScrollRef=useRef(false);
+  const atBottomRef=useRef(true);
+  const chatNotifTimer=useRef(null);
   const escribiendoTimer=useRef(null);
   const fileInputRef=useRef(null);
 
-  const scrollBottom=(smooth=true)=>setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:smooth?"smooth":"auto"}),60);
+  const scrollBottom=(smooth=true)=>setTimeout(()=>{
+    const el=msgsContainerRef.current;
+    if(el)el.scrollTo({top:el.scrollHeight,behavior:smooth?"smooth":"instant"});
+  },60);
 
   const cargar=useCallback(async()=>{
     try{
       const grupal=await sb.getMensajesGrupo(post.id,session.access_token).catch(()=>[]);
       const withNames=grupal.map(m=>({...m,de_nombre_display:sb.getDisplayName(m.de_nombre)}));
       setMsgs(prev=>{
-        if(prev.length>0&&withNames.length>prev.length&&onNewMessages){
-          onNewMessages(withNames.length-prev.length);
+        if(prev.length>0&&withNames.length>prev.length){
+          const nuevos=withNames.slice(prev.length).filter(m=>m.de_nombre!==miEmail);
+          if(nuevos.length>0){
+            if(onNewMessages)onNewMessages(nuevos.length);
+            // In-chat toast notification
+            const ultimo=nuevos[nuevos.length-1];
+            const isImg=ultimo.texto?.startsWith("[img]");
+            const preview=isImg?"📷 Imagen":(ultimo.texto||"").slice(0,55);
+            const nombre=ultimo.de_nombre_display||ultimo.de_nombre.split("@")[0];
+            const nid=Date.now();
+            setChatNotif({name:nombre,text:preview,email:ultimo.de_nombre,id:nid});
+            clearTimeout(chatNotifTimer.current);
+            chatNotifTimer.current=setTimeout(()=>setChatNotif(p=>p?.id===nid?null:p),4500);
+            // Scroll inteligente: solo si ya estaba al fondo
+            if(atBottomRef.current){
+              setTimeout(()=>{const el=msgsContainerRef.current;if(el)el.scrollTo({top:el.scrollHeight,behavior:"smooth"});},60);
+            } else {
+              setNewMsgCount(c=>c+nuevos.length);
+            }
+          }
         }
         return withNames;
       });
-      if(!didScrollRef.current&&withNames.length>0){didScrollRef.current=true;scrollBottom(false);}
+      if(!didScrollRef.current&&withNames.length>0){
+        didScrollRef.current=true;
+        setTimeout(()=>{const el=msgsContainerRef.current;if(el)el.scrollTo({top:el.scrollHeight,behavior:"instant"});},60);
+      }
     }finally{setLoading(false);}
-  },[post.id,session.access_token,onNewMessages]);
+  },[post.id,session.access_token,onNewMessages,miEmail]);
 
   // Realtime WebSocket + fallback polling
   useEffect(()=>{
@@ -494,14 +524,14 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
   const sendMsg=async()=>{
     const txt=input.trim();
     if(!txt&&!imagenPrevia)return;
+    if(sending)return;
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
-    setInput("");setImagenPrevia(null);
-    try{
-      localStorage.removeItem(`cl_typing_grupo_${post.id}`);
-    }catch{}
+    setInput("");setImagenPrevia(null);setSending(true);
+    try{localStorage.removeItem(`cl_typing_grupo_${post.id}`);}catch{}
     try{
       await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:"__grupo__",texto:mensajeTexto,leido:true,pub_titulo:post.titulo},session.access_token);
-      await cargar();scrollBottom();
+      await cargar();
+      setTimeout(()=>{const el=msgsContainerRef.current;if(el)el.scrollTo({top:el.scrollHeight,behavior:"smooth"});},60);
       // Notificaciones — 1 por destinatario cada 3 min (evita spam)
       const inscriptos=await sb.getInscripciones(post.id,session.access_token).catch(()=>[]);
       const todos=[...inscriptos.map(i=>i.alumno_email),post.autor_email].filter(e=>e!==miEmail);
@@ -509,15 +539,15 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
       await Promise.all(todos.map(async(e)=>{
         const ck=`cl_notif_chat_${post.id}_${e}`;
         const last=parseInt(localStorage.getItem(ck)||"0");
-        if(ahora-last<3*60*1000)return;// cooldown 3 min
-        // Contar mensajes nuevos desde última notif
+        if(ahora-last<3*60*1000)return;
         const desde=new Date(last).toISOString();
         const nuevos=msgs.filter(m=>m.de_nombre!==e&&m.created_at>desde).length+1;
         const titulo=nuevos>1?`${post.titulo} (${nuevos} mensajes)`:post.titulo;
         await sb.insertNotificacion({usuario_id:null,alumno_email:e,tipo:"chat_grupal",publicacion_id:post.id,pub_titulo:titulo,leida:false},session.access_token).catch(()=>{});
         try{localStorage.setItem(ck,String(ahora));}catch{}
       }));
-    }catch(e){alert("Error al enviar: "+e.message);}
+    }catch(e){toast("Error al enviar: "+e.message,"error");}
+    finally{setSending(false);}
   };
 
   const esOwner=(email)=>email===post.autor_email;
@@ -536,13 +566,17 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
 
   return(
     <>
+    <style>{`
+      @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    `}</style>
     {showJitsi&&<JitsiModal roomName={jitsiRoom} displayName={miDisplayName} onClose={()=>setShowJitsi(false)}/>}
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       {/* Header */}
       <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,background:C.surface}}>
         <span style={{fontSize:18}}>💬</span>
         <div style={{flex:1}}>
-          <div style={{fontWeight:700,color:C.text,fontSize:14}}>Chat grupal</div>
+          <div style={{fontWeight:700,color:C.text,fontSize:14}}>{esChatParticular?"Chat con el docente":"Chat grupal"}</div>
           <div style={{fontSize:11,color:C.muted}}>{msgs.length} mensaje{msgs.length!==1?"s":""}</div>
         </div>
         {/* Botón resumen IA */}
@@ -573,7 +607,14 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
       </div>
 
       {/* Mensajes */}
-      <div style={{height:420,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:2,background:`linear-gradient(${C.bg},${C.bg})`}}>
+      <div ref={msgsContainerRef}
+        onScroll={e=>{
+          const el=e.currentTarget;
+          const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<60;
+          atBottomRef.current=atBottom;
+          if(atBottom&&newMsgCount>0)setNewMsgCount(0);
+        }}
+        style={{height:420,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:2,background:`linear-gradient(${C.bg},${C.bg})`,position:"relative"}}>
         {loading?<div style={{display:"flex",justifyContent:"center",padding:"32px 0"}}><Spinner/></div>
           :msgs.length===0
             ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"32px 0",display:"flex",flexDirection:"column",gap:6,alignItems:"center"}}>
@@ -647,6 +688,44 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           </div>
         )}
         <div ref={bottomRef}/>
+        {/* ── Toast de mensaje entrante ── */}
+        {chatNotif&&(
+          <div onClick={()=>{scrollBottom();setChatNotif(null);}} style={{
+            position:"sticky",bottom:8,alignSelf:"flex-end",
+            background:C.surface,border:`1px solid ${C.border}`,
+            borderLeft:`3px solid ${
+              esOwner(chatNotif.email)?"#C85CE0":
+              esAyudante(chatNotif.email)?"#5CA8E0":C.accent}`,
+            borderRadius:12,padding:"10px 12px",
+            boxShadow:"0 6px 24px rgba(0,0,0,.18)",
+            display:"flex",alignItems:"center",gap:10,
+            maxWidth:260,cursor:"pointer",
+            animation:"slideDown .25s cubic-bezier(.2,.8,.2,1)",
+            zIndex:10,
+          }}>
+            <Avatar letra={(chatNotif.name||"?")[0].toUpperCase()} size={32}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:12,color:C.text,marginBottom:2}}>{chatNotif.name}</div>
+              <div style={{fontSize:11,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{chatNotif.text}</div>
+            </div>
+            <button onClick={e=>{e.stopPropagation();setChatNotif(null);}}
+              style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,lineHeight:1,flexShrink:0,padding:"0 0 0 4px"}}>×</button>
+          </div>
+        )}
+        {/* ── Pill nuevos mensajes (cuando usuario scrolleó arriba) ── */}
+        {newMsgCount>0&&(
+          <div onClick={()=>{scrollBottom();setNewMsgCount(0);}} style={{
+            position:"sticky",bottom:8,alignSelf:"center",
+            background:C.accent,color:"#fff",
+            borderRadius:20,padding:"7px 16px",
+            fontSize:12,fontWeight:700,cursor:"pointer",
+            boxShadow:"0 4px 16px rgba(26,110,216,.4)",
+            display:"flex",alignItems:"center",gap:6,
+            animation:"slideUp .2s ease",zIndex:10,
+          }}>
+            ↓ {newMsgCount} mensaje{newMsgCount>1?"s":""} nuevo{newMsgCount>1?"s":""}
+          </div>
+        )}
       </div>
 
       {/* Panel resumen IA */}
@@ -683,13 +762,15 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           value={input}
           onChange={e=>{setInput(e.target.value);emitirEscribiendo();}}
           onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
-          placeholder="Escribí al grupo…"
+          placeholder={esChatParticular?"Escribile al docente…":"Escribí al grupo…"}
           rows={1}
           style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 14px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:100,overflowY:"hidden",boxSizing:"border-box",transition:"border-color .15s"}}
           onInput={e=>{const el=e.target;el.style.overflowY="hidden";el.style.height="0";const h=Math.min(el.scrollHeight,100);el.style.height=h+"px";el.style.overflowY=h>=100?"auto":"hidden";}}
         />
-        <button onClick={sendMsg} disabled={!input.trim()&&!imagenPrevia}
-          style={{background:C.accent,border:"none",borderRadius:"50%",width:36,height:36,cursor:(input.trim()||imagenPrevia)?"pointer":"default",fontSize:16,flexShrink:0,opacity:(input.trim()||imagenPrevia)?1:0.4,transition:"all .15s",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>↑</button>
+        <button onClick={sendMsg} disabled={(!input.trim()&&!imagenPrevia)||sending}
+          style={{background:C.accent,border:"none",borderRadius:"50%",width:36,height:36,cursor:(input.trim()||imagenPrevia)&&!sending?"pointer":"default",fontSize:16,flexShrink:0,opacity:(input.trim()||imagenPrevia)&&!sending?1:0.4,transition:"all .15s",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {sending?<Spinner small/>:"↑"}
+        </button>
       </div>
     </div>
     </>
@@ -5261,7 +5342,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                 {!esParticular&&<ForoCurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>}
                 <div style={{marginTop:esParticular?0:14}}>
                   {esParticular&&<div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>💬 CHAT CON EL DOCENTE</div>}
-                  <ChatCurso post={post} session={session} ayudantes={post.ayudantes||[]} ayudanteEmails={ayudanteEmails} esMio={esMio} esAyudante={esAyudante} onNewMessages={(n)=>{if(tabActivo!=="comunidad")setMensajesNuevos(prev=>prev+n);}}/>
+                  <ChatCurso post={post} session={session} ayudantes={post.ayudantes||[]} ayudanteEmails={ayudanteEmails} esMio={esMio} esAyudante={esAyudante} esParticular={esParticular} onNewMessages={(n)=>{if(tabActivo!=="comunidad")setMensajesNuevos(prev=>prev+n);}}/>
                 </div>
               </>
             ):(
