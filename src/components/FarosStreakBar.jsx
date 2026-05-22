@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Flame, Check, Timer } from 'lucide-react';
 import { C, FONT } from '../shared';
 import { formatTime } from '../FarosGameLogic';
 
@@ -41,13 +42,13 @@ export default function FarosStreakBar({ streak, timerActive, wonToday }) {
       boxShadow: '0 2px 12px rgba(26,110,216,.04)',
       fontFamily: FONT,
     }}>
-      <div style={{ fontSize: 24 }}>🔥</div>
+      <Flame size={24} color="#E8881A" strokeWidth={1.8}/>
       <div>
         <div style={{ fontSize: 15, fontWeight: 800, color: '#E8881A' }}>
           {streak} {streak === 1 ? 'día seguido' : 'días seguidos'}
         </div>
         <div style={{ fontSize: 11, color: C.muted }}>
-          {wonToday ? '✓ Completado hoy' : `⏱ ${formatTime(elapsed)}`}
+          {wonToday ? <span style={{display:'inline-flex',alignItems:'center',gap:3}}><Check size={10} strokeWidth={2.5}/>Completado hoy</span> : <span style={{display:'inline-flex',alignItems:'center',gap:3}}><Timer size={10} strokeWidth={2}/>{formatTime(elapsed)}</span>}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Flag } from "lucide-react";
 import * as sb from "../supabase";
 import { C, FONT, Modal, Btn, Label } from "../shared";
 
@@ -9,7 +10,7 @@ export default function DenunciaModal({post,session,onClose}){
   return(
     <Modal onClose={onClose} width="min(440px,95vw)">
       <div style={{padding:"20px 22px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><h3 style={{color:C.danger,margin:0,fontSize:16,fontWeight:700}}>⚑ Denunciar publicación</h3><button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"8px 12px",margin:"-8px -8px -8px 0",borderRadius:8,lineHeight:1,minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><h3 style={{color:C.danger,margin:0,fontSize:16,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><Flag size={15} strokeWidth={2}/>Denunciar publicación</h3><button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"8px 12px",margin:"-8px -8px -8px 0",borderRadius:8,lineHeight:1,minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>
         {ok?(<div style={{textAlign:"center",padding:"24px 0"}}><div style={{color:C.success,fontWeight:700,fontSize:15,marginBottom:8}}>Denuncia enviada</div><div style={{color:C.muted,fontSize:13}}>Revisaremos tu reporte.</div><Btn onClick={onClose} style={{marginTop:16}}>Cerrar</Btn></div>):(
           <><div style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:10,padding:"10px 13px",marginBottom:14,fontSize:12,color:C.muted}}>Publicación: <span style={{color:C.text,fontWeight:600}}>{post.titulo}</span></div>
           <Label>Motivo</Label>

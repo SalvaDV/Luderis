@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Check, Circle, Calendar, AlertTriangle, Clock, Trash2, Bell } from "lucide-react";
 import { C, FONT, Spinner, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
@@ -69,24 +70,24 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
     if(ini)ini.setHours(0,0,0,0);
     if(fin)fin.setHours(0,0,0,0);
     // Clase ya finalizada manualmente
-    if(ins.clase_finalizada||p.finalizado)return{icon:"✓",texto:"Clase finalizada",color:C.success};
+    if(ins.clase_finalizada||p.finalizado)return{Icon:Check,texto:"Clase finalizada",color:C.success};
     // Todavía no empezó
     if(ini&&hoy<ini){
       const dias=Math.ceil((ini-hoy)/86400000);
-      if(dias===0)return{icon:"🟢",texto:"Inicia hoy",color:C.success};
-      if(dias===1)return{icon:"📅",texto:"Inicia mañana",color:C.info};
-      return{icon:"📅",texto:`Inicia en ${dias} día${dias!==1?"s":""}`,color:C.info};
+      if(dias===0)return{Icon:Circle,texto:"Inicia hoy",color:C.success};
+      if(dias===1)return{Icon:Calendar,texto:"Inicia mañana",color:C.info};
+      return{Icon:Calendar,texto:`Inicia en ${dias} día${dias!==1?"s":""}`,color:C.info};
     }
     // Ya empezó — mostrar cuánto falta para terminar
     if(fin){
       const dias=Math.ceil((fin-hoy)/86400000);
-      if(dias<0)return{icon:"·",texto:"Período finalizado",color:C.muted};
-      if(dias===0)return{icon:"⚠️",texto:"Finaliza hoy",color:C.danger};
-      if(dias===1)return{icon:"⏳",texto:"Finaliza mañana",color:C.warn};
-      return{icon:"⏳",texto:`Finaliza en ${dias} día${dias!==1?"s":""}`,color:dias<=7?C.danger:dias<=30?C.warn:C.muted};
+      if(dias<0)return{Icon:null,texto:"Período finalizado",color:C.muted};
+      if(dias===0)return{Icon:AlertTriangle,texto:"Finaliza hoy",color:C.danger};
+      if(dias===1)return{Icon:Clock,texto:"Finaliza mañana",color:C.warn};
+      return{Icon:Clock,texto:`Finaliza en ${dias} día${dias!==1?"s":""}`,color:dias<=7?C.danger:dias<=30?C.warn:C.muted};
     }
     // Empezó pero sin fecha de fin
-    if(ini&&hoy>=ini)return{icon:"🟢",texto:"En curso",color:C.success};
+    if(ini&&hoy>=ini)return{Icon:Circle,texto:"En curso",color:C.success};
     return null;
   };
 
@@ -113,7 +114,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
     const p=posts[ins.publicacion_id];
     if(!p)return(
       <div key={ins.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,opacity:0.6}}>
-        <div style={{width:44,height:44,borderRadius:11,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🗑️</div>
+        <div style={{width:44,height:44,borderRadius:11,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:C.muted}}><Trash2 size={20} strokeWidth={1.5}/></div>
         <div><p style={{fontFamily:FONT,fontSize:13,fontWeight:600,color:C.muted,margin:0}}>Publicación eliminada</p><p style={{fontFamily:FONT,fontSize:11,color:C.muted,margin:"2px 0 0"}}>Este curso o clase ya no está disponible.</p></div>
       </div>
     );
@@ -127,15 +128,15 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
         onMouseEnter={e=>e.currentTarget.style.borderColor=pendienteConfirmacion?"#FF9800":C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=borderColor}>
         <div onClick={()=>{marcarNotifPubLeida(p.id);onOpenCurso(p);}} style={{display:"flex",gap:12,alignItems:"center",flex:1,minWidth:0,cursor:"pointer"}}>
           <div style={{width:44,height:44,borderRadius:11,background:finalizado?"#4ECB7115":tieneNotif?C.accentDim:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,position:"relative"}}>
-            {finalizado?"✓":"·"}
+            {finalizado?<Check size={18} strokeWidth={2.5} color={C.success}/>:<span style={{fontSize:18,color:C.muted}}>·</span>}
             {tieneNotif&&<span style={{position:"absolute",top:-4,right:-4,background:C.danger,color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>!</span>}
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700}}>⏳ El docente marcó la clase como finalizada — confirmá si la recibiste</span>}
-            {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700}}>🔔 Clase finalizada — dejá tu reseña</span>}
-            {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600}}>{ti.icon} {ti.texto}</span>
+            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente marcó la clase como finalizada — confirmá si la recibiste</span>}
+            {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Bell size={10} strokeWidth={2}/>Clase finalizada — dejá tu reseña</span>}
+            {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>{ti.Icon&&<ti.Icon size={10} strokeWidth={2}/>}{ti.texto}</span>
               :<span style={{fontSize:11,color:C.muted}}>Inscripto {fmt(ins.created_at)}</span>)}
           </div>
         </div>

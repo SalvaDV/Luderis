@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Lightbulb, Flame, Share2, Trophy } from 'lucide-react';
 import { C, FONT } from '../shared';
 import { formatTime } from '../FarosGameLogic';
+
+const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
+const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:10,height:10,borderRadius:'50%',background:DIFF_COLOR[difficulty]||'#888',verticalAlign:'middle',marginRight:3}}/>);
 
 /**
  * Pantalla "Volvé mañana" — se muestra cuando el usuario ya ganó hoy
@@ -27,7 +31,6 @@ export default function FarosTomorrow({
     return () => clearInterval(intervalRef.current);
   }, []);
 
-  const diffEmoji = difficulty === 'fácil' ? '🟡' : difficulty === 'medio' ? '🟠' : '🔴';
   const ready = secondsLeft <= 0;
 
   return (
@@ -56,12 +59,12 @@ export default function FarosTomorrow({
           padding: '20px 24px 16px',
           textAlign: 'center',
         }}>
-          <div style={{ fontSize: 40, marginBottom: 6 }}>🔦</div>
+          <div style={{ marginBottom: 6 }}><Lightbulb size={40} color="#fff" strokeWidth={1.5}/></div>
           <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
             ¡Ya jugaste hoy!
           </div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', fontWeight: 500 }}>
-            Faros #{puzzleNum} · {diffEmoji} {difficulty} · {gridSize}×{gridSize}
+            Faros #{puzzleNum} · <DiffDot difficulty={difficulty}/>{difficulty} · {gridSize}×{gridSize}
           </div>
         </div>
 
@@ -84,8 +87,8 @@ export default function FarosTomorrow({
           </div>
           <div style={{ width: 1, background: C.border }} />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#E8881A' }}>
-              🔥 {streak}
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#E8881A', display:'flex', alignItems:'center', gap:4 }}>
+              <Flame size={20} color="#E8881A" strokeWidth={1.8}/>{streak}
             </div>
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 2 }}>
               {streak === 1 ? 'día seguido' : 'días seguidos'}
@@ -100,7 +103,7 @@ export default function FarosTomorrow({
         }}>
           {ready ? (
             <>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
+              <div style={{ marginBottom: 6 }}><Trophy size={28} color="#F59E0B" strokeWidth={1.5}/></div>
               <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, marginBottom: 4 }}>
                 ¡El nuevo puzzle ya está disponible!
               </div>
@@ -137,7 +140,7 @@ export default function FarosTomorrow({
               cursor: 'pointer', fontFamily: FONT,
             }}
           >
-            📤 Compartir resultado
+            <Share2 size={14} strokeWidth={2} style={{marginRight:6}}/> Compartir resultado
           </button>
         </div>
       </div>

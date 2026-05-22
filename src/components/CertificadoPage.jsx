@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { GraduationCap, XCircle, CheckCircle2, User, BookOpen, Tag, Calendar, Key } from "lucide-react";
 import { C, FONT } from "../shared";
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
@@ -35,7 +36,7 @@ export default function CertificadoPage({certId,onClose}){
         <div style={{background:"linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0)",padding:"24px 28px",position:"relative"}}>
           <button onClick={onClose} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(255,255,255,.7)",fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <span style={{fontSize:36}}>🎓</span>
+            <GraduationCap size={36} color="#fff" strokeWidth={1.5}/>
             <div>
               <div style={{color:"#fff",fontWeight:800,fontSize:18}}>Verificación de Certificado</div>
               <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>Luderis — Plataforma Educativa Argentina</div>
@@ -53,7 +54,7 @@ export default function CertificadoPage({certId,onClose}){
 
           {error&&(
             <div style={{textAlign:"center",padding:"24px 0"}}>
-              <div style={{fontSize:40,marginBottom:12}}>❌</div>
+              <div style={{marginBottom:12}}><XCircle size={40} color={C.danger} strokeWidth={1.5}/></div>
               <div style={{color:C.danger,fontWeight:700,fontSize:15,marginBottom:8}}>Certificado inválido</div>
               <div style={{color:C.muted,fontSize:13}}>{error}</div>
             </div>
@@ -63,7 +64,7 @@ export default function CertificadoPage({certId,onClose}){
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               {/* Badge verificado */}
               <div style={{background:"#2EC4A012",border:"1px solid #2EC4A040",borderRadius:12,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:22}}>✅</span>
+                <CheckCircle2 size={22} color="#0F6E56" strokeWidth={1.8}/>
                 <div>
                   <div style={{fontWeight:700,color:"#0F6E56",fontSize:14}}>Certificado verificado</div>
                   <div style={{fontSize:11,color:C.muted}}>Este documento es auténtico y fue emitido por Luderis</div>
@@ -72,15 +73,15 @@ export default function CertificadoPage({certId,onClose}){
 
               {/* Datos */}
               {[
-                {label:"Alumno",value:cert.alumno_nombre,icon:"👤",big:true},
-                {label:"Curso completado",value:cert.curso_titulo,icon:"📚",big:true},
-                {label:"Materia",value:cert.materia,icon:"🏷️"},
-                {label:"Docente",value:cert.docente_nombre,icon:"🎓"},
-                {label:"Fecha de emisión",value:fecha,icon:"📅"},
-                {label:"ID del certificado",value:cert.id,icon:"🔑",mono:true},
-              ].filter(d=>d.value).map(({label,value,icon,big,mono})=>(
+                {label:"Alumno",value:cert.alumno_nombre,Icon:User,big:true},
+                {label:"Curso completado",value:cert.curso_titulo,Icon:BookOpen,big:true},
+                {label:"Materia",value:cert.materia,Icon:Tag},
+                {label:"Docente",value:cert.docente_nombre,Icon:GraduationCap},
+                {label:"Fecha de emisión",value:fecha,Icon:Calendar},
+                {label:"ID del certificado",value:cert.id,Icon:Key,mono:true},
+              ].filter(d=>d.value).map(({label,value,Icon:FieldIcon,big,mono})=>(
                 <div key={label} style={{background:C.bg,borderRadius:10,padding:"10px 14px",border:`1px solid ${C.border}`}}>
-                  <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.4,marginBottom:3,textTransform:"uppercase"}}>{icon} {label}</div>
+                  <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.4,marginBottom:3,textTransform:"uppercase",display:"flex",alignItems:"center",gap:4}}><FieldIcon size={10} strokeWidth={2}/>{label}</div>
                   <div style={{fontSize:big?16:14,fontWeight:big?700:500,color:C.text,fontFamily:mono?"monospace":FONT}}>{value}</div>
                 </div>
               ))}

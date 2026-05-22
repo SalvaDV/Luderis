@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { GraduationCap, Inbox, CheckCircle, XCircle, RefreshCw, MessageCircle, Video, BookOpen, Users, Star, Bell, CreditCard, Megaphone, VolumeX, HelpCircle } from "lucide-react";
 import { C, FONT, Spinner, fmtRel, logError } from "../shared";
 import * as sb from "../supabase";
 
@@ -28,23 +29,23 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
   };
 
   const TIPO_INFO={
-    nueva_inscripcion:{icon:"🎓",color:"#2EC4A0",label:"Nueva inscripción"},
-    nueva_oferta:{icon:"📩",color:"#1A6ED8",label:"Nueva oferta"},
-    oferta_aceptada:{icon:"✅",color:"#2EC4A0",label:"Oferta aceptada"},
-    oferta_rechazada:{icon:"❌",color:"#E53E3E",label:"Oferta rechazada"},
-    contraoferta:{icon:"🔄",color:"#F59E0B",label:"Contraoferta"},
-    nuevo_mensaje:{icon:"💬",color:"#7B3FBE",label:"Mensaje nuevo"},
-    chat_grupal:{icon:"💬",color:"#1A6ED8",label:"Mensaje en grupo"},
-    clase_iniciada:{icon:"📹",color:"#C80000",label:"¡Clase en vivo!"},
-    nuevo_contenido:{icon:"📚",color:"#1A6ED8",label:"Nuevo contenido"},
-    nuevo_ayudante:{icon:"🤝",color:"#2EC4A0",label:"Co-docente agregado"},
-    valorar_curso:{icon:"⭐",color:"#F59E0B",label:"Valorar curso"},
-    alerta_publicacion:{icon:"🔔",color:"#1A6ED8",label:"Alerta de búsqueda"},
-    pago_aprobado_mp:{icon:"💳",color:"#009EE3",label:"Pago aprobado"},
-    sistema:{icon:"📣",color:"#7B3FBE",label:"Anuncio de Luderis"},
-    alerta_contacto:{icon:"🔇",color:"#c62828",label:"Alerta de moderación"},
-    nueva_pregunta:{icon:"❓",color:"#1565c0",label:"Nueva pregunta en tu publicación"},
-    pregunta_respondida:{icon:"✅",color:"#2e7d32",label:"Tu pregunta fue respondida"},
+    nueva_inscripcion:{Icon:GraduationCap,color:"#2EC4A0",label:"Nueva inscripción"},
+    nueva_oferta:{Icon:Inbox,color:"#1A6ED8",label:"Nueva oferta"},
+    oferta_aceptada:{Icon:CheckCircle,color:"#2EC4A0",label:"Oferta aceptada"},
+    oferta_rechazada:{Icon:XCircle,color:"#E53E3E",label:"Oferta rechazada"},
+    contraoferta:{Icon:RefreshCw,color:"#F59E0B",label:"Contraoferta"},
+    nuevo_mensaje:{Icon:MessageCircle,color:"#7B3FBE",label:"Mensaje nuevo"},
+    chat_grupal:{Icon:MessageCircle,color:"#1A6ED8",label:"Mensaje en grupo"},
+    clase_iniciada:{Icon:Video,color:"#C80000",label:"¡Clase en vivo!"},
+    nuevo_contenido:{Icon:BookOpen,color:"#1A6ED8",label:"Nuevo contenido"},
+    nuevo_ayudante:{Icon:Users,color:"#2EC4A0",label:"Co-docente agregado"},
+    valorar_curso:{Icon:Star,color:"#F59E0B",label:"Valorar curso"},
+    alerta_publicacion:{Icon:Bell,color:"#1A6ED8",label:"Alerta de búsqueda"},
+    pago_aprobado_mp:{Icon:CreditCard,color:"#009EE3",label:"Pago aprobado"},
+    sistema:{Icon:Megaphone,color:"#7B3FBE",label:"Anuncio de Luderis"},
+    alerta_contacto:{Icon:VolumeX,color:"#c62828",label:"Alerta de moderación"},
+    nueva_pregunta:{Icon:HelpCircle,color:"#1565c0",label:"Nueva pregunta en tu publicación"},
+    pregunta_respondida:{Icon:CheckCircle,color:"#2e7d32",label:"Tu pregunta fue respondida"},
   };
 
   const tabs=[
@@ -65,7 +66,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
         {/* Header */}
         <div style={{padding:"18px 20px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
           <div>
-            <div style={{fontWeight:700,color:C.text,fontSize:17}}>🔔 Notificaciones</div>
+            <div style={{fontWeight:700,color:C.text,fontSize:17,display:"flex",alignItems:"center",gap:7}}><Bell size={16} strokeWidth={2}/>Notificaciones</div>
             {sinLeer>0&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{sinLeer} sin leer</div>}
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -88,12 +89,12 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
         <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           {loading?<Spinner/>:filtradas.length===0?(
             <div style={{textAlign:"center",padding:"48px 24px"}}>
-              <div style={{fontSize:40,marginBottom:12}}>🔔</div>
+              <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Bell size={40} color={C.muted} strokeWidth={1.5}/></div>
               <div style={{color:C.muted,fontSize:14}}>{tab==="noLeidas"?"Todo leído ✓":"Sin notificaciones aún"}</div>
             </div>
           ):(
             filtradas.map((n,i)=>{
-              const info=TIPO_INFO[n.tipo]||{icon:"📌",color:C.muted,label:n.tipo};
+              const info=TIPO_INFO[n.tipo]||{Icon:Bell,color:C.muted,label:n.tipo};
               return(
                 <div key={n.id||i}
                   onClick={()=>{
@@ -110,8 +111,8 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                   onMouseEnter={e=>{if(n.publicacion_id)e.currentTarget.style.background=C.bg;}}
                   onMouseLeave={e=>e.currentTarget.style.background=n.leida?"transparent":C.accentDim+"80"}>
                   {/* Icono */}
-                  <div style={{width:40,height:40,borderRadius:"50%",background:info.color+"18",border:`1px solid ${info.color}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-                    {info.icon}
+                  <div style={{width:40,height:40,borderRadius:"50%",background:info.color+"18",border:`1px solid ${info.color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <info.Icon size={18} color={info.color} strokeWidth={1.8}/>
                   </div>
                   {/* Contenido */}
                   <div style={{flex:1,minWidth:0}}>

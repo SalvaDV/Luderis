@@ -1,4 +1,5 @@
 import React from "react";
+import { Trophy } from "lucide-react";
 import { C, LUD, Avatar } from "../shared";
 
 export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpenPerfil,filtroMateria}){
@@ -31,7 +32,6 @@ export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpe
     ?docentes.filter(d=>d.materias.includes(filtroMateria))
     :docentes;
 
-  const MEDALLAS=["🥇","🥈","🥉"];
 
   if(!visibles.length)return(
     <div style={{textAlign:"center",padding:"48px 0",color:C.muted,fontSize:14}}>
@@ -42,7 +42,7 @@ export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpe
   return(
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <div style={{background:LUD.grad,borderRadius:14,padding:"14px 18px",marginBottom:4,display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:24}}>🏆</span>
+        <Trophy size={24} color="#F59E0B" strokeWidth={1.8}/>
         <div>
           <div style={{fontWeight:800,color:"#fff",fontSize:15}}>Ranking de docentes</div>
           <div style={{fontSize:12,color:"rgba(255,255,255,.75)"}}>Basado en rating, publicaciones y reseñas{filtroMateria?` · ${filtroMateria}`:""}</div>
@@ -55,7 +55,7 @@ export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpe
           onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
           {/* Posición */}
           <div style={{width:36,height:36,borderRadius:"50%",background:i<3?["linear-gradient(135deg,#F59E0B,#D97706)","linear-gradient(135deg,#94A3B8,#64748B)","linear-gradient(135deg,#CD7F32,#A0522D)"][i]:C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:i<3?18:14,color:i<3?"#fff":C.muted,flexShrink:0}}>
-            {i<3?MEDALLAS[i]:i+1}
+            {i+1}
           </div>
           {/* Avatar */}
           <Avatar letra={d.nombre[0]} size={44}/>

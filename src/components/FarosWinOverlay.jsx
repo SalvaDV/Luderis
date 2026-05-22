@@ -1,26 +1,17 @@
 import React from 'react';
+import { Trophy, Flame, Share2 } from 'lucide-react';
 import { C, FONT } from '../shared';
 import { formatTime } from '../FarosGameLogic';
 
-/**
- * Victory overlay. Non-dismissable (game is locked on win).
- * Props:
- *   show        - boolean
- *   timeSeconds - integer
- *   streak      - integer (consecutive days)
- *   puzzleNum   - integer
- *   difficulty  - 'fácil'|'medio'|'difícil'
- *   gridSize    - integer
- *   onShare     - () => void
- *   onBack      - () => void
- */
+const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
+const DiffDot=({difficulty})=>(
+  <span style={{display:'inline-block',width:10,height:10,borderRadius:'50%',background:DIFF_COLOR[difficulty]||'#888',verticalAlign:'middle',marginRight:3}}/>
+);
+
 export default function FarosWinOverlay({
   show, timeSeconds, streak, puzzleNum, difficulty, gridSize, onShare, onBack,
 }) {
   if (!show) return null;
-
-  const diffEmoji = difficulty === 'fácil' ? '🟡' : difficulty === 'medio' ? '🟠' : '🔴';
-
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -39,12 +30,14 @@ export default function FarosWinOverlay({
         fontFamily: FONT,
         boxShadow: '0 24px 64px rgba(0,0,0,.25)',
       }}>
-        <div style={{ fontSize: 44, marginBottom: 8 }}>🎉</div>
+        <div style={{ marginBottom: 8, display:'flex', justifyContent:'center' }}>
+          <Trophy size={44} color="#F59E0B" strokeWidth={1.5}/>
+        </div>
         <div style={{ fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 2 }}>
           ¡Resuelto!
         </div>
-        <div style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>
-          Faros #{puzzleNum} · {diffEmoji} {difficulty} ({gridSize}×{gridSize})
+        <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+          Faros #{puzzleNum} · <DiffDot difficulty={difficulty}/>{difficulty} ({gridSize}×{gridSize})
         </div>
 
         {/* Stats */}
@@ -62,8 +55,8 @@ export default function FarosWinOverlay({
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>Tiempo</div>
           </div>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#E8881A' }}>
-              🔥 {streak}
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#E8881A', display:'flex', alignItems:'center', gap:4 }}>
+              <Flame size={20} color="#E8881A" strokeWidth={1.8}/>{streak}
             </div>
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>Racha</div>
           </div>
@@ -79,9 +72,10 @@ export default function FarosWinOverlay({
             color: '#fff', fontSize: 13, fontWeight: 700,
             cursor: 'pointer', fontFamily: FONT,
             marginBottom: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}
         >
-          📤 Compartir resultado
+          <Share2 size={14} strokeWidth={2}/> Compartir resultado
         </button>
         <button
           onClick={onBack}

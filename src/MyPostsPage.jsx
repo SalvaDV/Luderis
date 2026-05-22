@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Timer, Eye, Clock, AlertTriangle, X } from "lucide-react";
 import { C, FONT, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { AcuerdoModal } from "./MiCuentaPage";
@@ -46,7 +47,7 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
         {post.verificado&&<VerifiedBadge/>}
         {ofertasPendientes>0&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`}}>{ofertasPendientes} oferta{ofertasPendientes!==1?"s":""}</span>}
         {!finalizado&&post.inscripciones_cerradas&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:C.warn+"12",color:C.warn,border:`1px solid ${C.warn}30`}}>Inscripciones cerradas</span>}
-        {post.tipo==="busqueda"&&post.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(daysLeft<=0)return<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`}}>⏱ Expirada</span>;if(daysLeft<=3)return<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:"#FEF3C7",color:"#B45309",border:"1px solid #F59E0B33"}}>⏱ Expira en {daysLeft} día{daysLeft!==1?"s":""}</span>;return null;})()}
+        {post.tipo==="busqueda"&&post.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(daysLeft<=0)return<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`,display:"inline-flex",alignItems:"center",gap:3}}><Timer size={10} strokeWidth={2}/>Expirada</span>;if(daysLeft<=3)return<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:"#FEF3C7",color:"#B45309",border:"1px solid #F59E0B33",display:"inline-flex",alignItems:"center",gap:3}}><Timer size={10} strokeWidth={2}/>Expira en {daysLeft} día{daysLeft!==1?"s":""}</span>;return null;})()}
       </div>
       {/* Contenido + acciones */}
       <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
@@ -59,12 +60,12 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
           <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
             {post.precio&&<span style={{fontSize:12,color:C.accent,fontWeight:600}}>{fmtPrice(post.precio,post.moneda)}</span>}
             {post.tipo==="oferta"&&inscriptos!==undefined&&<span style={{fontSize:12,color:C.muted}}>{inscriptos} inscripto{inscriptos!==1?"s":""}</span>}
-            {post.vistas>0&&<span style={{fontSize:12,color:C.muted}}>👁 {post.vistas}</span>}
+            {post.vistas>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:3}}><Eye size={11} strokeWidth={2}/>{post.vistas}</span>}
             {post.created_at&&<span style={{fontSize:12,color:C.muted}}>{fmt(post.created_at)}</span>}
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0,minWidth:88}}>
-          {post.tipo==="oferta"&&<button onClick={()=>onOpenCurso(pendienteValidacion?{...post,_openValidacion:true}:post)} style={{background:pendienteValidacion?C.accent:C.accentDim,border:`1px solid ${C.accent}${pendienteValidacion?"":"44"}`,borderRadius:6,color:pendienteValidacion?"#fff":C.accent,padding:"6px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,textAlign:"center"}}>{pendienteValidacion?"⏳ Validar":"Contenido"}</button>}
+          {post.tipo==="oferta"&&<button onClick={()=>onOpenCurso(pendienteValidacion?{...post,_openValidacion:true}:post)} style={{background:pendienteValidacion?C.accent:C.accentDim,border:`1px solid ${C.accent}${pendienteValidacion?"":"44"}`,borderRadius:6,color:pendienteValidacion?"#fff":C.accent,padding:"6px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,textAlign:"center"}}>{pendienteValidacion?<span style={{display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>Validar</span>:"Contenido"}</button>}
           {!finalizado&&<button onClick={()=>onEdit(post)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",transition:"border-color .12s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>Editar</button>}
           {!finalizado&&!pendienteValidacion&&<button onClick={()=>onToggle(post)} disabled={toggling===post.id} style={{background:activo?C.warn+"12":C.success+"12",border:`1px solid ${activo?C.warn+"40":C.success+"40"}`,borderRadius:6,color:activo?C.warn:C.success,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",opacity:toggling===post.id?.5:1}}>{toggling===post.id?"...":(activo?"Pausar":"Activar")}</button>}
           {post.tipo==="busqueda"&&post.expires_at&&Math.ceil((new Date(post.expires_at)-new Date())/86400000)<=3&&(
@@ -76,9 +77,9 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
       {confirmDelete&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:FONT}} onClick={()=>setConfirmDelete(false)}>
           <div style={{background:C.surface,borderRadius:12,padding:"28px",width:"min(400px,92vw)",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.15)"}} onClick={e=>e.stopPropagation()}>
-            <div style={{width:44,height:44,borderRadius:"50%",background:C.danger+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:20,color:C.danger}}>✕</div>
+            <div style={{width:44,height:44,borderRadius:"50%",background:C.danger+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.danger}}><X size={20} strokeWidth={2.5}/></div>
             <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>¿Eliminar {post.tipo==="busqueda"?"búsqueda":"publicación"}?</h3>
-            {ofertaAceptadaInfo&&<div style={{background:C.warn+"10",border:`1px solid ${C.warn}30`,borderRadius:8,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left"}}>⚠️ <strong style={{color:C.text}}>{ofertaAceptadaInfo.nombre}</strong> tiene una oferta aceptada. Se le avisará.</div>}
+            {ofertaAceptadaInfo&&<div style={{background:C.warn+"10",border:`1px solid ${C.warn}30`,borderRadius:8,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left",display:"flex",alignItems:"flex-start",gap:6}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0,marginTop:1}}/><span><strong style={{color:C.text}}>{ofertaAceptadaInfo.nombre}</strong> tiene una oferta aceptada. Se le avisará.</span></div>}
             <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 22px"}}>Se eliminará <strong style={{color:C.text}}>"{post.titulo}"</strong> permanentemente.</p>
             <div style={{display:"flex",gap:10}}>
               <button onClick={()=>setConfirmDelete(false)} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"10px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>

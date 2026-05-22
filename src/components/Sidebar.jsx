@@ -1,4 +1,5 @@
 import React from "react";
+import { Search, Calendar, MessageCircle, Bookmark, GraduationCap, Lightbulb, User, LogOut } from "lucide-react";
 import * as sb from "../supabase";
 import {
   C, FONT, LUD,
@@ -10,13 +11,13 @@ import {
 export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,totalNotifsUnread,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin,juegosBadge,onOpenAdmin,onOpenNotifPanel}){
   const nombre=sb.getDisplayName(session.user.email);
   const nav=[
-    {id:"explore",icon:"🔍",label:t("explore")},
-    {id:"agenda",icon:"📅",label:t("agenda")},
-    {id:"chats",icon:"💬",label:t("chats"),badge:unreadCount},
-    {id:"favoritos",icon:"★",label:t("favorites")},
-    {id:"inscripciones",icon:"🎓",label:t("classes"),badge:notifCount},
-    {id:"juegos",icon:"🔦",label:"Juegos",badge:juegosBadge?1:0,badgeDot:true},
-    {id:"cuenta",icon:"👤",label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
+    {id:"explore",Icon:Search,label:t("explore")},
+    {id:"agenda",Icon:Calendar,label:t("agenda")},
+    {id:"chats",Icon:MessageCircle,label:t("chats"),badge:unreadCount},
+    {id:"favoritos",Icon:Bookmark,label:t("favorites")},
+    {id:"inscripciones",Icon:GraduationCap,label:t("classes"),badge:notifCount},
+    {id:"juegos",Icon:Lightbulb,label:"Juegos",badge:juegosBadge?1:0,badgeDot:true},
+    {id:"cuenta",Icon:User,label:t("account"),badge:ofertasAceptadasNuevas+ofertasCount},
   ];
   const inner=(
     <div style={{width:224,height:"100%",background:C.surface,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",fontFamily:FONT}}>
@@ -79,7 +80,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
               transition:"background .12s,color .12s"}}
             onMouseEnter={e=>{if(!active){e.currentTarget.style.background=C.bg;}}}
             onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";}}}>
-            <span style={{fontSize:16,lineHeight:1}}>{item.icon}</span>
+            <item.Icon size={16} strokeWidth={1.8} style={{flexShrink:0}}/>
             <span style={{flex:1}}>{item.label}</span>
             {item.badge>0&&(
               item.badgeDot
@@ -129,7 +130,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
             style={{flex:1,background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all .15s"}}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            ↩ {t("logout")}
+            <LogOut size={13} strokeWidth={2}/> {t("logout")}
           </button>
         </div>
         {/* Selector de idioma */}

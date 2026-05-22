@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { Share2, Copy, Mail, MessageCircle, Check } from "lucide-react";
 import { C, FONT, toast } from "../shared";
 
 function ShareToast({msg,onDone}){
   useEffect(()=>{const t=setTimeout(onDone,2200);return()=>clearTimeout(t);},[onDone]);
   return(
     <div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"10px 20px",fontSize:12,color:C.text,zIndex:9999,whiteSpace:"nowrap",boxShadow:"0 4px 20px #0008",fontFamily:FONT,display:"flex",alignItems:"center",gap:8}}>
-      <span style={{color:C.success}}>✓</span>{msg}
+      <Check size={13} color={C.success} strokeWidth={2.5}/>{msg}
     </div>
   );
 }
@@ -31,21 +32,21 @@ export default function ShareBtn({post,style={}}){
         title="Compartir" style={{background:"none",border:`1px solid ${C.border}`,fontSize:13,cursor:"pointer",color:C.muted,padding:"5px 10px",lineHeight:1,borderRadius:8,...style,display:"flex",alignItems:"center",gap:4,transition:"all .15s"}}
         onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
         onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-        ⤴ <span style={{fontSize:11}}>Compartir</span>
+        <Share2 size={13} strokeWidth={2}/> <span style={{fontSize:11}}>Compartir</span>
       </button>
       {menu&&(
         <>
           <div onClick={()=>setMenu(false)} style={{position:"fixed",inset:0,zIndex:299}}/>
           <div style={{position:"absolute",right:0,top:"calc(100% + 4px)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"6px",zIndex:300,boxShadow:"0 8px 24px rgba(0,0,0,.15)",display:"flex",flexDirection:"column",gap:2,minWidth:190,animation:"fadeUp .12s ease"}}>
             {[
-              {icon:"⎘",label:"Copiar enlace",fn:copiar,color:C.text},
-              {icon:"🟢",label:"WhatsApp",fn:whatsapp,color:"#25D366"},
-              {icon:"✉️",label:"Email",fn:email,color:C.muted},
-            ].map(({icon,label,fn,color})=>(
+              {Icon:Copy,label:"Copiar enlace",fn:copiar,color:C.text},
+              {Icon:MessageCircle,label:"WhatsApp",fn:whatsapp,color:"#25D366"},
+              {Icon:Mail,label:"Email",fn:email,color:C.muted},
+            ].map(({Icon,label,fn,color})=>(
               <button key={label} onClick={fn} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,color,padding:"9px 12px",borderRadius:8,textAlign:"left",display:"flex",gap:10,alignItems:"center",transition:"background .1s",fontWeight:label==="WhatsApp"?600:400}}
                 onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                 onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                <span style={{fontSize:16,flexShrink:0}}>{icon}</span>{label}
+                <Icon size={15} strokeWidth={1.8} style={{flexShrink:0}}/>{label}
               </button>
             ))}
           </div>

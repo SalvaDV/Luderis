@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { HelpCircle, Check, Ban, AlertTriangle, AlertOctagon } from "lucide-react";
 import * as sb from "../supabase";
 
 const FONT = "'Inter','Segoe UI',sans-serif";
@@ -156,7 +157,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
   return (
     <div style={{ marginTop: 32 }}>
       <h3 style={{ fontFamily: FONT, fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 18 }}>❓</span> Preguntas frecuentes
+        <HelpCircle size={18} strokeWidth={1.8}/> Preguntas frecuentes
         <span style={{ fontSize: 13, fontWeight: 400, color: C.muted, marginLeft: 4 }}>({preguntas.length})</span>
       </h3>
 
@@ -219,7 +220,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
               {p.respuesta && (
                 <div style={{ padding: "12px 16px", background: C.bg, borderTop: `1px solid ${C.border}` }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#d4edda", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>✓</div>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#d4edda", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Check size={12} strokeWidth={2.5} color="#2e7d32"/></div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: FONT, fontSize: 11, fontWeight: 600, color: "#2e7d32", marginBottom: 4 }}>Respuesta del docente</div>
                       <p style={{ fontFamily: FONT, fontSize: 13, color: C.text, margin: 0, lineHeight: 1.5 }}>{p.respuesta}</p>
@@ -258,18 +259,18 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
       {bloqueadoModal && (()=>{
         const t = bloqueadoModal?.tipo;
         const cfg = t === "contacto_externo"
-          ? { icon:"🚫", color:"#c62828", titulo:"Contacto externo no permitido",
+          ? { Icon:Ban, color:"#c62828", titulo:"Contacto externo no permitido",
               desc:"Tu mensaje fue bloqueado porque parece contener datos de contacto (email, teléfono, redes sociales) o una invitación a comunicarse fuera de Luderis.",
               sub:"Toda la comunicación debe ocurrir dentro de la plataforma." }
           : t === "lenguaje_agresivo"
-          ? { icon:"⚠️", color:"#e65100", titulo:"Lenguaje no permitido",
+          ? { Icon:AlertTriangle, color:"#e65100", titulo:"Lenguaje no permitido",
               desc:"Tu mensaje fue bloqueado por contener insultos, groserías o lenguaje ofensivo. Luderis es una comunidad educativa que requiere un trato respetuoso.",
               sub:"Mantené un lenguaje apropiado para seguir participando." }
           : t === "violencia"
-          ? { icon:"🛑", color:"#b71c1c", titulo:"Contenido violento no permitido",
+          ? { Icon:AlertOctagon, color:"#b71c1c", titulo:"Contenido violento no permitido",
               desc:"Tu mensaje fue bloqueado por contener amenazas, intimidación o contenido violento. Este tipo de comportamiento está terminantemente prohibido.",
               sub:"Ante reincidencias tu cuenta puede ser suspendida." }
-          : { icon:"🚫", color:"#c62828", titulo:"Mensaje no permitido",
+          : { Icon:Ban, color:"#c62828", titulo:"Mensaje no permitido",
               desc:"Tu mensaje fue bloqueado por contener contenido que no está permitido en Luderis.",
               sub:"Un administrador fue notificado." };
         return(
@@ -277,7 +278,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
             onClick={() => setBloqueadoModal(null)}>
             <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.25)", textAlign: "center" }}
               onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>{cfg.icon}</div>
+              <div style={{ marginBottom: 12 }}><cfg.Icon size={44} color={cfg.color} strokeWidth={1.5}/></div>
               <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: cfg.color, marginBottom: 10 }}>{cfg.titulo}</h3>
               <p style={{ fontFamily: FONT, fontSize: 14, color: "#444", lineHeight: 1.6, marginBottom: 8 }}>{cfg.desc}</p>
               <p style={{ fontFamily: FONT, fontSize: 12, color: "#888", marginBottom: 20 }}>{cfg.sub} Un administrador fue notificado.</p>

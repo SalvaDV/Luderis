@@ -11,7 +11,8 @@ import {
   AlertTriangle, MessageSquare, BellOff, CreditCard, Package,
   FileText, Megaphone, Settings, TrendingUp, TrendingDown,
   DollarSign, UserCheck, BookMarked, BarChart2, RefreshCw,
-  ChevronRight, LogOut, Activity, Menu, X, BarChart3, Wallet
+  ChevronRight, LogOut, Activity, Menu, X, BarChart3, Wallet,
+  CheckCircle2, Image
 } from "lucide-react";
 
 // Admin fallback email (optional, only for bootstrapping). Set REACT_APP_ADMIN_EMAIL in env to use.
@@ -480,7 +481,7 @@ function VerificacionesTab({ session, onCountChange }) {
 
   if (verifs.length === 0) return (
     <Card style={{ textAlign: "center", padding: "40px 24px" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+      <div style={{ marginBottom: 12 }}><CheckCircle2 size={40} color={C.success} strokeWidth={1.5}/></div>
       <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 6 }}>Sin verificaciones pendientes</div>
       <div style={{ color: C.muted, fontSize: 13 }}>Todas las solicitudes están procesadas.</div>
     </Card>
@@ -529,7 +530,7 @@ function VerificacionesTab({ session, onCountChange }) {
             {v.foto_dni_frente && (
               <button onClick={() => verFoto(v.foto_dni_frente)}
                 style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.accent, padding: "7px 16px", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: FONT, marginBottom: 14 }}>
-                🪪 Ver foto del DNI
+                <Image size={13} strokeWidth={2} style={{verticalAlign:'middle',marginRight:5}}/> Ver foto del DNI
               </button>
             )}
 
@@ -548,7 +549,7 @@ function VerificacionesTab({ session, onCountChange }) {
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => aprobar(v)} disabled={!!procesando}
                 style={{ flex: 1, background: "#10B981", border: "none", borderRadius: 10, color: "#fff", padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: FONT, opacity: procesando === v.id ? 0.6 : 1 }}>
-                {procesando === v.id ? "Procesando…" : "✅ Aprobar"}
+                {procesando === v.id ? "Procesando…" : <span style={{display:"inline-flex",alignItems:"center",gap:5}}><CheckCircle2 size={14} strokeWidth={2}/>Aprobar</span>}
               </button>
               <button
                 onClick={() => {
@@ -557,7 +558,7 @@ function VerificacionesTab({ session, onCountChange }) {
                 }}
                 disabled={!!procesando}
                 style={{ flex: 1, background: "#EF4444", border: "none", borderRadius: 10, color: "#fff", padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: FONT, opacity: procesando === v.id ? 0.6 : 1 }}>
-                {procesando === v.id ? "Procesando…" : mostrarRazon[v.id] ? "Confirmar rechazo" : "❌ Rechazar"}
+                {procesando === v.id ? "Procesando…" : mostrarRazon[v.id] ? "Confirmar rechazo" : <span style={{display:"inline-flex",alignItems:"center",gap:5}}><X size={14} strokeWidth={2}/>Rechazar</span>}
               </button>
             </div>
           </Card>

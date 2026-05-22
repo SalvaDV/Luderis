@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap } from "lucide-react";
 import * as sb from "./supabase";
 import {
   C, FONT, toast,
@@ -69,7 +70,7 @@ function MiActividadCard({session}){
   const completados=insc.filter(i=>i.clase_finalizada).length;
   return(
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px",marginBottom:16}}>
-      <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:14}}>📊 Mi actividad</div>
+      <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><BarChart2 size={15} strokeWidth={1.8}/>Mi actividad</div>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         {[
           {icon:"🎓",label:"Cursos inscripto",value:insc.length,color:C.accent},
@@ -308,7 +309,7 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
                   <div key={p.id} style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                       <div style={{fontSize:11,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,marginRight:8}}>{p.titulo}</div>
-                      <div style={{fontSize:11,color:C.muted,flexShrink:0}}>👁 {v}</div>
+                      <div style={{fontSize:11,color:C.muted,flexShrink:0,display:"inline-flex",alignItems:"center",gap:3}}><Eye size={10} strokeWidth={2}/>{v}</div>
                     </div>
                     <div style={{height:5,background:C.border,borderRadius:4,overflow:"hidden"}}>
                       <div style={{height:"100%",background:C.purple,borderRadius:4,width:`${(v/maxV)*100}%`}}/>
@@ -368,7 +369,7 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
                     </div>
                     {pendientes>0&&(
                       <div style={{background:C.warn+"12",border:`1px solid ${C.warn}30`,borderRadius:10,padding:"10px 14px",fontSize:13,color:C.warn,fontWeight:600}}>
-                        ⏳ {pendientes} pago{pendientes!==1?"s":""} pendiente{pendientes!==1?"s":""}
+                        <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>{pendientes} pago{pendientes!==1?"s":""} pendiente{pendientes!==1?"s":""}</span>
                       </div>
                     )}
                     {mesesArr.length>0&&(
@@ -815,7 +816,7 @@ function ClasesTab({session,misPubs}){
 
       {loading?<Spinner/>:clases.length===0?(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"40px 24px",textAlign:"center"}}>
-          <div style={{fontSize:36,marginBottom:12}}>📋</div>
+          <div style={{marginBottom:12}}><Clipboard size={36} color={C.muted} strokeWidth={1.5}/></div>
           <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin clases registradas</div>
           <div style={{color:C.muted,fontSize:13}}>Registrá las clases que diste para que tus alumnos puedan confirmarte y dejarte reseñas verificadas.</div>
         </div>
@@ -833,10 +834,10 @@ function ClasesTab({session,misPubs}){
                     <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
                       {soyDocente?"Alumno":"Docente"}: <span style={{color:C.text,fontWeight:600}}>{contraparte}</span>
                     </div>
-                    {c.publicacion_id&&<div style={{fontSize:12,color:C.accent,marginBottom:4}}>📌 Publicación vinculada</div>}
-                    <div style={{fontSize:12,color:C.muted}}>
-                      📅 {new Date(c.fecha_clase).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}
-                      {c.duracion_min&&<span> · ⏱ {c.duracion_min} min</span>}
+                    {c.publicacion_id&&<div style={{fontSize:12,color:C.accent,marginBottom:4,display:"flex",alignItems:"center",gap:3}}><Bookmark size={11} strokeWidth={2}/>Publicación vinculada</div>}
+                    <div style={{fontSize:12,color:C.muted,display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                      <Clock size={10} strokeWidth={2}/>{new Date(c.fecha_clase).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}
+                      {c.duracion_min&&<span>· {c.duracion_min} min</span>}
                     </div>
                     {c.notas&&<div style={{fontSize:12,color:C.muted,marginTop:4,fontStyle:"italic"}}>{c.notas}</div>}
                   </div>
@@ -844,7 +845,7 @@ function ClasesTab({session,misPubs}){
                     {ambasConfirmaron?(
                       <span style={{fontSize:11,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"3px 10px",fontWeight:700}}>✓ Confirmada</span>
                     ):(
-                      <span style={{fontSize:11,background:"#F59E0B12",color:"#B45309",border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700}}>⏳ Pendiente confirmación</span>
+                      <span style={{fontSize:11,background:"#F59E0B12",color:"#B45309",border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2}/>Pendiente confirmación</span>
                     )}
                     {!yaConfirme&&!ambasConfirmaron&&(
                       <button onClick={()=>confirmar(c)} disabled={confirmando===c.id}
@@ -853,12 +854,12 @@ function ClasesTab({session,misPubs}){
                       </button>
                     )}
                     {ambasConfirmaron&&(
-                      <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px",fontWeight:600}}>⭐ Reseña habilitada</span>
+                      <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px",fontWeight:600,display:"inline-flex",alignItems:"center",gap:4}}><Star size={10} strokeWidth={2}/>Reseña habilitada</span>
                     )}
                     {ambasConfirmaron&&soyDocente&&!liberados[c.id]&&(
                       <button onClick={()=>liberarPago(c)} disabled={liberando===c.id}
                         style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.success,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:liberando===c.id?0.5:1}}>
-                        {liberando===c.id?"...":"💰 Liberar pago"}
+                        {liberando===c.id?"...":<span style={{display:"inline-flex",alignItems:"center",gap:3}}><Banknote size={10} strokeWidth={2}/>Liberar pago</span>}
                       </button>
                     )}
                     {ambasConfirmaron&&soyDocente&&liberados[c.id]&&(
@@ -944,7 +945,7 @@ function PagosTab({session}){
       <div style={{background:"linear-gradient(135deg,#009EE3,#007BBE)",borderRadius:18,padding:"24px 22px",color:"#fff",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-30,right:-30,width:140,height:140,borderRadius:"50%",background:"rgba(255,255,255,.06)"}}/>
         <div style={{position:"relative",zIndex:1}}>
-          <div style={{fontSize:22,marginBottom:6}}>💳</div>
+          <div style={{marginBottom:6}}><CreditCard size={22} color="#fff" strokeWidth={1.8}/></div>
           <div style={{fontWeight:800,fontSize:17,marginBottom:4}}>Mercado Pago Connect</div>
           <div style={{fontSize:13,opacity:.85,lineHeight:1.5}}>Conectá tu cuenta de MP para recibir los pagos de tus alumnos directamente en tu billetera.</div>
         </div>
@@ -953,20 +954,20 @@ function PagosTab({session}){
         {loading?<div style={{textAlign:"center",padding:"20px 0"}}><Spinner/></div>:status?.connected?(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:44,height:44,borderRadius:"50%",background:"#2EC4A015",border:"2px solid #2EC4A0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✓</div>
+              <div style={{width:44,height:44,borderRadius:"50%",background:"#2EC4A015",border:"2px solid #2EC4A0",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Sparkles size={20} color="#2EC4A0" strokeWidth={1.8}/></div>
               <div>
                 <div style={{fontWeight:700,color:C.text,fontSize:14}}>Cuenta conectada</div>
                 {status.mp_email&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{status.mp_email}</div>}
                 {status.connected_at&&<div style={{fontSize:11,color:C.muted,marginTop:1}}>Conectada el {new Date(status.connected_at).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}</div>}
               </div>
             </div>
-            <div style={{background:"#2EC4A010",border:"1px solid #2EC4A040",borderRadius:10,padding:"12px 14px",fontSize:13,color:"#0F6E56",lineHeight:1.5}}>🎉 Los pagos de tus alumnos van directo a tu cuenta de Mercado Pago.</div>
+            <div style={{background:"#2EC4A010",border:"1px solid #2EC4A040",borderRadius:10,padding:"12px 14px",fontSize:13,color:"#0F6E56",lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:8}}><Sparkles size={14} strokeWidth={1.8} style={{flexShrink:0,marginTop:1}}/>Los pagos de tus alumnos van directo a tu cuenta de Mercado Pago.</div>
             <button onClick={desconectar} disabled={disconnecting} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"9px 16px",fontSize:13,cursor:"pointer",fontFamily:FONT,alignSelf:"flex-start",opacity:disconnecting?.5:1}}>{disconnecting?"Desconectando…":"Desconectar cuenta"}</button>
           </div>
         ):(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:44,height:44,borderRadius:"50%",background:C.bg,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>💳</div>
+              <div style={{width:44,height:44,borderRadius:"50%",background:C.bg,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:C.muted}}><CreditCard size={20} strokeWidth={1.5}/></div>
               <div><div style={{fontWeight:700,color:C.text,fontSize:14}}>No conectado</div><div style={{fontSize:12,color:C.muted,marginTop:2}}>Los pagos se retienen en Luderis hasta conectar tu MP.</div></div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -977,7 +978,7 @@ function PagosTab({session}){
                 </div>
               ))}
             </div>
-            <button onClick={conectar} style={{background:"#009EE3",border:"none",borderRadius:10,color:"#fff",padding:"13px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 4px 14px #009EE340"}}><span style={{fontSize:18}}>💳</span> Conectar Mercado Pago</button>
+            <button onClick={conectar} style={{background:"#009EE3",border:"none",borderRadius:10,color:"#fff",padding:"13px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 4px 14px #009EE340"}}><CreditCard size={18} strokeWidth={1.8}/> Conectar Mercado Pago</button>
             <div style={{fontSize:11,color:C.muted,textAlign:"center",lineHeight:1.5}}>Luderis nunca accede a tu dinero ni a tus datos bancarios.</div>
           </div>
         )}
@@ -985,15 +986,15 @@ function PagosTab({session}){
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
         <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:10}}>¿Por qué conectar MP?</div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {[{icon:"⚡",t:"Cobro automático — 72hs después de finalizar la clase sin disputas"},{icon:"🔒",t:"100% seguro — OAuth oficial de Mercado Pago, sin contraseñas"},{icon:"📊",t:"Vas a ver cada cobro en tu historial de MP directamente"},{icon:"🎓",t:"Funciona para clases particulares, cursos y paquetes de clases"}].map((f,i)=>(
-            <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0}}>{f.icon}</span><span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>{f.t}</span></div>
+          {[{Icon:Sparkles,t:"Cobro automático — 72hs después de finalizar la clase sin disputas"},{Icon:FileText,t:"100% seguro — OAuth oficial de Mercado Pago, sin contraseñas"},{Icon:BarChart2,t:"Vas a ver cada cobro en tu historial de MP directamente"},{Icon:GraduationCap,t:"Funciona para clases particulares, cursos y paquetes de clases"}].map((f,i)=>(
+            <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}><f.Icon size={16} strokeWidth={1.8} color={C.muted} style={{flexShrink:0,marginTop:1}}/><span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>{f.t}</span></div>
           ))}
         </div>
       </div>
 
       {/* ── Dashboard de cobros ──────────────────────────────────────── */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>💰 Mis cobros</div>
+        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><Banknote size={14} strokeWidth={1.8}/>Mis cobros</div>
         {/* Resumen */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
           {[
@@ -1041,7 +1042,7 @@ function PagosTab({session}){
       {/* ── Liquidaciones mensuales ──────────────────────────────────── */}
       {liquidaciones.length>0&&(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
-          <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>📄 Liquidaciones</div>
+          <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><FileText size={14} strokeWidth={1.8}/>Liquidaciones</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {liquidaciones.map(liq=>{
               const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -1352,14 +1353,14 @@ ${refUrl}`;
 
       {/* Beneficio */}
       <div style={{background:"linear-gradient(135deg,#7B3FBE15,#1A6ED815)",border:"1px solid #7B3FBE30",borderRadius:14,padding:"16px 18px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:6}}>🎁 ¿Qué ganan?</div>
+        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:6,display:"flex",alignItems:"center",gap:6}}><Gift size={14} strokeWidth={1.8}/>¿Qué ganan?</div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <span style={{fontSize:16}}>👤</span>
+            <Eye size={16} strokeWidth={1.5} color={C.muted} style={{flexShrink:0}}/>
             <span style={{fontSize:13,color:C.muted}}>Tu amigo se registra y obtiene <strong style={{color:C.text}}>acceso prioritario</strong> a docentes verificados</span>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <span style={{fontSize:16}}>⭐</span>
+            <Star size={16} strokeWidth={1.5} color={C.muted} style={{flexShrink:0}}/>
             <span style={{fontSize:13,color:C.muted}}>Vos sumás <strong style={{color:C.text}}>puntos de reputación</strong> por cada referido que completa su primer clase</span>
           </div>
         </div>

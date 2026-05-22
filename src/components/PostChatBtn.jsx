@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Clock, X } from "lucide-react";
 import * as sb from "../supabase";
 import { C, FONT } from "../shared";
 
@@ -31,8 +32,8 @@ export default function PostChatBtn({post,session,onOpenChat}){
   if(permitido===null)return null;
   if(!permitido){
     if(post.tipo==="busqueda"){
-      if(estadoOferta==="pendiente")return<span style={{fontSize:11,color:C.warn,fontStyle:"italic"}}>⏳ Pendiente de respuesta</span>;
-      if(estadoOferta==="rechazada")return<span style={{fontSize:11,color:C.danger,fontStyle:"italic"}}>✗ Oferta rechazada</span>;
+      if(estadoOferta==="pendiente")return<span style={{fontSize:11,color:C.warn,fontStyle:"italic",display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>Pendiente de respuesta</span>;
+      if(estadoOferta==="rechazada")return<span style={{fontSize:11,color:C.danger,fontStyle:"italic",display:"inline-flex",alignItems:"center",gap:3}}><X size={10} strokeWidth={2.5}/>Oferta rechazada</span>;
       return<span style={{fontSize:11,color:C.muted,fontStyle:"italic"}}>Ofertá para chatear</span>;
     }
     return<span style={{fontSize:11,color:C.muted,fontStyle:"italic"}}>Inscribite para chatear</span>;

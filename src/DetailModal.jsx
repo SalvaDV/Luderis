@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from "react";
+import {
+  Megaphone, Eye, BookOpen, HelpCircle, Layers, GraduationCap, Users, Lock,
+  AlertTriangle, Check, Inbox, Video, Folder, FileText, Bell, Bookmark, Link2,
+  User, Clock, Globe, MapPin, Calendar, Timer, BarChart2, Clipboard, RefreshCw,
+  Settings, Wrench, Palette, Search, Zap,
+} from "lucide-react";
 import * as sb from "./supabase";
 import { trackPostView, trackChatStart } from "./analytics";
 import {
@@ -92,7 +98,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           onMouseLeave={e=>e.currentTarget.style.background=T.dim}>←</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:700,color:C.text,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
-          <div style={{fontSize:12,color:C.muted,display:"flex",alignItems:"center",gap:5}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600}}>· 📣 Pedido</span>}</div>
+          <div style={{fontSize:12,color:C.muted,display:"flex",alignItems:"center",gap:5}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>· <Megaphone size={11} strokeWidth={2}/>Pedido</span>}</div>
         </div>
         <div style={{display:"flex",gap:8,flexShrink:0}}>
           <ShareBtn post={post} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"6px 12px",fontSize:12}}/>
@@ -123,7 +129,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
             {avgPub?<span style={{fontSize:13,color:"#B45309",fontWeight:600}}>★ {parseFloat(avgPub).toFixed(1)} <span style={{color:C.muted,fontWeight:400}}>({reseñas.length} reseña{reseñas.length!==1?"s":""})</span></span>:null}
             {post.verificado&&<VerifiedBadge/>}
             <Tag tipo={post.tipo}/>
-            {post.vistas>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:3}}>· 👁 <strong>{post.vistas}</strong> vista{post.vistas!==1?"s":""}</span>}
+            {post.vistas>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:3}}>· <Eye size={12} strokeWidth={2}/><strong>{post.vistas}</strong> vista{post.vistas!==1?"s":""}</span>}
             {post.created_at&&<span style={{fontSize:12,color:C.muted}}>· Publicado {fmtRel(post.created_at)}</span>}
           </div>
           <div style={{height:1,background:C.border,margin:"0 0 24px"}}/>
@@ -163,10 +169,11 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Lo que vas a aprender</h2>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
                   {skills.map(s=>{
-                    const ICONS={conceptual:"📖",procedimental:"⚙️",practica:"🛠",creativa:"🎨",interpretativa:"🔍",performance:"🎭"};
+                    const ICONS={conceptual:BookOpen,procedimental:Settings,practica:Wrench,creativa:Palette,interpretativa:Search,performance:Zap};
+                    const SkillIcon=ICONS[s.tipo]||null;
                     return(
                       <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:10,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px"}}>
-                        <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>{ICONS[s.tipo]||"✦"}</span>
+                        <span style={{lineHeight:1,flexShrink:0,color:C.muted}}>{SkillIcon?<SkillIcon size={16} strokeWidth={1.8}/>:"✦"}</span>
                         <span style={{fontSize:13,color:C.text,fontWeight:500,lineHeight:1.4}}>{s.nombre}</span>
                       </div>
                     );
@@ -181,12 +188,12 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Vista previa del contenido</h2>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {modulosPreview.map((c,i)=>{
-                    const TIPO_IC={video:"🎬",archivo:"📁",texto:"📝",aviso:"📢",tarea:"📌",link:"🔗"};
+                    const TIPO_IC={video:Video,archivo:Folder,texto:FileText,aviso:Bell,tarea:Bookmark,link:Link2};
                     const TIPO_CLR={video:"#1A6ED8",archivo:"#2EC4A0",texto:"#5A7294",aviso:"#E8881A",tarea:"#7B5CF0",link:"#0EA5E9"};
-                    const icon=TIPO_IC[c.tipo]||"📄";const clr=TIPO_CLR[c.tipo]||C.muted;
+                    const TipoIcon=TIPO_IC[c.tipo]||FileText;const clr=TIPO_CLR[c.tipo]||C.muted;
                     return(
                       <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:C.bg,border:`1px solid ${C.border}`,borderLeft:`3px solid ${clr}`,borderRadius:10,padding:"10px 14px"}}>
-                        <span style={{fontSize:17,flexShrink:0}}>{icon}</span>
+                        <span style={{flexShrink:0,color:clr}}><TipoIcon size={16} strokeWidth={1.8}/></span>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.titulo}</div>
                           <div style={{fontSize:11,color:C.muted,textTransform:"capitalize"}}>{c.tipo}</div>
@@ -197,7 +204,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                   })}
                   {contenidoCount&&contenidoCount.modulos>2&&(
                     <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,fontSize:12}}>
-                      <span>🔒</span>
+                      <Lock size={13} strokeWidth={2}/>
                       <span>+{contenidoCount.modulos-2} módulos más · Inscribite para acceder</span>
                     </div>
                   )}
@@ -211,22 +218,22 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Detalles</h2>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12}}>
                   {[
-                    post.modo==="curso"&&{label:"Tipo",val:"Curso grupal",icon:"📚"},
-                    post.modo==="particular"&&{label:"Tipo",val:"Clase particular",icon:"👤"},
-                    post.sinc&&{label:"Sincronismo",val:post.sinc==="sinc"?"Sincrónico":"Asincrónico",icon:"🕐"},
-                    post.modalidad&&{label:"Lugar",val:post.modalidad==="virtual"?"Online":post.modalidad==="presencial"?"Presencial":"Mixto",icon:post.modalidad==="virtual"?"🌐":"📍"},
-                    post.fecha_inicio&&{label:"Inicio",val:fmt(post.fecha_inicio),icon:"📅"},
-                    calcDuracion(post.fecha_inicio,post.fecha_fin)&&{label:"Duración",val:calcDuracion(post.fecha_inicio,post.fecha_fin),icon:"⏱"},
-                    post.nivel&&{label:"Nivel",val:post.nivel,icon:"📊"},
-                    post.max_alumnos&&{label:"Cupo máx.",val:`${post.max_alumnos} alumnos`,icon:"👥"},
-                    post.ubicacion&&post.modalidad!=="virtual"&&{label:"Zona",val:post.ubicacion,icon:"📍"},
-                    post.requisitos&&{label:"Requisitos",val:post.requisitos,icon:"📋"},
-                    post.idioma&&{label:"Idioma",val:post.idioma,icon:"🌐"},
-                    post.frecuencia&&{label:"Frecuencia",val:post.frecuencia,icon:"🔄"},
-                    post.otorga_certificado&&{label:"Certificado",val:"Incluido al completar",icon:"🎓"},
-                  ].filter(Boolean).map(({label,val,icon})=>(
+                    post.modo==="curso"&&{label:"Tipo",val:"Curso grupal",Icon:BookOpen},
+                    post.modo==="particular"&&{label:"Tipo",val:"Clase particular",Icon:User},
+                    post.sinc&&{label:"Sincronismo",val:post.sinc==="sinc"?"Sincrónico":"Asincrónico",Icon:Clock},
+                    post.modalidad&&{label:"Lugar",val:post.modalidad==="virtual"?"Online":post.modalidad==="presencial"?"Presencial":"Mixto",Icon:post.modalidad==="virtual"?Globe:MapPin},
+                    post.fecha_inicio&&{label:"Inicio",val:fmt(post.fecha_inicio),Icon:Calendar},
+                    calcDuracion(post.fecha_inicio,post.fecha_fin)&&{label:"Duración",val:calcDuracion(post.fecha_inicio,post.fecha_fin),Icon:Timer},
+                    post.nivel&&{label:"Nivel",val:post.nivel,Icon:BarChart2},
+                    post.max_alumnos&&{label:"Cupo máx.",val:`${post.max_alumnos} alumnos`,Icon:Users},
+                    post.ubicacion&&post.modalidad!=="virtual"&&{label:"Zona",val:post.ubicacion,Icon:MapPin},
+                    post.requisitos&&{label:"Requisitos",val:post.requisitos,Icon:Clipboard},
+                    post.idioma&&{label:"Idioma",val:post.idioma,Icon:Globe},
+                    post.frecuencia&&{label:"Frecuencia",val:post.frecuencia,Icon:RefreshCw},
+                    post.otorga_certificado&&{label:"Certificado",val:"Incluido al completar",Icon:GraduationCap},
+                  ].filter(Boolean).map(({label,val,Icon:ChipIcon})=>(
                     <div key={label} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-                      <div style={{fontSize:22,marginBottom:8,lineHeight:1}}>{icon}</div>
+                      <div style={{marginBottom:8,color:C.muted}}><ChipIcon size={20} strokeWidth={1.8}/></div>
                       <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.5,marginBottom:4,textTransform:"uppercase"}}>{label}</div>
                       <div style={{fontSize:13,color:C.text,fontWeight:700,lineHeight:1.3}}>{val}</div>
                     </div>
@@ -285,11 +292,11 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                   <span style={{color:C.muted,fontSize:12}}>({reseñas.length})</span>
                 </div>}
                 {post.cantidad_inscriptos>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{fontSize:13}}>👥</span>
+                  <Users size={13} strokeWidth={1.8} color={C.muted}/>
                   <span style={{fontSize:12,color:C.muted}}>{post.cantidad_inscriptos} inscripto{post.cantidad_inscriptos!==1?"s":""}</span>
                 </div>}
                 {post.vistas>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{fontSize:12}}>👁</span>
+                  <Eye size={12} strokeWidth={2} color={C.muted}/>
                   <span style={{fontSize:12,color:C.muted}}>{post.vistas}</span>
                 </div>}
               </div>
@@ -297,15 +304,15 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Contador de módulos */}
               {post.modo==="curso"&&contenidoCount&&(contenidoCount.modulos>0||contenidoCount.quizzes>0)&&(
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12,paddingBottom:12,borderBottom:`1px solid ${C.border}`}}>
-                  {contenidoCount.modulos>0&&<span style={{fontSize:12,color:C.muted}}>📚 <strong>{contenidoCount.modulos}</strong> módulo{contenidoCount.modulos!==1?"s":""}</span>}
-                  {contenidoCount.quizzes>0&&<span style={{fontSize:12,color:C.muted}}>🧩 <strong>{contenidoCount.quizzes}</strong> evaluación{contenidoCount.quizzes!==1?"es":""}</span>}
-                  {contenidoCount.mazos>0&&<span style={{fontSize:12,color:C.muted}}>🃏 <strong>{contenidoCount.mazos}</strong> mazo{contenidoCount.mazos!==1?"s":""}</span>}
+                  {contenidoCount.modulos>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:4}}><BookOpen size={13} strokeWidth={1.8}/><strong>{contenidoCount.modulos}</strong> módulo{contenidoCount.modulos!==1?"s":""}</span>}
+                  {contenidoCount.quizzes>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:4}}><HelpCircle size={13} strokeWidth={1.8}/><strong>{contenidoCount.quizzes}</strong> evaluación{contenidoCount.quizzes!==1?"es":""}</span>}
+                  {contenidoCount.mazos>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:4}}><Layers size={13} strokeWidth={1.8}/><strong>{contenidoCount.mazos}</strong> mazo{contenidoCount.mazos!==1?"s":""}</span>}
                 </div>
               )}
               {/* Criterio de certificado */}
               {post.modo==="curso"&&post.otorga_certificado&&(
                 <div style={{background:"#1A6ED808",border:"1px solid #1A6ED822",borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
-                  <span style={{fontSize:15,flexShrink:0}}>🎓</span>
+                  <GraduationCap size={15} strokeWidth={1.8} color={C.accent} style={{flexShrink:0}}/>
                   <div>
                     <div style={{fontSize:12,fontWeight:700,color:C.text}}>Otorga certificado</div>
                     {post.aprobacion_pct&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>Completá el {post.aprobacion_pct}% de los módulos</div>}
@@ -326,7 +333,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                         <InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>
                         {/* Anti-puenteo */}
                         <div style={{background:C.warn+"10",border:`1px solid ${C.warn}25`,borderRadius:8,padding:"8px 10px",display:"flex",gap:6,alignItems:"flex-start"}}>
-                          <span style={{fontSize:12,flexShrink:0}}>⚠️</span>
+                          <AlertTriangle size={12} strokeWidth={2} color={C.warn} style={{flexShrink:0}}/>
                           <span style={{fontSize:11,color:C.muted,lineHeight:1.4}}>Por favor realizá el pago a través de la plataforma. Las transacciones fuera de Luderis no tienen protección. <a href="/devoluciones" target="_blank" rel="noopener noreferrer" style={{color:"inherit",fontWeight:600,textDecoration:"underline"}}>Ver política de devoluciones</a> · <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{color:"inherit",fontWeight:600,textDecoration:"underline"}}>T&C</a></span>
                         </div>
                       </div>
@@ -365,12 +372,12 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Info extra */}
               <div style={{marginTop:8,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
                 {[
-                  {icon:"✓",txt:"Pago seguro · sin cargos ocultos"},
-                  post.tipo==="oferta"&&{icon:"🔒",txt:"Pago acordado directamente"},
-                  post.tipo==="busqueda"&&{icon:"📩",txt:"Recibís ofertas de docentes"},
-                ].filter(Boolean).map(({icon,txt})=>(
+                  {Icon:Check,txt:"Pago seguro · sin cargos ocultos",color:C.success},
+                  post.tipo==="oferta"&&{Icon:Lock,txt:"Pago acordado directamente",color:C.muted},
+                  post.tipo==="busqueda"&&{Icon:Inbox,txt:"Recibís ofertas de docentes",color:C.muted},
+                ].filter(Boolean).map(({Icon:InfoIcon,txt,color})=>(
                   <div key={txt} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                    <span style={{fontSize:13,color:C.success,flexShrink:0}}>{icon}</span>
+                    <InfoIcon size={13} strokeWidth={2} color={color} style={{flexShrink:0,marginTop:1}}/>
                     <span style={{fontSize:12,color:C.muted}}>{txt}</span>
                   </div>
                 ))}

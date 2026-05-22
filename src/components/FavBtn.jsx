@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Heart } from "lucide-react";
 import * as sb from "../supabase";
 import { C } from "../shared";
 import { trackFavoriteAdd } from "../analytics";
@@ -26,10 +27,10 @@ export default function FavBtn({post,session,onFavChange,isFav,favId:favIdProp})
   const active=!!favId;
   return(
     <button onClick={toggle} title={active?"Quitar favorito":"Agregar a favoritos"}
-      style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:active?C.accent:"#aaa",transition:"color .15s",padding:"0 3px",lineHeight:1,opacity:loading?0.5:1}}
-      onMouseEnter={e=>{if(!active)e.currentTarget.style.color=C.accent;}}
+      style={{background:"none",border:"none",cursor:"pointer",color:active?"#E05C9A":"#aaa",transition:"color .15s",padding:"0 3px",lineHeight:1,opacity:loading?0.5:1,display:"flex",alignItems:"center"}}
+      onMouseEnter={e=>{if(!active)e.currentTarget.style.color="#E05C9A";}}
       onMouseLeave={e=>{if(!active)e.currentTarget.style.color="#aaa";}}>
-      {active?"★":"☆"}
+      <Heart size={16} fill={active?"currentColor":"none"} strokeWidth={active?0:1.8}/>
     </button>
   );
 }

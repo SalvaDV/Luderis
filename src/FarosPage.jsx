@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Lightbulb, Hammer, AlertTriangle, Calendar, Brain } from 'lucide-react';
 import { C, FONT, toast } from './shared';
+
+const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
+const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:9,height:9,borderRadius:'50%',background:DIFF_COLOR[difficulty]||'#888',verticalAlign:'middle',marginRight:3}}/>);
 import * as sb from './supabase';
 import {
   createCellState, toggleCell, getConflicts, checkWin, formatTime, REGION_PALETTE, PUZZLE_EPOCH,
@@ -159,7 +163,7 @@ export default function FarosPage({ session, onBack, onWin }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '64px 16px', fontFamily: FONT, color: C.muted }}>
-        <div style={{ fontSize: 32 }}>🔦</div>
+        <Lightbulb size={32} color={C.muted} strokeWidth={1.5}/>
         <div style={{ fontSize: 14 }}>Cargando el puzzle de hoy…</div>
       </div>
     );
@@ -168,7 +172,7 @@ export default function FarosPage({ session, onBack, onWin }) {
   if (error === 'no_puzzle') {
     return (
       <div style={{ textAlign: 'center', padding: '64px 16px', fontFamily: FONT, color: C.muted }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🏗️</div>
+        <div style={{ marginBottom: 8 }}><Hammer size={32} color={C.muted} strokeWidth={1.5}/></div>
         <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 4 }}>Puzzle en preparación</div>
         <div style={{ fontSize: 13 }}>El puzzle de hoy todavía no está listo. Volvé más tarde.</div>
       </div>
@@ -178,7 +182,7 @@ export default function FarosPage({ session, onBack, onWin }) {
   if (error) {
     return (
       <div style={{ textAlign: 'center', padding: '64px 16px', fontFamily: FONT, color: C.muted }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
+        <div style={{ marginBottom: 8 }}><AlertTriangle size={32} color={C.muted} strokeWidth={1.5}/></div>
         <div style={{ fontSize: 13 }}>No se pudo cargar el puzzle. Revisá tu conexión.</div>
       </div>
     );
@@ -197,7 +201,6 @@ export default function FarosPage({ session, onBack, onWin }) {
     );
   }
 
-  const diffEmoji = puzzle.difficulty === 'fácil' ? '🟡' : puzzle.difficulty === 'medio' ? '🟠' : '🔴';
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', fontFamily: FONT, padding: '0 0 40px' }}>
@@ -218,17 +221,17 @@ export default function FarosPage({ session, onBack, onWin }) {
           padding: '16px 20px 12px',
         }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.7)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 3 }}>
-            🔦 Desafío del día
+            <Lightbulb size={11} color="rgba(255,255,255,.7)" strokeWidth={2} style={{verticalAlign:'middle',marginRight:4}}/> Desafío del día
           </div>
           <div style={{ fontSize: 21, fontWeight: 800, color: '#fff' }}>
             Faros <span style={{ fontSize: 13, fontWeight: 400, opacity: .75 }}>#{puzzleNum}</span>
           </div>
           <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontWeight: 600 }}>
-              📅 {new Date(puzzle.date + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
+              <Calendar size={11} strokeWidth={2} style={{verticalAlign:'middle',marginRight:3}}/>{new Date(puzzle.date + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
             </span>
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontWeight: 600 }}>
-              {diffEmoji} {puzzle.difficulty}
+              <DiffDot difficulty={puzzle.difficulty}/>{puzzle.difficulty}
             </span>
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontWeight: 600 }}>
               {N}×{N}
@@ -271,8 +274,8 @@ export default function FarosPage({ session, onBack, onWin }) {
             borderRadius: 8, padding: '4px 12px',
           }}>
             {puzzle.hints.length === 0
-              ? '🧠 Sin pistas — ¡a pura lógica!'
-              : `💡 ${puzzle.hints.length} faro${puzzle.hints.length !== 1 ? 's' : ''} ya colocado${puzzle.hints.length !== 1 ? 's' : ''} como pista`}
+              ? <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Brain size={12} strokeWidth={2}/>Sin pistas — ¡a pura lógica!</span>
+              : <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Lightbulb size={12} strokeWidth={2}/>{puzzle.hints.length} faro{puzzle.hints.length !== 1 ? 's' : ''} ya colocado{puzzle.hints.length !== 1 ? 's' : ''} como pista</span>}
           </div>
 
           {cellState && (

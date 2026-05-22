@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { MessageCircle, X } from "lucide-react";
 import { C, FONT } from "../shared";
 import * as sb from "../supabase";
 
@@ -80,7 +81,7 @@ export default function ChatBotWidget(){
                   <div style={{display:"flex",flexDirection:"column",gap:7,alignItems:"flex-start"}}>
                     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"16px 16px 16px 4px",padding:"9px 13px",maxWidth:220,fontSize:12,color:C.text,lineHeight:1.5}}>{m.text}</div>
                     <button onClick={openWhatsApp} style={{background:"#25D366",border:"none",borderRadius:20,color:"#fff",padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",gap:7}}>
-                      <span style={{fontSize:16}}>💬</span> Hablar con representante
+                      <MessageCircle size={15} strokeWidth={2}/> Hablar con representante
                     </button>
                   </div>
                 ):(
@@ -100,7 +101,7 @@ export default function ChatBotWidget(){
       )}
       {/* FAB button */}
       <button onClick={()=>setOpen(v=>!v)} style={{width:52,height:52,borderRadius:"50%",background:open?C.border:"var(--cl-section-accent)",border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        {open?"×":"💬"}
+        {open?<X size={20} strokeWidth={2}/>:<MessageCircle size={22} strokeWidth={1.8}/>}
       </button>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
     </div>
