@@ -413,6 +413,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
   const msgsContainerRef=useRef(null);
   const didScrollRef=useRef(false);
   const atBottomRef=useRef(true);
+  const prevMsgCountRef=useRef(0);
   const chatNotifTimer=useRef(null);
   const escribiendoTimer=useRef(null);
   const fileInputRef=useRef(null);
@@ -426,30 +427,33 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
     try{
       const grupal=await sb.getMensajesGrupo(post.id,session.access_token).catch(()=>[]);
       const withNames=grupal.map(m=>({...m,de_nombre_display:sb.getDisplayName(m.de_nombre)}));
-      setMsgs(prev=>{
-        if(prev.length>0&&withNames.length>prev.length){
-          const nuevos=withNames.slice(prev.length).filter(m=>m.de_nombre!==miEmail);
-          if(nuevos.length>0){
-            if(onNewMessages)onNewMessages(nuevos.length);
-            // In-chat toast notification
-            const ultimo=nuevos[nuevos.length-1];
-            const isImg=ultimo.texto?.startsWith("[img]");
-            const preview=isImg?"📷 Imagen":(ultimo.texto||"").slice(0,55);
-            const nombre=ultimo.de_nombre_display||ultimo.de_nombre.split("@")[0];
-            const nid=Date.now();
-            setChatNotif({name:nombre,text:preview,email:ultimo.de_nombre,id:nid});
-            clearTimeout(chatNotifTimer.current);
-            chatNotifTimer.current=setTimeout(()=>setChatNotif(p=>p?.id===nid?null:p),4500);
-            // Scroll inteligente: solo si ya estaba al fondo
-            if(atBottomRef.current){
-              setTimeout(()=>{const el=msgsContainerRef.current;if(el)el.scrollTo({top:el.scrollHeight,behavior:"smooth"});},60);
-            } else {
-              setNewMsgCount(c=>c+nuevos.length);
-            }
+
+      // ── Detectar mensajes nuevos FUERA del updater (side effects prohibidos adentro)
+      const prevCount=prevMsgCountRef.current;
+      if(prevCount>0&&withNames.length>prevCount){
+        const nuevos=withNames.slice(prevCount).filter(m=>m.de_nombre!==miEmail);
+        if(nuevos.length>0){
+          if(onNewMessages)onNewMessages(nuevos.length);
+          // Toast de mensaje entrante
+          const ultimo=nuevos[nuevos.length-1];
+          const isImg=ultimo.texto?.startsWith("[img]");
+          const preview=isImg?"📷 Imagen":(ultimo.texto||"").slice(0,55);
+          const nombre=ultimo.de_nombre_display||ultimo.de_nombre.split("@")[0];
+          const nid=Date.now();
+          setChatNotif({name:nombre,text:preview,email:ultimo.de_nombre,id:nid});
+          clearTimeout(chatNotifTimer.current);
+          chatNotifTimer.current=setTimeout(()=>setChatNotif(p=>p?.id===nid?null:p),4500);
+          // Scroll inteligente
+          if(atBottomRef.current){
+            setTimeout(()=>{const el=msgsContainerRef.current;if(el)el.scrollTo({top:el.scrollHeight,behavior:"smooth"});},60);
+          }else{
+            setNewMsgCount(c=>c+nuevos.length);
           }
         }
-        return withNames;
-      });
+      }
+      prevMsgCountRef.current=withNames.length;
+      setMsgs(withNames);
+
       if(!didScrollRef.current&&withNames.length>0){
         didScrollRef.current=true;
         setTimeout(()=>{const el=msgsContainerRef.current;if(el)el.scrollTo({top:el.scrollHeight,behavior:"instant"});},60);
