@@ -5,18 +5,49 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MAX_TOKENS_CAP = 1000; // el cliente no puede inflar esto
+
+// Verifica JWT Supabase (anon key o user session) — igual que ludy-chat
+function isValidSupabaseJwt(token: string, projectRef: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
+    const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
+    if (!payload.iss || !payload.iss.includes(projectRef)) return false;
+    if (!["anon", "authenticated"].includes(payload.role)) return false;
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
+    return true;
+  } catch { return false; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // ── Verificar JWT Supabase ────────────────────────────────────────────────
+  const SUPA_URL   = Deno.env.get("SUPABASE_URL") ?? "";
+  const projectRef = SUPA_URL.replace(/^https?:\/\//, "").split(".")[0];
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("apikey") ?? "";
+  const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  if (!jwtToken || !isValidSupabaseJwt(jwtToken, projectRef)) {
+    return new Response(JSON.stringify({ error: "No autorizado" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const body = await req.json();
     const anthropicKey = Deno.env.get("ANTHROPIC_KEY") ?? "";
-    const groqKey = Deno.env.get("GROQ_KEY") ?? "";
+    const groqKey      = Deno.env.get("GROQ_KEY") ?? "";
+
+    // max_tokens siempre viene del servidor — ignorar valor del cliente
+    const max_tokens = MAX_TOKENS_CAP;
 
     // Intentar Anthropic primero si hay key
     if (anthropicKey.length > 20) {
-      console.log("Trying Anthropic...");
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -24,22 +55,19 @@ Deno.serve(async (req) => {
           "x-api-key": anthropicKey,
           "anthropic-version": "2023-06-01",
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, max_tokens }),
       });
       if (res.ok) {
         const data = await res.json();
-        console.log("Anthropic OK");
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
       }
-      const errData = await res.json().catch(() => ({}));
-      console.log("Anthropic failed:", res.status, errData?.error?.type, "→ fallback Groq");
+      console.log("Anthropic failed:", res.status, "→ fallback Groq");
     }
 
     // Fallback: Groq
-    console.log("Using Groq...");
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -48,7 +76,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        max_tokens: body.max_tokens || 600,
+        max_tokens,
         messages: [
           ...(body.system ? [{ role: "system", content: body.system }] : []),
           ...(body.messages || []),
@@ -56,7 +84,6 @@ Deno.serve(async (req) => {
       }),
     });
     const groqData = await groqRes.json();
-    console.log("Groq response status:", groqRes.status);
     return new Response(JSON.stringify({
       content: [{ type: "text", text: groqData.choices?.[0]?.message?.content || "" }],
     }), {
@@ -65,7 +92,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (e) {
-    console.error("Error:", e.message);
+    console.error("ai-proxy error:", e.message);
     return new Response(JSON.stringify({ error: e.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
