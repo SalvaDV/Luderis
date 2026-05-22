@@ -2079,6 +2079,148 @@ function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,p
   );
 }
 
+function PracticasIA({post,session}){
+  const [cargando,setCargando]=useState(false);
+  const [tarjeta,setTarjeta]=useState(null);// {pregunta,respuesta}
+  const [girada,setGirada]=useState(false);
+  const [sinMaterial,setSinMaterial]=useState(false);
+  const [err,setErr]=useState("");
+
+  const generarPregunta=async()=>{
+    setErr("");setTarjeta(null);setGirada(false);setSinMaterial(false);setCargando(true);
+    try{
+      // Obtener contenido del docente (excluir flashcards y quizzes)
+      const items=await sb.getContenido(post.id,session.access_token).catch(()=>[]);
+      const material=(items||[]).filter(x=>x.tipo!=="flashcards"&&x.tipo!=="quiz");
+      if(material.length===0){setSinMaterial(true);setCargando(false);return;}
+
+      // Armar contexto con el material disponible
+      const contexto=material.map(x=>{
+        const partes=[];
+        if(x.titulo)partes.push(x.titulo);
+        if(x.texto)partes.push(x.texto);
+        if(x.url)partes.push(`URL: ${x.url}`);
+        return partes.join("\n");
+      }).join("\n\n");
+
+      const system=`Sos un tutor educativo que genera preguntas de práctica para estudiantes.
+Respondés SIEMPRE en JSON válido con el formato exacto: {"pregunta":"...","respuesta":"..."}
+La pregunta debe ser concisa y educativa, basada en el material del docente.
+La respuesta debe ser clara y completa pero breve (máximo 3 oraciones).`;
+
+      const userPrompt=`Basándote en el siguiente material educativo, generá UNA pregunta de práctica con su respuesta.
+Material:
+${contexto.slice(0,3000)}
+
+Respondé solo con JSON: {"pregunta":"...","respuesta":"..."}`;
+
+      const data=await sb.callIA(system,userPrompt,400,session.access_token);
+      // Parsear respuesta
+      let parsed=null;
+      const txt=data?.content?.[0]?.text||data?.choices?.[0]?.message?.content||"";
+      const match=txt.match(/\{[\s\S]*"pregunta"[\s\S]*"respuesta"[\s\S]*\}/);
+      if(match){try{parsed=JSON.parse(match[0]);}catch{}}
+      if(!parsed||!parsed.pregunta){setErr("No se pudo generar la pregunta. Intentá de nuevo.");setCargando(false);return;}
+      setTarjeta(parsed);
+    }catch(e){setErr("Error al generar la pregunta. Intentá de nuevo.");}
+    finally{setCargando(false);}
+  };
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.muted}}>🧠 PRÁCTICAS</div>
+        <button onClick={generarPregunta} disabled={cargando}
+          style={{background:cargando?C.surface:C.accent,border:"none",borderRadius:8,color:cargando?C.muted:"#fff",padding:"5px 13px",cursor:cargando?"not-allowed":"pointer",fontSize:11,fontWeight:700,fontFamily:FONT,transition:"all .15s"}}>
+          {cargando?"Generando...":"✨ Generar con IA"}
+        </button>
+      </div>
+
+      {sinMaterial&&(
+        <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
+          El docente aún no cargó material para generar preguntas.
+        </div>
+      )}
+
+      {err&&!sinMaterial&&(
+        <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"16px",textAlign:"center",color:C.danger,fontSize:13}}>
+          {err}
+        </div>
+      )}
+
+      {!tarjeta&&!sinMaterial&&!err&&!cargando&&(
+        <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
+          Presioná <strong>Generar con IA</strong> para practicar con una pregunta basada en el material del docente.
+        </div>
+      )}
+
+      {cargando&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"32px",textAlign:"center",color:C.muted,fontSize:13}}>
+          <Spinner small/><div style={{marginTop:10}}>Generando pregunta...</div>
+        </div>
+      )}
+
+      {tarjeta&&(
+        <div style={{perspective:"800px"}}>
+          <style>{`
+            .practica-flip-inner{
+              position:relative;width:100%;transform-style:preserve-3d;
+              transition:transform .55s cubic-bezier(.4,0,.2,1);
+            }
+            .practica-flip-inner.girada{transform:rotateY(180deg);}
+            .practica-flip-front,.practica-flip-back{
+              backface-visibility:hidden;-webkit-backface-visibility:hidden;
+              border-radius:14px;padding:24px 20px;
+            }
+            .practica-flip-back{
+              position:absolute;top:0;left:0;width:100%;
+              transform:rotateY(180deg);box-sizing:border-box;
+            }
+          `}</style>
+          <div className={`practica-flip-inner${girada?" girada":""}`}>
+            {/* Frente — pregunta */}
+            <div className="practica-flip-front"
+              style={{background:C.card,border:`1px solid ${C.border}`}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:12,letterSpacing:.5}}>PREGUNTA</div>
+              <div style={{fontSize:15,color:C.text,fontWeight:600,lineHeight:1.5,marginBottom:20}}>
+                {tarjeta.pregunta}
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                <button onClick={generarPregunta} disabled={cargando}
+                  style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
+                  🔄 Nueva pregunta
+                </button>
+                <button onClick={()=>setGirada(true)}
+                  style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>
+                  Respuesta →
+                </button>
+              </div>
+            </div>
+            {/* Reverso — respuesta */}
+            <div className="practica-flip-back"
+              style={{background:`linear-gradient(135deg,${C.accentDim},${C.card})`,border:`1px solid ${C.accent}55`}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.accent,marginBottom:12,letterSpacing:.5}}>RESPUESTA</div>
+              <div style={{fontSize:15,color:C.text,lineHeight:1.6,marginBottom:20}}>
+                {tarjeta.respuesta}
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                <button onClick={()=>setGirada(false)}
+                  style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
+                  ← Pregunta
+                </button>
+                <button onClick={generarPregunta} disabled={cargando}
+                  style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>
+                  ✨ Nueva pregunta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Flashcards({post,session,esMio,esAyudante}){
   const esStaff=esMio||esAyudante;
   const miEmail=session.user.email;
@@ -2208,33 +2350,8 @@ function Flashcards({post,session,esMio,esAyudante}){
         </div>
       )}
 
-      {/* Mazo privado del alumno */}
-      <div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.muted}}>🔒 MI MAZO PERSONAL</div>
-          <button onClick={()=>setVista("crear-priv")}
-            style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
-            {privCards.length?"✏ Editar":"+ Crear"}
-          </button>
-        </div>
-        {privCards.length===0?(
-          <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"20px",textAlign:"center",color:C.muted,fontSize:13}}>
-            Creá tu propio mazo privado para repasar.
-          </div>
-        ):(
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
-            <span style={{fontSize:20}}>🔒</span>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13}}>Mi mazo personal</div>
-              <div style={{fontSize:11,color:C.muted}}>{privCards.length} tarjetas · solo vos lo ves</div>
-            </div>
-            <button onClick={()=>setVista("practica-priv")}
-              style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 13px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>
-              ▶ Practicar
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Prácticas IA */}
+      <PracticasIA post={post} session={session}/>
     </div>
   );
 }
@@ -4584,7 +4701,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [mensajesNuevos,setMensajesNuevos]=useState(0);
   const [showDiagnostico,setShowDiagnostico]=useState(false);
   const [showExamenFinal,setShowExamenFinal]=useState(()=>false);
-  const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"aprender";try{const t=sessionStorage.getItem("curso_tab_"+post.id);return["contenido","aprender","agenda","comunidad"].includes(t)?t:"contenido";}catch{return "contenido";}});
+  const esParticular=post.modo==="particular"||post.modo==="particulares";
+  const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"aprender";try{const t=sessionStorage.getItem("curso_tab_"+post.id);const validos=["contenido","aprender","agenda",...(esParticular?[]:["comunidad"])];return validos.includes(t)?t:"contenido";}catch{return "contenido";}});
   const setTab=(t)=>{try{sessionStorage.setItem("curso_tab_"+post.id,t);}catch{}if(t==="chat"||t==="comunidad"){setMensajesNuevos(0);try{sessionStorage.setItem("chat_seen_"+post.id,Date.now());}catch{}}setTabActivo(t);};const [nuevoTipo,setNuevoTipo]=useState("video");const [nuevoTitulo,setNuevoTitulo]=useState("");const [nuevoUrl,setNuevoUrl]=useState("");const [nuevoTexto,setNuevoTexto]=useState("");const [savingC,setSavingC]=useState(false);
   const [calExpanded,setCalExpanded]=useState(false);const [showEditCal,setShowEditCal]=useState(false);const [showFinalizar,setShowFinalizar]=useState(false);const [showDenuncia,setShowDenuncia]=useState(false);const [showCerrarInsc,setShowCerrarInsc]=useState(false);const [localFinalizado,setLocalFinalizado]=useState(!!post.finalizado);const [localCerrado,setLocalCerrado]=useState(!!post.inscripciones_cerradas);
   const [claseActiva,setClaseActiva]=useState(false);const [iniciandoClase,setIniciandoClase]=useState(false);
@@ -4887,7 +5005,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
               {id:"contenido",label:"Contenido"},
               {id:"aprender",label:"Aprender",pendiente:esPendienteValidacion},
               ...(hasCal||esMio?[{id:"agenda",label:"Agenda"}]:[]),
-              {id:"comunidad",label:mensajesNuevos>0?`Comunidad (${mensajesNuevos})`:"Comunidad"},
+              ...(post.modo!=="particular"&&post.modo!=="particulares"?[{id:"comunidad",label:mensajesNuevos>0?`Comunidad (${mensajesNuevos})`:"Comunidad"}]:[]),
             ].map(tab=>(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
                 style={{flex:1,padding:"6px 4px",borderRadius:8,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
