@@ -501,10 +501,22 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
     }catch{}
     try{
       await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:"__grupo__",texto:mensajeTexto,leido:true,pub_titulo:post.titulo},session.access_token);
+      await cargar();scrollBottom();
+      // Notificaciones — 1 por destinatario cada 3 min (evita spam)
       const inscriptos=await sb.getInscripciones(post.id,session.access_token).catch(()=>[]);
       const todos=[...inscriptos.map(i=>i.alumno_email),post.autor_email].filter(e=>e!==miEmail);
-      await Promise.all(todos.map(e=>sb.insertNotificacion({usuario_id:null,alumno_email:e,tipo:"chat_grupal",publicacion_id:post.id,pub_titulo:post.titulo,leida:false}).catch(()=>{})));
-      await cargar();scrollBottom();
+      const ahora=Date.now();
+      await Promise.all(todos.map(async(e)=>{
+        const ck=`cl_notif_chat_${post.id}_${e}`;
+        const last=parseInt(localStorage.getItem(ck)||"0");
+        if(ahora-last<3*60*1000)return;// cooldown 3 min
+        // Contar mensajes nuevos desde última notif
+        const desde=new Date(last).toISOString();
+        const nuevos=msgs.filter(m=>m.de_nombre!==e&&m.created_at>desde).length+1;
+        const titulo=nuevos>1?`${post.titulo} (${nuevos} mensajes)`:post.titulo;
+        await sb.insertNotificacion({usuario_id:null,alumno_email:e,tipo:"chat_grupal",publicacion_id:post.id,pub_titulo:titulo,leida:false},session.access_token).catch(()=>{});
+        try{localStorage.setItem(ck,String(ahora));}catch{}
+      }));
     }catch(e){alert("Error al enviar: "+e.message);}
   };
 
@@ -673,8 +685,8 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
           placeholder="Escribí al grupo…"
           rows={1}
-          style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 14px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:100,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
-          onInput={e=>{const sy=window.scrollY;e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";window.scrollTo({top:sy,behavior:"instant"});}}
+          style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 14px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:100,overflowY:"hidden",boxSizing:"border-box",transition:"border-color .15s"}}
+          onInput={e=>{const el=e.target;el.style.overflowY="hidden";el.style.height="0";const h=Math.min(el.scrollHeight,100);el.style.height=h+"px";el.style.overflowY=h>=100?"auto":"hidden";}}
         />
         <button onClick={sendMsg} disabled={!input.trim()&&!imagenPrevia}
           style={{background:C.accent,border:"none",borderRadius:"50%",width:36,height:36,cursor:(input.trim()||imagenPrevia)?"pointer":"default",fontSize:16,flexShrink:0,opacity:(input.trim()||imagenPrevia)?1:0.4,transition:"all .15s",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>↑</button>
