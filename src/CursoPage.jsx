@@ -674,7 +674,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           placeholder="Escribí al grupo…"
           rows={1}
           style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 14px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:100,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
-          onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}
+          onInput={e=>{const sy=window.scrollY;e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";window.scrollTo({top:sy,behavior:"instant"});}}
         />
         <button onClick={sendMsg} disabled={!input.trim()&&!imagenPrevia}
           style={{background:C.accent,border:"none",borderRadius:"50%",width:36,height:36,cursor:(input.trim()||imagenPrevia)?"pointer":"default",fontSize:16,flexShrink:0,opacity:(input.trim()||imagenPrevia)?1:0.4,transition:"all .15s",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>↑</button>
