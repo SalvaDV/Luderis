@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { C, FONT, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName } from "./shared";
+import { C, FONT, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { AcuerdoModal } from "./MiCuentaPage";
 
@@ -68,7 +68,7 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
           {!finalizado&&<button onClick={()=>onEdit(post)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",transition:"border-color .12s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>Editar</button>}
           {!finalizado&&!pendienteValidacion&&<button onClick={()=>onToggle(post)} disabled={toggling===post.id} style={{background:activo?C.warn+"12":C.success+"12",border:`1px solid ${activo?C.warn+"40":C.success+"40"}`,borderRadius:6,color:activo?C.warn:C.success,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",opacity:toggling===post.id?.5:1}}>{toggling===post.id?"...":(activo?"Pausar":"Activar")}</button>}
           {post.tipo==="busqueda"&&post.expires_at&&Math.ceil((new Date(post.expires_at)-new Date())/86400000)<=3&&(
-            <button onClick={async()=>{try{await sb.updatePublicacion(post.id,{expires_at:new Date(Date.now()+14*86400000).toISOString()},session.access_token);if(onToggle)onToggle({...post,_renovar:true});}catch(e){alert("Error: "+e.message);}}} style={{background:C.success+"12",border:`1px solid ${C.success}40`,borderRadius:6,color:C.success,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",fontWeight:600}}>Renovar</button>
+            <button onClick={async()=>{try{await sb.updatePublicacion(post.id,{expires_at:new Date(Date.now()+14*86400000).toISOString()},session.access_token);if(onToggle)onToggle({...post,_renovar:true});}catch(e){toast("Error: "+e.message,"error");}}} style={{background:C.success+"12",border:`1px solid ${C.success}40`,borderRadius:6,color:C.success,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",fontWeight:600}}>Renovar</button>
           )}
           <button onClick={handleClickEliminar} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,textAlign:"center",transition:"all .12s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>Eliminar</button>
         </div>
@@ -125,7 +125,7 @@ export function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
       },session.access_token).catch(e=>logError("email contraoferta",e));
       sb.sendPush(destinatario,`Nueva contraoferta — ${oferta.busqueda_titulo}`,`${miNombreContra} hizo una contraoferta`,"/?cuenta","contraoferta").catch(()=>{});
       onEnviada();
-    }catch(e){alert(e.message);}finally{setSaving(false);}
+    }catch(e){toast(e.message,"error");}finally{setSaving(false);}
   };
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:9};
   const precioActual=oferta.contraoferta_precio||oferta.precio;
@@ -280,7 +280,7 @@ export default function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat
     }finally{setLoading(false);}
   },[session]);
   useEffect(()=>{cargar();},[cargar]);
-  const toggle=async(post)=>{if(post.activo===false&&post.estado_validacion==="pendiente")return;setToggling(post.id);try{await sb.updatePublicacion(post.id,{activo:post.activo===false},session.access_token);await cargar();}catch(e){alert("Error: "+e.message);}finally{setToggling(null);}};
+  const toggle=async(post)=>{if(post.activo===false&&post.estado_validacion==="pendiente")return;setToggling(post.id);try{await sb.updatePublicacion(post.id,{activo:post.activo===false},session.access_token);await cargar();}catch(e){toast("Error: "+e.message,"error");}finally{setToggling(null);}};
   const remove=async(post)=>{await sb.deletePublicacion(post.id,session.access_token);cargar();};
   return(
     <div style={{fontFamily:FONT}}>

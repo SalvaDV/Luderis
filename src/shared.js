@@ -19,18 +19,35 @@ export const logError = (context, error) => {
 
 // ─── TOAST GLOBAL ─────────────────────────────────────────────────────────────
 let _toastCb=null;
-export const toast=(msg,type="info",dur=3000)=>{if(_toastCb)_toastCb({msg,type,id:Date.now()});};
+export const toast=(msg,type="info",dur=3000)=>{if(_toastCb)_toastCb({msg,type,id:Date.now(),dur});};
 export function ToastContainer(){
   const [items,setItems]=useState([]);
-  useEffect(()=>{_toastCb=(item)=>{setItems(p=>[...p.slice(-3),item]);setTimeout(()=>setItems(p=>p.filter(t=>t.id!==item.id)),item.dur||3000);};return()=>{_toastCb=null;};},[]);
+  const dismiss=(id)=>setItems(p=>p.filter(t=>t.id!==id));
+  useEffect(()=>{
+    _toastCb=(item)=>{
+      setItems(p=>[...p.slice(-3),item]);
+      setTimeout(()=>dismiss(item.id),item.dur||3000);
+    };
+    return()=>{_toastCb=null;};
+  },[]);
   const colors={success:"#2EC4A0",error:"#E53E3E",info:"#1A6ED8",warn:"#DD8A1A"};
+  const icons={success:"✓",error:"✕",warn:"⚠",info:"◎"};
   if(!items.length)return null;
-  return(<div style={{position:"fixed",bottom:80,right:16,zIndex:9000,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
-    {items.map(t=>(<div key={t.id} style={{background:C.surface,border:`2px solid ${colors[t.type]||colors.info}`,borderRadius:12,padding:"12px 16px",fontSize:13,color:C.text,fontFamily:FONT,boxShadow:"0 8px 24px rgba(0,0,0,.15)",animation:"fadeUp .2s ease",maxWidth:280,fontWeight:500,display:"flex",alignItems:"center",gap:8}}>
-      <span style={{color:colors[t.type]||colors.info,fontSize:16}}>{t.type==="success"?"✓":t.type==="error"?"✕":t.type==="warn"?"⚠":"◎"}</span>
-      {t.msg}
-    </div>))}
-  </div>);
+  return(
+    <div style={{position:"fixed",bottom:"max(80px,env(safe-area-inset-bottom,0px) + 72px)",right:16,zIndex:9000,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
+      {items.map(item=>(
+        <div key={item.id}
+          onClick={()=>dismiss(item.id)}
+          style={{background:C.surface,border:`1px solid ${colors[item.type]||colors.info}40`,borderLeft:`3px solid ${colors[item.type]||colors.info}`,borderRadius:12,padding:"11px 14px",fontSize:13,color:C.text,fontFamily:FONT,boxShadow:"0 8px 28px rgba(0,0,0,.18)",animation:"fadeUp .2s ease",maxWidth:300,fontWeight:500,display:"flex",alignItems:"center",gap:9,pointerEvents:"auto",cursor:"pointer",transition:"opacity .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
+          onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+          <span style={{color:colors[item.type]||colors.info,fontSize:15,flexShrink:0}}>{icons[item.type]||icons.info}</span>
+          <span style={{flex:1,lineHeight:1.4}}>{item.msg}</span>
+          <span style={{color:C.muted,fontSize:16,flexShrink:0,lineHeight:1}}>×</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ─── DATOS DE CATEGORÍAS ──────────────────────────────────────────────────────
@@ -223,7 +240,12 @@ export const Avatar=({letra,size=38,img})=>{
     ["#2EC4A0","#1A6ED8"],["#F5A623","#E05C5C"],["#0F3F7A","#1A6ED8"],
   ];
   const [from,to]=colors[(letra||"?").toUpperCase().charCodeAt(0)%colors.length];
-  if(img)return<div style={{width:size,height:size,borderRadius:"50%",overflow:"hidden",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}><img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
+  const [imgOk,setImgOk]=useState(true);
+  if(img&&imgOk)return(
+    <div style={{width:size,height:size,borderRadius:"50%",overflow:"hidden",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
+      <img src={img} alt={letra?`Avatar de ${letra}`:"Avatar"} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setImgOk(false)}/>
+    </div>
+  );
   return<div title={typeof letra==='string'&&letra.length>1?letra:undefined} style={{width:size,height:size,borderRadius:"50%",background:`linear-gradient(135deg,${from},${to})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:size*0.38,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.15)",letterSpacing:"-.5px"}}>{(letra||"?").toUpperCase()}</div>;
 };
 
@@ -240,8 +262,8 @@ export const VerifiedBadge=()=>(<span style={{fontSize:12,fontWeight:700,padding
 
 export const StarRating=({val,count,small})=>{if(!count&&!val)return <span style={{color:C.muted,fontSize:small?12:13,fontStyle:"italic"}}>Sin valoraciones</span>;const v=parseFloat(val)||0;const full=Math.round(v);return<span style={{display:"inline-flex",alignItems:"center",gap:3}}><span style={{color:"#F59E0B",fontSize:small?13:15,letterSpacing:1}}>{"★".repeat(full)}<span style={{color:C.border}}>{"★".repeat(5-full)}</span></span><span style={{color:"#B45309",fontWeight:700,fontSize:small?12:13,marginLeft:2}}>{v.toFixed(1)}</span>{count!==undefined&&<span style={{color:C.muted,fontSize:small?11:12}}>({count})</span>}</span>;};
 
-export const Input=({style={},...props})=>(<input style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"10px 13px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:FONT,transition:"border-color .15s",...style}}
-  onFocus={e=>{e.target.style.borderColor=C.accent;e.target.style.boxShadow=`0 0 0 1px ${C.accent}`;}}
+export const Input=({style={},...props})=>(<input style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"10px 13px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:FONT,transition:"border-color .15s, box-shadow .15s",...style}}
+  onFocus={e=>{e.target.style.borderColor=C.accent;e.target.style.boxShadow=`0 0 0 3px ${C.accent}22`;}}
   onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}
   {...props}/>);
 

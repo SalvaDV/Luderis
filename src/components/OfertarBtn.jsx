@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "../supabase";
-import { C, FONT, Label, Btn } from "../shared";
+import { C, FONT, Label, Btn, toast } from "../shared";
 import { trackOfertaEnviada } from "../analytics";
 
 export default function OfertarBtn({post,session}){
@@ -51,8 +51,8 @@ export default function OfertarBtn({post,session}){
       cerrar();
     }catch(e){
       const msg2=e.message||"";
-      if(msg2.includes("estado"))alert("Error de esquema: la columna 'estado' no existe. Pedí al admin que ejecute el SQL de actualización.");
-      else alert("Error: "+msg2);
+      if(msg2.includes("estado"))toast("Error de configuración. Contactá al administrador.","error");
+      else toast("Error: "+msg2,"error");
     }finally{setSaving(false);}
   };
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:9};

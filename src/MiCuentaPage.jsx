@@ -444,9 +444,9 @@ function EspacioClaseModal({oferta,session,onClose}){
       const r=await sb.insertContenido(d,session.access_token);
       setContenido(p=>[...p,...(Array.isArray(r)?r:[r])]);
       setNuevoTitulo("");setNuevoBody("");setShowAdd(false);
-    }catch(e){alert(e.message);}finally{setSavingC(false);}
+    }catch(e){toast(e.message,"error");}finally{setSavingC(false);}
   };
-  const removeC=async(id)=>{try{await sb.deleteContenido(id,session.access_token);setContenido(p=>p.filter(x=>x.id!==id));}catch(e){alert(e.message);}};
+  const removeC=async(id)=>{try{await sb.deleteContenido(id,session.access_token);setContenido(p=>p.filter(x=>x.id!==id));}catch(e){toast(e.message,"error");}};
   const TM={video:{ic:"▶",col:C.info,l:"Video"},archivo:{ic:"↓",col:C.success,l:"Archivo"},texto:{ic:"≡",col:C.text,l:"Texto"},aviso:{ic:"!",col:C.accent,l:"Aviso"},tarea:{ic:"★",col:C.purple,l:"Tarea"},link:{ic:"↗",col:C.info,l:"Link"}};
   const iS2={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
   return(
@@ -543,7 +543,7 @@ function EspacioChat({pubId,miEmail,miId,otroEmail,otroNombre,session}){
     try{
       await sb.insertMensaje({publicacion_id:pubId,de_usuario:miId,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:txt,leido:false},session.access_token);
       await cargar();
-    }catch(e){alert(e.message);setTexto(txt);}finally{setSending(false);}
+    }catch(e){toast(e.message,"error");setTexto(txt);}finally{setSending(false);}
   };
   return(
     <div>
@@ -654,14 +654,14 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
       sb.insertNotificacion({usuario_id:null,alumno_email:oferta.busqueda_autor_email,tipo:"oferta_aceptada",publicacion_id:oferta.busqueda_id,pub_titulo:oferta.busqueda_titulo,leida:false},session.access_token).catch(()=>{});
       sb.insertNotificacion({usuario_id:null,alumno_email:oferta.busqueda_autor_email,tipo:"busqueda_acordada",publicacion_id:oferta.busqueda_id,pub_titulo:oferta.busqueda_titulo,leida:false},session.access_token).catch(()=>{});
       cerrar();onActualizado();
-    }catch(e){alert(e.message);}finally{setSaving(false);}
+    }catch(e){toast(e.message,"error");}finally{setSaving(false);}
   };
   const rechazar=async()=>{
     setSaving(true);
     try{
       await sb.updateOfertaBusq(oferta.id,{estado:"rechazada",leida:true},session.access_token);
       cerrar();onActualizado();
-    }catch(e){alert(e.message);}finally{setSaving(false);}
+    }catch(e){toast(e.message,"error");}finally{setSaving(false);}
   };
 
   return(
@@ -1962,16 +1962,16 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   },[session,email]);
   useEffect(()=>{cargar();},[cargar]);
   const avg=calcAvg(reseñas);
-  const toggle=async(post)=>{if(post.activo===false&&post.estado_validacion==="pendiente")return;setToggling(post.id);try{await sb.updatePublicacion(post.id,{activo:post.activo===false},session.access_token);await cargar();}catch(e){alert("Error: "+e.message);}finally{setToggling(null);}};
+  const toggle=async(post)=>{if(post.activo===false&&post.estado_validacion==="pendiente")return;setToggling(post.id);try{await sb.updatePublicacion(post.id,{activo:post.activo===false},session.access_token);await cargar();}catch(e){toast("Error: "+e.message,"error");}finally{setToggling(null);}};
   const remove=async(post)=>{await sb.deletePublicacion(post.id,session.access_token);cargar();};
   const addDoc=async()=>{
     if(!docTitulo.trim())return;setSavingDoc(true);
     try{
       await sb.insertDocumento({usuario_id:session.user.id,usuario_email:email,tipo:docTipo,titulo:docTitulo.trim(),institucion:docInst.trim()||null,año:docAño.trim()||null,descripcion:docDesc.trim()||null,url_verificacion:docUrl.trim()||null,pais:docPais.trim()||null},session.access_token);
       setDocTitulo("");setDocInst("");setDocAño("");setDocDesc("");setShowAddDoc(false);await cargar();
-    }catch(e){alert("Error: "+e.message);}finally{setSavingDoc(false);}
+    }catch(e){toast("Error: "+e.message,"error");}finally{setSavingDoc(false);}
   };
-  const removeDoc=async(id)=>{try{await sb.deleteDocumento(id,session.access_token);await cargar();}catch(e){alert(e.message);}};
+  const removeDoc=async(id)=>{try{await sb.deleteDocumento(id,session.access_token);await cargar();}catch(e){toast(e.message,"error");}};
   const saveColor=(c)=>{localStorage.setItem("avatarColor_"+email,c);setAvatarColor2(c);};
   const TIPOS_DOC=[{v:"titulo",l:"Título"},{v:"certificado",l:"Certificado"},{v:"experiencia",l:"Experiencia"},{v:"otro",l:"Otro"}];
   const TIPO_ICON={titulo:"🎓",certificado:"📜",experiencia:"💼",otro:"📄"};
@@ -2179,7 +2179,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     await sb.updateReseñasNombre(email,newName,session.access_token).catch(()=>{});
                     await sb.updateMensajesNombre(email,newName,session.access_token).catch(()=>{});
                     setEditingPerfil(false);
-                  }catch(e){alert("Error: "+e.message);}
+                  }catch(e){toast("Error: "+e.message,"error");}
                   finally{setSavingDisplayName(false);}
                 }} disabled={savingDisplayName} style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT}}>
                   {savingDisplayName?"Guardando...":"Guardar cambios"}
@@ -2536,7 +2536,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
       }
       setConfirmado(true);
       if(onConfirmado)onConfirmado();
-    }catch(e){alert("Error: "+e.message);}finally{setSaving(false);}
+    }catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}
   };
 
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:9};

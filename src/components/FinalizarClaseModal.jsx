@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { C, FONT, Spinner, Btn, Modal, logError } from "../shared";
+import { C, FONT, Spinner, Btn, Modal, logError, toast } from "../shared";
 import * as sb from "../supabase";
 
 export default function FinalizarClaseModal({post,session,onClose,onFinalizado}){
@@ -26,7 +26,7 @@ export default function FinalizarClaseModal({post,session,onClose,onFinalizado})
       leida:false,
     }).catch(e=>logError("notif confirmar_clase",e))));
     onFinalizado();onClose();
-  }catch(e){alert("Error al finalizar: "+e.message);}finally{setSaving(false);}};
+  }catch(e){toast("Error al finalizar: "+e.message,"error");}finally{setSaving(false);}};
   return(
     <Modal onClose={onClose} width="min(420px,95vw)">
       <div style={{padding:"20px 22px"}}>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "../supabase";
-import { C, FONT, safeDisplayName, sanitizeContactInfo, Avatar, Spinner } from "../shared";
+import { C, FONT, safeDisplayName, sanitizeContactInfo, Avatar, Spinner, toast } from "../shared";
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
@@ -27,7 +27,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     const check=()=>{
       try{
         const ts=parseInt(localStorage.getItem(`cl_typing_${post.id}_${otroEmail}`)||"0");
-        setOtroEscribiendo(Date.now()-ts<3000);
+        setOtroEscribiendo(Date.now()-ts<1800);
       }catch{}
     };
     const t=setInterval(check,500);
@@ -40,7 +40,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     clearTimeout(escribiendoTimer.current);
     escribiendoTimer.current=setTimeout(()=>{
       try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
-    },2500);
+    },1200);
   };
   const marcar=useCallback(async()=>{
     try{await sb.marcarLeidos(post.id,miEmail,session.access_token);}catch{}
@@ -97,11 +97,11 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
   const handleImageSelect=(e)=>{
     const file=e.target.files?.[0];
     if(!file)return;
-    if(file.size>4*1024*1024){alert("La imagen no puede superar 4MB");return;}
+    if(file.size>4*1024*1024){toast("La imagen no puede superar 4MB","warn");return;}
     setLeyendoImg(true);
     const reader=new FileReader();
     reader.onload=(ev)=>{setImagenPrevia(ev.target.result);setLeyendoImg(false);};
-    reader.onerror=()=>setLeyendoImg(false);
+    reader.onerror=()=>{setLeyendoImg(false);toast("No se pudo procesar la imagen","error");};
     reader.readAsDataURL(file);
     e.target.value="";
   };
@@ -119,7 +119,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
       (()=>{const ck=`cl_email_sent_${post.id}_${otroEmail}`;const last=parseInt(localStorage.getItem(ck)||"0");if(Date.now()-last>2*60*60*1000){sb.sendEmail("nuevo_mensaje",otroEmail,{pub_titulo:post.titulo,de_nombre:sb.getDisplayName(miEmail)||miEmail.split("@")[0],preview:imagenPrevia?"[Imagen]":txt},session.access_token).catch(()=>{});try{localStorage.setItem(ck,Date.now());}catch{}}})();
       sb.sendPush(otroEmail,`Nuevo mensaje — ${post.titulo}`,imagenPrevia?"[Imagen]":txt.slice(0,80)||"…",`/?chat=${post.id}`,"nuevo_mensaje").catch(()=>{});
       cargar();
-    }catch(e){alert("Error al enviar: "+e.message);}
+    }catch(e){toast("No se pudo enviar el mensaje. Intentá de nuevo.","error");}
     finally{setEnviando(false);}
   };
   const nombre=post.autor_nombre||safeDisplayName(null,otroEmail)||"Usuario";
@@ -188,8 +188,10 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
             placeholder="Escribí un mensaje..."
             rows={1}
-            style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 13px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:120,overflowY:"auto",boxSizing:"border-box",transition:"border-color .15s"}}
-            onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
+            style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 13px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,resize:"none",lineHeight:1.5,maxHeight:120,overflowY:"hidden",boxSizing:"border-box",transition:"border-color .15s, box-shadow .15s"}}
+            onFocus={e=>{e.target.style.borderColor=C.accent;e.target.style.boxShadow=`0 0 0 3px ${C.accent}22`;}}
+            onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}
+            onInput={e=>{const el=e.target;el.style.overflowY="hidden";el.style.height="0";const h=Math.min(el.scrollHeight,120);el.style.height=h+"px";el.style.overflowY=h>=120?"auto":"hidden";}}
           />
           <button onClick={()=>sendMsg()} disabled={(!input.trim()&&!imagenPrevia)||enviando}
             style={{background:C.accent,border:"none",borderRadius:9,padding:"9px 13px",fontWeight:700,cursor:"pointer",color:"#fff",fontSize:15,flexShrink:0,opacity:((!input.trim()&&!imagenPrevia)||enviando)?.4:1,transition:"opacity .15s"}}>

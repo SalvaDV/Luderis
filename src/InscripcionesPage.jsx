@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { C, FONT, Spinner, Avatar, fmt, fmtPrice, logError, safeDisplayName } from "./shared";
+import { C, FONT, Spinner, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
 
@@ -105,7 +105,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
       setInscripciones(prev=>prev.map(i=>i.id===ins.id?{...i,alumno_confirmada:true,alumno_confirmada_at:new Date().toISOString()}:i));
     }catch(e){
       logError("confirmarClaseAlumno",e);
-      alert("No se pudo confirmar: "+(e.message||"error"));
+      toast("No se pudo confirmar: "+(e.message||"error"),"error");
     }
   };
 

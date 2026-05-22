@@ -299,7 +299,7 @@ function AyudanteBuscador({post,session,ayudantesActuales,onUpdate}){
   };
   const quitar=async(uid)=>{
     const newAyuds=ayudantesActuales.filter(a=>a!==uid);
-    try{await sb.updatePublicacion(post.id,{ayudantes:newAyuds},session.access_token);onUpdate(newAyuds);}catch(e){alert(e.message);}
+    try{await sb.updatePublicacion(post.id,{ayudantes:newAyuds},session.access_token);onUpdate(newAyuds);}catch(e){toast(e.message,"error");}
   };
   return(
     <div style={{marginTop:14,borderTop:`1px solid ${C.border}`,paddingTop:14}}>
@@ -517,8 +517,8 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
 
   const handleImageSelect=(e)=>{
     const file=e.target.files?.[0];if(!file)return;
-    if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){alert("Solo se permiten imágenes (JPG, PNG, WebP, GIF)");e.target.value="";return;}
-    if(file.size>4*1024*1024){alert("La imagen no puede superar 4MB");return;}
+    if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){toast("Solo se permiten imágenes (JPG, PNG, WebP, GIF)","warn");e.target.value="";return;}
+    if(file.size>4*1024*1024){toast("La imagen no puede superar 4MB","warn");return;}
     const reader=new FileReader();
     reader.onload=(ev)=>setImagenPrevia(ev.target.result);
     reader.readAsDataURL(file);
@@ -784,7 +784,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
 // ─── CERRAR INSCRIPCIONES MODAL ───────────────────────────────────────────────
 function CerrarInscModal({post,session,onClose,onCerrado}){
   const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
-  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}catch(e){alert("Error: "+e.message);}finally{setSaving(false);}};
+  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}};
   return(<Modal onClose={onClose} width="min(400px,95vw)">
     <div style={{padding:"20px 22px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
@@ -810,7 +810,7 @@ function EditCalModal({post,session,onClose,onSaved}){
   const add=()=>setClases(p=>[...p,{dia:"Lunes",hora_inicio:"09:00",hora_fin:"10:00"}]);
   const upd=(i,k,v)=>setClases(p=>p.map((x,j)=>j===i?{...x,[k]:v}:x));
   const rem=(i)=>setClases(p=>p.filter((_,j)=>j!==i));
-  const save=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{clases_sinc:JSON.stringify(clases),sinc:"sinc"},session.access_token);onSaved(clases);}catch(e){alert(e.message);}finally{setSaving(false);}};
+  const save=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{clases_sinc:JSON.stringify(clases),sinc:"sinc"},session.access_token);onSaved(clases);}catch(e){toast(e.message,"error");}finally{setSaving(false);}};
   return(<Modal onClose={onClose} width="min(480px,97vw)"><div style={{padding:"20px 22px"}}>
     <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><h3 style={{color:C.text,margin:0,fontSize:16,fontWeight:700}}>Editar horarios</h3><button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:21,cursor:"pointer"}}>×</button></div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{fontSize:12,color:C.muted}}>Días y horas de clase</span><button onClick={add} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"3px 9px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>+ Agregar</button></div>
@@ -896,7 +896,7 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
         })));
         if(!titulo)setTitulo(`Quiz: ${temaIA}`);
       }
-    }catch(e){alert("No se pudo generar: "+e.message);}
+    }catch(e){toast("No se pudo generar: "+e.message,"error");}
     finally{setLoadingIA(false);}
   };
 
@@ -929,7 +929,7 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
         }catch{}
       }
       onSaved(saved||{...data,id:null});
-    }catch(e){alert("Error: "+e.message);}
+    }catch(e){toast("Error: "+e.message,"error");}
     finally{setSaving(false);}
   };
 
@@ -1048,7 +1048,7 @@ function QuizEditor({item,session,onSaved,onClose}){
       const data={titulo:titulo.trim(),texto:JSON.stringify(quizData)};
       await sb.updateContenido(item.id,data,session.access_token);
       onSaved(data);
-    }catch(e){alert("Error: "+e.message);}
+    }catch(e){toast("Error: "+e.message,"error");}
     finally{setSaving(false);}
   };
 
@@ -1196,7 +1196,7 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
       const r=await sb.insertEntregaQuiz({quiz_id:item.id,publicacion_id:item.publicacion_id,alumno_email:session.user.email,tipo:"multiple",resultado_json:resJson,nota},session.access_token);
       setMiEntrega(r?.[0]);
       setResultado({nota,correctas,total:preguntas.length,detalle});
-    }catch(e){alert(e.message);}finally{setEnviando(false);}
+    }catch(e){toast(e.message,"error");}finally{setEnviando(false);}
   };
 
   const ALLOWED_ENTREGA_TYPES=["application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","text/plain","image/jpeg","image/png","application/zip","application/x-zip-compressed"];
@@ -1205,7 +1205,7 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
     if(file.size>5*1024*1024){rej(new Error("El archivo no puede superar 5MB"));return;}
     const r=new FileReader();r.onload=e=>res({name:file.name,size:file.size,base64:e.target.result});r.onerror=rej;r.readAsDataURL(file);
   });
-  const onFileChange=async(e)=>{const f=e.target.files?.[0];if(!f)return;try{const d=await leerArchivo(f);setArchivoEntrega(d);}catch(err){alert(err.message);}};
+  const onFileChange=async(e)=>{const f=e.target.files?.[0];if(!f)return;try{const d=await leerArchivo(f);setArchivoEntrega(d);}catch(err){toast(err.message,"error");}};
 
   const enviarEntregable=async()=>{
     if(!textoEntrega.trim()&&!archivoEntrega)return;
@@ -1215,7 +1215,7 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
       if(archivoEntrega)payload.texto_entrega=(payload.texto_entrega?payload.texto_entrega+"\n\n":"")+`[Archivo: ${archivoEntrega.name}]\n${archivoEntrega.base64}`;
       const r=await sb.insertEntregaQuiz(payload,session.access_token);
       setMiEntrega(r?.[0]);
-    }catch(e){alert(e.message);}finally{setEnviando(false);}
+    }catch(e){toast(e.message,"error");}finally{setEnviando(false);}
   };
 
   const guardarNota=async(entregaId)=>{
@@ -1225,7 +1225,7 @@ function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
     try{
       await sb.updateEntregaQuiz(entregaId,{nota,corregido:true},session.access_token);
       setEntregas(prev=>prev.map(e=>e.id===entregaId?{...e,nota,corregido:true}:e));
-    }catch(e){alert(e.message);}finally{setSavingNota(null);}
+    }catch(e){toast(e.message,"error");}finally{setSavingNota(null);}
   };
 
   const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 11px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT};
@@ -2476,7 +2476,7 @@ function NotasPrivadas({storageKey,session,post}){
         nota,600,session.access_token
       );
       onChange(nota+"\n\n---\n✨ Expansión IA:\n"+r);
-    }catch(e){alert("Error IA: "+e.message);}finally{setExpandiendoIA(false);}
+    }catch(e){toast("Error IA: "+e.message,"error");}finally{setExpandiendoIA(false);}
   };
 
   return(
@@ -2860,7 +2860,7 @@ function CertificadoBtn({post,session,inscripcion,progresoModulos=[],contenido=[
       link.download=`certificado-${post.titulo.slice(0,30).replace(/\s+/g,"-")}-${uid}.png`;
       link.href=dataUrl;
       link.click();
-    }catch(e){alert("Error al generar: "+e.message);}
+    }catch(e){toast("Error al generar: "+e.message,"error");}
     finally{setGenerando(false);}
   };
 
@@ -3300,7 +3300,7 @@ function ValidacionWizard({post,session,onValidado}){
 
   // ─── generar banco de preguntas ───────────────────────────────────────────
   const generarBanco=async(paraTipo)=>{
-    if(!skills.length){alert("Primero agregá las habilidades del curso.");return;}
+    if(!skills.length){toast("Primero agregá las habilidades del curso.","warn");return;}
     setGenerando(true);
     const fmt=detectarFormato();
     setFormato(fmt);
@@ -3330,7 +3330,7 @@ function ValidacionWizard({post,session,onValidado}){
         if(paraTipo==="inicial"){setBancoPregInicial(items);setSelecInicial(new Set(items.slice(0,nPregs).map(p=>p.id)));}
         else{setBancoPregFinal(items);setSelecFinal(new Set(items.slice(0,nPregs).map(p=>p.id)));}
       }
-    }catch(e){alert("Error generando banco: "+e.message);}
+    }catch(e){toast("Error generando banco: "+e.message,"error");}
     finally{setGenerando(false);}
   };
 
@@ -3354,7 +3354,7 @@ function ValidacionWizard({post,session,onValidado}){
         generado_ia:true,activo:true,
       },session.access_token);
       return r?.[0]||null;
-    }catch(e){alert("Error guardando: "+e.message);return null;}
+    }catch(e){toast("Error guardando: "+e.message,"error");return null;}
     finally{setGuardando(false);}
   };
 
@@ -3366,24 +3366,24 @@ function ValidacionWizard({post,session,onValidado}){
       if(onValidado)onValidado();
       // Disparar alertas ahora que la pub está activa
       dispararAlertasIA({...post,activo:true},session).catch(()=>{});
-    }catch(e){alert(e.message);}
+    }catch(e){toast(e.message,"error");}
     finally{setGuardando(false);}
   };
 
   const siguienteDesdeHabilidades=async()=>{
-    if(skills.length<2){alert("Agregá al menos 2 habilidades para continuar.");return;}
+    if(skills.length<2){toast("Agregá al menos 2 habilidades para continuar.","warn");return;}
     await generarBanco("inicial");
     setFase("examen_inicial");
   };
 
   const siguienteDesdeInicial=async()=>{
-    if(selecInicial.size===0){alert("Seleccioná al menos una pregunta.");return;}
+    if(selecInicial.size===0){toast("Seleccioná al menos una pregunta.","warn");return;}
     const ev=await guardarEval("diagnostico",bancoPregInicial,selecInicial);
     if(ev){setEvalInicial(ev);await generarBanco("final");setFase("examen_final");}
   };
 
   const finalizarValidacion=async()=>{
-    if(selecFinal.size===0){alert("Seleccioná al menos una pregunta para el examen final.");return;}
+    if(selecFinal.size===0){toast("Seleccioná al menos una pregunta para el examen final.","warn");return;}
     const ev=await guardarEval("final",bancoPregFinal,selecFinal);
     if(!ev)return;
     setEvalFinal(ev);
@@ -3395,7 +3395,7 @@ function ValidacionWizard({post,session,onValidado}){
       if(onValidado)onValidado();
       // Disparar alertas ahora que la pub está activa
       dispararAlertasIA({...post,activo:true},session).catch(()=>{});
-    }catch(e){alert(e.message);}
+    }catch(e){toast(e.message,"error");}
     finally{setGuardando(false);}
   };
 
@@ -3645,7 +3645,7 @@ JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
           }
         });
       }).catch(()=>{});
-    }catch(e){alert("Error al guardar: "+e.message);}
+    }catch(e){toast("Error al guardar: "+e.message,"error");}
   };
 
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
@@ -3775,7 +3775,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
         alumno_email:miEmail,respuesta_json:JSON.stringify(respuesta),
       },session.access_token);
       setEntrega(r?.[0]||{});
-    }catch(e){alert(e.message);}
+    }catch(e){toast(e.message,"error");}
     finally{setEnviando(false);}
   };
 
@@ -3903,7 +3903,7 @@ function EntregaEvalRow({entrega,evaluacion,session,onUpdate}){
     try{
       const r=await sb.updateEvaluacionEntrega(entrega.id,{nota:parseFloat(nota)||null,feedback,corregido:true},session.access_token);
       if(onUpdate)onUpdate({...entrega,...(r?.[0]||{}),nota:parseFloat(nota)||null,feedback,corregido:true});
-    }catch(e){alert(e.message);}
+    }catch(e){toast(e.message,"error");}
     finally{setSaving(false);}
   };
 
@@ -4245,7 +4245,7 @@ function InlineContenidoEditor({item,session,onSaved,onCancel}){
       if(esTexto)data.texto=texto.trim()||null;else data.url=url.trim()||null;
       await sb.updateContenido(item.id,data,session.access_token);
       onSaved(data);
-    }catch(e){alert(e.message);}finally{setSaving(false);}
+    }catch(e){toast(e.message,"error");}finally{setSaving(false);}
   };
   const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:6};
   return(
@@ -4370,7 +4370,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
         setPregsDesarrollo(parsed.preguntas.map(p=>({texto:p.texto||"",criterios:p.criterios||""})));
       }else if(parsed.consigna){setConsigna(parsed.consigna);if(parsed.criterios)setCriterios(parsed.criterios);}
       if(!evalTitulo)setEvalTitulo(`${evalTipo==="diagnostico"?"Diagnóstico":evalTipo==="checkpoint"?"Checkpoint":"Examen final"} — ${temaIA}`);
-    }catch(e){alert("Error generando: "+e.message);}finally{setGenerandoIA(false);}
+    }catch(e){toast("Error generando: "+e.message,"error");}finally{setGenerandoIA(false);}
   };
   const guardar=async()=>{
     if(!evalTitulo.trim())return;setSaving(true);
@@ -4397,7 +4397,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
         });
       }).catch(()=>{});
       onSaved(r?.[0]||{});
-    }catch(e){alert("Error: "+e.message);}finally{setSaving(false);}
+    }catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}
   };
   const formatosGrupos=[
     {label:"Opción múltiple",items:[["multiple_choice","📋 Multiple choice"],["verdadero_falso","☑️ Verdadero/Falso"]]},
@@ -4767,7 +4767,7 @@ function CertificadoPctEditor({post,session,onUpdatePost}){
       await sb.updatePublicacion(post.id,{aprobacion_pct:Math.min(100,Math.max(1,pct))},session.access_token);
       if(onUpdatePost)onUpdatePost({...post,aprobacion_pct:pct});
       setSaved(true);setTimeout(()=>setSaved(false),2000);
-    }catch(e){alert("Error: "+e.message);}
+    }catch(e){toast("Error: "+e.message,"error");}
     finally{setSaving(false);}
   };
   return(
@@ -4831,7 +4831,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       } else {
         toast(`Clase iniciada · ${enviados}/${emails.length} alumno${emails.length!==1?"s":""} notificado${enviados!==1?"s":""}. ✓`,"success",5000);
       }
-    }catch(e){alert("Error al iniciar la clase: "+e.message);}
+    }catch(e){toast("Error al iniciar la clase: "+e.message,"error");}
     finally{setIniciandoClase(false);}
   };
   const [needsValoracion,setNeedsValoracion]=useState(false);
@@ -4937,7 +4937,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           sb.insertNotificacion({usuario_id:null,alumno_email:e,tipo:"nuevo_contenido",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       });
     }catch(e){
-      alert("Error al guardar: "+e.message+"\n\nSi sos co-docente, asegurate de que la RLS de contenido_curso permita inserción a co-docentes.");
+      toast("Error al guardar el contenido. Si sos co-docente verificá los permisos.","error");
     }finally{setSavingC(false);}
   };
   const removeContenido=async(id)=>{await sb.deleteContenido(id,session.access_token);setContenido(prev=>prev.filter(c=>c.id!==id));};
@@ -4996,7 +4996,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
         {/* Row 2: actions — scrollable on mobile */}
         <div className="curso-actions" style={{padding:"0 14px 8px",borderTop:`1px solid ${C.border}`,paddingTop:6}}>
           {esMio&&!localFinalizado&&!localCerrado&&<button onClick={()=>setShowCerrarInsc(true)} style={{background:"#E0955C12",border:"1px solid #E0955C33",borderRadius:7,color:C.warn,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Cerrar inscrip.</button>}
-          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){alert("Error: "+e.message);}}} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.success,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
+          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){toast("Error: "+e.message,"error");}}} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.success,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
           {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
             style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
             {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":"▶ Iniciar clase"}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
-  C, FONT, LUD,
+  C, FONT, LUD, toast,
   Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect, Btn, Chip,
   fmtPrice, fmtRel, fmt,
   safeDisplayName, _avatarCache,
@@ -911,7 +911,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.5}}>
                     Creá una alerta y te notificamos cuando aparezca algo relacionado con <strong style={{color:C.text}}>"{iaQuery}"</strong>.
                   </div>
-                  <button onClick={()=>{alert("Función de alertas próximamente. Por ahora podés buscar de nuevo más tarde.");}}
+                  <button onClick={()=>{toast("Función de alertas próximamente 🔔","info",4000);}}
                     style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%"}}>
                     🔔 Crear alerta para "{iaQuery}"
                   </button>
