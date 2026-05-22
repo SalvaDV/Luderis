@@ -16,7 +16,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Package, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, CheckCircle, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Package, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, CheckCircle, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag } from "lucide-react";
 
 export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);
@@ -314,16 +314,22 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   });
   const qText=norm(busquedaDebounced.trim());
   const matchesText=(p)=>!qText||(norm(p.titulo||"").includes(qText)||norm(p.descripcion||"").includes(qText)||norm(p.materia||"").includes(qText)||norm(p.autor_nombre||p.autor_email||"").includes(qText));
-  // En modo resultados no filtramos por sección — el usuario ve todo lo que matchea
-  const noSeccionBase=postsPorRol.filter(p=>p.tipo!=="busqueda");
-  const _filtroBase=modoVista==="resultados"?noSeccionBase:visiblePosts;
+  // Base filtrada por sección activa (respetada siempre, incluso en modo resultados)
+  const _seccionFiltrada=postsPorRol.filter(p=>{
+    if(seccion==="pedidos")return p.tipo==="busqueda"&&p.autor_email!==session.user.email;
+    if(p.tipo==="busqueda")return false;
+    if(seccion==="cursos")return p.modo==="curso"||p.modo==="grupal";
+    if(seccion==="clases")return p.modo==="particular"||!p.modo;
+    return true;
+  });
+  const _filtroBase=modoVista==="resultados"?_seccionFiltrada:visiblePosts;
   const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax);
-  // IA: busca en todos los posts del rol, sin limitarse a la sección activa
+  // IA: busca dentro de la sección activa
   const filteredConRol=iaResults!==null
-    ?postsPorRol.filter(p=>p.tipo!=="busqueda"&&iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
+    ?_seccionFiltrada.filter(p=>iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
     :_filtroBase.filter(_filtroCriteria);
-  // Conteo para el botón del panel (siempre sin filtro de sección para mostrar el total real)
-  const countForPanel=noSeccionBase.filter(_filtroCriteria).length;
+  // Conteo para el botón del panel (toda la sección activa con filtros aplicados)
+  const countForPanel=_seccionFiltrada.filter(_filtroCriteria).length;
   const baseList=filteredConRol;
 
   // Aplicar ordenamiento — cómputo directo sin useMemo (posts <500, no necesita memo)
@@ -476,16 +482,16 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               {/* Tabs Cursos / Clases / Pedidos */}
               <div style={{display:"flex",gap:4,background:"rgba(255,255,255,.12)",borderRadius:12,padding:4,marginBottom:20,backdropFilter:"blur(8px)",width:"fit-content"}}>
                 {[
-                  {id:"cursos",icon:"🎓",label:"Cursos"},
-                  {id:"clases",icon:"👤",label:"Clases"},
-                  ...(esDocente?[{id:"pedidos",icon:"📣",label:"Pedidos"}]:[]),
+                  {id:"cursos",Icon:GraduationCap,label:"Cursos",color:LUD.blue},
+                  {id:"clases",Icon:User,label:"Clases",color:"#C8660A"},
+                  ...(esDocente?[{id:"pedidos",Icon:Megaphone,label:"Pedidos",color:"#7B5CF0"}]:[]),
                 ].map(tab=>(
-                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
+                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");if(tab.id!=="cursos")setFiltroSinc("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
                     style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
                       background:seccion===tab.id?"#fff":"transparent",
-                      color:seccion===tab.id?(tab.id==="cursos"?LUD.blue:tab.id==="clases"?"#C8660A":"#7B5CF0"):"rgba(255,255,255,.8)",
+                      color:seccion===tab.id?tab.color:"rgba(255,255,255,.8)",
                       boxShadow:seccion===tab.id?"0 2px 8px rgba(0,0,0,.15)":"none"}}>
-                    <span style={{fontSize:15}}>{tab.icon}</span>
+                    <tab.Icon size={14} strokeWidth={2.2}/>
                     {tab.label}
                   </button>
                 ))}
@@ -516,7 +522,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           {seccion==="pedidos"&&(
             <div style={{marginBottom:24}}>
               <div style={{background:`linear-gradient(135deg,${TIPO_PUB.pedido.dim},#E05C9A10)`,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:28}}>📣</span>
+                <div style={{width:44,height:44,borderRadius:12,background:TIPO_PUB.pedido.dim,border:`1px solid ${TIPO_PUB.pedido.border}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Megaphone size={20} strokeWidth={1.8} color={TIPO_PUB.pedido.accent}/></div>
                 <div>
                   <div style={{fontWeight:700,color:TIPO_PUB.pedido.accent,fontSize:15}}>Alumnos buscando docentes</div>
                   <div style={{fontSize:13,color:C.muted}}>Contactalos directamente y ofrecé tus servicios</div>
@@ -539,7 +545,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       </div>
                       <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <span style={{fontSize:10,fontWeight:700,color:TIPO_PUB.pedido.accent,background:TIPO_PUB.pedido.dim,borderRadius:20,padding:"2px 8px"}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</span>
+                        <span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:700,color:TIPO_PUB.pedido.accent,background:TIPO_PUB.pedido.dim,borderRadius:20,padding:"2px 8px"}}><Megaphone size={9} strokeWidth={2.5}/>{p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</span>
                         {p.expires_at&&(()=>{const d=Math.ceil((new Date(p.expires_at)-new Date())/86400000);return d>0&&d<=7?<span style={{fontSize:10,color:C.warn}}>⏱ {d}d</span>:null;})()}
                       </div>
                     </div>
@@ -624,15 +630,15 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
 
           {/* Publicaciones destacadas — scroll horizontal */}
           {seccion!=="pedidos"&&(loading?<SkeletonList n={4}/>:(seccion==="cursos"?[
-            {label:"✨ Cursos recientes",data:cursos.slice(0,8)},
-            {label:"⭐ Mejor valorados",data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
+            {label:"Cursos recientes",Icon:Sparkles,data:cursos.slice(0,8)},
+            {label:"Mejor valorados",Icon:Star,data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
           ]:[
-            {label:"✨ Docentes disponibles",data:particulares.slice(0,8)},
-            {label:"⭐ Mejor valorados",data:[...particulares].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
-          ]).map(({label,data})=>data.length>0&&(
+            {label:"Docentes disponibles",Icon:Sparkles,data:particulares.slice(0,8)},
+            {label:"Mejor valorados",Icon:Star,data:[...particulares].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
+          ]).map(({label,Icon:LabelIcon,data})=>data.length>0&&(
             <div key={label} style={{marginBottom:24}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <div style={{fontWeight:700,color:C.text,fontSize:15}}>{label}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:700,color:C.text,fontSize:15}}><LabelIcon size={15} color={C.accent} strokeWidth={2}/>{label}</div>
                 <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todos →</button>
               </div>
               <div style={{display:"flex",gap:14,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8}}>
@@ -755,17 +761,17 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             {/* Pie */}
             <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:24,padding:"16px 0",flexWrap:"wrap"}}>
               <div style={{display:"flex",alignItems:"center",gap:6,color:C.muted,fontSize:12}}>
-                <span>✉️</span>
+                <Mail size={13} strokeWidth={2}/>
                 <span>contacto@luderis.com</span>
               </div>
               <div style={{width:1,height:14,background:C.border}}/>
               <div style={{display:"flex",alignItems:"center",gap:6,color:C.muted,fontSize:12}}>
-                <span>🇦🇷</span>
+                <Flag size={13} strokeWidth={2}/>
                 <span>Buenos Aires, Argentina</span>
               </div>
               <div style={{width:1,height:14,background:C.border}}/>
               <div style={{display:"flex",alignItems:"center",gap:6,color:C.muted,fontSize:12}}>
-                <span>🔒</span>
+                <Lock size={13} strokeWidth={2}/>
                 <span>Plataforma segura · Sin cargos ocultos</span>
               </div>
             </div>
@@ -824,7 +830,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               ].map(({id,label,T})=>{
                 const active=seccion===id;
                 return(<button key={id}
-                  onClick={()=>{setSeccion(id);setFiltroTipo("all");setFiltroModo("all");try{sessionStorage.setItem("cl_seccion_explore",id);}catch{}}}
+                  onClick={()=>{setSeccion(id);setFiltroTipo("all");setFiltroModo("all");if(id!=="cursos")setFiltroSinc("all");try{sessionStorage.setItem("cl_seccion_explore",id);}catch{}}}
                   style={{padding:"6px 18px",borderRadius:20,fontSize:13,fontWeight:active?700:400,cursor:"pointer",fontFamily:FONT,
                     background:active?T.accent:"transparent",
                     color:active?"#fff":C.muted,

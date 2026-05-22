@@ -1072,7 +1072,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
 
           {/* Tabs */}
           <div style={{display:"flex",gap:2,background:C.surface,borderRadius:12,padding:3,marginBottom:16}}>
-            {[["clases",`Clases (${pubs.length})`],["reseñas",`Reseñas (${reseñas.length})`],["credenciales",`Credenciales (${docs.length})`]].map(([id,label])=>(
+            {[["clases",`Publicaciones (${pubs.length})`],["reseñas",`Reseñas (${reseñas.length})`],["credenciales",`Credenciales (${docs.length})`]].map(([id,label])=>(
               <button key={id} onClick={()=>setTab(id)}
                 style={{flex:1,padding:"7px",borderRadius:10,border:"none",fontSize:12,cursor:"pointer",fontFamily:FONT,
                   fontWeight:tab===id?700:400,background:tab===id?C.accent:"transparent",color:tab===id?"#fff":C.muted,transition:"all .15s"}}>
@@ -1086,16 +1086,16 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
           {/* Tab: Clases */}
           {!loading&&tab==="clases"&&(
             pubs.length===0
-              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin clases activas</div>
+              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin publicaciones activas</div>
               :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {pubs.map(p=>{const T=getPubTipo(p);return(
+                {pubs.map(p=>{const T=getPubTipo(p);const tipoBadge=p.tipo==="busqueda"?"Pedido":(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase";return(
                   <div key={p.id} onClick={()=>onOpenDetail&&onOpenDetail(p)}
                     style={{background:C.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .15s",display:"flex",gap:12,alignItems:"center",borderLeft:`3px solid ${T.accent}`}}
                     onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 4px 14px ${T.dim}`;e.currentTarget.style.borderColor=T.accent+"44";}}
                     onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=T.border;}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                        <span style={{fontSize:10,fontWeight:700,color:T.accent,background:T.dim,borderRadius:20,padding:"1px 8px",flexShrink:0}}>{(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase"}</span>
+                        <span style={{fontSize:10,fontWeight:700,color:T.accent,background:T.dim,borderRadius:20,padding:"1px 8px",flexShrink:0}}>{tipoBadge}</span>
                         <div style={{fontWeight:700,color:C.text,fontSize:14,lineHeight:1.3}}>{p.titulo}</div>
                       </div>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
