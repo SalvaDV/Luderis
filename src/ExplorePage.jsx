@@ -927,7 +927,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           ):(
             <div>
               <div style={viewMode==="cards"?{display:"grid",gap:11}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
-                {sorted.slice(0,pagina*PAGE_SIZE).map(p=>(
+                {(modoVista==="resultados"?sorted:sorted.slice(0,pagina*PAGE_SIZE)).map(p=>(
                   viewMode==="lista"?(
                     <div key={p.id} onClick={()=>onOpenDetail(p)} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
                       onMouseEnter={e=>e.currentTarget.style.background=C.bg}
@@ -949,9 +949,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   )
                 ))}
               </div>
-              {/* Sentinel para infinite scroll */}
+              {/* Sentinel para infinite scroll — solo activo en modo home */}
               <div ref={sentinelRef} style={{height:40,display:"flex",alignItems:"center",justifyContent:"center",marginTop:8}}>
-                {pagina*PAGE_SIZE<sorted.length?(
+                {modoVista!=="resultados"&&pagina*PAGE_SIZE<sorted.length?(
                   <div style={{display:"flex",alignItems:"center",gap:8,color:C.muted,fontSize:12}}>
                     <div style={{width:16,height:16,border:`2px solid ${C.accent}`,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
                     Cargando más…
