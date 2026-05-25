@@ -565,9 +565,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={{fontWeight:700,color:C.text,fontSize:16}}>{seccion==="pedidos"?"Pedidos por materia":"Explorar por categoría"}</div>
               <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todo →</button>
             </div>
-            <div style={{overflowX:"auto",overflowY:"visible",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingTop:8,paddingBottom:16,marginTop:-8,marginBottom:-8}}>
+            <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
-              <div style={{display:"flex",gap:12,paddingBottom:4,paddingTop:4,flexWrap:"nowrap"}} className="cl-cats-row">
+              <div style={{display:"flex",gap:12,paddingBottom:16,paddingTop:10,paddingLeft:4,paddingRight:4,flexWrap:"nowrap"}} className="cl-cats-row">
                 {catsActivas.map((cat,i)=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
@@ -592,13 +592,16 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                     </motion.button>
                   );
                 })}
-                {/* Ver todo — chip compacto */}
+                {/* Ver todo */}
                 <motion.button onClick={()=>setModoVista("resultados")}
-                  whileHover={{scale:1.05,borderColor:C.accent,color:C.accent}}
-                  whileTap={{scale:0.97}}
-                  transition={{type:"spring",stiffness:360,damping:28}}
-                  style={{flexShrink:0,alignSelf:"center",borderRadius:20,border:`1.5px solid ${C.border}`,cursor:"pointer",fontFamily:FONT,padding:"8px 16px",background:C.surface,display:"flex",alignItems:"center",gap:6,color:C.muted,fontSize:12,fontWeight:600,whiteSpace:"nowrap",marginLeft:4}}>
-                  Ver todas →
+                  whileHover={{y:-6,scale:1.04,boxShadow:`0 12px 28px ${C.accent}22`}}
+                  whileTap={{scale:0.96,y:-2}}
+                  transition={{type:"spring",stiffness:320,damping:22}}
+                  style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"visible",border:`1.5px dashed ${C.border}`,cursor:"pointer",fontFamily:FONT,padding:0,background:C.surface,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,height:138,transformOrigin:"bottom center",color:C.muted}}>
+                  <div style={{width:36,height:36,borderRadius:"50%",background:`${C.accent}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  </div>
+                  <span style={{fontSize:11,fontWeight:600,color:C.muted,lineHeight:1.2}}>Ver<br/>todas</span>
                 </motion.button>
               </div>
             </div>
