@@ -28,9 +28,19 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
   const T=getPubTipo(post);
   return(
     <div onClick={()=>onOpenDetail(post)} className="cl-card-anim"
-      style={{background:post.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px 18px",cursor:"pointer",transition:"box-shadow .2s,border-color .2s,transform .15s",willChange:"transform",fontFamily:FONT,borderLeft:esMio?`3px solid ${C.accent}`:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined}}
-      onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 4px 20px ${T.dim},0 1px 6px rgba(0,0,0,.06)`;e.currentTarget.style.borderColor=fueRechazado?C.danger+"60":T.accent+"40";e.currentTarget.style.transform="translateY(-2px)";}}
-      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;e.currentTarget.style.transform="none";}}
+      style={{
+        position:"relative",
+        background:esMio
+          ?`linear-gradient(150deg,${C.accent}07 0%,${C.surface} 50%)`
+          :post.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,
+        border:`1px solid ${esMio?C.accent+"35":fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,
+        borderRadius:12,padding:"16px 18px",cursor:"pointer",
+        transition:"box-shadow .2s,border-color .2s,transform .15s",
+        willChange:"transform",fontFamily:FONT,
+        borderLeft:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined,
+      }}
+      onMouseEnter={e=>{e.currentTarget.style.boxShadow=esMio?`0 4px 24px ${C.accent}20,0 1px 6px rgba(0,0,0,.04)`:`0 4px 20px ${T.dim},0 1px 6px rgba(0,0,0,.06)`;e.currentTarget.style.borderColor=esMio?C.accent+"55":fueRechazado?C.danger+"60":T.accent+"40";e.currentTarget.style.transform="translateY(-2px)";}}
+      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=esMio?C.accent+"35":fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;e.currentTarget.style.transform="none";}}
       onMouseDown={e=>e.currentTarget.style.transform="translateY(-1px) scale(0.99)"}
       onMouseUp={e=>e.currentTarget.style.transform="translateY(-2px)"}>
 
@@ -61,6 +71,11 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
         <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
           <Tag tipo={post.tipo}/>
           {post.created_at&&(()=>{const diff=(Date.now()-new Date(post.created_at));if(diff<86400000)return<span style={{background:LUD.grad,color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px",letterSpacing:.3,boxShadow:"0 2px 6px rgba(26,110,216,.3)"}}>HOY</span>;if(diff<259200000)return<span style={{background:"#2EC4A0",color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px",letterSpacing:.3}}>NUEVO</span>;return null;})()}
+          {esMio&&(
+            <div style={{background:`linear-gradient(135deg,${C.accent},#2EC4A0)`,color:"#fff",borderRadius:20,padding:"3px 9px",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3,boxShadow:"0 2px 8px rgba(26,110,216,.3)",letterSpacing:.5,textTransform:"uppercase",flexShrink:0}}>
+              <User size={8} strokeWidth={2.5}/>Mía
+            </div>
+          )}
           <FavBtn post={post} session={session} onFavChange={onFavChange} isFav={isFav} favId={favId}/>
         </div>
       </div>
@@ -98,7 +113,6 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <ShareBtn post={post}/>
           {!esMio&&<PostChatBtn post={post} session={session} onOpenChat={onOpenChat}/>}
-          {esMio&&<span style={{fontSize:12,color:C.muted,fontStyle:"italic"}}>Tu publicación</span>}
         </div>
       </div>
     </div>
