@@ -5870,20 +5870,47 @@ function InscribirseBtn({post,session,onDone}){
 }
 
 // ─── DESCRIPCIÓN EXPANDIBLE ──────────────────────────────────────────────────
-function DescExpandible({texto,max=300}){
+function DescExpandible({texto,max=300,lang}){
   const [exp,setExp]=useState(false);
+  const [translated,setTranslated]=useState(null);
+  const [translating,setTranslating]=useState(false);
+  const [showTrans,setShowTrans]=useState(false);
+  const appLang=lang||(()=>{try{return localStorage.getItem("cl_lang")||"es";}catch{return"es";}})();
   const corto=texto.length<=max;
+  const displayed=showTrans&&translated?translated:texto;
+
+  const translate=async()=>{
+    if(translated){setShowTrans(v=>!v);return;}
+    setTranslating(true);
+    try{
+      const pair=appLang==="en"?"es|en":"en|es";
+      const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=${pair}`);
+      const d=await r.json();
+      const t=d?.responseData?.translatedText;
+      if(t&&t!==texto){setTranslated(t);setShowTrans(true);}
+    }catch{}finally{setTranslating(false);}
+  };
+
   return(
     <div>
       <p style={{color:C.muted,fontSize:14,lineHeight:1.8,margin:0,whiteSpace:"pre-line"}}>
-        {corto||exp?texto:texto.slice(0,max)+"…"}
+        {corto||exp?displayed:displayed.slice(0,max)+"…"}
       </p>
-      {!corto&&(
-        <button onClick={()=>setExp(v=>!v)}
-          style={{background:"none",border:"none",color:C.accent,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,padding:"6px 0 0",display:"flex",alignItems:"center",gap:4}}>
-          {exp?"Ver menos ▲":"Ver más ▼"}
-        </button>
-      )}
+      <div style={{display:"flex",gap:8,alignItems:"center",marginTop:6,flexWrap:"wrap"}}>
+        {!corto&&(
+          <button onClick={()=>setExp(v=>!v)}
+            style={{background:"none",border:"none",color:C.accent,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,padding:0,display:"flex",alignItems:"center",gap:4}}>
+            {exp?"Ver menos ▲":"Ver más ▼"}
+          </button>
+        )}
+        {texto.length>10&&(
+          <button onClick={translate} disabled={translating}
+            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:showTrans?C.accent:C.muted,cursor:translating?"wait":"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,padding:"3px 10px",display:"flex",alignItems:"center",gap:4,transition:"all .15s",opacity:translating?0.6:1}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+            {translating?"Traduciendo…":showTrans?"Original":appLang==="en"?"Translate":"Traducir"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
