@@ -565,41 +565,40 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={{fontWeight:700,color:C.text,fontSize:16}}>{seccion==="pedidos"?"Pedidos por materia":"Explorar por categoría"}</div>
               <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todo →</button>
             </div>
-            <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8,marginLeft:-2,paddingLeft:2}}>
+            <div style={{overflowX:"auto",overflowY:"visible",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingTop:8,paddingBottom:16,marginTop:-8,marginBottom:-8}}>
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
-              <div style={{display:"flex",gap:10,paddingBottom:4,paddingTop:2,flexWrap:"nowrap"}} className="cl-cats-row">
+              <div style={{display:"flex",gap:12,paddingBottom:4,paddingTop:4,flexWrap:"nowrap"}} className="cl-cats-row">
                 {catsActivas.map((cat,i)=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
                     <motion.button key={cat.label}
                       onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");trackFilterApplied("materia",cat.label);}}
-                      initial={{opacity:0,y:12}}
-                      animate={{opacity:1,y:0,transition:{type:"spring",stiffness:280,damping:24,delay:i*0.05}}}
-                      whileHover={{y:-4,boxShadow:`0 8px 24px ${data.bg}40`}}
-                      whileTap={{scale:0.97}}
-                      transition={{type:"spring",stiffness:360,damping:28}}
-                      style={{flexShrink:0,width:110,borderRadius:16,overflow:"visible",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",textAlign:"left",display:"flex",flexDirection:"column"}}>
+                      initial={{opacity:0,y:16}}
+                      animate={{opacity:1,y:0,transition:{type:"spring",stiffness:260,damping:22,delay:i*0.055}}}
+                      whileHover={{y:-6,scale:1.04,boxShadow:`0 12px 32px ${data.bg}44`}}
+                      whileTap={{scale:0.96,y:-2}}
+                      transition={{type:"spring",stiffness:320,damping:22}}
+                      style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"visible",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",textAlign:"left",display:"flex",flexDirection:"column",transformOrigin:"bottom center"}}>
                       {/* Área visual */}
-                      <div style={{height:88,background:data.grad,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:"16px 16px 0 0",overflow:"hidden",flexShrink:0,boxShadow:`0 2px 8px ${data.bg}30`}}>
-                        <div style={{position:"absolute",width:70,height:70,borderRadius:"50%",background:"rgba(255,255,255,.12)",top:-18,right:-18,pointerEvents:"none"}}/>
-                        <div style={{position:"absolute",width:40,height:40,borderRadius:"50%",background:"rgba(255,255,255,.08)",bottom:-10,left:-10,pointerEvents:"none"}}/>
-                        <span style={{fontSize:38,filter:"drop-shadow(0 2px 6px rgba(0,0,0,.25))",lineHeight:1,position:"relative",zIndex:1}}>{data.emoji}</span>
-                        {cat.count>0&&<span style={{position:"absolute",bottom:7,right:8,background:"rgba(0,0,0,.45)",color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"1px 6px",backdropFilter:"blur(6px)",letterSpacing:.3}}>{cat.count}</span>}
+                      <div style={{height:90,background:data.grad,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:"14px 14px 0 0",overflow:"hidden",flexShrink:0}}>
+                        <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.1)",top:-20,right:-20,pointerEvents:"none"}}/>
+                        <span style={{fontSize:42,filter:"drop-shadow(0 2px 8px rgba(0,0,0,.2))",lineHeight:1,position:"relative",zIndex:1}}>{data.emoji}</span>
+                        {cat.count>0&&<span style={{position:"absolute",bottom:6,right:7,background:"rgba(0,0,0,.4)",color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"1px 6px",backdropFilter:"blur(4px)"}}>{cat.count}</span>}
                       </div>
                       {/* Label */}
-                      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 16px 16px",padding:"7px 8px 8px",display:"flex",alignItems:"center",minHeight:40}}>
-                        <div style={{fontWeight:600,color:C.text,fontSize:11,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",width:"100%"}}>{cat.label}</div>
+                      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 14px 14px",padding:"8px 9px",flex:1,height:48,display:"flex",alignItems:"center"}}>
+                        <div style={{fontWeight:600,color:C.text,fontSize:11,lineHeight:1.35,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",width:"100%"}}>{cat.label}</div>
                       </div>
                     </motion.button>
                   );
                 })}
-                {/* Ver todo — chip compacto alineado verticalmente al centro */}
+                {/* Ver todo — chip compacto */}
                 <motion.button onClick={()=>setModoVista("resultados")}
-                  whileHover={{scale:1.05,backgroundColor:C.accent,color:"#fff"}}
+                  whileHover={{scale:1.05,borderColor:C.accent,color:C.accent}}
                   whileTap={{scale:0.97}}
                   transition={{type:"spring",stiffness:360,damping:28}}
                   style={{flexShrink:0,alignSelf:"center",borderRadius:20,border:`1.5px solid ${C.border}`,cursor:"pointer",fontFamily:FONT,padding:"8px 16px",background:C.surface,display:"flex",alignItems:"center",gap:6,color:C.muted,fontSize:12,fontWeight:600,whiteSpace:"nowrap",marginLeft:4}}>
-                  Ver todas <span style={{fontSize:14}}>→</span>
+                  Ver todas →
                 </motion.button>
               </div>
             </div>
