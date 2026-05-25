@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Calendar, MessageCircle, Bookmark, GraduationCap, Lightbulb, User, LogOut } from "lucide-react";
+import { Search, Calendar, MessageCircle, Bookmark, GraduationCap, Lightbulb, User, LogOut, Moon, Sun } from "lucide-react";
 import * as sb from "../supabase";
 import {
   C, FONT, LUD,
@@ -124,7 +124,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
             style={{flex:1,background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all .15s"}}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            {theme==="light"?t("dark"):t("light")}
+            {theme==="light"?<><Moon size={13} strokeWidth={2}/> Oscuro</>:<><Sun size={13} strokeWidth={2}/> Claro</>}
           </button>
           <button onClick={onLogout}
             style={{flex:1,background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"6px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all .15s"}}

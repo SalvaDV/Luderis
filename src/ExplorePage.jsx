@@ -16,7 +16,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Package, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, CheckCircle, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Package, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, CheckCircle, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer } from "lucide-react";
 
 export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);
@@ -436,7 +436,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <input value={filtroUbicacion} onChange={e=>setFiltroUbicacion(e.target.value)} placeholder={userCity?`Tu ciudad: ${userCity}`:"Ej: Palermo, CABA"} style={{width:"100%",background:C.bg,border:`1px solid ${filtroUbicacion?C.accent:C.border}`,borderRadius:8,padding:"9px 36px 9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                   <button title="Usar mi ubicación" onClick={()=>{if(userCity){setFiltroUbicacion(userCity);}else{detectarUbicacion();setTimeout(()=>{if(userCity)setFiltroUbicacion(userCity);},2000);}}}
                     style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:15,color:C.accent,padding:0,lineHeight:1}}>
-                    {geoLoading?"⏳":"📍"}
+                    {geoLoading?<Spinner small/>:<MapPin size={15}/>}
                   </button>
                 </div>
                 {userCity&&!filtroUbicacion&&<button onClick={()=>setFiltroUbicacion(userCity)} style={{background:"none",border:"none",color:C.accent,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:"4px 0",fontWeight:600}}>Usar {userCity}</button>}
@@ -546,7 +546,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         <span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:700,color:TIPO_PUB.pedido.accent,background:TIPO_PUB.pedido.dim,borderRadius:20,padding:"2px 8px"}}><Megaphone size={9} strokeWidth={2.5}/>{p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</span>
-                        {p.expires_at&&(()=>{const d=Math.ceil((new Date(p.expires_at)-new Date())/86400000);return d>0&&d<=7?<span style={{fontSize:10,color:C.warn}}>⏱ {d}d</span>:null;})()}
+                        {p.expires_at&&(()=>{const d=Math.ceil((new Date(p.expires_at)-new Date())/86400000);return d>0&&d<=7?<span style={{fontSize:10,color:C.warn,display:"inline-flex",alignItems:"center",gap:2}}><Timer size={9} strokeWidth={2}/>{d}d</span>:null;})()}
                       </div>
                     </div>
                   ))}
@@ -682,7 +682,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                           :<div style={{fontWeight:600,color:C.success,fontSize:13}}>Gratis</div>}
                         {p.cantidad_inscriptos>0&&<span style={{fontSize:10,color:C.muted}}>👥{p.cantidad_inscriptos}</span>}
                       </div>
-                      {p.tipo==="busqueda"&&p.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(p.expires_at)-new Date())/86400000);if(daysLeft<=3&&daysLeft>0)return(<div style={{fontSize:10,color:"#B45309",fontWeight:600,marginTop:4}}>⏱ Expira en {daysLeft} día{daysLeft!==1?"s":""}</div>);return null;})()}
+                      {p.tipo==="busqueda"&&p.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(p.expires_at)-new Date())/86400000);if(daysLeft<=3&&daysLeft>0)return(<div style={{fontSize:10,color:"#B45309",fontWeight:600,marginTop:4,display:"flex",alignItems:"center",gap:3}}><Timer size={9} strokeWidth={2}/>Expira en {daysLeft} día{daysLeft!==1?"s":""}</div>);return null;})()}
                     </div>
                   ))}
                 </div>
@@ -854,7 +854,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
               <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",flexShrink:0}}>
                 {[["cards",<LayoutGrid size={14} strokeWidth={2}/>],["lista",<List size={14} strokeWidth={2}/>],["ranking",<Trophy size={14} strokeWidth={2}/>]].map(([m,icon])=>(
-                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?C.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
+                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?sT.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
                 ))}
               </div>
             </div>

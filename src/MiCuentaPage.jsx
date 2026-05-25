@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Trophy } from "lucide-react";
 import * as sb from "./supabase";
 import {
   C, FONT, toast,
@@ -73,12 +73,12 @@ function MiActividadCard({session}){
       <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><BarChart2 size={15} strokeWidth={1.8}/>Mi actividad</div>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         {[
-          {icon:"🎓",label:"Cursos inscripto",value:insc.length,color:C.accent},
-          {icon:"📚",label:"En curso",value:activos,color:C.info},
-          {icon:"✅",label:"Completados",value:completados,color:C.success},
+          {Icon:GraduationCap,label:"Cursos inscripto",value:insc.length,color:C.accent},
+          {Icon:BookOpen,label:"En curso",value:activos,color:C.info},
+          {Icon:CheckCircle2,label:"Completados",value:completados,color:C.success},
         ].map(s=>(
           <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",flex:1,minWidth:90,textAlign:"center"}}>
-            <div style={{fontSize:20}}>{s.icon}</div>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:2}}><s.Icon size={20} color={s.color} strokeWidth={1.8}/></div>
             <div style={{fontSize:22,fontWeight:800,color:s.color,marginTop:4}}>{s.value}</div>
             <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.label}</div>
           </div>
@@ -623,7 +623,7 @@ function BusquedasConfirmList({busquedas,ofertasMap,session,toggle,toggling,onEd
           <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>¿Eliminar búsqueda?</h3>
           {confirmBusq.ofertanteAcept&&(
             <div style={{background:"#E0955C15",border:"1px solid #E0955C33",borderRadius:10,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left"}}>
-              ⚠️ <strong style={{color:C.text}}>{confirmBusq.ofertanteAcept.nombre}</strong> tiene una oferta aceptada. Se le notificará al eliminar.
+              <AlertTriangle size={12} strokeWidth={2} style={{verticalAlign:"middle",marginRight:4}}/><strong style={{color:C.text}}>{confirmBusq.ofertanteAcept.nombre}</strong> tiene una oferta aceptada. Se le notificará al eliminar.
             </div>
           )}
           <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 22px"}}>Se eliminará <strong style={{color:C.text}}>"{confirmBusq.p.titulo}"</strong> y todas las ofertas recibidas. Esta acción no se puede deshacer.</p>
@@ -896,11 +896,11 @@ function PagosTab({session}){
   },[session?.user?.email]);// eslint-disable-line
 
   const ESCROW_INFO={
-    pendiente:{label:"Pendiente",color:"#F59E0B",bg:"#FEF3C720",icon:"⏳",desc:"La clase aún no fue marcada como finalizada"},
-    retenido: {label:"En ventana",color:"#3B82F6",bg:"#EFF6FF",icon:"🔒",desc:"Clase finalizada — 72hs de disputa abiertas"},
-    en_disputa:{label:"En disputa",color:"#EF4444",bg:"#FEF2F2",icon:"⚠️",desc:"Disputa abierta — Luderis está revisando"},
-    liberado:  {label:"Cobrado",color:"#10B981",bg:"#F0FDF4",icon:"✅",desc:"Transferido a tu Mercado Pago"},
-    reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#F9FAFB",icon:"↩️",desc:"Reembolsado al alumno"},
+    pendiente:{label:"Pendiente",color:"#F59E0B",bg:"#FEF3C720",Icon:Clock,desc:"La clase aún no fue marcada como finalizada"},
+    retenido: {label:"En ventana",color:"#3B82F6",bg:"#EFF6FF",Icon:Lock,desc:"Clase finalizada — 72hs de disputa abiertas"},
+    en_disputa:{label:"En disputa",color:"#EF4444",bg:"#FEF2F2",Icon:AlertTriangle,desc:"Disputa abierta — Luderis está revisando"},
+    liberado:  {label:"Cobrado",color:"#10B981",bg:"#F0FDF4",Icon:CheckCircle2,desc:"Transferido a tu Mercado Pago"},
+    reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#F9FAFB",Icon:RefreshCw,desc:"Reembolsado al alumno"},
   };
 
   const totalPendiente=cobros.filter(p=>p.estado_escrow==="pendiente"||p.estado_escrow==="retenido").reduce((a,p)=>a+Number(p.monto||0),0);
@@ -1020,7 +1020,7 @@ function PagosTab({session}){
                 :null;
               return(
                 <div key={p.id} style={{background:info.bg,border:`1px solid ${info.color}30`,borderRadius:10,padding:"11px 13px",display:"flex",alignItems:"center",gap:12}}>
-                  <span style={{fontSize:18,flexShrink:0}}>{info.icon}</span>
+                  <div style={{flexShrink:0,display:"flex"}}><info.Icon size={18} color={info.color} strokeWidth={1.8}/></div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8}}>
                       <span style={{fontSize:12,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.alumno_email}</span>
@@ -1173,7 +1173,7 @@ function BilleteraTab({session}){
   };
 
   const ESTADO_RETIRO={pendiente:{label:"Pendiente",color:"#F59E0B"},procesado:{label:"Acreditado",color:"#10B981"},rechazado:{label:"Rechazado",color:"#EF4444"}};
-  const TIPO_ICONS={recarga:"⬆️",pago:"⬇️",reembolso:"↩️",bono:"🎁"};
+  const TIPO_ICONS={recarga:ArrowUp,pago:ArrowDown,reembolso:RefreshCw,bono:Gift};
   const TIPO_LABELS={recarga:"Recarga",pago:"Pago de clase",reembolso:"Reembolso",bono:"Bono"};
 
   return(
@@ -1281,7 +1281,7 @@ function BilleteraTab({session}){
             return(
               <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<movimientos.length-1?`1px solid ${C.border}`:"none"}}>
                 <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                  <span style={{fontSize:20}}>{TIPO_ICONS[m.tipo]||"💳"}</span>
+                  {(()=>{const TIcon=TIPO_ICONS[m.tipo]||CreditCard;return<div style={{display:"flex",alignItems:"center",justifyContent:"center",width:32,height:32,borderRadius:8,background:esIngreso?C.success+"18":C.danger+"12",flexShrink:0}}><TIcon size={16} color={esIngreso?C.success:C.danger} strokeWidth={2}/></div>;})()}
                   <div>
                     <div style={{fontSize:13,color:C.text,fontWeight:500}}>{TIPO_LABELS[m.tipo]||m.tipo}{m.descripcion?` — ${m.descripcion}`:""}</div>
                     <div style={{fontSize:11,color:C.muted}}>{new Date(m.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"})}</div>
@@ -1339,12 +1339,12 @@ ${refUrl}`;
       {/* Header con stats */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
         {[
-          {n:referidos.length,label:"Invitados",icon:"👥",color:C.accent},
-          {n:completados,label:"Completados",icon:"✅",color:C.success},
-          {n:pendientes,label:"Pendientes",icon:"⏳",color:C.warn},
-        ].map(({n,label,icon,color})=>(
+          {n:referidos.length,label:"Invitados",Icon:Users,color:C.accent},
+          {n:completados,label:"Completados",Icon:CheckCircle2,color:C.success},
+          {n:pendientes,label:"Pendientes",Icon:Clock,color:C.warn},
+        ].map(({n,label,Icon:SI,color})=>(
           <div key={label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
-            <div style={{fontSize:20}}>{icon}</div>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:2}}><SI size={20} color={color} strokeWidth={1.8}/></div>
             <div style={{fontSize:22,fontWeight:800,color}}>{n}</div>
             <div style={{fontSize:11,color:C.muted}}>{label}</div>
           </div>
@@ -1406,7 +1406,7 @@ ${refUrl}`;
               <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,
                 background:r.estado==="completado"?C.success+"20":C.warn+"20",
                 color:r.estado==="completado"?C.success:C.warn}}>
-                {r.estado==="completado"?"✓ Completado":"⏳ Pendiente"}
+                {r.estado==="completado"?<><CheckCircle2 size={10} strokeWidth={2.5}/> Completado</>:<><Clock size={10} strokeWidth={2}/> Pendiente</>}
               </span>
             </div>
           ))
@@ -1473,7 +1473,7 @@ function AlertasBusquedasTab({session}){
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px",marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
           <div>
-            <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4}}>🔔 Alertas de busquedas</div>
+            <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4,display:"flex",alignItems:"center",gap:6}}><Bell size={15} strokeWidth={2}/>Alertas de busquedas</div>
             <div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
               Te notificamos cuando un alumno busca docente en tu materia.
             </div>
@@ -1523,7 +1523,7 @@ function AlertasBusquedasTab({session}){
 
       {loading?<Spinner/>:alertas.length===0?(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"48px 24px",textAlign:"center"}}>
-          <div style={{fontSize:40,marginBottom:12}}>🔔</div>
+          <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Bell size={40} color={C.border} strokeWidth={1.5}/></div>
           <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin alertas de busquedas</div>
           <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Agrega materias para recibir notificaciones cuando un alumno busque docente en esa area.</div>
           <button onClick={()=>setShowForm(true)}
@@ -1634,7 +1634,7 @@ function AlertasTab({session}){
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,gap:12,flexWrap:"wrap"}}>
         <div>
-          <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4}}>🔔 Alertas de publicaciones</div>
+          <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4,display:"flex",alignItems:"center",gap:6}}><Bell size={15} strokeWidth={2}/>Alertas de publicaciones</div>
           <div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
             Recibís un email cuando se publique algo que coincida con tus criterios.
           </div>
@@ -1656,14 +1656,14 @@ function AlertasTab({session}){
           <div style={{marginBottom:12}}>
             <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:6}}>¿Qué tipo de publicaciones querés monitorear?</div>
             <div style={{display:"flex",gap:6}}>
-              {[["ambos","📢 Ambas"],["oferta","🎓 Clases/Cursos"],["busqueda","🔍 Pedidos"]].map(([v,l])=>(
+              {[["ambos","Ambas",Bell],["oferta","Clases/Cursos",GraduationCap],["busqueda","Pedidos",Bookmark]].map(([v,l,TIcon])=>(
                 <button key={v} onClick={()=>setTipoAlerta(v)}
                   style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,
                     background:tipoAlerta===v?(v==="oferta"?C.accent:v==="busqueda"?"#F59E0B":LUD.grad):C.bg,
                     color:tipoAlerta===v?"#fff":C.muted,
                     border:`1px solid ${tipoAlerta===v?(v==="oferta"?C.accent:v==="busqueda"?"#F59E0B":C.accent):C.border}`,
-                    fontWeight:tipoAlerta===v?700:400,transition:"all .12s"}}>
-                  {l}
+                    fontWeight:tipoAlerta===v?700:400,transition:"all .12s",display:"flex",alignItems:"center",gap:4}}>
+                  <TIcon size={11} strokeWidth={2}/>{l}
                 </button>
               ))}
             </div>
@@ -1688,7 +1688,7 @@ function AlertasTab({session}){
       {/* Lista de alertas */}
       {loading?<Spinner/>:alertas.length===0?(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"48px 24px",textAlign:"center"}}>
-          <div style={{fontSize:40,marginBottom:12}}>🔔</div>
+          <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Bell size={40} color={C.border} strokeWidth={1.5}/></div>
           <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin alertas activas</div>
           <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Creá una alerta y te avisamos cuando aparezca algo que te interese.</div>
           <button onClick={()=>setShowForm(true)}
@@ -1703,7 +1703,7 @@ function AlertasTab({session}){
             return(
               <div key={a.id} style={{background:C.surface,border:`1px solid ${a.activa?(a.tipo_alerta==="oferta"?C.accent+"44":a.tipo_alerta==="busqueda"?"#F59E0B44":"#7B3FBE44"):C.border}`,borderLeft:`3px solid ${a.tipo_alerta==="oferta"?C.accent:a.tipo_alerta==="busqueda"?"#F59E0B":"#7B3FBE"}`,borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",opacity:a.activa?1:0.6,transition:"all .2s"}}>
                 <div style={{fontSize:22,flexShrink:0,marginTop:2,width:36,height:36,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:a.tipo_alerta==="oferta"?C.accentDim:a.tipo_alerta==="busqueda"?"#F59E0B15":"#7B3FBE12",border:`1px solid ${a.tipo_alerta==="oferta"?C.accent+"40":a.tipo_alerta==="busqueda"?"#F59E0B40":"#7B3FBE40"}`}}>
-                  {a.tipo_alerta==="oferta"?"🎓":a.tipo_alerta==="busqueda"?"🔍":"📢"}
+                  {a.tipo_alerta==="oferta"?<GraduationCap size={18} strokeWidth={1.8}/>:a.tipo_alerta==="busqueda"?<Bookmark size={18} strokeWidth={1.8}/>:<Bell size={18} strokeWidth={1.8}/>}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
@@ -1712,7 +1712,7 @@ function AlertasTab({session}){
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
                     {criterios.materia&&<span style={{fontSize:11,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 9px",fontWeight:600}}>{criterios.materia}</span>}
                     {criterios.tipo&&criterios.tipo!=="cualquiera"&&<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{criterios.tipo==="oferta"?"Clases":"Pedidos"}</span>}
-                    {criterios.modalidad&&criterios.modalidad!=="cualquiera"&&<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{criterios.modalidad==="virtual"?"🌐 Virtual":"📍 Presencial"}</span>}
+                    {criterios.modalidad&&criterios.modalidad!=="cualquiera"&&<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`,display:"inline-flex",alignItems:"center",gap:3}}>{criterios.modalidad==="virtual"?<><Globe size={9} strokeWidth={2}/>Virtual</>:<><MapPin size={9} strokeWidth={2}/>Presencial</>}</span>}
                     {(criterios.palabras_clave||[]).slice(0,3).map(p=>(
                       <span key={p} style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>{p}</span>
                     ))}
@@ -1979,7 +1979,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const removeDoc=async(id)=>{try{await sb.deleteDocumento(id,session.access_token);await cargar();}catch(e){toast(e.message,"error");}};
   const saveColor=(c)=>{localStorage.setItem("avatarColor_"+email,c);setAvatarColor2(c);};
   const TIPOS_DOC=[{v:"titulo",l:"Título"},{v:"certificado",l:"Certificado"},{v:"experiencia",l:"Experiencia"},{v:"otro",l:"Otro"}];
-  const TIPO_ICON={titulo:"🎓",certificado:"📜",experiencia:"💼",otro:"📄"};
+  const TIPO_ICON={titulo:GraduationCap,certificado:ScrollText,experiencia:Briefcase,otro:FileText};
   const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:9,fontFamily:FONT};
   const ofertas=pubs.filter(p=>p.tipo==="oferta");
   const busquedas=pubs.filter(p=>p.tipo==="busqueda");
@@ -2199,7 +2199,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {/* ── ALERT VALIDACIONES PENDIENTES ── */}
       {pendientesVal.length>0&&(
         <div style={{background:C.warn+"10",border:`1px solid ${C.warn}35`,borderRadius:10,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
-          <span style={{fontSize:20,flexShrink:0}}>⏳</span>
+          <Clock size={20} color={C.warn} strokeWidth={1.8} style={{flexShrink:0}}/>
           <div style={{flex:1}}>
             <div style={{fontWeight:600,color:C.warn,fontSize:13,marginBottom:4}}>
               {pendientesVal.length} publicación{pendientesVal.length!==1?"es":""}  pendiente{pendientesVal.length!==1?"s":""} de validación
@@ -2246,7 +2246,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             const kycDone=localStorage.getItem("cl_kyc_done_"+session.user.email);
             if(!kycDone&&rolLocal==="alumno")return(
               <div style={{background:`linear-gradient(135deg,${C.accentDim},#7B3FBE08)`,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 18px",marginBottom:16,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
-                <div style={{fontSize:32}}>🎓</div>
+                <GraduationCap size={32} color={C.accent} strokeWidth={1.5}/>
                 <div style={{flex:1,minWidth:200}}>
                   <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:3}}>¿Querés enseñar en Luderis?</div>
                   <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Completá tu verificación de identidad para publicar clases y cursos.</div>
@@ -2284,7 +2284,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             pubs.filter(p=>p.tipo===filtroPubsTipo);
           return pubsFiltradas.length===0?(
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"40px 24px",textAlign:"center"}}>
-              <div style={{fontSize:32,marginBottom:12}}>📋</div>
+              <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Clipboard size={32} color={C.border} strokeWidth={1.5}/></div>
               <div style={{color:C.text,fontWeight:600,fontSize:15,marginBottom:8}}>Todavía no publicaste nada</div>
               <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Creá tu primera clase o pedido para conectar con alumnos o docentes.</div>
               <Btn onClick={onNew} style={{borderRadius:20}}>Crear primera publicación</Btn>
@@ -2437,7 +2437,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
           ):(
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {docs.map(d=>(<div key={d.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:40,height:40,borderRadius:8,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{TIPO_ICON[d.tipo]||"📄"}</div>
+                <div style={{width:40,height:40,borderRadius:8,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{(()=>{const DIcon=TIPO_ICON[d.tipo]||FileText;return<DIcon size={20} color={C.accent} strokeWidth={1.8}/>;})()}</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:600,color:C.text,fontSize:14}}>{d.titulo}</div>
                   {d.institucion&&<div style={{color:C.muted,fontSize:12,marginTop:2}}>{d.institucion}</div>}
@@ -2459,7 +2459,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         <div>
           {loading?<Spinner/>:reseñas.length===0?(
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"40px 24px",textAlign:"center"}}>
-              <div style={{fontSize:32,marginBottom:12}}>⭐</div>
+              <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Star size={32} color={C.border} strokeWidth={1.5}/></div>
               <div style={{color:C.text,fontWeight:600,fontSize:15,marginBottom:8}}>Sin reseñas aún</div>
               <div style={{color:C.muted,fontSize:13}}>Cuando finalices clases, tus alumnos podrán valorarte aquí.</div>
             </div>
@@ -2602,7 +2602,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
               </div>}
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 13px"}}>
                 <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,marginBottom:3}}>FORMA DE PAGO</div>
-                <div style={{color:C.text,fontWeight:600,fontSize:13}}>💳 Mercado Pago</div>
+                <div style={{color:C.text,fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:5}}><CreditCard size={13} strokeWidth={2}/>Mercado Pago</div>
               </div>
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 13px"}}>
                 <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,marginBottom:3}}>FRECUENCIA</div>
@@ -2633,7 +2633,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
             </div>
             <div style={{color:C.muted,fontSize:11,fontWeight:600,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Forma de pago</div>
             <div style={{background:"linear-gradient(135deg,#009EE320,#0070BA18)",border:"1px solid #009EE344",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:20}}>💳</span>
+              <CreditCard size={20} color="#009EE3" strokeWidth={1.8}/>
               <div>
                 <div style={{fontWeight:700,color:C.text,fontSize:13}}>Mercado Pago</div>
                 <div style={{fontSize:11,color:C.muted}}>El pago se realiza a través de Luderis — protegido y garantizado</div>

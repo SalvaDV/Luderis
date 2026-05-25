@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Trophy } from "lucide-react";
 import * as sb from "./supabase";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
@@ -1575,7 +1576,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
   return(
     <div style={{marginBottom:18}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14}}>🏆 Docentes destacados</div>
+        <div style={{fontWeight:700,color:C.text,fontSize:14,display:"flex",alignItems:"center",gap:5}}><Trophy size={14} color="#F59E0B" strokeWidth={2}/>Docentes destacados</div>
         <button onClick={()=>setVisible(v=>!v)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT}}>{visible?"▴":"▾"}</button>
       </div>
       {visible&&(
