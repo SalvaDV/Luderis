@@ -565,9 +565,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={{fontWeight:700,color:C.text,fontSize:16}}>{seccion==="pedidos"?"Pedidos por materia":"Explorar por categoría"}</div>
               <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todo →</button>
             </div>
-            <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
+            <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:4,marginBottom:-4}}>
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
-              <div style={{display:"flex",gap:12,paddingBottom:6}} className="cl-cats-row">
+              <div style={{display:"flex",gap:12,paddingBottom:10,paddingTop:4,flexWrap:"nowrap",width:"max-content",minWidth:"100%"}} className="cl-cats-row">
                 {catsActivas.map((cat,i)=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
