@@ -3,7 +3,7 @@ import { Clock, X } from "lucide-react";
 import * as sb from "../supabase";
 import { C, FONT } from "../shared";
 
-export default function PostChatBtn({post,session,onOpenChat}){
+export default function PostChatBtn({post,session,onOpenChat,grad,accent}){
   const [permitido,setPermitido]=useState(null);
   const [estadoOferta,setEstadoOferta]=useState(null);// null | "pendiente" | "rechazada" | "aceptada"
   const miEmail=session.user.email;
@@ -38,5 +38,5 @@ export default function PostChatBtn({post,session,onOpenChat}){
     }
     return<span style={{fontSize:11,color:C.muted,fontStyle:"italic"}}>Inscribite para chatear</span>;
   }
-  return <button onClick={e=>{e.stopPropagation();onOpenChat(post);}} style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"5px 12px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT}}>Contactar</button>;
+  return <button onClick={e=>{e.stopPropagation();onOpenChat(post);}} style={{background:grad||C.accent,color:"#fff",border:"none",borderRadius:9,padding:"5px 12px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:`0 2px 8px ${accent||C.accent}40`}}>Contactar</button>;
 }
