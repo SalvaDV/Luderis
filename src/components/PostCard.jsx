@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { GraduationCap, User, Monitor, MapPin, ArrowLeftRight, CheckCircle, Package } from "lucide-react";
 import * as sb from "../supabase";
 import {
@@ -27,7 +28,10 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
   const autorAvatar=useAutorAvatar(post.autor_email,session.access_token);
   const T=getPubTipo(post);
   return(
-    <div onClick={()=>onOpenDetail(post)} className="cl-card-anim"
+    <motion.div onClick={()=>onOpenDetail(post)}
+      whileHover={{y:-3,boxShadow:esMio?`0 6px 28px ${C.accent}22,0 1px 6px rgba(0,0,0,.05)`:`0 6px 24px ${T.accent}18,0 1px 6px rgba(0,0,0,.07)`}}
+      whileTap={{scale:0.985,y:-1}}
+      transition={{type:"spring",stiffness:340,damping:26}}
       style={{
         position:"relative",
         background:esMio
@@ -35,14 +39,9 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
           :post.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,
         border:`1px solid ${esMio?C.accent+"35":fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,
         borderRadius:12,padding:"16px 18px",cursor:"pointer",
-        transition:"box-shadow .2s,border-color .2s,transform .15s",
         willChange:"transform",fontFamily:FONT,
         borderLeft:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined,
-      }}
-      onMouseEnter={e=>{e.currentTarget.style.boxShadow=esMio?`0 4px 24px ${C.accent}20,0 1px 6px rgba(0,0,0,.04)`:`0 4px 20px ${T.dim},0 1px 6px rgba(0,0,0,.06)`;e.currentTarget.style.borderColor=esMio?C.accent+"55":fueRechazado?C.danger+"60":T.accent+"40";e.currentTarget.style.transform="translateY(-2px)";}}
-      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=esMio?C.accent+"35":fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;e.currentTarget.style.transform="none";}}
-      onMouseDown={e=>e.currentTarget.style.transform="translateY(-1px) scale(0.99)"}
-      onMouseUp={e=>e.currentTarget.style.transform="translateY(-2px)"}>
+      }}>
 
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,gap:8}}>
@@ -115,6 +114,6 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
           {!esMio&&<PostChatBtn post={post} session={session} onOpenChat={onOpenChat} grad={T.grad} accent={T.accent}/>}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

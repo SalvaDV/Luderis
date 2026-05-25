@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import * as sb from "./supabase";
 import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
@@ -651,6 +652,12 @@ export default function App(){
       )}
       <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
+          <AnimatePresence mode="wait">
+          <motion.div key={page}
+            initial={{opacity:0,y:10}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:0,y:-6}}
+            transition={{duration:0.18,ease:"easeOut"}}>
           {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/>}
           {page==="agenda"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><AgendaPage session={session} onOpenCurso={setCursoPost}/></React.Suspense>}
           {page==="chats"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/></React.Suspense>}
@@ -676,6 +683,8 @@ export default function App(){
             sb.marcarNotifsTipoLeidas(session.user.email,["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion"],session.access_token).then(refreshUnread).catch(()=>{});
           }}/>
           </React.Suspense>}
+          </motion.div>
+          </AnimatePresence>
         </div>
       </main>
       {chatPost&&<React.Suspense fallback={null}><ChatModal post={chatPost} session={session} onClose={closeChat} onUnreadChange={refreshUnread}/></React.Suspense>}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import * as sb from "./supabase";
 import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
@@ -567,13 +568,17 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
               <div style={{display:"flex",gap:12,paddingBottom:6}} className="cl-cats-row">
-                {catsActivas.map(cat=>{
+                {catsActivas.map((cat,i)=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
-                    <button key={cat.label} onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");trackFilterApplied("materia",cat.label);}}
-                      style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",transition:"transform .2s",textAlign:"left",display:"flex",flexDirection:"column"}}
-                      onMouseEnter={e=>e.currentTarget.style.transform="translateY(-4px) scale(1.02)"}
-                      onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                    <motion.button key={cat.label}
+                      onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");trackFilterApplied("materia",cat.label);}}
+                      initial={{opacity:0,y:16}}
+                      animate={{opacity:1,y:0,transition:{type:"spring",stiffness:260,damping:22,delay:i*0.055}}}
+                      whileHover={{y:-6,scale:1.04,rotateZ:0,boxShadow:`0 12px 32px ${data.bg}44`}}
+                      whileTap={{scale:0.96,y:-2}}
+                      transition={{type:"spring",stiffness:320,damping:22}}
+                      style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"hidden",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",textAlign:"left",display:"flex",flexDirection:"column",transformOrigin:"bottom center"}}>
                       {/* Área visual */}
                       <div style={{height:90,background:data.grad,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:"14px 14px 0 0",overflow:"hidden",flexShrink:0}}>
                         <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.1)",top:-20,right:-20,pointerEvents:"none"}}/>
@@ -584,17 +589,18 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 14px 14px",padding:"8px 9px",flex:1,height:48,display:"flex",alignItems:"center"}}>
                         <div style={{fontWeight:600,color:C.text,fontSize:11,lineHeight:1.35,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",width:"100%"}}>{cat.label}</div>
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
                 {/* Ver todo */}
-                <button onClick={()=>setModoVista("resultados")}
-                  style={{flexShrink:0,width:130,borderRadius:14,overflow:"hidden",border:`2px dashed ${C.border}`,cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,height:130+36,transition:"border-color .15s"}}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                <motion.button onClick={()=>setModoVista("resultados")}
+                  whileHover={{y:-4,scale:1.03,borderColor:C.accent}}
+                  whileTap={{scale:0.97}}
+                  transition={{type:"spring",stiffness:320,damping:22}}
+                  style={{flexShrink:0,width:130,borderRadius:14,overflow:"hidden",border:`2px dashed ${C.border}`,cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,height:130+36}}>
                   <span style={{fontSize:28,color:C.muted}}>→</span>
                   <span style={{fontSize:12,fontWeight:600,color:C.muted}}>Ver todas</span>
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
