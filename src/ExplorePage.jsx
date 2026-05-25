@@ -324,9 +324,12 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   });
   const _filtroBase=modoVista==="resultados"?_seccionFiltrada:visiblePosts;
   const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax);
-  // IA: busca dentro de la sección activa
+  // IA: busca dentro del tipo de sección (pedidos vs clases/cursos) pero sin restringir por modo
+  const _iaBase=seccion==="pedidos"
+    ?postsPorRol.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email)
+    :postsPorRol.filter(p=>p.tipo==="oferta");
   const filteredConRol=iaResults!==null
-    ?_seccionFiltrada.filter(p=>iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
+    ?_iaBase.filter(p=>iaResults.includes(p.id)).sort((a,b)=>iaResults.indexOf(a.id)-iaResults.indexOf(b.id))
     :_filtroBase.filter(_filtroCriteria);
   // Conteo para el botón del panel (toda la sección activa con filtros aplicados)
   const countForPanel=_seccionFiltrada.filter(_filtroCriteria).length;
@@ -392,10 +395,10 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   );
 
   const [viewMode,setViewMode]=useState("cards");// "cards" | "lista"
-  // Categorías visuales para el home — combina datos de DB con CATEGORIAS_DATA
+  // Categorías visuales para el home — cuenta solo posts de la sección activa
   const cats=(categorias.length>0
-    ?categorias.map(c=>({label:c.nombre,slug:c.slug,count:posts.filter(p=>p.materia===c.nombre).length}))
-    :MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.materia===m).length}))
+    ?categorias.map(c=>({label:c.nombre,slug:c.slug,count:visiblePosts.filter(p=>p.materia===c.nombre).length}))
+    :MATERIAS.map(m=>({label:m,count:visiblePosts.filter(p=>p.materia===m).length}))
   ).filter(c=>c.count>0).slice(0,19);
 
   // Categorías para la sección pedidos (conteo desde busquedas)
