@@ -141,15 +141,30 @@ function Features(){
 }
 
 function BentoCard({children, dark=false, accent=null}){
+  const ref = React.useRef(null);
+  const onMove = (e)=>{
+    const el = ref.current; if(!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.transform = `perspective(700px) rotateY(${x*10}deg) rotateX(${-y*10}deg) scale(1.025)`;
+    el.style.boxShadow = `${-x*16}px ${-y*16}px 40px oklch(0 0 0 / .13)`;
+  };
+  const onLeave = ()=>{
+    const el = ref.current; if(!el) return;
+    el.style.transform = 'perspective(700px) rotateY(0deg) rotateX(0deg) scale(1)';
+    el.style.boxShadow = 'none';
+  };
   return (
-    <div style={{
+    <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave} style={{
       width:'100%', height:'100%',
       background: accent || (dark ? 'var(--ink)' : 'var(--paper)'),
       color: dark ? 'var(--paper)' : 'var(--ink)',
       border: dark ? '1px solid var(--ink)' : '1px solid var(--line)',
       borderRadius:20, padding:'24px', position:'relative', overflow:'hidden',
       display:'flex', flexDirection:'column',
-      transition:'transform .4s cubic-bezier(.2,.7,.2,1)'
+      transition:'transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s cubic-bezier(.2,.7,.2,1)',
+      willChange:'transform',
     }}>
       {children}
     </div>

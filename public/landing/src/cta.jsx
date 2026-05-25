@@ -1,3 +1,13 @@
+// Checkmark SVG para CTA
+function CheckBadge(){
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{display:'inline-block',verticalAlign:'middle',flexShrink:0}}>
+      <circle cx="8" cy="8" r="7.5" stroke="var(--ink)" strokeWidth="1"/>
+      <path d="M5 8.5l2 2 4-4" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 // CTA final gigante
 function CTA({onEnter}){
   return (
@@ -5,6 +15,28 @@ function CTA({onEnter}){
       <div style={{position:'absolute', inset:0, opacity:.9}}>
         <Shader palette="warm" intensity={1.1}/>
       </div>
+
+      {/* Anillo decorativo animado */}
+      <div aria-hidden style={{position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', width:700, height:700, borderRadius:'50%', pointerEvents:'none', zIndex:1}}>
+        <div style={{
+          position:'absolute', inset:0, borderRadius:'50%',
+          background:'conic-gradient(from 0deg, var(--blue), var(--orange), var(--blue))',
+          opacity:.12,
+          animation:'lud-ring-spin 12s linear infinite',
+          mask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
+          WebkitMask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
+        }}/>
+        <div style={{
+          position:'absolute', inset:24, borderRadius:'50%',
+          background:'conic-gradient(from 180deg, var(--orange), var(--blue), var(--orange))',
+          opacity:.08,
+          animation:'lud-ring-spin 18s linear infinite reverse',
+          mask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
+          WebkitMask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
+        }}/>
+      </div>
+      <style>{`@keyframes lud-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+
       <div style={{maxWidth:1200, margin:'0 auto', position:'relative', zIndex:2, textAlign:'center'}}>
         <Reveal>
           <Kicker>08 · Empezá</Kicker>
@@ -27,9 +59,9 @@ function CTA({onEnter}){
           </div>
         </Reveal>
         <Reveal delay={0.4}>
-          <div style={{display:'flex', justifyContent:'center', gap:24, marginTop:36, flexWrap:'wrap', fontFamily:'var(--font-mono)', fontSize:12, color:'var(--ink)'}}>
-            {['✓ Match instantáneo','✓ Docentes verificados','✓ Búsqueda con IA','✓ Privacidad primero'].map(x=>(
-              <span key={x}>{x}</span>
+          <div style={{display:'flex', justifyContent:'center', gap:20, marginTop:36, flexWrap:'wrap', fontFamily:'var(--font-mono)', fontSize:12, color:'var(--ink)'}}>
+            {['Match instantáneo','Docentes verificados','Búsqueda con IA','Privacidad primero'].map(x=>(
+              <span key={x} style={{display:'inline-flex', alignItems:'center', gap:6}}><CheckBadge/>{x}</span>
             ))}
           </div>
         </Reveal>

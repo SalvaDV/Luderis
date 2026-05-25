@@ -52,16 +52,49 @@ function Counter({to, suffix='', duration=1800}){
   return <span ref={ref} style={{fontVariantNumeric:'tabular-nums'}}>{formatted}{suffix}</span>;
 }
 
-// Marquee horizontal infinito
-function Marquee({children, speed=40, className='', style={}}){
+// Marquee horizontal infinito con soporte reverse y pausa en hover
+function Marquee({children, speed=40, reverse=false, className='', style={}}){
+  const [paused, setPaused] = React.useState(false);
+  const anim = reverse ? 'lud-marquee-rev' : 'lud-marquee';
   return (
-    <div className={className} style={{overflow:'hidden', whiteSpace:'nowrap', ...style}}>
-      <div style={{display:'inline-flex', animation:`lud-marquee ${speed}s linear infinite`, gap:0}}>
+    <div className={className} style={{overflow:'hidden', whiteSpace:'nowrap', ...style}}
+      onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}>
+      <div style={{display:'inline-flex', animation:`${anim} ${speed}s linear infinite`, animationPlayState:paused?'paused':'running', gap:0}}>
         <div style={{display:'inline-flex', gap:40, paddingRight:40}}>{children}</div>
         <div style={{display:'inline-flex', gap:40, paddingRight:40}} aria-hidden>{children}</div>
       </div>
-      <style>{`@keyframes lud-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}`}</style>
+      <style>{`
+        @keyframes lud-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        @keyframes lud-marquee-rev{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+      `}</style>
     </div>
+  );
+}
+
+// Barra de progreso de scroll pegada arriba
+function ScrollProgress(){
+  const [p, setP] = React.useState(0);
+  React.useEffect(()=>{
+    const fn = ()=>{
+      const max = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      setP(window.scrollY / max);
+    };
+    window.addEventListener('scroll', fn, {passive:true});
+    return ()=>window.removeEventListener('scroll', fn);
+  },[]);
+  return (
+    <div aria-hidden style={{position:'fixed',top:0,left:0,right:0,height:3,zIndex:9999,pointerEvents:'none'}}>
+      <div style={{height:'100%',background:'linear-gradient(90deg,var(--blue) 0%,var(--orange) 100%)',width:`${p*100}%`,transition:'width .08s linear',borderRadius:'0 3px 3px 0'}}/>
+    </div>
+  );
+}
+
+// Estrella SVG para testimonios
+function SvgStar({color='var(--orange)',size=14}){
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{display:'block'}}>
+      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+    </svg>
   );
 }
 
@@ -147,4 +180,4 @@ function useWindowWidth(){
   return w;
 }
 
-Object.assign(window, {Reveal, Counter, Marquee, Kicker, Pill, MagBtn, Grain, useWindowWidth});
+Object.assign(window, {Reveal, Counter, Marquee, Kicker, Pill, MagBtn, Grain, useWindowWidth, ScrollProgress, SvgStar});

@@ -91,24 +91,30 @@ function Counter({
   }, formatted, suffix);
 }
 
-// Marquee horizontal infinito
+// Marquee horizontal infinito con soporte reverse y pausa en hover
 function Marquee({
   children,
   speed = 40,
+  reverse = false,
   className = '',
   style = {}
 }) {
+  const [paused, setPaused] = React.useState(false);
+  const anim = reverse ? 'lud-marquee-rev' : 'lud-marquee';
   return /*#__PURE__*/React.createElement("div", {
     className: className,
     style: {
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       ...style
-    }
+    },
+    onMouseEnter: () => setPaused(true),
+    onMouseLeave: () => setPaused(false)
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'inline-flex',
-      animation: `lud-marquee ${speed}s linear infinite`,
+      animation: `${anim} ${speed}s linear infinite`,
+      animationPlayState: paused ? 'paused' : 'running',
       gap: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -124,7 +130,63 @@ function Marquee({
       paddingRight: 40
     },
     "aria-hidden": true
-  }, children)), /*#__PURE__*/React.createElement("style", null, `@keyframes lud-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}`));
+  }, children)), /*#__PURE__*/React.createElement("style", null, `
+        @keyframes lud-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        @keyframes lud-marquee-rev{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+      `));
+}
+
+// Barra de progreso de scroll pegada arriba
+function ScrollProgress() {
+  const [p, setP] = React.useState(0);
+  React.useEffect(() => {
+    const fn = () => {
+      const max = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      setP(window.scrollY / max);
+    };
+    window.addEventListener('scroll', fn, {
+      passive: true
+    });
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+  return /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      zIndex: 9999,
+      pointerEvents: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: '100%',
+      background: 'linear-gradient(90deg,var(--blue) 0%,var(--orange) 100%)',
+      width: `${p * 100}%`,
+      transition: 'width .08s linear',
+      borderRadius: '0 3px 3px 0'
+    }
+  }));
+}
+
+// Estrella SVG para testimonios
+function SvgStar({
+  color = 'var(--orange)',
+  size = 14
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: color,
+    style: {
+      display: 'block'
+    }
+  }, /*#__PURE__*/React.createElement("polygon", {
+    points: "12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
+  }));
 }
 
 // Kicker (etiqueta monoespaciada)
@@ -327,7 +389,9 @@ Object.assign(window, {
   Pill,
   MagBtn,
   Grain,
-  useWindowWidth
+  useWindowWidth,
+  ScrollProgress,
+  SvgStar
 });
 
 // --- shader.jsx ---
@@ -2105,7 +2169,26 @@ function BentoCard({
   dark = false,
   accent = null
 }) {
+  const ref = React.useRef(null);
+  const onMove = e => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.transform = `perspective(700px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) scale(1.025)`;
+    el.style.boxShadow = `${-x * 16}px ${-y * 16}px 40px oklch(0 0 0 / .13)`;
+  };
+  const onLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.transform = 'perspective(700px) rotateY(0deg) rotateX(0deg) scale(1)';
+    el.style.boxShadow = 'none';
+  };
   return /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    onPointerMove: onMove,
+    onPointerLeave: onLeave,
     style: {
       width: '100%',
       height: '100%',
@@ -2118,7 +2201,8 @@ function BentoCard({
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      transition: 'transform .4s cubic-bezier(.2,.7,.2,1)'
+      transition: 'transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s cubic-bezier(.2,.7,.2,1)',
+      willChange: 'transform'
     }
   }, children);
 }
@@ -3086,10 +3170,94 @@ function Testimonials() {
     r: 'Docente · Programación',
     t: 'Los certificados verificables y las evaluaciones automáticas me ahorran horas. Hecho con cabeza.',
     c: 'var(--blue-deep)'
+  }, {
+    n: 'Valentina G.',
+    r: 'Alumna · Piano',
+    t: 'En una semana encontré al profe ideal. El sistema de reseñas y perfiles verificados le da mucha confianza.',
+    c: 'var(--orange)'
+  }, {
+    n: 'Rodrigo B.',
+    r: 'Docente · Física',
+    t: 'Mis alumnos pueden ver su progreso en tiempo real y eso los mantiene motivados. La diferencia se nota en los resultados.',
+    c: 'var(--blue)'
   }];
+  const Card = ({
+    it,
+    i
+  }) => /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 400,
+      background: 'var(--paper)',
+      border: '1px solid var(--line)',
+      borderRadius: 20,
+      padding: '26px',
+      display: 'inline-block',
+      whiteSpace: 'normal',
+      verticalAlign: 'top',
+      marginRight: 16,
+      transition: 'transform .3s, box-shadow .3s'
+    },
+    onMouseEnter: e => {
+      e.currentTarget.style.transform = 'translateY(-4px)';
+      e.currentTarget.style.boxShadow = '0 12px 32px oklch(0 0 0 / .08)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.transform = 'none';
+      e.currentTarget.style.boxShadow = 'none';
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 3,
+      marginBottom: 12
+    }
+  }, [0, 1, 2, 3, 4].map(j => /*#__PURE__*/React.createElement(SvgStar, {
+    key: j
+  }))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 16,
+      lineHeight: 1.55,
+      margin: '0 0 20px',
+      color: 'var(--ink)',
+      textWrap: 'pretty'
+    }
+  }, "\"", it.t, "\""), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      paddingTop: 16,
+      borderTop: '1px solid var(--line)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 38,
+      height: 38,
+      borderRadius: '50%',
+      background: it.c,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      fontWeight: 700,
+      fontSize: 14,
+      flexShrink: 0
+    }
+  }, it.n[0]), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600
+    }
+  }, it.n), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 11,
+      color: 'var(--muted)'
+    }
+  }, it.r))));
   return /*#__PURE__*/React.createElement("section", {
     style: {
-      padding: '120px 28px',
+      padding: '120px 0',
       background: 'var(--paper-2)',
       borderTop: '1px solid var(--line)',
       borderBottom: '1px solid var(--line)',
@@ -3099,7 +3267,8 @@ function Testimonials() {
     style: {
       maxWidth: 1344,
       margin: '0 auto',
-      marginBottom: 60
+      marginBottom: 60,
+      padding: '0 28px'
     }
   }, /*#__PURE__*/React.createElement(Reveal, null, /*#__PURE__*/React.createElement(Kicker, null, "07 \xB7 Voces"), /*#__PURE__*/React.createElement("h2", {
     style: {
@@ -3117,77 +3286,53 @@ function Testimonials() {
       color: 'var(--blue)'
     }
   }, "los que ya usan"), " Luderis."))), /*#__PURE__*/React.createElement(Marquee, {
-    speed: 65
-  }, items.map((it, i) => /*#__PURE__*/React.createElement("div", {
+    speed: 60,
+    style: {
+      marginBottom: 16
+    }
+  }, items.map((it, i) => /*#__PURE__*/React.createElement(Card, {
     key: i,
-    style: {
-      width: 420,
-      background: 'var(--paper)',
-      border: '1px solid var(--line)',
-      borderRadius: 20,
-      padding: '28px',
-      display: 'inline-block',
-      whiteSpace: 'normal',
-      verticalAlign: 'top',
-      marginRight: 16
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: 3,
-      marginBottom: 12
-    }
-  }, [0, 1, 2, 3, 4].map(j => /*#__PURE__*/React.createElement("span", {
-    key: j,
-    style: {
-      color: 'var(--orange)',
-      fontSize: 14
-    }
-  }, "\u2605"))), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 17,
-      lineHeight: 1.5,
-      margin: '0 0 20px',
-      color: 'var(--ink)',
-      textWrap: 'pretty'
-    }
-  }, "\"", it.t, "\""), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      paddingTop: 18,
-      borderTop: '1px solid var(--line)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 38,
-      height: 38,
-      borderRadius: '50%',
-      background: it.c,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#fff',
-      fontWeight: 700,
-      fontSize: 14
-    }
-  }, it.n[0]), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600
-    }
-  }, it.n), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontFamily: 'var(--font-mono)',
-      fontSize: 11,
-      color: 'var(--muted)'
-    }
-  }, it.r)))))));
+    it: it,
+    i: i
+  }))), /*#__PURE__*/React.createElement(Marquee, {
+    speed: 50,
+    reverse: true
+  }, [...items].reverse().map((it, i) => /*#__PURE__*/React.createElement(Card, {
+    key: i,
+    it: it,
+    i: i
+  }))));
 }
 window.Testimonials = Testimonials;
 
 // --- cta.jsx ---
+// Checkmark SVG para CTA
+function CheckBadge() {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 16 16",
+    fill: "none",
+    style: {
+      display: 'inline-block',
+      verticalAlign: 'middle',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "8",
+    cy: "8",
+    r: "7.5",
+    stroke: "var(--ink)",
+    strokeWidth: "1"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M5 8.5l2 2 4-4",
+    stroke: "var(--ink)",
+    strokeWidth: "1.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }));
+}
+
 // CTA final gigante
 function CTA({
   onEnter
@@ -3208,6 +3353,41 @@ function CTA({
     palette: "warm",
     intensity: 1.1
   })), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%,-50%)',
+      width: 700,
+      height: 700,
+      borderRadius: '50%',
+      pointerEvents: 'none',
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: 0,
+      borderRadius: '50%',
+      background: 'conic-gradient(from 0deg, var(--blue), var(--orange), var(--blue))',
+      opacity: .12,
+      animation: 'lud-ring-spin 12s linear infinite',
+      mask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
+      WebkitMask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: 24,
+      borderRadius: '50%',
+      background: 'conic-gradient(from 180deg, var(--orange), var(--blue), var(--orange))',
+      opacity: .08,
+      animation: 'lud-ring-spin 18s linear infinite reverse',
+      mask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
+      WebkitMask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)'
+    }
+  })), /*#__PURE__*/React.createElement("style", null, `@keyframes lud-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 1200,
       margin: '0 auto',
@@ -3277,16 +3457,21 @@ function CTA({
     style: {
       display: 'flex',
       justifyContent: 'center',
-      gap: 24,
+      gap: 20,
       marginTop: 36,
       flexWrap: 'wrap',
       fontFamily: 'var(--font-mono)',
       fontSize: 12,
       color: 'var(--ink)'
     }
-  }, ['✓ Match instantáneo', '✓ Docentes verificados', '✓ Búsqueda con IA', '✓ Privacidad primero'].map(x => /*#__PURE__*/React.createElement("span", {
-    key: x
-  }, x))))));
+  }, ['Match instantáneo', 'Docentes verificados', 'Búsqueda con IA', 'Privacidad primero'].map(x => /*#__PURE__*/React.createElement("span", {
+    key: x,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement(CheckBadge, null), x))))));
 }
 window.CTA = CTA;
 
@@ -3708,7 +3893,7 @@ function App() {
       } catch {}
     };
   }, []);
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Cursor, null), /*#__PURE__*/React.createElement(Nav, {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ScrollProgress, null), /*#__PURE__*/React.createElement(Cursor, null), /*#__PURE__*/React.createElement(Nav, {
     onEnter: onEnter
   }), /*#__PURE__*/React.createElement(Hero, {
     onEnter: onEnter

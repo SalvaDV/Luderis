@@ -22,6 +22,7 @@ function App(){
   },[]);
   return (
     <>
+      <ScrollProgress/>
       <Cursor/>
       <Nav onEnter={onEnter}/>
       <Hero onEnter={onEnter}/>
