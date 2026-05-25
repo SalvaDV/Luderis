@@ -567,7 +567,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             </div>
             <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
-              <div style={{display:"flex",gap:12,paddingBottom:16,paddingTop:10,paddingLeft:4,paddingRight:4,flexWrap:"nowrap"}} className="cl-cats-row">
+              <div style={{display:"flex",gap:12,paddingBottom:18,paddingTop:18,paddingLeft:4,paddingRight:4,flexWrap:"nowrap"}} className="cl-cats-row">
                 {catsActivas.map((cat,i)=>{
                   const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
                   return(
