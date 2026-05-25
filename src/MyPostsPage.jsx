@@ -42,7 +42,7 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
       onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
       {/* Badges */}
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
-        <Tag tipo={post.tipo}/>
+        <Tag tipo={post.tipo} modo={post.modo}/>
         <StatusBadge activo={activo} finalizado={finalizado} pendiente={pendienteValidacion}/>
         {post.verificado&&<VerifiedBadge/>}
         {ofertasPendientes>0&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`}}>{ofertasPendientes} oferta{ofertasPendientes!==1?"s":""}</span>}

@@ -662,7 +662,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
                       {/* Tags */}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
-                        <Tag tipo={p.tipo}/>
+                        <Tag tipo={p.tipo} modo={p.modo}/>
                         {(p.modo==="curso"||p.modo==="grupal")&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:6,padding:"2px 8px",fontWeight:600}}><GraduationCap size={9} strokeWidth={2.5}/>Curso</span>}
                         {p.modo==="particular"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:6,padding:"2px 8px",fontWeight:600}}><User size={9} strokeWidth={2.5}/>Clase</span>}
                         {p.modalidad==="virtual"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:C.muted,background:C.bg,borderRadius:6,padding:"2px 8px",border:`1px solid ${C.border}`}}><Monitor size={9} strokeWidth={2.5}/>Virtual</span>}
@@ -950,7 +950,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                         {p.precio?<div style={{fontWeight:700,color:C.accent,fontSize:14}}>{fmtPrice(p.precio)}</div>:<div style={{fontSize:12,color:C.success,fontWeight:600}}>Gratis</div>}
                       {p.tiene_prueba&&<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>✓ Clase de prueba</div>}
                       {(()=>{try{const pqs=JSON.parse(p.paquetes||"[]");const mejor=pqs.filter(x=>x.clases>0).sort((a,b)=>(b.descuento||0)-(a.descuento||0))[0];return mejor?.descuento>0?<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>📦 Pack -{mejor.descuento}%</div>:null;}catch{return null;}})()}
-                        <Tag tipo={p.tipo}/>
+                        <Tag tipo={p.tipo} modo={p.modo}/>
                       </div>
                     </div>
                   ):(

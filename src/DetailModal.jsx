@@ -128,7 +128,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:16}}>
             {avgPub?<span style={{fontSize:13,color:"#B45309",fontWeight:600}}>★ {parseFloat(avgPub).toFixed(1)} <span style={{color:C.muted,fontWeight:400}}>({reseñas.length} reseña{reseñas.length!==1?"s":""})</span></span>:null}
             {post.verificado&&<VerifiedBadge/>}
-            <Tag tipo={post.tipo}/>
+            <Tag tipo={post.tipo} modo={post.modo}/>
             {post.vistas>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:3}}>· <Eye size={12} strokeWidth={2}/><strong>{post.vistas}</strong> vista{post.vistas!==1?"s":""}</span>}
             {post.created_at&&<span style={{fontSize:12,color:C.muted}}>· Publicado {fmtRel(post.created_at)}</span>}
           </div>
