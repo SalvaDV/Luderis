@@ -72,7 +72,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
           <Tag tipo={post.tipo}/>
           {post.created_at&&(()=>{const diff=(Date.now()-new Date(post.created_at));if(diff<86400000)return<span style={{background:LUD.grad,color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px",letterSpacing:.3,boxShadow:"0 2px 6px rgba(26,110,216,.3)"}}>HOY</span>;if(diff<259200000)return<span style={{background:"#2EC4A0",color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px",letterSpacing:.3}}>NUEVO</span>;return null;})()}
           {esMio&&(
-            <div style={{background:`linear-gradient(135deg,${C.accent},#2EC4A0)`,color:"#fff",borderRadius:20,padding:"3px 9px",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3,boxShadow:"0 2px 8px rgba(26,110,216,.3)",letterSpacing:.5,textTransform:"uppercase",flexShrink:0}}>
+            <div style={{background:T.accent,color:"#fff",borderRadius:20,padding:"3px 9px",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3,boxShadow:`0 2px 8px ${T.accent}50`,letterSpacing:.5,textTransform:"uppercase",flexShrink:0}}>
               <User size={8} strokeWidth={2.5}/>Mía
             </div>
           )}
