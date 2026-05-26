@@ -144,7 +144,7 @@ function Hero({onEnter}){
                 background:'var(--blue)', position:'relative', overflow:'hidden', padding:'38px 40px',
                 display:'flex', flexDirection:'column', justifyContent:'space-between', color:'#fff'
               }}>
-              <div style={{position:'absolute', inset:0, opacity:.75}}>
+              <div style={{position:'absolute', inset:0, opacity:.68}}>
                 <Shader palette="dark" intensity={1}/>
               </div>
               <div style={{position:'relative', zIndex:2, display:'flex', justifyContent:'space-between'}}>
@@ -174,7 +174,7 @@ function Hero({onEnter}){
                 flex:1, background:'#160830', position:'relative', overflow:'hidden', padding:'38px 40px',
                 display:'flex', flexDirection:'column', justifyContent:'space-between', color:'#fff'
               }}>
-              <div style={{position:'absolute', inset:0, opacity:.75}}>
+              <div style={{position:'absolute', inset:0, opacity:.68}}>
                 <Shader palette="pedidos" intensity={1}/>
               </div>
               <div style={{position:'relative', zIndex:2, display:'flex', justifyContent:'space-between'}}>

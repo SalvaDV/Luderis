@@ -74,9 +74,9 @@ function Shader({intensity=1, palette='blue', className='', style={}}){
         // ring bloom ligado al scroll
         col += ring * .06 * uC;
 
-        // vignette suave hacia el papel
-        float vig = smoothstep(1.2,.25, length(uv));
-        col = mix(uA*1.02, col, vig);
+        // vignette suave — base más clara para evitar esquinas negras
+        float vig = smoothstep(1.4,.4, length(uv));
+        col = mix(uA*1.35, col, vig);
 
         col *= uIntensity;
         gl_FragColor = vec4(col,1.);
@@ -118,15 +118,15 @@ function Shader({intensity=1, palette='blue', className='', style={}}){
     // Clases:  #E8891C naranja  +  #F4C030 amber
     // Pedidos: #7B5CF0 violeta  +  #D85AA3 rosa
     const palettes = {
-      // familia Cursos — A más claro para que nunca se vea negro
-      blue:    [[0.08,0.25,0.55],[0.10,0.43,0.85],[0.18,0.77,0.63]],
-      dark:    [[0.06,0.20,0.48],[0.10,0.43,0.85],[0.18,0.77,0.63]],
-      warm:    [[0.08,0.25,0.55],[0.18,0.77,0.63],[0.10,0.43,0.85]],
-      deep:    [[0.08,0.22,0.52],[0.10,0.43,0.85],[0.18,0.77,0.63]],
-      // Clases — A naranja claro para que no se vea marrón
-      amber:   [[0.60,0.30,0.05],[0.91,0.54,0.11],[0.96,0.75,0.19]],
-      // Pedidos — A violeta claro
-      pedidos: [[0.28,0.14,0.52],[0.48,0.36,0.94],[0.85,0.35,0.64]],
+      // familia Cursos — base más clara para evitar oscuridad excesiva
+      blue:    [[0.18,0.40,0.72],[0.16,0.55,0.94],[0.24,0.84,0.74]],
+      dark:    [[0.14,0.33,0.64],[0.16,0.55,0.94],[0.24,0.84,0.74]],
+      warm:    [[0.16,0.40,0.70],[0.24,0.84,0.74],[0.16,0.55,0.94]],
+      deep:    [[0.16,0.36,0.68],[0.16,0.55,0.94],[0.24,0.84,0.74]],
+      // Clases — naranja/ámbar vibrante, sin marrón oscuro
+      amber:   [[0.78,0.46,0.10],[0.96,0.62,0.16],[0.99,0.82,0.24]],
+      // Pedidos — violeta vibrante
+      pedidos: [[0.40,0.24,0.68],[0.58,0.45,0.97],[0.90,0.42,0.72]],
     };
 
     // DPR capped at 1 — retina no aporta al shader y duplica el costo GPU

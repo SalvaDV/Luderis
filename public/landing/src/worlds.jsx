@@ -23,11 +23,11 @@ function Worlds({onEnter}){
           {/* CURSOS */}
           <Reveal delay={0.1}>
             <div data-cursor data-cursor-label="CURSOS" onClick={onEnter} style={{
-              background:'var(--ink)', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
+              background:'#0C2A6E', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
               position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 540,
               display:'flex', flexDirection:'column', justifyContent:'space-between'
             }}>
-              <div style={{position:'absolute', inset:0, opacity:.9}}>
+              <div style={{position:'absolute', inset:0, opacity:.78}}>
                 <Shader palette="warm"/>
               </div>
               <div style={{position:'relative', zIndex:2}}>
@@ -67,11 +67,11 @@ function Worlds({onEnter}){
           {/* CLASES */}
           <Reveal delay={0.2}>
             <div data-cursor data-cursor-label="CLASES" onClick={onEnter} style={{
-              background:'#100A00', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
+              background:'#3D1A00', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
               position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 540,
               display:'flex', flexDirection:'column', justifyContent:'space-between'
             }}>
-              <div style={{position:'absolute', inset:0, opacity:.9}}>
+              <div style={{position:'absolute', inset:0, opacity:.78}}>
                 <Shader palette="amber"/>
               </div>
               <div style={{position:'relative', zIndex:2}}>

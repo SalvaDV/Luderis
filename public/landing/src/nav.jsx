@@ -106,12 +106,26 @@ function Nav({onEnter}){
 
 function LudLogo({size=28}){
   return (
-    <div style={{width:size, height:size, borderRadius:8, background:'var(--ink)', position:'relative', overflow:'hidden', display:'inline-flex', alignItems:'center', justifyContent:'center'}}>
-      <svg viewBox="0 0 28 28" width={size} height={size}>
-        <circle cx="10" cy="14" r="5" fill="var(--blue)"/>
-        <circle cx="18" cy="14" r="5" fill="#2EC4A0" style={{mixBlendMode:'screen'}}/>
-      </svg>
-    </div>
+    <svg viewBox="0 0 40 40" width={size} height={size} fill="none" aria-label="Luderis">
+      <defs>
+        <linearGradient id="lud-logo-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#1758D8"/>
+          <stop offset="1" stopColor="#16B88A"/>
+        </linearGradient>
+        <clipPath id="lud-logo-clip">
+          <rect width="40" height="40" rx="12"/>
+        </clipPath>
+      </defs>
+      <rect width="40" height="40" rx="12" fill="url(#lud-logo-grad)"/>
+      <g clipPath="url(#lud-logo-clip)">
+        {/* Nodo izquierdo — alumno */}
+        <circle cx="15" cy="20" r="7.5" fill="white" fillOpacity="0.95"/>
+        {/* Nodo derecho — docente, superpuesto */}
+        <circle cx="25" cy="20" r="7.5" fill="white" fillOpacity="0.65"/>
+        {/* Conector entre nodos */}
+        <path d="M19 17 C19 13.5 21 13.5 21 17" stroke="url(#lud-logo-grad)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+      </g>
+    </svg>
   );
 }
 

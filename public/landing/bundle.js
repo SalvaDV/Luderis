@@ -482,9 +482,9 @@ function Shader({
         // ring bloom ligado al scroll
         col += ring * .06 * uC;
 
-        // vignette suave hacia el papel
-        float vig = smoothstep(1.2,.25, length(uv));
-        col = mix(uA*1.02, col, vig);
+        // vignette suave — base más clara para evitar esquinas negras
+        float vig = smoothstep(1.4,.4, length(uv));
+        col = mix(uA*1.35, col, vig);
 
         col *= uIntensity;
         gl_FragColor = vec4(col,1.);
@@ -524,15 +524,15 @@ function Shader({
     // Clases:  #E8891C naranja  +  #F4C030 amber
     // Pedidos: #7B5CF0 violeta  +  #D85AA3 rosa
     const palettes = {
-      // familia Cursos — A más claro para que nunca se vea negro
-      blue: [[0.08, 0.25, 0.55], [0.10, 0.43, 0.85], [0.18, 0.77, 0.63]],
-      dark: [[0.06, 0.20, 0.48], [0.10, 0.43, 0.85], [0.18, 0.77, 0.63]],
-      warm: [[0.08, 0.25, 0.55], [0.18, 0.77, 0.63], [0.10, 0.43, 0.85]],
-      deep: [[0.08, 0.22, 0.52], [0.10, 0.43, 0.85], [0.18, 0.77, 0.63]],
-      // Clases — A naranja claro para que no se vea marrón
-      amber: [[0.60, 0.30, 0.05], [0.91, 0.54, 0.11], [0.96, 0.75, 0.19]],
-      // Pedidos — A violeta claro
-      pedidos: [[0.28, 0.14, 0.52], [0.48, 0.36, 0.94], [0.85, 0.35, 0.64]]
+      // familia Cursos — base más clara para evitar oscuridad excesiva
+      blue: [[0.18, 0.40, 0.72], [0.16, 0.55, 0.94], [0.24, 0.84, 0.74]],
+      dark: [[0.14, 0.33, 0.64], [0.16, 0.55, 0.94], [0.24, 0.84, 0.74]],
+      warm: [[0.16, 0.40, 0.70], [0.24, 0.84, 0.74], [0.16, 0.55, 0.94]],
+      deep: [[0.16, 0.36, 0.68], [0.16, 0.55, 0.94], [0.24, 0.84, 0.74]],
+      // Clases — naranja/ámbar vibrante, sin marrón oscuro
+      amber: [[0.78, 0.46, 0.10], [0.96, 0.62, 0.16], [0.99, 0.82, 0.24]],
+      // Pedidos — violeta vibrante
+      pedidos: [[0.40, 0.24, 0.68], [0.58, 0.45, 0.97], [0.90, 0.42, 0.72]]
     };
 
     // DPR capped at 1 — retina no aporta al shader y duplica el costo GPU
@@ -987,35 +987,55 @@ function Nav({
 function LudLogo({
   size = 28
 }) {
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: size,
-      height: size,
-      borderRadius: 8,
-      background: 'var(--ink)',
-      position: 'relative',
-      overflow: 'hidden',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 28 28",
+  return /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 40 40",
     width: size,
-    height: size
+    height: size,
+    fill: "none",
+    "aria-label": "Luderis"
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
+    id: "lud-logo-grad",
+    x1: "0",
+    y1: "0",
+    x2: "40",
+    y2: "40",
+    gradientUnits: "userSpaceOnUse"
+  }, /*#__PURE__*/React.createElement("stop", {
+    stopColor: "#1758D8"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "1",
+    stopColor: "#16B88A"
+  })), /*#__PURE__*/React.createElement("clipPath", {
+    id: "lud-logo-clip"
+  }, /*#__PURE__*/React.createElement("rect", {
+    width: "40",
+    height: "40",
+    rx: "12"
+  }))), /*#__PURE__*/React.createElement("rect", {
+    width: "40",
+    height: "40",
+    rx: "12",
+    fill: "url(#lud-logo-grad)"
+  }), /*#__PURE__*/React.createElement("g", {
+    clipPath: "url(#lud-logo-clip)"
   }, /*#__PURE__*/React.createElement("circle", {
-    cx: "10",
-    cy: "14",
-    r: "5",
-    fill: "var(--blue)"
+    cx: "15",
+    cy: "20",
+    r: "7.5",
+    fill: "white",
+    fillOpacity: "0.95"
   }), /*#__PURE__*/React.createElement("circle", {
-    cx: "18",
-    cy: "14",
-    r: "5",
-    fill: "#2EC4A0",
-    style: {
-      mixBlendMode: 'screen'
-    }
+    cx: "25",
+    cy: "20",
+    r: "7.5",
+    fill: "white",
+    fillOpacity: "0.65"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19 17 C19 13.5 21 13.5 21 17",
+    stroke: "url(#lud-logo-grad)",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    fill: "none"
   })));
 }
 Object.assign(window, {
@@ -1310,7 +1330,7 @@ function Hero({
     style: {
       position: 'absolute',
       inset: 0,
-      opacity: .75
+      opacity: .68
     }
   }, /*#__PURE__*/React.createElement(Shader, {
     palette: "dark",
@@ -1387,7 +1407,7 @@ function Hero({
     style: {
       position: 'absolute',
       inset: 0,
-      opacity: .75
+      opacity: .68
     }
   }, /*#__PURE__*/React.createElement(Shader, {
     palette: "pedidos",
@@ -1619,7 +1639,7 @@ function Worlds({
     "data-cursor-label": "CURSOS",
     onClick: onEnter,
     style: {
-      background: 'var(--ink)',
+      background: '#0C2A6E',
       color: 'var(--paper)',
       borderRadius: 28,
       padding: isMobile ? '24px' : '40px',
@@ -1634,7 +1654,7 @@ function Worlds({
     style: {
       position: 'absolute',
       inset: 0,
-      opacity: .9
+      opacity: .78
     }
   }, /*#__PURE__*/React.createElement(Shader, {
     palette: "warm"
@@ -1737,7 +1757,7 @@ function Worlds({
     "data-cursor-label": "CLASES",
     onClick: onEnter,
     style: {
-      background: '#100A00',
+      background: '#3D1A00',
       color: 'var(--paper)',
       borderRadius: 28,
       padding: isMobile ? '24px' : '40px',
@@ -1752,7 +1772,7 @@ function Worlds({
     style: {
       position: 'absolute',
       inset: 0,
-      opacity: .9
+      opacity: .78
     }
   }, /*#__PURE__*/React.createElement(Shader, {
     palette: "amber"
