@@ -2076,7 +2076,7 @@ function Features() {
     style: {
       fontStyle: 'italic',
       fontWeight: 500,
-      color: 'var(--orange-deep)'
+      color: 'var(--blue)'
     }
   }, "desaparece."))), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.1
@@ -2102,12 +2102,14 @@ function Features() {
       gridRow: isMobile ? 'span 1' : 'span 2'
     },
     className: "lud-bento-item"
-  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(BentoCard, {
+    dark: true
+  }, /*#__PURE__*/React.createElement("div", {
     "aria-hidden": true,
     style: {
       position: 'absolute',
       inset: 0,
-      background: 'linear-gradient(140deg, #0B1F60 0%, #1245C8 55%, #1478C0 100%)',
+      background: 'linear-gradient(140deg, #0D2A6E 0%, #1A52D8 55%, #1A7FCC 100%)',
       borderRadius: 20,
       zIndex: 1
     }
@@ -2120,14 +2122,17 @@ function Features() {
       height: '100%',
       justifyContent: 'space-between'
     }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Kicker, null, "IA Sem\xE1ntica"), /*#__PURE__*/React.createElement("h3", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Kicker, {
+    color: "rgba(255,255,255,0.65)"
+  }, "IA Sem\xE1ntica"), /*#__PURE__*/React.createElement("h3", {
     style: {
       fontSize: 44,
       fontWeight: 700,
       letterSpacing: '-.04em',
       lineHeight: 1,
       margin: '20px 0 0',
-      maxWidth: 460
+      maxWidth: 460,
+      color: '#fff'
     }
   }, "Describ\xED con tus palabras.", /*#__PURE__*/React.createElement("br", null), "La IA encuentra el match.")), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2138,12 +2143,13 @@ function Features() {
   }, ['"preparación para el final de álgebra"', '"guitarra para zurdo"', '"inglés para entrevistas tech"'].map(q => /*#__PURE__*/React.createElement("span", {
     key: q,
     style: {
-      background: 'var(--ink)',
-      color: 'var(--paper)',
+      background: 'rgba(255,255,255,0.12)',
+      color: 'rgba(255,255,255,0.9)',
       padding: '8px 14px',
       borderRadius: 99,
       fontFamily: 'var(--font-mono)',
-      fontSize: 12
+      fontSize: 12,
+      border: '1px solid rgba(255,255,255,0.15)'
     }
   }, q)))))), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.08,
@@ -2215,10 +2221,8 @@ function Features() {
       gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'
     }
   }, /*#__PURE__*/React.createElement(BentoCard, {
-    accent: "var(--orange)"
-  }, /*#__PURE__*/React.createElement(Kicker, {
-    color: "var(--ink)"
-  }, "Chat integrado"), /*#__PURE__*/React.createElement("div", {
+    accent: "#EEF4FF"
+  }, /*#__PURE__*/React.createElement(Kicker, null, "Chat integrado"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 14,
       display: 'flex',
@@ -2230,7 +2234,7 @@ function Features() {
   }, "\xBFSeguro ten\xE9s lugar martes 18hs?"), /*#__PURE__*/React.createElement(Bubble, {
     side: "out",
     accent: true
-  }, "S\xED, te mando el link ahora \u2728")))), /*#__PURE__*/React.createElement(Reveal, {
+  }, "S\xED, te mando el link ahora")))), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.15,
     style: {
       gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'
@@ -3331,21 +3335,27 @@ function About() {
 window.About = About;
 
 // --- testimonials.jsx ---
-// Early Access — reemplaza testimonios, honesto y convierte
-function Testimonials() {
-  const [email, setEmail] = React.useState('');
-  const [done, setDone] = React.useState(false);
-  const [err, setErr] = React.useState(false);
-  const submit = e => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setErr(true);
-      return;
-    }
-    setErr(false);
-    setDone(true);
-    // TODO: conectar con backend / Supabase
-  };
+// Sección para docentes — lado oferta del marketplace
+function Testimonials({
+  onEnter
+}) {
+  const benefits = [{
+    n: '01',
+    k: 'Tu precio, tus reglas',
+    v: 'Vos fijás cuánto cobrás por clase o por curso. Sin negociar con nadie.'
+  }, {
+    n: '02',
+    k: 'Publicás en minutos',
+    v: 'Cargá tu perfil, describí lo que enseñás y empezás a recibir consultas.'
+  }, {
+    n: '03',
+    k: 'Alumnos que ya buscan',
+    v: 'La IA conecta tu oferta con alumnos que buscan exactamente lo que sabés.'
+  }, {
+    n: '04',
+    k: 'Pagos directos',
+    v: 'MercadoPago integrado. Sin demoras, sin intermediarios en la plata.'
+  }];
   return /*#__PURE__*/React.createElement("section", {
     style: {
       padding: '140px 28px',
@@ -3357,10 +3367,10 @@ function Testimonials() {
     "aria-hidden": true,
     style: {
       position: 'absolute',
-      width: 800,
-      height: 800,
+      width: 900,
+      height: 900,
       borderRadius: '50%',
-      background: 'radial-gradient(circle, rgba(26,110,216,0.18) 0%, transparent 70%)',
+      background: 'radial-gradient(circle, rgba(26,110,216,0.14) 0%, transparent 65%)',
       left: '50%',
       top: '50%',
       transform: 'translate(-50%,-50%)',
@@ -3368,17 +3378,24 @@ function Testimonials() {
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
-      maxWidth: 680,
+      maxWidth: 1200,
       margin: '0 auto',
-      textAlign: 'center',
       position: 'relative',
       zIndex: 2
     }
-  }, /*#__PURE__*/React.createElement(Reveal, null, /*#__PURE__*/React.createElement(Kicker, {
-    color: "rgba(255,255,255,0.5)"
-  }, "07 \xB7 Acceso temprano"), /*#__PURE__*/React.createElement("h2", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 'clamp(48px, 8vw, 110px)',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 80,
+      alignItems: 'center'
+    },
+    className: "lud-doc-grid"
+  }, /*#__PURE__*/React.createElement(Reveal, null, /*#__PURE__*/React.createElement(Kicker, {
+    color: "rgba(255,255,255,0.45)"
+  }, "07 \xB7 Para docentes"), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 'clamp(48px, 7vw, 100px)',
       fontWeight: 700,
       letterSpacing: '-.055em',
       lineHeight: .9,
@@ -3386,161 +3403,76 @@ function Testimonials() {
       color: '#fff',
       textWrap: 'balance'
     }
-  }, "Somos nuevos.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("i", {
+  }, "Ense\xF1\xE1s algo que am\xE1s.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("i", {
     style: {
       fontStyle: 'italic',
       fontWeight: 500,
       color: '#7EFAEA'
     }
-  }, "Vos lleg\xE1s primero."))), /*#__PURE__*/React.createElement(Reveal, {
-    delay: 0.1
-  }, /*#__PURE__*/React.createElement("p", {
+  }, "Empez\xE1 a cobrar hoy.")), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 18,
       lineHeight: 1.55,
-      color: 'rgba(255,255,255,0.65)',
-      margin: '28px auto 0',
-      maxWidth: 480
+      color: 'rgba(255,255,255,0.6)',
+      margin: '28px 0 40px',
+      maxWidth: 440
     }
-  }, "Luderis est\xE1 en etapa de lanzamiento. Anotate y te avisamos cuando tu acceso est\xE9 listo \u2014 sin spam, sin compromisos.")), /*#__PURE__*/React.createElement(Reveal, {
-    delay: 0.2
-  }, done ? /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 44,
-      padding: '40px 32px',
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(126,250,234,0.25)',
-      borderRadius: 20,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "48",
-    height: "48",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "#7EFAEA",
-    strokeWidth: "1.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "10"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M8 12.5l3 3 5-6"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 20,
-      fontWeight: 700,
-      color: '#fff',
-      letterSpacing: '-.02em'
-    }
-  }, "\xA1Te anotamos!"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      color: 'rgba(255,255,255,0.55)',
-      fontFamily: 'var(--font-mono)'
-    }
-  }, "Te avisamos a ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#7EFAEA'
-    }
-  }, email), " cuando est\xE9s listo.")) : /*#__PURE__*/React.createElement("form", {
-    onSubmit: submit,
-    style: {
-      marginTop: 44
-    }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, "Public\xE1 tus clases o cursos en minutos. Conect\xE1 directo con alumnos que ya est\xE1n buscando lo que sab\xE9s ense\xF1ar."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      gap: 8,
-      background: 'rgba(255,255,255,0.07)',
-      border: `1px solid ${err ? '#D85AA3' : 'rgba(255,255,255,0.12)'}`,
-      borderRadius: 16,
-      padding: 6,
-      maxWidth: 480,
-      margin: '0 auto',
-      transition: 'border-color .25s'
+      gap: 12,
+      flexWrap: 'wrap',
+      alignItems: 'center'
     }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "email",
-    value: email,
-    onChange: e => {
-      setEmail(e.target.value);
-      setErr(false);
-    },
-    placeholder: "tu@email.com",
-    "data-cursor": true,
+  }, /*#__PURE__*/React.createElement(MagBtn, {
+    onClick: onEnter,
+    variant: "paper"
+  }, "Crear perfil docente"), /*#__PURE__*/React.createElement("span", {
     style: {
-      flex: 1,
-      background: 'transparent',
-      border: 'none',
-      outline: 'none',
-      color: '#fff',
-      fontSize: 16,
-      fontFamily: 'var(--font-display)',
-      padding: '12px 16px',
-      minWidth: 0
-    }
-  }), /*#__PURE__*/React.createElement("button", {
-    type: "submit",
-    "data-cursor": true,
-    style: {
-      background: '#fff',
-      color: 'var(--ink)',
-      border: 'none',
-      borderRadius: 11,
-      padding: '12px 22px',
-      fontFamily: 'var(--font-display)',
-      fontSize: 14,
-      fontWeight: 700,
-      cursor: 'pointer',
-      whiteSpace: 'nowrap',
-      flexShrink: 0,
-      transition: 'opacity .2s'
-    },
-    onMouseEnter: e => e.currentTarget.style.opacity = '.85',
-    onMouseLeave: e => e.currentTarget.style.opacity = '1'
-  }, "Quiero acceso")), err && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 10,
       fontFamily: 'var(--font-mono)',
       fontSize: 12,
-      color: '#D85AA3'
+      color: 'rgba(255,255,255,0.35)'
     }
-  }, "Ingres\xE1 un email v\xE1lido."))), /*#__PURE__*/React.createElement(Reveal, {
-    delay: 0.3
+  }, "Es gratis, siempre."))), /*#__PURE__*/React.createElement(Reveal, {
+    delay: 0.15
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: 28,
-      marginTop: 36,
-      flexWrap: 'wrap',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 12
+    }
+  }, benefits.map(b => /*#__PURE__*/React.createElement("div", {
+    key: b.n,
+    style: {
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 16,
+      padding: '24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
       fontFamily: 'var(--font-mono)',
-      fontSize: 11,
-      color: 'rgba(255,255,255,0.35)',
-      letterSpacing: '.06em'
+      fontSize: 10,
+      letterSpacing: '.14em',
+      color: 'rgba(126,250,234,0.7)',
+      marginBottom: 10
     }
-  }, ['Sin spam', 'Gratis para siempre', 'Cancelás cuando querés'].map(x => /*#__PURE__*/React.createElement("span", {
-    key: x,
+  }, b.n), /*#__PURE__*/React.createElement("div", {
     style: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6
+      fontSize: 16,
+      fontWeight: 700,
+      color: '#fff',
+      letterSpacing: '-.02em',
+      marginBottom: 8
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, b.k), /*#__PURE__*/React.createElement("p", {
     style: {
-      width: 4,
-      height: 4,
-      borderRadius: '50%',
-      background: 'rgba(255,255,255,0.25)',
-      display: 'inline-block'
+      fontSize: 13,
+      lineHeight: 1.55,
+      color: 'rgba(255,255,255,0.45)',
+      margin: 0
     }
-  }), x))))));
+  }, b.v))))))), /*#__PURE__*/React.createElement("style", null, `@media(max-width:900px){.lud-doc-grid{grid-template-columns:1fr!important;gap:48px!important;}}`));
 }
 window.Testimonials = Testimonials;
 

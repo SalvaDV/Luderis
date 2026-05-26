@@ -10,7 +10,7 @@ function Features(){
           <Reveal>
             <Kicker>03 · Funciones</Kicker>
             <h2 style={{fontSize:'clamp(44px, 7vw, 92px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'18px 0 0', maxWidth:900}}>
-              Tecnología que <i style={{fontStyle:'italic', fontWeight:500, color:'var(--orange-deep)'}}>desaparece.</i>
+              Tecnología que <i style={{fontStyle:'italic', fontWeight:500, color:'var(--blue)'}}>desaparece.</i>
             </h2>
           </Reveal>
           <Reveal delay={0.1}>
@@ -24,19 +24,19 @@ function Features(){
 
           {/* AI Search — grande */}
           <Reveal style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 3' : 'span 4', gridRow: isMobile ? 'span 1' : 'span 2'}} className="lud-bento-item">
-            <BentoCard>
-              <div aria-hidden style={{position:'absolute', inset:0, background:'linear-gradient(140deg, #0B1F60 0%, #1245C8 55%, #1478C0 100%)', borderRadius:20, zIndex:1}}/>
+            <BentoCard dark>
+              <div aria-hidden style={{position:'absolute', inset:0, background:'linear-gradient(140deg, #0D2A6E 0%, #1A52D8 55%, #1A7FCC 100%)', borderRadius:20, zIndex:1}}/>
 
               <div style={{position:'relative', zIndex:2, display:'flex', flexDirection:'column', height:'100%', justifyContent:'space-between'}}>
                 <div>
-                  <Kicker>IA Semántica</Kicker>
-                  <h3 style={{fontSize:44, fontWeight:700, letterSpacing:'-.04em', lineHeight:1, margin:'20px 0 0', maxWidth:460}}>
+                  <Kicker color="rgba(255,255,255,0.65)">IA Semántica</Kicker>
+                  <h3 style={{fontSize:44, fontWeight:700, letterSpacing:'-.04em', lineHeight:1, margin:'20px 0 0', maxWidth:460, color:'#fff'}}>
                     Describí con tus palabras.<br/>La IA encuentra el match.
                   </h3>
                 </div>
                 <div style={{display:'flex', gap:10, flexWrap:'wrap'}}>
                   {['"preparación para el final de álgebra"','"guitarra para zurdo"','"inglés para entrevistas tech"'].map(q=>(
-                    <span key={q} style={{background:'var(--ink)', color:'var(--paper)', padding:'8px 14px', borderRadius:99, fontFamily:'var(--font-mono)', fontSize:12}}>{q}</span>
+                    <span key={q} style={{background:'rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.9)', padding:'8px 14px', borderRadius:99, fontFamily:'var(--font-mono)', fontSize:12, border:'1px solid rgba(255,255,255,0.15)'}}>{q}</span>
                   ))}
                 </div>
               </div>
@@ -72,11 +72,11 @@ function Features(){
 
           {/* Chat */}
           <Reveal delay={0.12} style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'}}>
-            <BentoCard accent="var(--orange)">
-              <Kicker color="var(--ink)">Chat integrado</Kicker>
+            <BentoCard accent="#EEF4FF">
+              <Kicker>Chat integrado</Kicker>
               <div style={{marginTop:14, display:'flex', flexDirection:'column', gap:6}}>
                 <Bubble side="in">¿Seguro tenés lugar martes 18hs?</Bubble>
-                <Bubble side="out" accent>Sí, te mando el link ahora ✨</Bubble>
+                <Bubble side="out" accent>Sí, te mando el link ahora</Bubble>
               </div>
             </BentoCard>
           </Reveal>
