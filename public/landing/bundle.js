@@ -2684,7 +2684,7 @@ function How() {
 window.How = How;
 
 // --- preview.jsx ---
-// Preview mockup de la app (mobile + desktop flotando)
+// Preview — mockup fiel al UI real de la app
 function Preview({
   onEnter
 }) {
@@ -2760,9 +2760,9 @@ function Preview({
       borderRadius: 28,
       overflow: 'hidden',
       background: 'linear-gradient(135deg, #0A1840 0%, #1040A8 52%, #1870B8 100%)',
-      padding: isMobile ? '40px 24px 0' : '60px 60px 0',
-      minHeight: isMobile ? 420 : 560,
-      border: '1px solid var(--line)'
+      padding: isMobile ? '40px 20px 0' : '52px 52px 0',
+      minHeight: isMobile ? 420 : 540,
+      border: '1px solid rgba(255,255,255,0.08)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     "aria-hidden": true,
@@ -2771,7 +2771,7 @@ function Preview({
       width: 600,
       height: 600,
       borderRadius: '50%',
-      background: 'oklch(0.7 0.2 225 / .08)',
+      background: 'oklch(0.7 0.2 225 / .06)',
       right: -150,
       top: -150,
       pointerEvents: 'none'
@@ -2783,158 +2783,459 @@ function Preview({
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'flex-end',
-      gap: 40
+      gap: 32
     }
   }, !isMobile && /*#__PURE__*/React.createElement(DesktopMock, {
     tab: tab
   }), /*#__PURE__*/React.createElement(PhoneMock, {
     tab: tab
-  }))))), /*#__PURE__*/React.createElement("style", null, `
-        @media (max-width: 900px){ .lud-prev-grid{ grid-template-columns: 1fr !important; } }
-      `));
+  }))))));
+}
+
+// Icono SVG reutilizable
+function AppIcon({
+  d,
+  size = 13,
+  stroke = 2
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: stroke,
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: d
+  }));
 }
 function DesktopMock({
   tab
 }) {
+  const isDocente = tab === 'docente';
+  const nav = [{
+    d: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+    label: 'Explorar',
+    active: !isDocente
+  }, {
+    d: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
+    label: 'Mi agenda'
+  }, {
+    d: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+    label: 'Mis chats',
+    badge: 2
+  }, {
+    d: 'M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z',
+    label: 'Favoritos'
+  }, {
+    d: 'M22 10v6M2 10l10-5 10 5-10 5z',
+    label: 'Mis clases',
+    active: isDocente
+  }];
+  const alumnoCards = [{
+    init: 'L',
+    grad: '#1A6ED8,#2EC4A0',
+    author: 'Lucía G.',
+    subj: 'Programación',
+    title: 'Python para principiantes',
+    price: '$2.500',
+    unit: '/hs',
+    tag: 'Curso',
+    tc: '#1A6ED8',
+    mode: 'Virtual'
+  }, {
+    init: 'M',
+    grad: '#E8891C,#F4C030',
+    author: 'Martín R.',
+    subj: 'Música',
+    title: 'Guitarra clásica 1:1',
+    price: '$1.800',
+    unit: '/hs',
+    tag: 'Clase',
+    tc: '#E8891C',
+    mode: 'Presencial'
+  }, {
+    init: 'A',
+    grad: '#1A6ED8,#2EC4A0',
+    author: 'Ana L.',
+    subj: 'Idiomas',
+    title: 'Inglés conversacional',
+    price: '$2.200',
+    unit: '/hs',
+    tag: 'Clase',
+    tc: '#E8891C',
+    mode: 'Virtual'
+  }, {
+    init: 'C',
+    grad: '#7B5CF0,#D85AA3',
+    author: 'Carlos M.',
+    subj: 'Matemática',
+    title: 'Álgebra lineal para CBC',
+    price: '$2.000',
+    unit: '/hs',
+    tag: 'Curso',
+    tc: '#1A6ED8',
+    mode: 'Virtual'
+  }];
+  const docenteCards = [{
+    init: '✦',
+    grad: '#1A6ED8,#2EC4A0',
+    author: '',
+    subj: '20 inscriptos',
+    title: 'Programación web con React',
+    price: '$3.200',
+    unit: '',
+    tag: 'Activo',
+    tc: '#2EC4A0',
+    mode: 'Virtual'
+  }, {
+    init: '✦',
+    grad: '#1A6ED8,#2EC4A0',
+    author: '',
+    subj: '8 inscriptos',
+    title: 'JavaScript avanzado',
+    price: '$2.800',
+    unit: '',
+    tag: 'Activo',
+    tc: '#2EC4A0',
+    mode: 'Virtual'
+  }, {
+    init: '✦',
+    grad: '#5A7294,#8FA0B4',
+    author: '',
+    subj: '0 inscriptos',
+    title: 'Node.js y APIs REST',
+    price: '$3.000',
+    unit: '',
+    tag: 'Borrador',
+    tc: '#5A7294',
+    mode: 'Virtual'
+  }, {
+    init: '✦',
+    grad: '#1A6ED8,#2EC4A0',
+    author: '',
+    subj: '5 inscriptos',
+    title: 'Introducción a Git',
+    price: '$1.500',
+    unit: '',
+    tag: 'Activo',
+    tc: '#2EC4A0',
+    mode: 'Virtual'
+  }];
+  const cards = isDocente ? docenteCards : alumnoCards;
+  const tabs = isDocente ? ['Todas', 'Activas', 'Borradores'] : ['Cursos', 'Clases', 'Pedidos'];
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'var(--paper)',
-      borderRadius: '16px 16px 0 0',
-      boxShadow: '0 30px 80px -20px oklch(0 0 0 / .25)',
+      background: '#fff',
+      borderRadius: '14px 14px 0 0',
+      boxShadow: '0 32px 80px -20px rgba(0,0,0,0.3)',
       overflow: 'hidden',
-      border: '1px solid var(--line)',
-      borderBottom: 'none'
+      border: '1px solid #DDE5F5',
+      borderBottom: 'none',
+      width: 580
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      padding: '10px 14px',
-      background: 'var(--paper-2)',
-      borderBottom: '1px solid var(--line)'
+      gap: 6,
+      padding: '9px 12px',
+      background: '#F6F9FF',
+      borderBottom: '1px solid #DDE5F5'
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 10,
-      height: 10,
+      width: 9,
+      height: 9,
       borderRadius: '50%',
-      background: 'oklch(0.75 0.15 25)'
+      background: '#FF5F57'
     }
   }), /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 10,
-      height: 10,
+      width: 9,
+      height: 9,
       borderRadius: '50%',
-      background: 'oklch(0.85 0.15 85)'
+      background: '#FEBC2E'
     }
   }), /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 10,
-      height: 10,
+      width: 9,
+      height: 9,
       borderRadius: '50%',
-      background: 'oklch(0.75 0.15 150)'
+      background: '#28C840'
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       textAlign: 'center',
       fontFamily: 'var(--font-mono)',
-      fontSize: 11,
-      color: 'var(--muted)'
+      fontSize: 10,
+      color: '#5A7294'
     }
-  }, "luderis.com/", tab === 'alumno' ? 'explorar' : 'panel')), /*#__PURE__*/React.createElement("div", {
+  }, "luderis.com/", isDocente ? 'mis-publicaciones' : 'explorar')), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '18px',
       display: 'grid',
-      gridTemplateColumns: '140px 1fr',
-      gap: 14,
-      minHeight: 280
+      gridTemplateColumns: '150px 1fr',
+      height: 310
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderRight: '1px solid #DDE5F5',
+      padding: '10px 6px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 1
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      flexDirection: 'column',
-      gap: 6
+      alignItems: 'center',
+      gap: 6,
+      padding: '5px 8px',
+      marginBottom: 6
     }
-  }, ['Inicio', 'Buscar', 'Mis cursos', 'Mensajes', 'Perfil'].map((x, i) => /*#__PURE__*/React.createElement("div", {
-    key: x,
+  }, /*#__PURE__*/React.createElement(LudLogo, {
+    size: 18
+  }), /*#__PURE__*/React.createElement("span", {
     style: {
-      padding: '8px 10px',
-      borderRadius: 8,
-      fontSize: 12,
-      fontWeight: i === 1 ? 600 : 500,
-      color: i === 1 ? 'var(--paper)' : 'var(--ink-2)',
-      background: i === 1 ? 'var(--ink)' : 'transparent'
-    }
-  }, x))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: 'var(--paper-2)',
-      border: '1px solid var(--line)',
-      borderRadius: 10,
-      padding: '8px 12px',
-      fontFamily: 'var(--font-mono)',
       fontSize: 11,
-      color: 'var(--ink-2)',
-      marginBottom: 12
+      fontWeight: 700,
+      color: '#0D1F3C',
+      letterSpacing: '-.02em'
     }
-  }, "\u2728 ", tab === 'alumno' ? '"fotografía nocturna con celular"' : 'Crear nueva publicación'), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3,1fr)',
-      gap: 10
-    }
-  }, [0, 1, 2, 3, 4, 5].map(i => /*#__PURE__*/React.createElement("div", {
+  }, "Luderis")), nav.map((it, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      background: 'var(--paper-2)',
-      border: '1px solid var(--line)',
-      borderRadius: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 7,
+      padding: '6px 8px',
+      borderRadius: 7,
+      background: it.active ? '#1A6ED810' : 'transparent',
+      color: it.active ? '#1A6ED8' : '#5A7294',
+      fontSize: 11,
+      fontWeight: it.active ? 600 : 400,
+      position: 'relative'
+    }
+  }, /*#__PURE__*/React.createElement(AppIcon, {
+    d: it.d
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1
+    }
+  }, it.label), it.badge && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: '#E53E3E',
+      color: '#fff',
+      borderRadius: 99,
+      fontSize: 8,
+      padding: '1px 4px',
+      fontWeight: 700
+    }
+  }, it.badge))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 'auto',
+      background: 'linear-gradient(135deg,#1A6ED8,#2EC4A0)',
+      borderRadius: 8,
+      padding: '7px 0',
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: 700,
+      textAlign: 'center'
+    }
+  }, "+ Publicar")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#F6F9FF',
       padding: '10px',
-      aspectRatio: '1/1.1'
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+      overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      height: '55%',
-      borderRadius: 6,
-      background: i % 2 ? 'var(--blue)' : 'var(--orange)',
-      opacity: .15
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      background: '#fff',
+      border: '1px solid #DDE5F5',
+      borderRadius: 8,
+      padding: '6px 10px'
     }
-  }), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(AppIcon, {
+    d: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0",
+    size: 12
+  }), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 11,
-      fontWeight: 600,
-      marginTop: 8
+      flex: 1,
+      fontSize: 10,
+      color: '#5A7294'
     }
-  }, ['Python', 'Guitarra', 'Inglés', 'Álgebra', 'Foto', 'Yoga'][i]), /*#__PURE__*/React.createElement("div", {
+  }, isDocente ? 'Nueva publicación...' : 'Buscar clases, materias o docentes...'), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontFamily: 'var(--font-mono)',
+      background: 'linear-gradient(135deg,#1A6ED8,#2EC4A0)',
+      color: '#fff',
+      borderRadius: 5,
+      padding: '2px 7px',
       fontSize: 9,
-      color: 'var(--muted)',
+      fontWeight: 700
+    }
+  }, "\u2726 IA")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 4
+    }
+  }, tabs.map((t, i) => /*#__PURE__*/React.createElement("span", {
+    key: t,
+    style: {
+      padding: '3px 10px',
+      borderRadius: 99,
+      fontSize: 10,
+      fontWeight: i === 0 ? 600 : 400,
+      background: i === 0 ? '#0D1F3C' : 'transparent',
+      color: i === 0 ? '#fff' : '#5A7294',
+      border: i === 0 ? 'none' : '1px solid #DDE5F5'
+    }
+  }, t))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 6,
+      flex: 1
+    }
+  }, cards.map((c, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      background: '#fff',
+      border: '1px solid #DDE5F5',
+      borderRadius: 9,
+      padding: '9px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 22,
+      height: 22,
+      borderRadius: '50%',
+      background: `linear-gradient(135deg,${c.grad})`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      fontSize: 8,
+      fontWeight: 700,
+      flexShrink: 0
+    }
+  }, c.init), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 600,
+      color: '#0D1F3C',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  }, c.title), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      color: '#5A7294'
+    }
+  }, isDocente ? c.subj : `${c.author} · ${c.subj}`))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       marginTop: 2
     }
-  }, "\u2605 4.9 \xB7 120 alumnos")))))));
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: '#0D1F3C'
+    }
+  }, c.price, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 8,
+      color: '#5A7294',
+      fontWeight: 400
+    }
+  }, c.unit)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: c.tc + '18',
+      color: c.tc,
+      borderRadius: 99,
+      fontSize: 8,
+      padding: '2px 6px',
+      fontWeight: 600
+    }
+  }, c.tag))))))));
 }
 function PhoneMock({
   tab
 }) {
+  const isDocente = tab === 'docente';
+  const alumnoItems = [{
+    color: '#1A6ED8',
+    label: 'Python 101',
+    sub: 'Lucía G. · Mar 18:00'
+  }, {
+    color: '#2EC4A0',
+    label: 'Guitarra clásica',
+    sub: 'Martín R. · Mie 10:00'
+  }, {
+    color: '#7B5CF0',
+    label: 'Álgebra CBC',
+    sub: 'Carlos M. · Jue 16:00'
+  }];
+  const docenteItems = [{
+    color: '#2EC4A0',
+    label: 'M. López',
+    sub: 'Python 101 · 18:00'
+  }, {
+    color: '#1A6ED8',
+    label: 'J. Ruiz',
+    sub: 'React básico · 20:00'
+  }, {
+    color: '#E8891C',
+    label: 'A. Díaz',
+    sub: 'JavaScript · Mañana'
+  }];
+  const items = isDocente ? docenteItems : alumnoItems;
+  const bottomNav = ['M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0', 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z', 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 7a4 4 0 100 8 4 4 0 000-8z'];
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 240,
-      background: 'var(--ink)',
-      borderRadius: '40px',
-      padding: 8,
-      boxShadow: '0 30px 70px -10px oklch(0 0 0 / .35)',
-      justifySelf: 'center',
-      marginBottom: -60
+      width: 215,
+      background: '#0D1F3C',
+      borderRadius: 36,
+      padding: 7,
+      boxShadow: '0 32px 70px -10px rgba(0,0,0,0.4)',
+      marginBottom: -52,
+      flexShrink: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'var(--paper)',
-      borderRadius: '32px',
+      background: '#F6F9FF',
+      borderRadius: 30,
       overflow: 'hidden',
-      aspectRatio: '9/19',
-      position: 'relative'
+      aspectRatio: '9/19.5',
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2942,89 +3243,133 @@ function PhoneMock({
       top: 8,
       left: '50%',
       transform: 'translateX(-50%)',
-      width: 60,
-      height: 14,
-      background: 'var(--ink)',
+      width: 56,
+      height: 12,
+      background: '#0D1F3C',
       borderRadius: 99,
       zIndex: 3
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '30px 14px 14px'
+      padding: '28px 12px 0',
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 18,
-      fontWeight: 700,
-      letterSpacing: '-.03em'
-    }
-  }, "Hola, ", tab === 'alumno' ? 'Sofi' : 'Prof.'), /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 26,
-      height: 26,
-      borderRadius: '50%',
-      background: 'var(--blue)'
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: 'var(--ink)',
-      color: 'var(--paper)',
-      borderRadius: 12,
-      padding: '10px 12px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: 10,
-      marginBottom: 14
-    }
-  }, "\u2728 Buscar con IA"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontFamily: 'var(--font-mono)',
-      fontSize: 9,
-      color: 'var(--muted)',
-      marginBottom: 8,
-      letterSpacing: '.1em'
-    }
-  }, tab === 'alumno' ? 'PRÓXIMAS CLASES' : 'ALUMNOS ACTIVOS'), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8
-    }
-  }, [1, 2, 3].map(i => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      border: '1px solid var(--line)',
-      borderRadius: 10,
-      padding: '10px',
-      display: 'flex',
-      gap: 10,
       alignItems: 'center'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 32,
-      height: 32,
-      borderRadius: 8,
-      background: i % 2 ? 'var(--blue)' : 'var(--orange)'
+      fontSize: 16,
+      fontWeight: 700,
+      letterSpacing: '-.02em',
+      color: '#0D1F3C'
     }
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Hola, ", isDocente ? 'Prof.' : 'Sofi', " \uD83D\uDC4B"), /*#__PURE__*/React.createElement("div", {
     style: {
+      width: 28,
+      height: 28,
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg,#1A6ED8,#2EC4A0)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
       fontSize: 11,
-      fontWeight: 600
+      fontWeight: 700
     }
-  }, tab === 'alumno' ? ['Python 101', 'Guitarra', 'Álgebra'][i - 1] : ['M. López', 'J. Ruiz', 'A. Díaz'][i - 1]), /*#__PURE__*/React.createElement("div", {
+  }, isDocente ? 'P' : 'S')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#0D1F3C',
+      borderRadius: 10,
+      padding: '9px 12px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      color: 'rgba(255,255,255,0.9)',
+      fontSize: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#2EC4A0',
+      fontSize: 12
+    }
+  }, "\u2726"), /*#__PURE__*/React.createElement("span", null, "Buscar con IA...")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 8,
+      letterSpacing: '.14em',
+      color: '#5A7294',
+      textTransform: 'uppercase'
+    }
+  }, isDocente ? 'Próximas clases' : 'Próximas clases'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6
+    }
+  }, items.map((it, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      background: '#fff',
+      border: '1px solid #DDE5F5',
+      borderRadius: 8,
+      padding: '8px 10px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 3,
+      height: 28,
+      borderRadius: 99,
+      background: it.color,
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 600,
+      color: '#0D1F3C'
+    }
+  }, it.label), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: 'var(--muted)',
-      fontFamily: 'var(--font-mono)'
+      color: '#5A7294',
+      marginTop: 1
     }
-  }, tab === 'alumno' ? ['Mar 18:00', 'Mie 10:00', 'Jue 16:00'][i - 1] : ['Activo', 'Activo', 'Pausa'][i - 1]))))))));
+  }, it.sub)))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      borderTop: '1px solid #DDE5F5',
+      padding: '8px 4px 10px',
+      display: 'flex',
+      justifyContent: 'space-around',
+      alignItems: 'center'
+    }
+  }, bottomNav.map((d, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      padding: '5px 12px',
+      borderRadius: 8,
+      color: i === 0 ? '#1A6ED8' : '#5A7294',
+      background: i === 0 ? '#1A6ED810' : 'transparent'
+    }
+  }, /*#__PURE__*/React.createElement(AppIcon, {
+    d: d,
+    size: 15
+  }))))));
 }
 window.Preview = Preview;
 
