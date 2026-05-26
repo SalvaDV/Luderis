@@ -3954,8 +3954,7 @@ function Footer() {
       letterSpacing: '-.06em',
       lineHeight: .88,
       marginBottom: 60,
-      color: 'transparent',
-      WebkitTextStroke: '1px oklch(1 0 0 / .3)'
+      color: 'oklch(1 0 0 / .06)'
     }
   }, "luderis"), /*#__PURE__*/React.createElement("div", {
     style: {

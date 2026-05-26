@@ -21,7 +21,7 @@ function Footer(){
       <Grain opacity={0.055}/>
       <div style={{maxWidth:1344, margin:'0 auto', position:'relative', zIndex:2}}>
         {/* Big wordmark */}
-        <div style={{fontSize:'clamp(100px, 22vw, 360px)', fontWeight:700, letterSpacing:'-.06em', lineHeight:.88, marginBottom:60, color:'transparent', WebkitTextStroke:'1px oklch(1 0 0 / .3)'}}>
+        <div style={{fontSize:'clamp(100px, 22vw, 360px)', fontWeight:700, letterSpacing:'-.06em', lineHeight:.88, marginBottom:60, color:'oklch(1 0 0 / .06)'}}>
           luderis
         </div>
 
