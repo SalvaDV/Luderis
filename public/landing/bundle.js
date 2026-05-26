@@ -536,7 +536,8 @@ function Shader({
     };
 
     // DPR capped at 1 — retina no aporta al shader y duplica el costo GPU
-    const resize = () => {
+    let resizeTimer;
+    const doResize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 1);
       const w = Math.round(canvas.clientWidth * dpr);
       const h = Math.round(canvas.clientHeight * dpr);
@@ -546,9 +547,16 @@ function Shader({
         gl.viewport(0, 0, w, h);
       }
     };
+    // Debounce: evita resetear el canvas durante CSS transitions (p.ej. split hero hover)
+    // canvas.width = X limpia el canvas; deferirlo 80ms hasta que el resize se estabilice
+    const resize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(doResize, 80);
+    };
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-    resize();
+    doResize(); // primer call inmediato
+
     const onMove = e => {
       const r = canvas.getBoundingClientRect();
       stateRef.current.mx = (e.clientX - r.left) / r.width;
@@ -598,6 +606,7 @@ function Shader({
     loop();
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(resizeTimer);
       ro.disconnect();
       io.disconnect();
       window.removeEventListener('pointermove', onMove);
@@ -1407,7 +1416,7 @@ function Hero({
     }
   }, /*#__PURE__*/React.createElement(Kicker, {
     color: "#fff"
-  }, "\u25CE Modo alumno"), /*#__PURE__*/React.createElement("span", {
+  }, "Modo alumno"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 11,
@@ -1484,7 +1493,7 @@ function Hero({
     }
   }, /*#__PURE__*/React.createElement(Kicker, {
     color: "#fff"
-  }, "\u25CE Modo docente"), /*#__PURE__*/React.createElement("span", {
+  }, "Modo docente"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 11,

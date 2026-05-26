@@ -148,7 +148,7 @@ function Hero({onEnter}){
                 <Shader palette="dark" intensity={1}/>
               </div>
               <div style={{position:'relative', zIndex:2, display:'flex', justifyContent:'space-between'}}>
-                <Kicker color="#fff">◎ Modo alumno</Kicker>
+                <Kicker color="#fff">Modo alumno</Kicker>
                 <span style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.8}}>01 / 02</span>
               </div>
               <div style={{position:'relative', zIndex:2}}>
@@ -178,7 +178,7 @@ function Hero({onEnter}){
                 <Shader palette="pedidos" intensity={1}/>
               </div>
               <div style={{position:'relative', zIndex:2, display:'flex', justifyContent:'space-between'}}>
-                <Kicker color="#fff">◎ Modo docente</Kicker>
+                <Kicker color="#fff">Modo docente</Kicker>
                 <span style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.7}}>02 / 02</span>
               </div>
               <div style={{position:'relative', zIndex:2}}>

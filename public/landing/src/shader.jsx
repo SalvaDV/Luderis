@@ -130,14 +130,18 @@ function Shader({intensity=1, palette='blue', className='', style={}}){
     };
 
     // DPR capped at 1 — retina no aporta al shader y duplica el costo GPU
-    const resize = ()=>{
+    let resizeTimer;
+    const doResize = ()=>{
       const dpr = Math.min(window.devicePixelRatio||1, 1);
       const w = Math.round(canvas.clientWidth*dpr);
       const h = Math.round(canvas.clientHeight*dpr);
       if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h); }
     };
+    // Debounce: evita resetear el canvas durante CSS transitions (p.ej. split hero hover)
+    // canvas.width = X limpia el canvas; deferirlo 80ms hasta que el resize se estabilice
+    const resize = ()=>{ clearTimeout(resizeTimer); resizeTimer = setTimeout(doResize, 80); };
     const ro = new ResizeObserver(resize); ro.observe(canvas);
-    resize();
+    doResize(); // primer call inmediato
 
     const onMove = (e)=>{
       const r = canvas.getBoundingClientRect();
@@ -182,6 +186,7 @@ function Shader({intensity=1, palette='blue', className='', style={}}){
 
     return ()=>{
       cancelAnimationFrame(raf);
+      clearTimeout(resizeTimer);
       ro.disconnect();
       io.disconnect();
       window.removeEventListener('pointermove', onMove);
