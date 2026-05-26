@@ -1,10 +1,10 @@
 // Contador animado de stats
 function Stats(){
   const items = [
-    {k:'alumnos activos', v:12483, suffix:''},
-    {k:'docentes verificados', v:3218, suffix:''},
-    {k:'clases esta semana', v:14203, suffix:''},
-    {k:'match promedio', v:2, suffix:' min'},
+    {k:'alumnos activos',     v:12483,  suffix:'', accent:'#3D8EF0'},
+    {k:'docentes verificados',v:3218,   suffix:'', accent:'#2EC4A0'},
+    {k:'clases esta semana',  v:14203,  suffix:'', accent:'#E8891C'},
+    {k:'match promedio',      v:2,      suffix:' min', accent:'#9B7BF4'},
   ];
   return (
     <section style={{padding:'80px 28px', background:'var(--ink)', color:'var(--paper)', borderTop:'1px solid var(--ink)', borderBottom:'1px solid var(--ink)'}}>
@@ -12,9 +12,9 @@ function Stats(){
         <Reveal>
           <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:30}} className="lud-stats-grid">
             {items.map((it,i)=>(
-              <div key={i} style={{borderLeft: i>0 ? '1px solid oklch(1 0 0 / .15)' : 'none', paddingLeft: i>0 ? 30 : 0}}>
+              <div key={i} style={{borderLeft: i>0 ? '1px solid oklch(1 0 0 / .15)' : 'none', paddingLeft: i>0 ? 30 : 0, borderTop:`2px solid ${it.accent}`, paddingTop:24}}>
                 <div style={{fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:'.14em', textTransform:'uppercase', color:'oklch(1 0 0 / .55)', marginBottom:14}}>{String(i+1).padStart(2,'0')} · {it.k}</div>
-                <div style={{fontSize:'clamp(48px, 6vw, 90px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95}}>
+                <div style={{fontSize:'clamp(48px, 6vw, 90px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, color:it.accent}}>
                   <Counter to={it.v} suffix={it.suffix}/>
                 </div>
               </div>

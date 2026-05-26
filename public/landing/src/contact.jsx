@@ -1,7 +1,24 @@
+function IcoCheckCircle(){
+  return (
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2EC4A0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M8 12.5l3 3 5-6"/>
+    </svg>
+  );
+}
+
 // Contacto
 function Contact(){
   const [form, setForm] = React.useState({nombre:'', email:'', msg:''});
+  const [touched, setTouched] = React.useState({});
   const [ok, setOk] = React.useState(false);
+
+  const isValid = f => f.trim().length > 0;
+  const borderColor = (k) => {
+    if (!touched[k]) return 'var(--line)';
+    return isValid(form[k]) ? '#2EC4A0' : '#D85AA3';
+  };
+
   return (
     <section id="contacto" style={{padding:'120px 28px', background:'var(--paper-2)', borderTop:'1px solid var(--line)'}}>
       <div style={{maxWidth:1344, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:80, alignItems:'flex-start'}} className="lud-contact-grid">
@@ -31,7 +48,7 @@ function Contact(){
         <Reveal delay={0.1}>
           {ok ? (
             <div style={{background:'var(--ink)', color:'var(--paper)', borderRadius:24, padding:'48px 32px', textAlign:'center'}}>
-              <div style={{fontSize:48, marginBottom:16}}>✓</div>
+              <div style={{marginBottom:16, display:'flex', justifyContent:'center'}}><IcoCheckCircle/></div>
               <div style={{fontSize:24, fontWeight:700, letterSpacing:'-.02em', marginBottom:10}}>¡Mensaje enviado!</div>
               <p style={{color:'oklch(1 0 0 / .7)', fontSize:14, margin:0}}>Te respondemos en menos de 24 horas a {form.email}.</p>
             </div>
@@ -43,17 +60,21 @@ function Contact(){
                 {k:'email', l:'Email', t:'email'},
               ].map(f=>(
                 <div key={f.k}>
-                  <label style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', color:'var(--muted)', textTransform:'uppercase'}}>{f.l}</label>
-                  <input type={f.t} value={form[f.k]} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))} data-cursor
-                    style={{width:'100%', border:'none', borderBottom:'1px solid var(--line)', padding:'10px 0', fontSize:18, fontFamily:'inherit', background:'transparent', outline:'none', color:'var(--ink)'}}
-                    onFocus={e=>e.currentTarget.style.borderColor='var(--ink)'}
-                    onBlur={e=>e.currentTarget.style.borderColor='var(--line)'}/>
+                  <label style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', color: touched[f.k] ? (isValid(form[f.k]) ? '#2EC4A0' : '#D85AA3') : 'var(--muted)', textTransform:'uppercase', transition:'color .2s'}}>{f.l}</label>
+                  <input type={f.t} value={form[f.k]}
+                    onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))}
+                    onBlur={()=>setTouched(p=>({...p,[f.k]:true}))}
+                    data-cursor
+                    style={{width:'100%', border:'none', borderBottom:`1.5px solid ${borderColor(f.k)}`, padding:'10px 0', fontSize:18, fontFamily:'inherit', background:'transparent', outline:'none', color:'var(--ink)', transition:'border-color .25s'}}/>
                 </div>
               ))}
               <div>
-                <label style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', color:'var(--muted)', textTransform:'uppercase'}}>Mensaje</label>
-                <textarea rows={4} value={form.msg} onChange={e=>setForm(p=>({...p,msg:e.target.value}))} data-cursor
-                  style={{width:'100%', border:'none', borderBottom:'1px solid var(--line)', padding:'10px 0', fontSize:18, fontFamily:'inherit', background:'transparent', outline:'none', resize:'vertical', color:'var(--ink)'}}/>
+                <label style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', color: touched.msg ? (isValid(form.msg) ? '#2EC4A0' : '#D85AA3') : 'var(--muted)', textTransform:'uppercase', transition:'color .2s'}}>Mensaje</label>
+                <textarea rows={4} value={form.msg}
+                  onChange={e=>setForm(p=>({...p,msg:e.target.value}))}
+                  onBlur={()=>setTouched(p=>({...p,msg:true}))}
+                  data-cursor
+                  style={{width:'100%', border:'none', borderBottom:`1.5px solid ${borderColor('msg')}`, padding:'10px 0', fontSize:18, fontFamily:'inherit', background:'transparent', outline:'none', resize:'vertical', color:'var(--ink)', transition:'border-color .25s'}}/>
               </div>
               <div style={{marginTop:8}}>
                 <MagBtn variant="ink">Enviar mensaje</MagBtn>

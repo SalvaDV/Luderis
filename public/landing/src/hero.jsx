@@ -34,7 +34,7 @@ function Hero({onEnter}){
         {/* Kicker + meta */}
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:20, flexWrap:'wrap', marginBottom:24}}>
           <Reveal>
-            <Kicker color="var(--ink)">● Luderis · Buenos Aires, 2026</Kicker>
+            <Kicker color="var(--ink)">Luderis · Buenos Aires, 2026</Kicker>
           </Reveal>
           <Reveal delay={0.1}>
             <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>

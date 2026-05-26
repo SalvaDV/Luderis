@@ -29,7 +29,7 @@ function Features(){
 
               <div style={{position:'relative', zIndex:2, display:'flex', flexDirection:'column', height:'100%', justifyContent:'space-between'}}>
                 <div>
-                  <Kicker>● IA Semántica</Kicker>
+                  <Kicker>IA Semántica</Kicker>
                   <h3 style={{fontSize:44, fontWeight:700, letterSpacing:'-.04em', lineHeight:1, margin:'20px 0 0', maxWidth:460}}>
                     Describí con tus palabras.<br/>La IA encuentra el match.
                   </h3>
@@ -46,7 +46,7 @@ function Features(){
           {/* Privacidad */}
           <Reveal delay={0.08} style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 3' : 'span 2', gridRow: isMobile ? 'span 1' : 'span 2'}}>
             <BentoCard dark>
-              <Kicker color="var(--paper)">● Privacidad primero</Kicker>
+              <Kicker color="var(--paper)">Privacidad primero</Kicker>
               <div style={{fontSize:'clamp(48px,5vw,72px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, marginTop:20, color:'var(--paper)'}}>
                 0 datos<br/>expuestos.
               </div>
@@ -59,7 +59,7 @@ function Features(){
           {/* Cert */}
           <Reveal delay={0.1} style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'}}>
             <BentoCard>
-              <Kicker>● Certificados</Kicker>
+              <Kicker>Certificados</Kicker>
               <div style={{display:'flex', alignItems:'center', gap:12, marginTop:16}}>
                 <div style={{width:48, height:48, borderRadius:10, background:'var(--ink)', color:'var(--paper)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-mono)', fontSize:10, fontWeight:600}}>✓</div>
                 <div>
@@ -73,7 +73,7 @@ function Features(){
           {/* Chat */}
           <Reveal delay={0.12} style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'}}>
             <BentoCard accent="var(--orange)">
-              <Kicker color="var(--ink)">● Chat integrado</Kicker>
+              <Kicker color="var(--ink)">Chat integrado</Kicker>
               <div style={{marginTop:14, display:'flex', flexDirection:'column', gap:6}}>
                 <Bubble side="in">¿Seguro tenés lugar martes 18hs?</Bubble>
                 <Bubble side="out" accent>Sí, te mando el link ahora ✨</Bubble>
@@ -84,7 +84,7 @@ function Features(){
           {/* Seguimiento */}
           <Reveal delay={0.15} style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'}}>
             <BentoCard>
-              <Kicker>● Seguimiento</Kicker>
+              <Kicker>Seguimiento</Kicker>
               <div style={{marginTop:14}}>
                 <div style={{fontSize:36, fontWeight:700, letterSpacing:'-.03em'}}>82%</div>
                 <div style={{height:6, background:'var(--line)', borderRadius:99, marginTop:8, overflow:'hidden'}}>
@@ -98,7 +98,7 @@ function Features(){
           {/* Pagos */}
           <Reveal delay={0.18} style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'}}>
             <BentoCard>
-              <Kicker>● Pagos</Kicker>
+              <Kicker>Pagos</Kicker>
               <div style={{marginTop:14}}>
                 <div style={{fontSize:'clamp(32px,3vw,44px)', fontWeight:700, letterSpacing:'-.04em', lineHeight:1}}>Seguros <span style={{color:'var(--muted)', fontWeight:500}}>y simples</span></div>
                 <div style={{fontSize:12, color:'var(--muted)', marginTop:6, fontFamily:'var(--font-mono)'}}>Mercado Pago · transferencia · tarjeta</div>
@@ -111,7 +111,7 @@ function Features(){
             <BentoCard>
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                 <div>
-                  <Kicker>● Agenda en vivo</Kicker>
+                  <Kicker>Agenda en vivo</Kicker>
                   <div style={{fontSize:24, fontWeight:700, letterSpacing:'-.03em', marginTop:14}}>Reservá en el slot que querés</div>
                 </div>
                 <span style={{fontFamily:'var(--font-mono)', fontSize:11, color:'var(--muted)'}}>AHORA</span>

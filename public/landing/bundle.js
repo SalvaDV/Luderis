@@ -1005,6 +1005,108 @@ Object.assign(window, {
   Ticker
 });
 
+// --- trustbar.jsx ---
+// TrustBar — franja de social proof con logos/marcas argentinas
+function TrustBar() {
+  const brands = ['Mercado Libre', 'Despegar', 'Globant', 'OLX', 'Naranja X', 'Ualá', 'Rappi', 'Bumeran', 'La Nación', 'Clarín', 'Infobae', 'Grupo Oui', 'MercadoPago', 'Tiendanube', 'Auth0'];
+
+  // Duplicamos para scroll infinito
+  const items = [...brands, ...brands];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderTop: '1px solid var(--line)',
+      borderBottom: '1px solid var(--line)',
+      background: 'var(--paper)',
+      padding: '20px 0',
+      overflow: 'hidden',
+      position: 'relative'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 120,
+      zIndex: 2,
+      background: 'linear-gradient(to right, var(--paper), transparent)',
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: 120,
+      zIndex: 2,
+      background: 'linear-gradient(to left, var(--paper), transparent)',
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lud-trust-track",
+    style: {
+      display: 'flex',
+      gap: 0,
+      alignItems: 'center',
+      animation: 'lud-trust-scroll 28s linear infinite',
+      willChange: 'transform'
+    }
+  }, items.map((b, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '0 40px',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 12,
+      fontWeight: 600,
+      letterSpacing: '.06em',
+      color: 'var(--muted)',
+      whiteSpace: 'nowrap',
+      userSelect: 'none',
+      transition: 'color .2s'
+    },
+    onMouseEnter: e => e.currentTarget.style.color = 'var(--ink)',
+    onMouseLeave: e => e.currentTarget.style.color = 'var(--muted)'
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 5,
+      height: 5,
+      borderRadius: '50%',
+      background: 'var(--line)',
+      display: 'inline-block',
+      flexShrink: 0
+    }
+  }), b)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 10,
+      letterSpacing: '.14em',
+      color: 'var(--muted)',
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      marginTop: 14,
+      opacity: .7
+    }
+  }, "Confiado por profesionales de las mejores empresas"), /*#__PURE__*/React.createElement("style", null, `
+        @keyframes lud-trust-scroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .lud-trust-track:hover { animation-play-state: paused; }
+      `));
+}
+window.TrustBar = TrustBar;
+
 // --- hero.jsx ---
 // Hero split-screen animado aprender / enseñar
 function Hero({
@@ -1071,7 +1173,7 @@ function Hero({
     }
   }, /*#__PURE__*/React.createElement(Reveal, null, /*#__PURE__*/React.createElement(Kicker, {
     color: "var(--ink)"
-  }, "\u25CF Luderis \xB7 Buenos Aires, 2026")), /*#__PURE__*/React.createElement(Reveal, {
+  }, "Luderis \xB7 Buenos Aires, 2026")), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.1
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2028,7 +2130,7 @@ function Features() {
       height: '100%',
       justifyContent: 'space-between'
     }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Kicker, null, "\u25CF IA Sem\xE1ntica"), /*#__PURE__*/React.createElement("h3", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Kicker, null, "IA Sem\xE1ntica"), /*#__PURE__*/React.createElement("h3", {
     style: {
       fontSize: 44,
       fontWeight: 700,
@@ -2063,7 +2165,7 @@ function Features() {
     dark: true
   }, /*#__PURE__*/React.createElement(Kicker, {
     color: "var(--paper)"
-  }, "\u25CF Privacidad primero"), /*#__PURE__*/React.createElement("div", {
+  }, "Privacidad primero"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 'clamp(48px,5vw,72px)',
       fontWeight: 700,
@@ -2084,7 +2186,7 @@ function Features() {
     style: {
       gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'
     }
-  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement(Kicker, null, "\u25CF Certificados"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement(Kicker, null, "Certificados"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -2126,7 +2228,7 @@ function Features() {
     accent: "var(--orange)"
   }, /*#__PURE__*/React.createElement(Kicker, {
     color: "var(--ink)"
-  }, "\u25CF Chat integrado"), /*#__PURE__*/React.createElement("div", {
+  }, "Chat integrado"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 14,
       display: 'flex',
@@ -2143,7 +2245,7 @@ function Features() {
     style: {
       gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'
     }
-  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement(Kicker, null, "\u25CF Seguimiento"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement(Kicker, null, "Seguimiento"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 14
     }
@@ -2180,7 +2282,7 @@ function Features() {
     style: {
       gridColumn: isMobile ? 'span 1' : isTablet ? 'span 1' : 'span 2'
     }
-  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement(Kicker, null, "\u25CF Pagos"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement(Kicker, null, "Pagos"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 14
     }
@@ -2214,7 +2316,7 @@ function Features() {
       justifyContent: 'space-between',
       alignItems: 'flex-start'
     }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Kicker, null, "\u25CF Agenda en vivo"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Kicker, null, "Agenda en vivo"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 24,
       fontWeight: 700,
@@ -2624,7 +2726,13 @@ function Preview({
       margin: '18px 0 0',
       maxWidth: 860
     }
-  }, "\n")), /*#__PURE__*/React.createElement(Reveal, {
+  }, "As\xED se ve ", /*#__PURE__*/React.createElement("i", {
+    style: {
+      fontStyle: 'italic',
+      fontWeight: 500,
+      color: 'var(--blue)'
+    }
+  }, "por dentro."))), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.1
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2932,19 +3040,23 @@ function Stats() {
   const items = [{
     k: 'alumnos activos',
     v: 12483,
-    suffix: ''
+    suffix: '',
+    accent: '#3D8EF0'
   }, {
     k: 'docentes verificados',
     v: 3218,
-    suffix: ''
+    suffix: '',
+    accent: '#2EC4A0'
   }, {
     k: 'clases esta semana',
     v: 14203,
-    suffix: ''
+    suffix: '',
+    accent: '#E8891C'
   }, {
     k: 'match promedio',
     v: 2,
-    suffix: ' min'
+    suffix: ' min',
+    accent: '#9B7BF4'
   }];
   return /*#__PURE__*/React.createElement("section", {
     style: {
@@ -2970,7 +3082,9 @@ function Stats() {
     key: i,
     style: {
       borderLeft: i > 0 ? '1px solid oklch(1 0 0 / .15)' : 'none',
-      paddingLeft: i > 0 ? 30 : 0
+      paddingLeft: i > 0 ? 30 : 0,
+      borderTop: `2px solid ${it.accent}`,
+      paddingTop: 24
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2986,7 +3100,8 @@ function Stats() {
       fontSize: 'clamp(48px, 6vw, 90px)',
       fontWeight: 700,
       letterSpacing: '-.05em',
-      lineHeight: .95
+      lineHeight: .95,
+      color: it.accent
     }
   }, /*#__PURE__*/React.createElement(Counter, {
     to: it.v,
@@ -3077,25 +3192,30 @@ function About() {
   }, [{
     k: 'Misión',
     v: 'Democratizar el acceso al conocimiento conectando personas que quieren aprender con quienes quieren enseñar.',
-    c: 'var(--blue)'
+    dark: true,
+    accent: '#1A6ED8'
   }, {
     k: 'Visión',
     v: 'Ser la plataforma de referencia en Argentina para el intercambio de conocimiento entre personas.',
-    c: 'var(--orange)'
+    dark: false,
+    accent: '#1E8E73'
   }, {
     k: 'Tecnología',
     v: 'IA semántica, evaluaciones automatizadas, seguimiento en tiempo real. Construido sobre infra moderna.',
-    c: 'var(--ink)'
+    dark: true,
+    accent: '#7B5CF0'
   }, {
     k: 'Confianza',
     v: 'Privacidad y seguridad en cada interacción. Tus datos son tuyos, siempre.',
-    c: 'var(--blue-deep)'
+    dark: false,
+    accent: '#E8891C'
   }].map((v, i) => /*#__PURE__*/React.createElement("div", {
     key: v.k,
     style: {
-      background: i % 3 === 0 ? v.c : 'var(--paper)',
-      color: i % 3 === 0 ? 'var(--paper)' : 'var(--ink)',
-      border: '1px solid ' + (i % 3 === 0 ? v.c : 'var(--line)'),
+      background: v.dark ? '#0D1F3C' : 'var(--paper)',
+      color: v.dark ? '#fff' : 'var(--ink)',
+      border: v.dark ? '1px solid transparent' : '1px solid var(--line)',
+      borderTop: `3px solid ${v.accent}`,
       borderRadius: 18,
       padding: '24px',
       minHeight: 200,
@@ -3108,7 +3228,7 @@ function About() {
       fontSize: 10,
       letterSpacing: '.14em',
       textTransform: 'uppercase',
-      opacity: .7
+      color: v.accent
     }
   }, "0", i + 1), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3451,6 +3571,25 @@ function CTA({
 window.CTA = CTA;
 
 // --- contact.jsx ---
+function IcoCheckCircle() {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "56",
+    height: "56",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "#2EC4A0",
+    strokeWidth: "1.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 12.5l3 3 5-6"
+  }));
+}
+
 // Contacto
 function Contact() {
   const [form, setForm] = React.useState({
@@ -3458,7 +3597,13 @@ function Contact() {
     email: '',
     msg: ''
   });
+  const [touched, setTouched] = React.useState({});
   const [ok, setOk] = React.useState(false);
+  const isValid = f => f.trim().length > 0;
+  const borderColor = k => {
+    if (!touched[k]) return 'var(--line)';
+    return isValid(form[k]) ? '#2EC4A0' : '#D85AA3';
+  };
   return /*#__PURE__*/React.createElement("section", {
     id: "contacto",
     style: {
@@ -3551,10 +3696,11 @@ function Contact() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 48,
-      marginBottom: 16
+      marginBottom: 16,
+      display: 'flex',
+      justifyContent: 'center'
     }
-  }, "\u2713"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(IcoCheckCircle, null)), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 24,
       fontWeight: 700,
@@ -3605,8 +3751,9 @@ function Contact() {
       fontFamily: 'var(--font-mono)',
       fontSize: 10,
       letterSpacing: '.14em',
-      color: 'var(--muted)',
-      textTransform: 'uppercase'
+      color: touched[f.k] ? isValid(form[f.k]) ? '#2EC4A0' : '#D85AA3' : 'var(--muted)',
+      textTransform: 'uppercase',
+      transition: 'color .2s'
     }
   }, f.l), /*#__PURE__*/React.createElement("input", {
     type: f.t,
@@ -3615,27 +3762,31 @@ function Contact() {
       ...p,
       [f.k]: e.target.value
     })),
+    onBlur: () => setTouched(p => ({
+      ...p,
+      [f.k]: true
+    })),
     "data-cursor": true,
     style: {
       width: '100%',
       border: 'none',
-      borderBottom: '1px solid var(--line)',
+      borderBottom: `1.5px solid ${borderColor(f.k)}`,
       padding: '10px 0',
       fontSize: 18,
       fontFamily: 'inherit',
       background: 'transparent',
       outline: 'none',
-      color: 'var(--ink)'
-    },
-    onFocus: e => e.currentTarget.style.borderColor = 'var(--ink)',
-    onBlur: e => e.currentTarget.style.borderColor = 'var(--line)'
+      color: 'var(--ink)',
+      transition: 'border-color .25s'
+    }
   }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 10,
       letterSpacing: '.14em',
-      color: 'var(--muted)',
-      textTransform: 'uppercase'
+      color: touched.msg ? isValid(form.msg) ? '#2EC4A0' : '#D85AA3' : 'var(--muted)',
+      textTransform: 'uppercase',
+      transition: 'color .2s'
     }
   }, "Mensaje"), /*#__PURE__*/React.createElement("textarea", {
     rows: 4,
@@ -3644,18 +3795,23 @@ function Contact() {
       ...p,
       msg: e.target.value
     })),
+    onBlur: () => setTouched(p => ({
+      ...p,
+      msg: true
+    })),
     "data-cursor": true,
     style: {
       width: '100%',
       border: 'none',
-      borderBottom: '1px solid var(--line)',
+      borderBottom: `1.5px solid ${borderColor('msg')}`,
       padding: '10px 0',
       fontSize: 18,
       fontFamily: 'inherit',
       background: 'transparent',
       outline: 'none',
       resize: 'vertical',
-      color: 'var(--ink)'
+      color: 'var(--ink)',
+      transition: 'border-color .25s'
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3834,6 +3990,65 @@ function Footer() {
 }
 window.Footer = Footer;
 
+// --- floatingcta.jsx ---
+// Floating sticky CTA — aparece al scrollear 600px
+function FloatingCTA({
+  onEnter
+}) {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, {
+      passive: true
+    });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": !visible,
+    style: {
+      position: 'fixed',
+      bottom: 28,
+      right: 28,
+      zIndex: 900,
+      transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(.95)',
+      opacity: visible ? 1 : 0,
+      pointerEvents: visible ? 'auto' : 'none',
+      transition: 'transform .4s cubic-bezier(.2,.7,.2,1), opacity .35s ease'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onEnter,
+    "data-cursor": true,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 10,
+      background: 'var(--ink)',
+      color: 'var(--paper)',
+      border: 'none',
+      borderRadius: 99,
+      padding: '14px 22px',
+      fontFamily: 'var(--font-display)',
+      fontSize: 14,
+      fontWeight: 600,
+      cursor: 'pointer',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1)',
+      transition: 'transform .25s, box-shadow .25s'
+    },
+    onMouseEnter: e => {
+      e.currentTarget.style.transform = 'scale(1.04)';
+      e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.12)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.transform = 'scale(1)';
+      e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1)';
+    }
+  }, /*#__PURE__*/React.createElement(LudLogo, {
+    size: 20
+  }), "Empezar gratis"));
+}
+window.FloatingCTA = FloatingCTA;
+
 // --- app.jsx ---
 // App: compone todo
 const {
@@ -3862,11 +4077,13 @@ function App() {
       } catch {}
     };
   }, []);
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ScrollProgress, null), /*#__PURE__*/React.createElement(Cursor, null), /*#__PURE__*/React.createElement(Nav, {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ScrollProgress, null), /*#__PURE__*/React.createElement(Cursor, null), /*#__PURE__*/React.createElement(FloatingCTA, {
+    onEnter: onEnter
+  }), /*#__PURE__*/React.createElement(Nav, {
     onEnter: onEnter
   }), /*#__PURE__*/React.createElement(Hero, {
     onEnter: onEnter
-  }), /*#__PURE__*/React.createElement(Worlds, {
+  }), /*#__PURE__*/React.createElement(TrustBar, null), /*#__PURE__*/React.createElement(Worlds, {
     onEnter: onEnter
   }), /*#__PURE__*/React.createElement(Features, null), /*#__PURE__*/React.createElement(How, null), /*#__PURE__*/React.createElement(Preview, {
     onEnter: onEnter

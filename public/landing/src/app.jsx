@@ -24,8 +24,10 @@ function App(){
     <>
       <ScrollProgress/>
       <Cursor/>
+      <FloatingCTA onEnter={onEnter}/>
       <Nav onEnter={onEnter}/>
       <Hero onEnter={onEnter}/>
+      <TrustBar/>
       <Worlds onEnter={onEnter}/>
       <Features/>
       <How/>

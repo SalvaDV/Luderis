@@ -6,7 +6,7 @@
 <title>Luderis — Aprendé lo que querés</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
   :root{
     --ink: #0D1F3C;
@@ -25,7 +25,7 @@
     --amber: #E8891C;
     --amber-light: #F4C030;
     --pink: #D85AA3;
-    --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Outfit', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
   *{box-sizing:border-box}
@@ -38,6 +38,13 @@
     html,body{cursor:none}
     button,a,[data-mag]{cursor:none}
   }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration:.01ms!important;
+      animation-iteration-count:1!important;
+      transition-duration:.01ms!important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -46,6 +53,6 @@
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
   <!-- Bundle pre-compilado — sin Babel runtime -->
-  <script src="bundle.js?v=20260525g"></script>
+  <script src="bundle.js?v=20260525h"></script>
 </body>
 </html>

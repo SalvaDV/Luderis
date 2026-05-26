@@ -10,7 +10,7 @@ function Preview({onEnter}){
           <Reveal>
             <Kicker>05 · Producto</Kicker>
             <h2 style={{fontSize:'clamp(44px, 7vw, 92px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'18px 0 0', maxWidth:860}}>
-              {"\n"}
+              Así se ve <i style={{fontStyle:'italic', fontWeight:500, color:'var(--blue)'}}>por dentro.</i>
             </h2>
           </Reveal>
           <Reveal delay={0.1}>

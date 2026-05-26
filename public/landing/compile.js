@@ -13,6 +13,7 @@ const order = [
   'shader.jsx',
   'cursor.jsx',
   'nav.jsx',
+  'trustbar.jsx',
   'hero.jsx',
   'worlds.jsx',
   'features.jsx',
@@ -24,6 +25,7 @@ const order = [
   'cta.jsx',
   'contact.jsx',
   'footer.jsx',
+  'floatingcta.jsx',
   'app.jsx',
 ];
 

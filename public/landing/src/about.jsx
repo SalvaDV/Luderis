@@ -25,13 +25,19 @@ function About(){
           <Reveal delay={0.15}>
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
               {[
-                {k:'Misión', v:'Democratizar el acceso al conocimiento conectando personas que quieren aprender con quienes quieren enseñar.', c:'var(--blue)'},
-                {k:'Visión', v:'Ser la plataforma de referencia en Argentina para el intercambio de conocimiento entre personas.', c:'var(--orange)'},
-                {k:'Tecnología', v:'IA semántica, evaluaciones automatizadas, seguimiento en tiempo real. Construido sobre infra moderna.', c:'var(--ink)'},
-                {k:'Confianza', v:'Privacidad y seguridad en cada interacción. Tus datos son tuyos, siempre.', c:'var(--blue-deep)'},
+                {k:'Misión', v:'Democratizar el acceso al conocimiento conectando personas que quieren aprender con quienes quieren enseñar.', dark:true, accent:'#1A6ED8'},
+                {k:'Visión', v:'Ser la plataforma de referencia en Argentina para el intercambio de conocimiento entre personas.', dark:false, accent:'#1E8E73'},
+                {k:'Tecnología', v:'IA semántica, evaluaciones automatizadas, seguimiento en tiempo real. Construido sobre infra moderna.', dark:true, accent:'#7B5CF0'},
+                {k:'Confianza', v:'Privacidad y seguridad en cada interacción. Tus datos son tuyos, siempre.', dark:false, accent:'#E8891C'},
               ].map((v,i)=>(
-                <div key={v.k} style={{background: i%3===0?v.c:'var(--paper)', color: i%3===0?'var(--paper)':'var(--ink)', border:'1px solid '+(i%3===0?v.c:'var(--line)'), borderRadius:18, padding:'24px', minHeight:200, position:'relative', overflow:'hidden'}}>
-                  <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', textTransform:'uppercase', opacity:.7}}>0{i+1}</div>
+                <div key={v.k} style={{
+                  background: v.dark ? '#0D1F3C' : 'var(--paper)',
+                  color: v.dark ? '#fff' : 'var(--ink)',
+                  border: v.dark ? '1px solid transparent' : '1px solid var(--line)',
+                  borderTop: `3px solid ${v.accent}`,
+                  borderRadius:18, padding:'24px', minHeight:200, position:'relative', overflow:'hidden'
+                }}>
+                  <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.14em', textTransform:'uppercase', color:v.accent}}>0{i+1}</div>
                   <div style={{fontSize:22, fontWeight:700, letterSpacing:'-.03em', margin:'8px 0 10px'}}>{v.k}</div>
                   <p style={{fontSize:13, lineHeight:1.5, opacity:.85, margin:0}}>{v.v}</p>
                 </div>
