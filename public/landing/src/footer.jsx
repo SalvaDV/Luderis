@@ -18,9 +18,7 @@ function Footer(){
   ];
   return (
     <footer style={{background:'var(--ink)', color:'var(--paper)', padding:'80px 28px 32px', position:'relative', overflow:'hidden'}}>
-      <div style={{position:'absolute', inset:0, opacity:.55}}>
-        <Shader palette="dark"/>
-      </div>
+      <Grain opacity={0.055}/>
       <div style={{maxWidth:1344, margin:'0 auto', position:'relative', zIndex:2}}>
         {/* Big wordmark */}
         <div style={{fontSize:'clamp(100px, 22vw, 360px)', fontWeight:700, letterSpacing:'-.06em', lineHeight:.88, marginBottom:60, color:'transparent', WebkitTextStroke:'1px oklch(1 0 0 / .3)'}}>

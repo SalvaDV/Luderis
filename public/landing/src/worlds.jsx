@@ -1,7 +1,38 @@
-// Sección Dos mundos (Cursos / Clases particulares)
+// WorldCard: CSS gradient + blobs + 3D tilt (sin WebGL)
+function WorldCard({children, style, onClick, 'data-cursor':dc, 'data-cursor-label':dcl}){
+  const ref = React.useRef(null);
+  const onMove = (e)=>{
+    const el = ref.current; if(!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left)/r.width - 0.5;
+    const y = (e.clientY - r.top)/r.height - 0.5;
+    el.style.transform = `perspective(1000px) rotateY(${x*7}deg) rotateX(${-y*7}deg) scale(1.018)`;
+    el.style.boxShadow = `${-x*28}px ${-y*28}px 70px oklch(0 0 0 / .28)`;
+  };
+  const onLeave = ()=>{
+    const el = ref.current; if(!el) return;
+    el.style.transform = 'perspective(1000px) rotateY(0) rotateX(0) scale(1)';
+    el.style.boxShadow = '0 20px 50px oklch(0 0 0 / .10)';
+  };
+  return (
+    <div ref={ref} onClick={onClick} data-cursor={dc} data-cursor-label={dcl}
+      onPointerMove={onMove} onPointerLeave={onLeave}
+      style={{
+        ...style,
+        transition:'transform .5s cubic-bezier(.2,.7,.2,1), box-shadow .5s cubic-bezier(.2,.7,.2,1)',
+        willChange:'transform', cursor:'pointer',
+        boxShadow:'0 20px 50px oklch(0 0 0 / .10)'
+      }}>
+      {children}
+    </div>
+  );
+}
+
+// Sección Dos mundos — CSS gradients, sin shader
 function Worlds({onEnter}){
   const w = useWindowWidth();
   const isMobile = w <= 640;
+
   return (
     <section id="mundos" style={{padding: isMobile ? '80px 16px 60px' : '140px 28px 120px', position:'relative'}}>
       <div style={{maxWidth:1344, margin:'0 auto'}}>
@@ -20,92 +51,101 @@ function Worlds({onEnter}){
         </div>
 
         <div className="lud-worlds-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}>
-          {/* CURSOS */}
+
+          {/* CURSOS — azul profundo */}
           <Reveal delay={0.1}>
-            <div data-cursor data-cursor-label="CURSOS" onClick={onEnter} style={{
-              background:'#0C2A6E', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
-              position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 540,
+            <WorldCard data-cursor data-cursor-label="CURSOS" onClick={onEnter} style={{
+              background:'linear-gradient(140deg, #071840 0%, #1040C0 52%, #1478C8 100%)',
+              color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
+              position:'relative', overflow:'hidden',
+              minHeight: isMobile ? 'auto' : 540,
               display:'flex', flexDirection:'column', justifyContent:'space-between'
             }}>
-              <div style={{position:'absolute', inset:0, opacity:.78}}>
-                <Shader palette="warm"/>
-              </div>
+              {/* Blobs decorativos CSS */}
+              <div aria-hidden style={{position:'absolute', width:400, height:400, borderRadius:'50%', background:'oklch(0.75 0.22 230 / .12)', right:-120, top:-140, pointerEvents:'none'}}/>
+              <div aria-hidden style={{position:'absolute', width:240, height:240, borderRadius:'50%', background:'oklch(0.65 0.20 210 / .14)', left:-70, bottom:-70, pointerEvents:'none'}}/>
+              <div aria-hidden style={{position:'absolute', width:130, height:130, borderRadius:'50%', background:'oklch(0.85 0.18 195 / .12)', right:80, bottom:120, pointerEvents:'none'}}/>
+
               <div style={{position:'relative', zIndex:2}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                   <Kicker color="var(--paper)">◎ Cursos estructurados</Kicker>
-                  <div style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.5}}>01</div>
+                  <div style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.45}}>01</div>
                 </div>
                 <h3 style={{fontSize: isMobile ? 48 : 72, fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'24px 0 0'}}>
-                  Cursos<br/><span style={{color:'#2EC4A0'}}>completos.</span>
+                  Cursos<br/><span style={{color:'#5EE8D0'}}>completos.</span>
                 </h3>
-                <p style={{fontSize:16, lineHeight:1.55, opacity:.92, margin:'20px 0 0', maxWidth:400}}>
+                <p style={{fontSize:16, lineHeight:1.55, opacity:.88, margin:'20px 0 0', maxWidth:400}}>
                   Experiencias de aprendizaje de punta a punta. Contenido, evaluaciones, seguimiento, certificados.
                 </p>
               </div>
               <div style={{position:'relative', zIndex:2, marginTop:40}}>
-                <div className="lud-worlds-feat-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .12)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
+                <div className="lud-worlds-feat-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .10)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
                   {[
                     ['Clases organizadas','Módulos + lecciones'],
                     ['Evaluaciones','Automáticas + revisadas'],
                     ['Certificados','Verificables'],
                     ['Foro grupal','Chat + archivos'],
                   ].map(([a,b],i)=>(
-                    <div key={i} style={{background:'oklch(0.20 0.04 230)', padding:'16px 18px'}}>
-                      <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.1em', opacity:.82, textTransform:'uppercase'}}>{a}</div>
+                    <div key={i} style={{background:'oklch(1 0 0 / .06)', padding:'16px 18px', backdropFilter:'blur(6px)'}}>
+                      <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.1em', opacity:.72, textTransform:'uppercase'}}>{a}</div>
                       <div style={{fontSize:14, fontWeight:500, marginTop:4}}>{b}</div>
                     </div>
                   ))}
                 </div>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:24}}>
-                  <span style={{fontFamily:'var(--font-mono)', fontSize:12, opacity:.88}}>3.428 cursos activos</span>
+                  <span style={{fontFamily:'var(--font-mono)', fontSize:12, opacity:.85}}>3.428 cursos activos</span>
                   <MagBtn variant="paper" onClick={onEnter}>Explorar cursos</MagBtn>
                 </div>
               </div>
-            </div>
+            </WorldCard>
           </Reveal>
 
-          {/* CLASES */}
+          {/* CLASES — ámbar cálido */}
           <Reveal delay={0.2}>
-            <div data-cursor data-cursor-label="CLASES" onClick={onEnter} style={{
-              background:'#3D1A00', color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
-              position:'relative', overflow:'hidden', minHeight: isMobile ? 'auto' : 540,
+            <WorldCard data-cursor data-cursor-label="CLASES" onClick={onEnter} style={{
+              background:'linear-gradient(140deg, #220800 0%, #A03000 52%, #D86010 100%)',
+              color:'var(--paper)', borderRadius:28, padding: isMobile ? '24px' : '40px',
+              position:'relative', overflow:'hidden',
+              minHeight: isMobile ? 'auto' : 540,
               display:'flex', flexDirection:'column', justifyContent:'space-between'
             }}>
-              <div style={{position:'absolute', inset:0, opacity:.78}}>
-                <Shader palette="amber"/>
-              </div>
+              {/* Blobs decorativos CSS */}
+              <div aria-hidden style={{position:'absolute', width:360, height:360, borderRadius:'50%', background:'oklch(0.85 0.20 60 / .10)', left:-100, top:-120, pointerEvents:'none'}}/>
+              <div aria-hidden style={{position:'absolute', width:220, height:220, borderRadius:'50%', background:'oklch(0.80 0.18 50 / .12)', right:-50, bottom:60, pointerEvents:'none'}}/>
+              <div aria-hidden style={{position:'absolute', width:110, height:110, borderRadius:'50%', background:'oklch(0.90 0.16 75 / .14)', left:100, bottom:-30, pointerEvents:'none'}}/>
+
               <div style={{position:'relative', zIndex:2}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                   <Kicker color="var(--paper)">◎ 1:1 a tu medida</Kicker>
-                  <div style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.5}}>02</div>
+                  <div style={{fontFamily:'var(--font-mono)', fontSize:11, opacity:.45}}>02</div>
                 </div>
                 <h3 style={{fontSize: isMobile ? 48 : 72, fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'24px 0 0'}}>
                   Clases<br/><span style={{fontStyle:'italic', fontWeight:500, color:'#F4C030'}}>particulares.</span>
                 </h3>
-                <p style={{fontSize:16, lineHeight:1.55, margin:'20px 0 0', maxWidth:400, opacity:.93}}>
+                <p style={{fontSize:16, lineHeight:1.55, margin:'20px 0 0', maxWidth:400, opacity:.90}}>
                   Conexión directa con un docente. Tu horario, tu ritmo, tu objetivo. Sin intermediarios.
                 </p>
               </div>
               <div style={{position:'relative', zIndex:2, marginTop:40}}>
-                <div className="lud-worlds-feat-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .12)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
+                <div className="lud-worlds-feat-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1px', background:'oklch(1 0 0 / .10)', border:'1px solid oklch(1 0 0 / .12)', borderRadius:14, overflow:'hidden'}}>
                   {[
                     ['Horarios','A tu medida'],
                     ['Chat directo','Sin intermediarios'],
                     ['Precio','Acordado 1:1'],
                     ['Duración','Vos elegís'],
                   ].map(([a,b],i)=>(
-                    <div key={i} style={{background:'oklch(0.24 0.08 55)', padding:'16px 18px'}}>
-                      <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.1em', opacity:.82, textTransform:'uppercase'}}>{a}</div>
+                    <div key={i} style={{background:'oklch(1 0 0 / .06)', padding:'16px 18px', backdropFilter:'blur(6px)'}}>
+                      <div style={{fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:'.1em', opacity:.72, textTransform:'uppercase'}}>{a}</div>
                       <div style={{fontSize:14, fontWeight:500, marginTop:4}}>{b}</div>
                     </div>
                   ))}
                 </div>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:24}}>
-                  <span style={{fontFamily:'var(--font-mono)', fontSize:12, opacity:.88}}>14.203 clases esta semana</span>
+                  <span style={{fontFamily:'var(--font-mono)', fontSize:12, opacity:.85}}>14.203 clases esta semana</span>
                   <MagBtn variant="paper" onClick={onEnter}>Encontrar docente</MagBtn>
                 </div>
               </div>
-            </div>
+            </WorldCard>
           </Reveal>
         </div>
       </div>

@@ -29,10 +29,9 @@ function Preview({onEnter}){
         </div>
 
         <Reveal delay={0.15}>
-          <div style={{position:'relative', borderRadius:28, overflow:'hidden', background:'linear-gradient(135deg, oklch(0.92 0.06 258), oklch(0.96 0.04 80))', padding: isMobile ? '40px 24px 0' : '60px 60px 0', minHeight: isMobile ? 420 : 560, border:'1px solid var(--line)'}}>
-            <div style={{position:'absolute', inset:0, opacity:.65}}>
-              <Shader palette="deep" intensity={1}/>
-            </div>
+          <div style={{position:'relative', borderRadius:28, overflow:'hidden', background:'linear-gradient(135deg, #0A1840 0%, #1040A8 52%, #1870B8 100%)', padding: isMobile ? '40px 24px 0' : '60px 60px 0', minHeight: isMobile ? 420 : 560, border:'1px solid var(--line)'}}>
+            <div aria-hidden style={{position:'absolute', width:600, height:600, borderRadius:'50%', background:'oklch(0.7 0.2 225 / .08)', right:-150, top:-150, pointerEvents:'none'}}/>
+
             <div style={{position:'relative', zIndex:2, display:'flex', justifyContent:'center', alignItems:'flex-end', gap:40}}>
               {/* Desktop mock — solo en desktop */}
               {!isMobile && <DesktopMock tab={tab}/>}

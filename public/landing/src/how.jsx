@@ -16,10 +16,11 @@ function How(){
   ];
 
   return (
-    <section id="como" style={{position:'relative', background:'var(--blue-deep)', color:'var(--paper)', padding: isMobile ? '80px 16px' : '120px 28px', overflow:'hidden'}}>
-      <div style={{position:'absolute', inset:0, opacity:.65}}>
-        <Shader palette="dark"/>
-      </div>
+    <section id="como" style={{position:'relative', background:'linear-gradient(160deg, #070F2A 0%, #0C2055 45%, #0E2E70 72%, #0B3858 100%)', color:'var(--paper)', padding: isMobile ? '80px 16px' : '120px 28px', overflow:'hidden'}}>
+      {/* Blobs decorativos CSS */}
+      <div aria-hidden style={{position:'absolute', width:500, height:500, borderRadius:'50%', background:'oklch(0.55 0.22 230 / .08)', right:-150, top:-150, pointerEvents:'none'}}/>
+      <div aria-hidden style={{position:'absolute', width:350, height:350, borderRadius:'50%', background:'oklch(0.60 0.20 215 / .07)', left:-100, bottom:-100, pointerEvents:'none'}}/>
+
 
       <div style={{position:'relative', zIndex:2, maxWidth:1344, margin:'0 auto'}}>
         <Reveal>

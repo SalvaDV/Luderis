@@ -11,17 +11,15 @@ function CheckBadge(){
 // CTA final gigante
 function CTA({onEnter}){
   return (
-    <section style={{padding:'120px 28px', position:'relative', overflow:'hidden'}}>
-      <div style={{position:'absolute', inset:0, opacity:.9}}>
-        <Shader palette="warm" intensity={1.1}/>
-      </div>
+    <section style={{padding:'120px 28px', position:'relative', overflow:'hidden', background:'linear-gradient(135deg, #F5F0FF 0%, #EAF2FF 40%, #EBF9F5 100%)'}}>
+
 
       {/* Anillo decorativo animado */}
       <div aria-hidden style={{position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', width:700, height:700, borderRadius:'50%', pointerEvents:'none', zIndex:1}}>
         <div style={{
           position:'absolute', inset:0, borderRadius:'50%',
           background:'conic-gradient(from 0deg, var(--blue), var(--orange), var(--blue))',
-          opacity:.12,
+          opacity:.22,
           animation:'lud-ring-spin 12s linear infinite',
           mask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
           WebkitMask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
@@ -29,7 +27,7 @@ function CTA({onEnter}){
         <div style={{
           position:'absolute', inset:24, borderRadius:'50%',
           background:'conic-gradient(from 180deg, var(--orange), var(--blue), var(--orange))',
-          opacity:.08,
+          opacity:.15,
           animation:'lud-ring-spin 18s linear infinite reverse',
           mask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
           WebkitMask:'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',

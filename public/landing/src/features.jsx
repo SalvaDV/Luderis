@@ -25,9 +25,8 @@ function Features(){
           {/* AI Search — grande */}
           <Reveal style={{gridColumn: isMobile ? 'span 1' : isTablet ? 'span 3' : 'span 4', gridRow: isMobile ? 'span 1' : 'span 2'}} className="lud-bento-item">
             <BentoCard>
-              <div style={{position:'absolute', inset:0, opacity:1}}>
-                <Shader palette="blue" intensity={1.05}/>
-              </div>
+              <div aria-hidden style={{position:'absolute', inset:0, background:'linear-gradient(140deg, #0B1F60 0%, #1245C8 55%, #1478C0 100%)', borderRadius:20, zIndex:1}}/>
+
               <div style={{position:'relative', zIndex:2, display:'flex', flexDirection:'column', height:'100%', justifyContent:'space-between'}}>
                 <div>
                   <Kicker>● IA Semántica</Kicker>

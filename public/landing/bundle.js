@@ -1533,7 +1533,48 @@ Object.assign(window, {
 });
 
 // --- worlds.jsx ---
-// Sección Dos mundos (Cursos / Clases particulares)
+// WorldCard: CSS gradient + blobs + 3D tilt (sin WebGL)
+function WorldCard({
+  children,
+  style,
+  onClick,
+  'data-cursor': dc,
+  'data-cursor-label': dcl
+}) {
+  const ref = React.useRef(null);
+  const onMove = e => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.transform = `perspective(1000px) rotateY(${x * 7}deg) rotateX(${-y * 7}deg) scale(1.018)`;
+    el.style.boxShadow = `${-x * 28}px ${-y * 28}px 70px oklch(0 0 0 / .28)`;
+  };
+  const onLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.transform = 'perspective(1000px) rotateY(0) rotateX(0) scale(1)';
+    el.style.boxShadow = '0 20px 50px oklch(0 0 0 / .10)';
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    onClick: onClick,
+    "data-cursor": dc,
+    "data-cursor-label": dcl,
+    onPointerMove: onMove,
+    onPointerLeave: onLeave,
+    style: {
+      ...style,
+      transition: 'transform .5s cubic-bezier(.2,.7,.2,1), box-shadow .5s cubic-bezier(.2,.7,.2,1)',
+      willChange: 'transform',
+      cursor: 'pointer',
+      boxShadow: '0 20px 50px oklch(0 0 0 / .10)'
+    }
+  }, children);
+}
+
+// Sección Dos mundos — CSS gradients, sin shader
 function Worlds({
   onEnter
 }) {
@@ -1595,12 +1636,12 @@ function Worlds({
     }
   }, /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.1
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(WorldCard, {
     "data-cursor": true,
     "data-cursor-label": "CURSOS",
     onClick: onEnter,
     style: {
-      background: '#0C2A6E',
+      background: 'linear-gradient(140deg, #071840 0%, #1040C0 52%, #1478C8 100%)',
       color: 'var(--paper)',
       borderRadius: 28,
       padding: isMobile ? '24px' : '40px',
@@ -1612,14 +1653,42 @@ function Worlds({
       justifyContent: 'space-between'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
     style: {
       position: 'absolute',
-      inset: 0,
-      opacity: .78
+      width: 400,
+      height: 400,
+      borderRadius: '50%',
+      background: 'oklch(0.75 0.22 230 / .12)',
+      right: -120,
+      top: -140,
+      pointerEvents: 'none'
     }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "warm"
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      width: 240,
+      height: 240,
+      borderRadius: '50%',
+      background: 'oklch(0.65 0.20 210 / .14)',
+      left: -70,
+      bottom: -70,
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      width: 130,
+      height: 130,
+      borderRadius: '50%',
+      background: 'oklch(0.85 0.18 195 / .12)',
+      right: 80,
+      bottom: 120,
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 2
@@ -1636,7 +1705,7 @@ function Worlds({
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 11,
-      opacity: .5
+      opacity: .45
     }
   }, "01")), /*#__PURE__*/React.createElement("h3", {
     style: {
@@ -1648,13 +1717,13 @@ function Worlds({
     }
   }, "Cursos", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
     style: {
-      color: '#2EC4A0'
+      color: '#5EE8D0'
     }
   }, "completos.")), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 16,
       lineHeight: 1.55,
-      opacity: .92,
+      opacity: .88,
       margin: '20px 0 0',
       maxWidth: 400
     }
@@ -1670,7 +1739,7 @@ function Worlds({
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
       gap: '1px',
-      background: 'oklch(1 0 0 / .12)',
+      background: 'oklch(1 0 0 / .10)',
       border: '1px solid oklch(1 0 0 / .12)',
       borderRadius: 14,
       overflow: 'hidden'
@@ -1678,15 +1747,16 @@ function Worlds({
   }, [['Clases organizadas', 'Módulos + lecciones'], ['Evaluaciones', 'Automáticas + revisadas'], ['Certificados', 'Verificables'], ['Foro grupal', 'Chat + archivos']].map(([a, b], i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      background: 'oklch(0.20 0.04 230)',
-      padding: '16px 18px'
+      background: 'oklch(1 0 0 / .06)',
+      padding: '16px 18px',
+      backdropFilter: 'blur(6px)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 10,
       letterSpacing: '.1em',
-      opacity: .82,
+      opacity: .72,
       textTransform: 'uppercase'
     }
   }, a), /*#__PURE__*/React.createElement("div", {
@@ -1706,19 +1776,19 @@ function Worlds({
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 12,
-      opacity: .88
+      opacity: .85
     }
   }, "3.428 cursos activos"), /*#__PURE__*/React.createElement(MagBtn, {
     variant: "paper",
     onClick: onEnter
   }, "Explorar cursos"))))), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.2
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(WorldCard, {
     "data-cursor": true,
     "data-cursor-label": "CLASES",
     onClick: onEnter,
     style: {
-      background: '#3D1A00',
+      background: 'linear-gradient(140deg, #220800 0%, #A03000 52%, #D86010 100%)',
       color: 'var(--paper)',
       borderRadius: 28,
       padding: isMobile ? '24px' : '40px',
@@ -1730,14 +1800,42 @@ function Worlds({
       justifyContent: 'space-between'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
     style: {
       position: 'absolute',
-      inset: 0,
-      opacity: .78
+      width: 360,
+      height: 360,
+      borderRadius: '50%',
+      background: 'oklch(0.85 0.20 60 / .10)',
+      left: -100,
+      top: -120,
+      pointerEvents: 'none'
     }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "amber"
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      width: 220,
+      height: 220,
+      borderRadius: '50%',
+      background: 'oklch(0.80 0.18 50 / .12)',
+      right: -50,
+      bottom: 60,
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      width: 110,
+      height: 110,
+      borderRadius: '50%',
+      background: 'oklch(0.90 0.16 75 / .14)',
+      left: 100,
+      bottom: -30,
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 2
@@ -1754,7 +1852,7 @@ function Worlds({
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 11,
-      opacity: .5
+      opacity: .45
     }
   }, "02")), /*#__PURE__*/React.createElement("h3", {
     style: {
@@ -1776,7 +1874,7 @@ function Worlds({
       lineHeight: 1.55,
       margin: '20px 0 0',
       maxWidth: 400,
-      opacity: .93
+      opacity: .90
     }
   }, "Conexi\xF3n directa con un docente. Tu horario, tu ritmo, tu objetivo. Sin intermediarios.")), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1790,7 +1888,7 @@ function Worlds({
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
       gap: '1px',
-      background: 'oklch(1 0 0 / .12)',
+      background: 'oklch(1 0 0 / .10)',
       border: '1px solid oklch(1 0 0 / .12)',
       borderRadius: 14,
       overflow: 'hidden'
@@ -1798,15 +1896,16 @@ function Worlds({
   }, [['Horarios', 'A tu medida'], ['Chat directo', 'Sin intermediarios'], ['Precio', 'Acordado 1:1'], ['Duración', 'Vos elegís']].map(([a, b], i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      background: 'oklch(0.24 0.08 55)',
-      padding: '16px 18px'
+      background: 'oklch(1 0 0 / .06)',
+      padding: '16px 18px',
+      backdropFilter: 'blur(6px)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 10,
       letterSpacing: '.1em',
-      opacity: .82,
+      opacity: .72,
       textTransform: 'uppercase'
     }
   }, a), /*#__PURE__*/React.createElement("div", {
@@ -1826,7 +1925,7 @@ function Worlds({
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 12,
-      opacity: .88
+      opacity: .85
     }
   }, "14.203 clases esta semana"), /*#__PURE__*/React.createElement(MagBtn, {
     variant: "paper",
@@ -1906,15 +2005,15 @@ function Features() {
     },
     className: "lud-bento-item"
   }, /*#__PURE__*/React.createElement(BentoCard, null, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
     style: {
       position: 'absolute',
       inset: 0,
-      opacity: 1
+      background: 'linear-gradient(140deg, #0B1F60 0%, #1245C8 55%, #1478C0 100%)',
+      borderRadius: 20,
+      zIndex: 1
     }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "blue",
-    intensity: 1.05
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 2,
@@ -2310,20 +2409,36 @@ function How() {
     id: "como",
     style: {
       position: 'relative',
-      background: 'var(--blue-deep)',
+      background: 'linear-gradient(160deg, #070F2A 0%, #0C2055 45%, #0E2E70 72%, #0B3858 100%)',
       color: 'var(--paper)',
       padding: isMobile ? '80px 16px' : '120px 28px',
       overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
     style: {
       position: 'absolute',
-      inset: 0,
-      opacity: .65
+      width: 500,
+      height: 500,
+      borderRadius: '50%',
+      background: 'oklch(0.55 0.22 230 / .08)',
+      right: -150,
+      top: -150,
+      pointerEvents: 'none'
     }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "dark"
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: 'absolute',
+      width: 350,
+      height: 350,
+      borderRadius: '50%',
+      background: 'oklch(0.60 0.20 215 / .07)',
+      left: -100,
+      bottom: -100,
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 2,
@@ -2536,21 +2651,24 @@ function Preview({
       position: 'relative',
       borderRadius: 28,
       overflow: 'hidden',
-      background: 'linear-gradient(135deg, oklch(0.92 0.06 258), oklch(0.96 0.04 80))',
+      background: 'linear-gradient(135deg, #0A1840 0%, #1040A8 52%, #1870B8 100%)',
       padding: isMobile ? '40px 24px 0' : '60px 60px 0',
       minHeight: isMobile ? 420 : 560,
       border: '1px solid var(--line)'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
     style: {
       position: 'absolute',
-      inset: 0,
-      opacity: .65
+      width: 600,
+      height: 600,
+      borderRadius: '50%',
+      background: 'oklch(0.7 0.2 225 / .08)',
+      right: -150,
+      top: -150,
+      pointerEvents: 'none'
     }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "deep",
-    intensity: 1
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 2,
@@ -3200,18 +3318,10 @@ function CTA({
     style: {
       padding: '120px 28px',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      background: 'linear-gradient(135deg, #F5F0FF 0%, #EAF2FF 40%, #EBF9F5 100%)'
     }
   }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      inset: 0,
-      opacity: .9
-    }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "warm",
-    intensity: 1.1
-  })), /*#__PURE__*/React.createElement("div", {
     "aria-hidden": true,
     style: {
       position: 'absolute',
@@ -3230,7 +3340,7 @@ function CTA({
       inset: 0,
       borderRadius: '50%',
       background: 'conic-gradient(from 0deg, var(--blue), var(--orange), var(--blue))',
-      opacity: .12,
+      opacity: .22,
       animation: 'lud-ring-spin 12s linear infinite',
       mask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
       WebkitMask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)'
@@ -3241,7 +3351,7 @@ function CTA({
       inset: 24,
       borderRadius: '50%',
       background: 'conic-gradient(from 180deg, var(--orange), var(--blue), var(--orange))',
-      opacity: .08,
+      opacity: .15,
       animation: 'lud-ring-spin 18s linear infinite reverse',
       mask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)',
       WebkitMask: 'radial-gradient(circle, transparent 46%, black 47%, black 50%, transparent 51%)'
@@ -3598,15 +3708,9 @@ function Footer() {
       position: 'relative',
       overflow: 'hidden'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      inset: 0,
-      opacity: .55
-    }
-  }, /*#__PURE__*/React.createElement(Shader, {
-    palette: "dark"
-  })), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Grain, {
+    opacity: 0.055
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 1344,
       margin: '0 auto',
