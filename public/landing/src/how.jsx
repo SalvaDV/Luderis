@@ -1,12 +1,18 @@
+// Lucide icons inline
+function IcoUser(){return(<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);}
+function IcoSearch(){return(<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>);}
+function IcoMsg(){return(<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>);}
+function IcoGrad(){return(<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>);}
+
 // Cómo funciona — 4 step cards con timeline line + Reveal staggered
 function How(){
   const w = useWindowWidth();
   const isMobile = w <= 640;
   const steps = [
-    {n:'01', title:'Creá tu cuenta', desc:'Menos de un minuto. Solo email. Sin tarjeta, sin datos de más.', detail:['Email','Verificación','Listo'], icon:'👤'},
-    {n:'02', title:'Decí qué querés', desc:'Buscá con IA en lenguaje natural. El match es semántico, no por palabras exactas.', detail:['Prompt','Match','Resultados'], icon:'🔍'},
-    {n:'03', title:'Conectá directo', desc:'Chateá con el docente sin intermediarios. Sin exponer datos personales. Acordá precio y horario.', detail:['Mensajes','Agenda','Acuerdo'], icon:'💬'},
-    {n:'04', title:'Aprendé o enseñá', desc:'Seguí el progreso, rendí evaluaciones y descargá certificados verificables.', detail:['Progreso','Tests','Certificado'], icon:'🎓'},
+    {n:'01', title:'Creá tu cuenta', desc:'Menos de un minuto. Solo email. Sin tarjeta, sin datos de más.', detail:['Email','Verificación','Listo'], Icon:IcoUser},
+    {n:'02', title:'Decí qué querés', desc:'Buscá con IA en lenguaje natural. El match es semántico, no por palabras exactas.', detail:['Prompt','Match','Resultados'], Icon:IcoSearch},
+    {n:'03', title:'Conectá directo', desc:'Chateá con el docente sin intermediarios. Sin exponer datos personales. Acordá precio y horario.', detail:['Mensajes','Agenda','Acuerdo'], Icon:IcoMsg},
+    {n:'04', title:'Aprendé o enseñá', desc:'Seguí el progreso, rendí evaluaciones y descargá certificados verificables.', detail:['Progreso','Tests','Certificado'], Icon:IcoGrad},
   ];
 
   return (
@@ -61,7 +67,7 @@ function How(){
                   ...(isMobile ? {} : {margin:'0 auto 28px'})
                 }}>
                   <span style={{fontFamily:'var(--font-mono)', fontSize:11, color:'var(--orange)', letterSpacing:'.1em', fontWeight:600}}>{s.n}</span>
-                  <span style={{fontSize:22}}>{s.icon}</span>
+                  <span style={{color:'white', opacity:.85, display:'flex'}}><s.Icon/></span>
                 </div>
 
                 <div style={isMobile ? {flex:1} : {}}>

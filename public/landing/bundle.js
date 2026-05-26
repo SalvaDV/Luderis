@@ -987,56 +987,17 @@ function Nav({
 function LudLogo({
   size = 28
 }) {
-  return /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 40 40",
+  return /*#__PURE__*/React.createElement("img", {
+    src: "../logo.png",
+    alt: "Luderis",
     width: size,
     height: size,
-    fill: "none",
-    "aria-label": "Luderis"
-  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
-    id: "lud-logo-grad",
-    x1: "0",
-    y1: "0",
-    x2: "40",
-    y2: "40",
-    gradientUnits: "userSpaceOnUse"
-  }, /*#__PURE__*/React.createElement("stop", {
-    stopColor: "#1758D8"
-  }), /*#__PURE__*/React.createElement("stop", {
-    offset: "1",
-    stopColor: "#16B88A"
-  })), /*#__PURE__*/React.createElement("clipPath", {
-    id: "lud-logo-clip"
-  }, /*#__PURE__*/React.createElement("rect", {
-    width: "40",
-    height: "40",
-    rx: "12"
-  }))), /*#__PURE__*/React.createElement("rect", {
-    width: "40",
-    height: "40",
-    rx: "12",
-    fill: "url(#lud-logo-grad)"
-  }), /*#__PURE__*/React.createElement("g", {
-    clipPath: "url(#lud-logo-clip)"
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "15",
-    cy: "20",
-    r: "7.5",
-    fill: "white",
-    fillOpacity: "0.95"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: "25",
-    cy: "20",
-    r: "7.5",
-    fill: "white",
-    fillOpacity: "0.65"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M19 17 C19 13.5 21 13.5 21 17",
-    stroke: "url(#lud-logo-grad)",
-    strokeWidth: "1.8",
-    strokeLinecap: "round",
-    fill: "none"
-  })));
+    style: {
+      display: 'block',
+      borderRadius: Math.round(size * 0.22),
+      flexShrink: 0
+    }
+  });
 }
 Object.assign(window, {
   Nav,
@@ -2248,6 +2209,74 @@ function Bubble({
 window.Features = Features;
 
 // --- how.jsx ---
+// Lucide icons inline
+function IcoUser() {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "7",
+    r: "4"
+  }));
+}
+function IcoSearch() {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "11",
+    cy: "11",
+    r: "8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m21 21-4.35-4.35"
+  }));
+}
+function IcoMsg() {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+  }));
+}
+function IcoGrad() {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M22 10v6M2 10l10-5 10 5-10 5z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 12v5c3 3 9 3 12 0v-5"
+  }));
+}
+
 // Cómo funciona — 4 step cards con timeline line + Reveal staggered
 function How() {
   const w = useWindowWidth();
@@ -2257,25 +2286,25 @@ function How() {
     title: 'Creá tu cuenta',
     desc: 'Menos de un minuto. Solo email. Sin tarjeta, sin datos de más.',
     detail: ['Email', 'Verificación', 'Listo'],
-    icon: '👤'
+    Icon: IcoUser
   }, {
     n: '02',
     title: 'Decí qué querés',
     desc: 'Buscá con IA en lenguaje natural. El match es semántico, no por palabras exactas.',
     detail: ['Prompt', 'Match', 'Resultados'],
-    icon: '🔍'
+    Icon: IcoSearch
   }, {
     n: '03',
     title: 'Conectá directo',
     desc: 'Chateá con el docente sin intermediarios. Sin exponer datos personales. Acordá precio y horario.',
     detail: ['Mensajes', 'Agenda', 'Acuerdo'],
-    icon: '💬'
+    Icon: IcoMsg
   }, {
     n: '04',
     title: 'Aprendé o enseñá',
     desc: 'Seguí el progreso, rendí evaluaciones y descargá certificados verificables.',
     detail: ['Progreso', 'Tests', 'Certificado'],
-    icon: '🎓'
+    Icon: IcoGrad
   }];
   return /*#__PURE__*/React.createElement("section", {
     id: "como",
@@ -2381,9 +2410,11 @@ function How() {
     }
   }, s.n), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 22
+      color: 'white',
+      opacity: .85,
+      display: 'flex'
     }
-  }, s.icon)), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(s.Icon, null))), /*#__PURE__*/React.createElement("div", {
     style: isMobile ? {
       flex: 1
     } : {}
