@@ -1,50 +1,128 @@
-// Testimonios
+// Early Access — reemplaza testimonios, honesto y convierte
 function Testimonials(){
-  const items = [
-    {n:'Martina L.', r:'Alumna · Matemática', t:'Encontré una profesora increíble en 2 minutos. La búsqueda con IA me recomendó exactamente lo que necesitaba para rendir el final.', c:'var(--blue)'},
-    {n:'Carlos R.', r:'Docente · Guitarra', t:'Empecé a subir mis clases hace un mes y ya tengo 8 alumnos. La plataforma es facilísima y llegan alumnos solos.', c:'var(--orange)'},
-    {n:'Sofía M.', r:'Alumna · Inglés', t:'Me gustó que pude ver el perfil del docente con reseñas reales antes de inscribirme. Nada de sorpresas.', c:'var(--ink)'},
-    {n:'Juan P.', r:'Docente · Programación', t:'Los certificados verificables y las evaluaciones automáticas me ahorran horas. Hecho con cabeza.', c:'var(--blue-deep)'},
-    {n:'Valentina G.', r:'Alumna · Piano', t:'En una semana encontré al profe ideal. El sistema de reseñas y perfiles verificados le da mucha confianza.', c:'var(--orange)'},
-    {n:'Rodrigo B.', r:'Docente · Física', t:'Mis alumnos pueden ver su progreso en tiempo real y eso los mantiene motivados. La diferencia se nota en los resultados.', c:'var(--blue)'},
-  ];
+  const [email, setEmail] = React.useState('');
+  const [done, setDone]   = React.useState(false);
+  const [err, setErr]     = React.useState(false);
 
-  const Card = ({it,i})=>(
-    <div style={{width:400, background:'var(--paper)', border:'1px solid var(--line)', borderRadius:20, padding:'26px', display:'inline-block', whiteSpace:'normal', verticalAlign:'top', marginRight:16, transition:'transform .3s, box-shadow .3s'}}
-      onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 12px 32px oklch(0 0 0 / .08)';}}
-      onMouseLeave={e=>{e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none';}}>
-      <div style={{display:'flex', gap:3, marginBottom:12}}>
-        {[0,1,2,3,4].map(j=><SvgStar key={j}/>)}
-      </div>
-      <p style={{fontSize:16, lineHeight:1.55, margin:'0 0 20px', color:'var(--ink)', textWrap:'pretty'}}>"{it.t}"</p>
-      <div style={{display:'flex', alignItems:'center', gap:10, paddingTop:16, borderTop:'1px solid var(--line)'}}>
-        <div style={{width:38, height:38, borderRadius:'50%', background:it.c, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:14, flexShrink:0}}>{it.n[0]}</div>
-        <div>
-          <div style={{fontSize:14, fontWeight:600}}>{it.n}</div>
-          <div style={{fontFamily:'var(--font-mono)', fontSize:11, color:'var(--muted)'}}>{it.r}</div>
-        </div>
-      </div>
-    </div>
-  );
+  const submit = (e)=>{
+    e.preventDefault();
+    if(!email || !email.includes('@')){ setErr(true); return; }
+    setErr(false);
+    setDone(true);
+    // TODO: conectar con backend / Supabase
+  };
 
   return (
-    <section style={{padding:'120px 0', background:'var(--paper-2)', borderTop:'1px solid var(--line)', borderBottom:'1px solid var(--line)', overflow:'hidden'}}>
-      <div style={{maxWidth:1344, margin:'0 auto', marginBottom:60, padding:'0 28px'}}>
+    <section style={{
+      padding:'140px 28px',
+      position:'relative', overflow:'hidden',
+      background:'linear-gradient(160deg, #07102A 0%, #0D2055 50%, #071428 100%)'
+    }}>
+      {/* Orbe decorativo */}
+      <div aria-hidden style={{
+        position:'absolute', width:800, height:800, borderRadius:'50%',
+        background:'radial-gradient(circle, rgba(26,110,216,0.18) 0%, transparent 70%)',
+        left:'50%', top:'50%', transform:'translate(-50%,-50%)',
+        pointerEvents:'none'
+      }}/>
+
+      <div style={{maxWidth:680, margin:'0 auto', textAlign:'center', position:'relative', zIndex:2}}>
         <Reveal>
-          <Kicker>07 · Voces</Kicker>
-          <h2 style={{fontSize:'clamp(44px, 7vw, 92px)', fontWeight:700, letterSpacing:'-.05em', lineHeight:.95, margin:'18px 0 0', maxWidth:900}}>
-            Lo que dicen <i style={{fontStyle:'italic', fontWeight:500, color:'var(--blue)'}}>los que ya usan</i> Luderis.
+          <Kicker color="rgba(255,255,255,0.5)">07 · Acceso temprano</Kicker>
+          <h2 style={{
+            fontSize:'clamp(48px, 8vw, 110px)',
+            fontWeight:700, letterSpacing:'-.055em', lineHeight:.9,
+            margin:'20px 0 0', color:'#fff', textWrap:'balance'
+          }}>
+            Somos nuevos.<br/>
+            <i style={{fontStyle:'italic', fontWeight:500, color:'#7EFAEA'}}>Vos llegás primero.</i>
           </h2>
         </Reveal>
+
+        <Reveal delay={0.1}>
+          <p style={{
+            fontSize:18, lineHeight:1.55, color:'rgba(255,255,255,0.65)',
+            margin:'28px auto 0', maxWidth:480
+          }}>
+            Luderis está en etapa de lanzamiento. Anotate y te avisamos cuando tu acceso esté listo — sin spam, sin compromisos.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.2}>
+          {done ? (
+            <div style={{
+              marginTop:44, padding:'40px 32px',
+              background:'rgba(255,255,255,0.05)',
+              border:'1px solid rgba(126,250,234,0.25)',
+              borderRadius:20,
+              display:'flex', flexDirection:'column', alignItems:'center', gap:12
+            }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7EFAEA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 12.5l3 3 5-6"/>
+              </svg>
+              <div style={{fontSize:20, fontWeight:700, color:'#fff', letterSpacing:'-.02em'}}>¡Te anotamos!</div>
+              <div style={{fontSize:14, color:'rgba(255,255,255,0.55)', fontFamily:'var(--font-mono)'}}>
+                Te avisamos a <span style={{color:'#7EFAEA'}}>{email}</span> cuando estés listo.
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={submit} style={{marginTop:44}}>
+              <div style={{
+                display:'flex', gap:8, background:'rgba(255,255,255,0.07)',
+                border:`1px solid ${err ? '#D85AA3' : 'rgba(255,255,255,0.12)'}`,
+                borderRadius:16, padding:6, maxWidth:480, margin:'0 auto',
+                transition:'border-color .25s'
+              }}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e=>{ setEmail(e.target.value); setErr(false); }}
+                  placeholder="tu@email.com"
+                  data-cursor
+                  style={{
+                    flex:1, background:'transparent', border:'none', outline:'none',
+                    color:'#fff', fontSize:16, fontFamily:'var(--font-display)',
+                    padding:'12px 16px', minWidth:0
+                  }}
+                />
+                <button type="submit" data-cursor style={{
+                  background:'#fff', color:'var(--ink)',
+                  border:'none', borderRadius:11, padding:'12px 22px',
+                  fontFamily:'var(--font-display)', fontSize:14, fontWeight:700,
+                  cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+                  transition:'opacity .2s'
+                }}
+                onMouseEnter={e=>e.currentTarget.style.opacity='.85'}
+                onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
+                  Quiero acceso
+                </button>
+              </div>
+              {err && (
+                <div style={{marginTop:10, fontFamily:'var(--font-mono)', fontSize:12, color:'#D85AA3'}}>
+                  Ingresá un email válido.
+                </div>
+              )}
+            </form>
+          )}
+        </Reveal>
+
+        <Reveal delay={0.3}>
+          <div style={{
+            display:'flex', justifyContent:'center', gap:28,
+            marginTop:36, flexWrap:'wrap',
+            fontFamily:'var(--font-mono)', fontSize:11, color:'rgba(255,255,255,0.35)',
+            letterSpacing:'.06em'
+          }}>
+            {['Sin spam','Gratis para siempre','Cancelás cuando querés'].map(x=>(
+              <span key={x} style={{display:'inline-flex', alignItems:'center', gap:6}}>
+                <span style={{width:4, height:4, borderRadius:'50%', background:'rgba(255,255,255,0.25)', display:'inline-block'}}/>
+                {x}
+              </span>
+            ))}
+          </div>
+        </Reveal>
       </div>
-      {/* Fila 1 — izquierda */}
-      <Marquee speed={60} style={{marginBottom:16}}>
-        {items.map((it,i)=><Card key={i} it={it} i={i}/>)}
-      </Marquee>
-      {/* Fila 2 — derecha (reverse) */}
-      <Marquee speed={50} reverse>
-        {[...items].reverse().map((it,i)=><Card key={i} it={it} i={i}/>)}
-      </Marquee>
     </section>
   );
 }

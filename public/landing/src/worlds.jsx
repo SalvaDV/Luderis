@@ -120,8 +120,7 @@ function Worlds({onEnter}){
                     </div>
                   ))}
                 </div>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:28}}>
-                  <span style={{fontFamily:'var(--font-mono)', fontSize:12, color:'rgba(255,255,255,0.62)'}}>3.428 cursos activos</span>
+                <div style={{display:'flex', justifyContent:'flex-end', alignItems:'center', marginTop:28}}>
                   <MagBtn variant="paper" onClick={onEnter}>Explorar cursos</MagBtn>
                 </div>
               </div>
@@ -187,8 +186,7 @@ function Worlds({onEnter}){
                     </div>
                   ))}
                 </div>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:28}}>
-                  <span style={{fontFamily:'var(--font-mono)', fontSize:12, color:'rgba(255,255,255,0.62)'}}>14.203 clases esta semana</span>
+                <div style={{display:'flex', justifyContent:'flex-end', alignItems:'center', marginTop:28}}>
                   <MagBtn variant="paper" onClick={onEnter}>Encontrar docente</MagBtn>
                 </div>
               </div>

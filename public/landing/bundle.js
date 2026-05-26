@@ -1015,104 +1015,97 @@ Object.assign(window, {
 });
 
 // --- trustbar.jsx ---
-// TrustBar — franja de social proof con logos/marcas argentinas
+// TrustBar — stack tecnológico real de Luderis
 function TrustBar() {
-  const brands = ['Mercado Libre', 'Despegar', 'Globant', 'OLX', 'Naranja X', 'Ualá', 'Rappi', 'Bumeran', 'La Nación', 'Clarín', 'Infobae', 'Grupo Oui', 'MercadoPago', 'Tiendanube', 'Auth0'];
-
-  // Duplicamos para scroll infinito
-  const items = [...brands, ...brands];
+  const techs = [{
+    label: 'MercadoPago',
+    desc: 'Pagos',
+    color: '#00B1EA'
+  }, {
+    label: 'OpenAI',
+    desc: 'Búsqueda IA',
+    color: '#10A37F'
+  }, {
+    label: 'Google',
+    desc: 'Autenticación',
+    color: '#4285F4'
+  }, {
+    label: 'Supabase',
+    desc: 'Base de datos',
+    color: '#3ECF8E'
+  }, {
+    label: 'Vercel',
+    desc: 'Infraestructura',
+    color: '#fff'
+  }];
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      borderTop: '1px solid var(--line)',
-      borderBottom: '1px solid var(--line)',
-      background: 'var(--paper)',
-      padding: '20px 0',
-      overflow: 'hidden',
-      position: 'relative'
+      background: 'var(--ink)',
+      borderTop: '1px solid rgba(255,255,255,0.06)',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      padding: '28px 28px'
     }
   }, /*#__PURE__*/React.createElement("div", {
-    "aria-hidden": true,
     style: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 120,
-      zIndex: 2,
-      background: 'linear-gradient(to right, var(--paper), transparent)',
-      pointerEvents: 'none'
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    "aria-hidden": true,
-    style: {
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      bottom: 0,
-      width: 120,
-      zIndex: 2,
-      background: 'linear-gradient(to left, var(--paper), transparent)',
-      pointerEvents: 'none'
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
+      maxWidth: 1344,
+      margin: '0 auto',
       display: 'flex',
-      gap: 0
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "lud-trust-track",
-    style: {
-      display: 'flex',
-      gap: 0,
       alignItems: 'center',
-      animation: 'lud-trust-scroll 28s linear infinite',
-      willChange: 'transform'
-    }
-  }, items.map((b, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 10,
-      padding: '0 40px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: 12,
-      fontWeight: 600,
-      letterSpacing: '.06em',
-      color: 'var(--muted)',
-      whiteSpace: 'nowrap',
-      userSelect: 'none',
-      transition: 'color .2s'
+      gap: 48,
+      flexWrap: 'wrap',
+      justifyContent: 'space-between'
     },
-    onMouseEnter: e => e.currentTarget.style.color = 'var(--ink)',
-    onMouseLeave: e => e.currentTarget.style.color = 'var(--muted)'
-  }, /*#__PURE__*/React.createElement("span", {
+    className: "lud-trust-row"
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 5,
-      height: 5,
-      borderRadius: '50%',
-      background: 'var(--line)',
-      display: 'inline-block',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 10,
+      letterSpacing: '.16em',
+      color: 'oklch(1 0 0 / .35)',
+      textTransform: 'uppercase',
       flexShrink: 0
     }
-  }), b)))), /*#__PURE__*/React.createElement("div", {
+  }, "Construido sobre"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 40,
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center'
+    }
+  }, techs.map(t => /*#__PURE__*/React.createElement("div", {
+    key: t.label,
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 4
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 9,
+      letterSpacing: '.14em',
+      textTransform: 'uppercase',
+      color: 'oklch(1 0 0 / .3)'
+    }
+  }, t.desc), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      letterSpacing: '-.02em',
+      color: t.color
+    }
+  }, t.label)))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: 'var(--font-mono)',
       fontSize: 10,
       letterSpacing: '.14em',
-      color: 'var(--muted)',
-      textTransform: 'uppercase',
-      textAlign: 'center',
-      marginTop: 14,
-      opacity: .7
+      color: 'oklch(1 0 0 / .25)',
+      flexShrink: 0
     }
-  }, "Confiado por profesionales de las mejores empresas"), /*#__PURE__*/React.createElement("style", null, `
-        @keyframes lud-trust-scroll {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        .lud-trust-track:hover { animation-play-state: paused; }
-      `));
+  }, "100% argentino")), /*#__PURE__*/React.createElement("style", null, `@media(max-width:640px){.lud-trust-row{gap:24px!important; justify-content:center!important;}}`));
 }
 window.TrustBar = TrustBar;
 
@@ -1190,7 +1183,7 @@ function Hero({
       gap: 8,
       flexWrap: 'wrap'
     }
-  }, /*#__PURE__*/React.createElement(Pill, null, "\u25B2 12.4K alumnos activos"), /*#__PURE__*/React.createElement(Pill, null, "\u25C6 3.218 docentes")))), /*#__PURE__*/React.createElement(Reveal, {
+  }, /*#__PURE__*/React.createElement(Pill, null, "Beta abierta"), /*#__PURE__*/React.createElement(Pill, null, "Buenos Aires, AR")))), /*#__PURE__*/React.createElement(Reveal, {
     delay: 0.15
   }, /*#__PURE__*/React.createElement("h1", {
     style: {
@@ -1887,17 +1880,11 @@ function Worlds({
   }, b)))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       alignItems: 'center',
       marginTop: 28
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontFamily: 'var(--font-mono)',
-      fontSize: 12,
-      color: 'rgba(255,255,255,0.62)'
-    }
-  }, "3.428 cursos activos"), /*#__PURE__*/React.createElement(MagBtn, {
+  }, /*#__PURE__*/React.createElement(MagBtn, {
     variant: "paper",
     onClick: onEnter
   }, "Explorar cursos"))))), /*#__PURE__*/React.createElement(Reveal, {
@@ -2034,17 +2021,11 @@ function Worlds({
   }, b)))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       alignItems: 'center',
       marginTop: 28
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontFamily: 'var(--font-mono)',
-      fontSize: 12,
-      color: 'rgba(255,255,255,0.62)'
-    }
-  }, "14.203 clases esta semana"), /*#__PURE__*/React.createElement(MagBtn, {
+  }, /*#__PURE__*/React.createElement(MagBtn, {
     variant: "paper",
     onClick: onEnter
   }, "Encontrar docente"))))))), /*#__PURE__*/React.createElement("style", null, `
@@ -3044,36 +3025,101 @@ function PhoneMock({
 window.Preview = Preview;
 
 // --- stats.jsx ---
-// Contador animado de stats
+// Propuestas de valor — cualitativas, honestas
 function Stats() {
   const items = [{
-    k: 'alumnos activos',
-    v: 12483,
-    suffix: '',
+    icon: () => /*#__PURE__*/React.createElement("svg", {
+      width: "22",
+      height: "22",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.8",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M13 2L3 14h9l-1 8 10-12h-9l1-8z"
+    })),
+    k: 'Match en minutos',
+    v: 'IA semántica que entiende lo que buscás. No palabras clave — contexto real.',
     accent: '#3D8EF0'
   }, {
-    k: 'docentes verificados',
-    v: 3218,
-    suffix: '',
+    icon: () => /*#__PURE__*/React.createElement("svg", {
+      width: "22",
+      height: "22",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.8",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "9",
+      cy: "7",
+      r: "4"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+    })),
+    k: 'Sin intermediarios',
+    v: 'Docente y alumno se conectan directo. El precio lo acordás vos.',
     accent: '#2EC4A0'
   }, {
-    k: 'clases esta semana',
-    v: 14203,
-    suffix: '',
+    icon: () => /*#__PURE__*/React.createElement("svg", {
+      width: "22",
+      height: "22",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.8",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, /*#__PURE__*/React.createElement("rect", {
+      x: "3",
+      y: "11",
+      width: "18",
+      height: "11",
+      rx: "2",
+      ry: "2"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M7 11V7a5 5 0 0 1 10 0v4"
+    })),
+    k: 'Privacidad primero',
+    v: 'Tu email nunca se muestra. Chat interno. Tus datos son tuyos, siempre.',
     accent: '#E8891C'
   }, {
-    k: 'match promedio',
-    v: 2,
-    suffix: ' min',
+    icon: () => /*#__PURE__*/React.createElement("svg", {
+      width: "22",
+      height: "22",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.8",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, /*#__PURE__*/React.createElement("rect", {
+      x: "1",
+      y: "4",
+      width: "22",
+      height: "16",
+      rx: "2",
+      ry: "2"
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: "1",
+      y1: "10",
+      x2: "23",
+      y2: "10"
+    })),
+    k: 'Pagos seguros',
+    v: 'Integrado con MercadoPago. Sin cuentas extra ni comisiones ocultas.',
     accent: '#9B7BF4'
   }];
   return /*#__PURE__*/React.createElement("section", {
     style: {
       padding: '80px 28px',
       background: 'var(--ink)',
-      color: 'var(--paper)',
-      borderTop: '1px solid var(--ink)',
-      borderBottom: '1px solid var(--ink)'
+      color: 'var(--paper)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3084,39 +3130,64 @@ function Stats() {
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(4, 1fr)',
-      gap: 30
+      gap: 1,
+      background: 'rgba(255,255,255,0.06)',
+      borderRadius: 20,
+      overflow: 'hidden',
+      border: '1px solid rgba(255,255,255,0.06)'
     },
     className: "lud-stats-grid"
-  }, items.map((it, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      borderLeft: i > 0 ? '1px solid oklch(1 0 0 / .15)' : 'none',
-      paddingLeft: i > 0 ? 30 : 0,
-      borderTop: `2px solid ${it.accent}`,
-      paddingTop: 24
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontFamily: 'var(--font-mono)',
-      fontSize: 11,
-      letterSpacing: '.14em',
-      textTransform: 'uppercase',
-      color: 'oklch(1 0 0 / .55)',
-      marginBottom: 14
-    }
-  }, String(i + 1).padStart(2, '0'), " \xB7 ", it.k), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 'clamp(48px, 6vw, 90px)',
-      fontWeight: 700,
-      letterSpacing: '-.05em',
-      lineHeight: .95,
-      color: it.accent
-    }
-  }, /*#__PURE__*/React.createElement(Counter, {
-    to: it.v,
-    suffix: it.suffix
-  }))))))), /*#__PURE__*/React.createElement("style", null, `
-        @media (max-width: 900px){ .lud-stats-grid{ grid-template-columns: repeat(2, 1fr) !important; gap: 30px !important; } .lud-stats-grid > *{ border-left: none !important; padding-left: 0 !important; } }
+  }, items.map((it, i) => {
+    const Icon = it.icon;
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        padding: '36px 32px',
+        background: 'var(--ink)',
+        position: 'relative'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: `${it.accent}18`,
+        border: `1px solid ${it.accent}30`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: it.accent,
+        marginBottom: 20
+      }
+    }, /*#__PURE__*/React.createElement(Icon, null)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 18,
+        fontWeight: 700,
+        letterSpacing: '-.02em',
+        marginBottom: 10,
+        color: 'var(--paper)'
+      }
+    }, it.k), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 13,
+        lineHeight: 1.6,
+        color: 'oklch(1 0 0 / .55)',
+        margin: 0
+      }
+    }, it.v), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 2,
+        background: it.accent,
+        opacity: .7
+      }
+    }));
+  })))), /*#__PURE__*/React.createElement("style", null, `
+        @media (max-width: 900px){ .lud-stats-grid{ grid-template-columns: repeat(2, 1fr) !important; } }
+        @media (max-width: 520px){ .lud-stats-grid{ grid-template-columns: 1fr !important; } }
       `));
 }
 window.Stats = Stats;
@@ -3260,160 +3331,216 @@ function About() {
 window.About = About;
 
 // --- testimonials.jsx ---
-// Testimonios
+// Early Access — reemplaza testimonios, honesto y convierte
 function Testimonials() {
-  const items = [{
-    n: 'Martina L.',
-    r: 'Alumna · Matemática',
-    t: 'Encontré una profesora increíble en 2 minutos. La búsqueda con IA me recomendó exactamente lo que necesitaba para rendir el final.',
-    c: 'var(--blue)'
-  }, {
-    n: 'Carlos R.',
-    r: 'Docente · Guitarra',
-    t: 'Empecé a subir mis clases hace un mes y ya tengo 8 alumnos. La plataforma es facilísima y llegan alumnos solos.',
-    c: 'var(--orange)'
-  }, {
-    n: 'Sofía M.',
-    r: 'Alumna · Inglés',
-    t: 'Me gustó que pude ver el perfil del docente con reseñas reales antes de inscribirme. Nada de sorpresas.',
-    c: 'var(--ink)'
-  }, {
-    n: 'Juan P.',
-    r: 'Docente · Programación',
-    t: 'Los certificados verificables y las evaluaciones automáticas me ahorran horas. Hecho con cabeza.',
-    c: 'var(--blue-deep)'
-  }, {
-    n: 'Valentina G.',
-    r: 'Alumna · Piano',
-    t: 'En una semana encontré al profe ideal. El sistema de reseñas y perfiles verificados le da mucha confianza.',
-    c: 'var(--orange)'
-  }, {
-    n: 'Rodrigo B.',
-    r: 'Docente · Física',
-    t: 'Mis alumnos pueden ver su progreso en tiempo real y eso los mantiene motivados. La diferencia se nota en los resultados.',
-    c: 'var(--blue)'
-  }];
-  const Card = ({
-    it,
-    i
-  }) => /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 400,
-      background: 'var(--paper)',
-      border: '1px solid var(--line)',
-      borderRadius: 20,
-      padding: '26px',
-      display: 'inline-block',
-      whiteSpace: 'normal',
-      verticalAlign: 'top',
-      marginRight: 16,
-      transition: 'transform .3s, box-shadow .3s'
-    },
-    onMouseEnter: e => {
-      e.currentTarget.style.transform = 'translateY(-4px)';
-      e.currentTarget.style.boxShadow = '0 12px 32px oklch(0 0 0 / .08)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'none';
-      e.currentTarget.style.boxShadow = 'none';
+  const [email, setEmail] = React.useState('');
+  const [done, setDone] = React.useState(false);
+  const [err, setErr] = React.useState(false);
+  const submit = e => {
+    e.preventDefault();
+    if (!email || !email.includes('@')) {
+      setErr(true);
+      return;
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: 3,
-      marginBottom: 12
-    }
-  }, [0, 1, 2, 3, 4].map(j => /*#__PURE__*/React.createElement(SvgStar, {
-    key: j
-  }))), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 16,
-      lineHeight: 1.55,
-      margin: '0 0 20px',
-      color: 'var(--ink)',
-      textWrap: 'pretty'
-    }
-  }, "\"", it.t, "\""), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      paddingTop: 16,
-      borderTop: '1px solid var(--line)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 38,
-      height: 38,
-      borderRadius: '50%',
-      background: it.c,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#fff',
-      fontWeight: 700,
-      fontSize: 14,
-      flexShrink: 0
-    }
-  }, it.n[0]), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600
-    }
-  }, it.n), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontFamily: 'var(--font-mono)',
-      fontSize: 11,
-      color: 'var(--muted)'
-    }
-  }, it.r))));
+    setErr(false);
+    setDone(true);
+    // TODO: conectar con backend / Supabase
+  };
   return /*#__PURE__*/React.createElement("section", {
     style: {
-      padding: '120px 0',
-      background: 'var(--paper-2)',
-      borderTop: '1px solid var(--line)',
-      borderBottom: '1px solid var(--line)',
-      overflow: 'hidden'
+      padding: '140px 28px',
+      position: 'relative',
+      overflow: 'hidden',
+      background: 'linear-gradient(160deg, #07102A 0%, #0D2055 50%, #071428 100%)'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
     style: {
-      maxWidth: 1344,
+      position: 'absolute',
+      width: 800,
+      height: 800,
+      borderRadius: '50%',
+      background: 'radial-gradient(circle, rgba(26,110,216,0.18) 0%, transparent 70%)',
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%,-50%)',
+      pointerEvents: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 680,
       margin: '0 auto',
-      marginBottom: 60,
-      padding: '0 28px'
+      textAlign: 'center',
+      position: 'relative',
+      zIndex: 2
     }
-  }, /*#__PURE__*/React.createElement(Reveal, null, /*#__PURE__*/React.createElement(Kicker, null, "07 \xB7 Voces"), /*#__PURE__*/React.createElement("h2", {
+  }, /*#__PURE__*/React.createElement(Reveal, null, /*#__PURE__*/React.createElement(Kicker, {
+    color: "rgba(255,255,255,0.5)"
+  }, "07 \xB7 Acceso temprano"), /*#__PURE__*/React.createElement("h2", {
     style: {
-      fontSize: 'clamp(44px, 7vw, 92px)',
+      fontSize: 'clamp(48px, 8vw, 110px)',
       fontWeight: 700,
-      letterSpacing: '-.05em',
-      lineHeight: .95,
-      margin: '18px 0 0',
-      maxWidth: 900
+      letterSpacing: '-.055em',
+      lineHeight: .9,
+      margin: '20px 0 0',
+      color: '#fff',
+      textWrap: 'balance'
     }
-  }, "Lo que dicen ", /*#__PURE__*/React.createElement("i", {
+  }, "Somos nuevos.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("i", {
     style: {
       fontStyle: 'italic',
       fontWeight: 500,
-      color: 'var(--blue)'
+      color: '#7EFAEA'
     }
-  }, "los que ya usan"), " Luderis."))), /*#__PURE__*/React.createElement(Marquee, {
-    speed: 60,
+  }, "Vos lleg\xE1s primero."))), /*#__PURE__*/React.createElement(Reveal, {
+    delay: 0.1
+  }, /*#__PURE__*/React.createElement("p", {
     style: {
-      marginBottom: 16
+      fontSize: 18,
+      lineHeight: 1.55,
+      color: 'rgba(255,255,255,0.65)',
+      margin: '28px auto 0',
+      maxWidth: 480
     }
-  }, items.map((it, i) => /*#__PURE__*/React.createElement(Card, {
-    key: i,
-    it: it,
-    i: i
-  }))), /*#__PURE__*/React.createElement(Marquee, {
-    speed: 50,
-    reverse: true
-  }, [...items].reverse().map((it, i) => /*#__PURE__*/React.createElement(Card, {
-    key: i,
-    it: it,
-    i: i
-  }))));
+  }, "Luderis est\xE1 en etapa de lanzamiento. Anotate y te avisamos cuando tu acceso est\xE9 listo \u2014 sin spam, sin compromisos.")), /*#__PURE__*/React.createElement(Reveal, {
+    delay: 0.2
+  }, done ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 44,
+      padding: '40px 32px',
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(126,250,234,0.25)',
+      borderRadius: 20,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "48",
+    height: "48",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "#7EFAEA",
+    strokeWidth: "1.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 12.5l3 3 5-6"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 20,
+      fontWeight: 700,
+      color: '#fff',
+      letterSpacing: '-.02em'
+    }
+  }, "\xA1Te anotamos!"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: 'rgba(255,255,255,0.55)',
+      fontFamily: 'var(--font-mono)'
+    }
+  }, "Te avisamos a ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#7EFAEA'
+    }
+  }, email), " cuando est\xE9s listo.")) : /*#__PURE__*/React.createElement("form", {
+    onSubmit: submit,
+    style: {
+      marginTop: 44
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      background: 'rgba(255,255,255,0.07)',
+      border: `1px solid ${err ? '#D85AA3' : 'rgba(255,255,255,0.12)'}`,
+      borderRadius: 16,
+      padding: 6,
+      maxWidth: 480,
+      margin: '0 auto',
+      transition: 'border-color .25s'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    value: email,
+    onChange: e => {
+      setEmail(e.target.value);
+      setErr(false);
+    },
+    placeholder: "tu@email.com",
+    "data-cursor": true,
+    style: {
+      flex: 1,
+      background: 'transparent',
+      border: 'none',
+      outline: 'none',
+      color: '#fff',
+      fontSize: 16,
+      fontFamily: 'var(--font-display)',
+      padding: '12px 16px',
+      minWidth: 0
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    "data-cursor": true,
+    style: {
+      background: '#fff',
+      color: 'var(--ink)',
+      border: 'none',
+      borderRadius: 11,
+      padding: '12px 22px',
+      fontFamily: 'var(--font-display)',
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+      transition: 'opacity .2s'
+    },
+    onMouseEnter: e => e.currentTarget.style.opacity = '.85',
+    onMouseLeave: e => e.currentTarget.style.opacity = '1'
+  }, "Quiero acceso")), err && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      fontFamily: 'var(--font-mono)',
+      fontSize: 12,
+      color: '#D85AA3'
+    }
+  }, "Ingres\xE1 un email v\xE1lido."))), /*#__PURE__*/React.createElement(Reveal, {
+    delay: 0.3
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: 28,
+      marginTop: 36,
+      flexWrap: 'wrap',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 11,
+      color: 'rgba(255,255,255,0.35)',
+      letterSpacing: '.06em'
+    }
+  }, ['Sin spam', 'Gratis para siempre', 'Cancelás cuando querés'].map(x => /*#__PURE__*/React.createElement("span", {
+    key: x,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 4,
+      height: 4,
+      borderRadius: '50%',
+      background: 'rgba(255,255,255,0.25)',
+      display: 'inline-block'
+    }
+  }), x))))));
 }
 window.Testimonials = Testimonials;
 

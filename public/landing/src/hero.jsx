@@ -38,8 +38,8 @@ function Hero({onEnter}){
           </Reveal>
           <Reveal delay={0.1}>
             <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
-              <Pill>▲ 12.4K alumnos activos</Pill>
-              <Pill>◆ 3.218 docentes</Pill>
+              <Pill>Beta abierta</Pill>
+              <Pill>Buenos Aires, AR</Pill>
             </div>
           </Reveal>
         </div>
