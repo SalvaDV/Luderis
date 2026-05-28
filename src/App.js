@@ -73,6 +73,8 @@ const MiCuentaPage   = React.lazy(() => import('./MiCuentaPage'));
 // Named exports from PostFormModal bundle
 const PerfilPage     = React.lazy(() => import('./PostFormModal').then(m => ({ default: m.PerfilPage })));
 const FarosPage      = React.lazy(() => import('./FarosPage'));
+const ShikakuPage    = React.lazy(() => import('./ShikakuPage'));
+const JuegosHub      = React.lazy(() => import('./JuegosHub'));
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 // Named exports for lazy-loaded modules that need these components
@@ -551,7 +553,7 @@ export default function App(){
   // ── Google Analytics: track page navigation ──────────────────────────────
   useEffect(()=>{
     trackPage(page);
-    if(page==="juegos")trackFarosPlay();
+    if(page==="faros")trackFarosPlay();
   },[page]);// eslint-disable-line
 
   const PAGE_TITLES={explore:"Explorar — Luderis",chats:"Mis chats — Luderis",favoritos:"Favoritos — Luderis",inscripciones:"Mis inscripciones — Luderis",cuenta:"Mi cuenta — Luderis"};
@@ -665,15 +667,29 @@ export default function App(){
           {page==="inscripciones"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>
           </React.Suspense>}
           {page==="juegos"&&(
-            <React.Suspense fallback={
-              <div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>
-                Cargando…
-              </div>
-            }>
+            <React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}>
+              <JuegosHub
+                session={session}
+                onPlayFaros={()=>setPage("faros")}
+                onPlayShikaku={()=>setPage("shikaku")}
+              />
+            </React.Suspense>
+          )}
+          {page==="faros"&&(
+            <React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}>
               <FarosPage
                 session={session}
-                onBack={()=>setPage("explore")}
+                onBack={()=>setPage("juegos")}
                 onWin={()=>setJuegosBadge(false)}
+              />
+            </React.Suspense>
+          )}
+          {page==="shikaku"&&(
+            <React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}>
+              <ShikakuPage
+                session={session}
+                onBack={()=>setPage("juegos")}
+                onWin={()=>{}}
               />
             </React.Suspense>
           )}

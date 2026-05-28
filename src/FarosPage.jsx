@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Lightbulb, Hammer, AlertTriangle, Calendar, Brain } from 'lucide-react';
 import { C, FONT, toast } from './shared';
-
-const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
-const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:9,height:9,borderRadius:'50%',background:DIFF_COLOR[difficulty]||'#888',verticalAlign:'middle',marginRight:3}}/>);
 import * as sb from './supabase';
 import {
   createCellState, toggleCell, getConflicts, checkWin, formatTime, REGION_PALETTE, PUZZLE_EPOCH,
@@ -12,6 +9,9 @@ import FarosGrid from './components/FarosGrid';
 import FarosWinOverlay from './components/FarosWinOverlay';
 import FarosStreakBar from './components/FarosStreakBar';
 import FarosTomorrow from './components/FarosTomorrow';
+
+const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
+const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:9,height:9,borderRadius:'50%',background:DIFF_COLOR[difficulty]||'#888',verticalAlign:'middle',marginRight:3}}/>);
 
 // Puzzle number: #1 en el día de lanzamiento (PUZZLE_EPOCH), +1 por día
 function getPuzzleNumber(dateStr) {

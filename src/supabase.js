@@ -855,6 +855,36 @@ export const submitPuzzleResult = async (token, puzzleId, timeSeconds) => {
   }
 };
 
+// ── Shikaku puzzle helpers ────────────────────────────────────────────────────
+
+// Returns the user's result for a given date, or null if not solved
+export const getShikakuResult = (token, dateStr) =>
+  db(`shikaku_results?puzzle_date=eq.${dateStr}&limit=1`, 'GET', null, token)
+    .then(rows => rows?.[0] ?? null)
+    .catch(() => null);
+
+// Returns array of puzzle_date strings (last 30) for streak calculation
+export const getShikakuStreak = (token) =>
+  db('shikaku_results?select=puzzle_date&order=completed_at.desc&limit=30', 'GET', null, token)
+    .then(rows => (rows || []).map(r => r.puzzle_date).filter(Boolean))
+    .catch(() => []);
+
+// Saves the user's result. Silently ignores duplicates.
+export const submitShikakuResult = async (token, dateStr, timeSeconds) => {
+  try {
+    return await db(
+      'shikaku_results',
+      'POST',
+      { puzzle_date: dateStr, time_seconds: timeSeconds },
+      token,
+      'return=representation'
+    );
+  } catch (e) {
+    if (e.message?.includes('23505') || e.message?.includes('unique')) return null;
+    throw e;
+  }
+};
+
 export const dispararAlertas = async (pub, token) => {
   try {
     const alertas = await db(
