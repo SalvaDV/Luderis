@@ -320,6 +320,16 @@ export const insertFavorito = (data, token) =>
 export const deleteFavorito = (id, token) =>
   db(`favoritos?id=eq.${id}`, "DELETE", null, token);
 
+// ── Alertas de búsqueda (S2-M1) ──────────────────────────────────────────────
+export const getAlertasBusqueda = (token) =>
+  db("alertas_busqueda?order=created_at.desc", "GET", null, token).catch(() => []);
+
+export const insertAlertaBusqueda = (data, token) =>
+  db("alertas_busqueda", "POST", data, token, "return=representation");
+
+export const deleteAlertaBusqueda = (id, token) =>
+  db(`alertas_busqueda?id=eq.${id}`, "DELETE", null, token);
+
 // ── Ofertas sobre búsquedas ───────────────────────────────────────────────────
 
 export const getOfertasSobre = (busquedaId, token) =>

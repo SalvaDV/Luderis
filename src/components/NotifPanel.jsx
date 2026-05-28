@@ -41,6 +41,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     nuevo_ayudante:{Icon:Users,color:"#2EC4A0",label:"Co-docente agregado"},
     valorar_curso:{Icon:Star,color:"#F59E0B",label:"Valorar curso"},
     alerta_publicacion:{Icon:Bell,color:"#1A6ED8",label:"Alerta de búsqueda"},
+    alerta_busqueda:{Icon:Bell,color:"#1A6ED8",label:"Nueva clase disponible"},
     pago_aprobado_mp:{Icon:CreditCard,color:"#009EE3",label:"Pago aprobado"},
     sistema:{Icon:Megaphone,color:"#7B3FBE",label:"Anuncio de Luderis"},
     alerta_contacto:{Icon:VolumeX,color:"#c62828",label:"Alerta de moderación"},

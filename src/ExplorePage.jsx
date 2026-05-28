@@ -141,6 +141,50 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     // Auto-detectar si no tenemos ciudad guardada
     if(!userCity)detectarUbicacion();
   },[]);// eslint-disable-line
+
+  // ── Alertas de búsqueda (S2-M1) ──────────────────────────────────────────
+  const [alertas,setAlertas]=useState([]);
+  const [savingAlerta,setSavingAlerta]=useState(false);
+  useEffect(()=>{
+    sb.getAlertasBusqueda(session.access_token).then(setAlertas).catch(()=>{});
+  },[]);// eslint-disable-line
+
+  const guardarAlerta=async()=>{
+    // ¿Ya existe una alerta con exactamente estos filtros?
+    const existe=alertas.find(a=>
+      (a.materia||null)===(filtroMateria||null)&&
+      (a.modo||null)===(filtroModo!=="all"?filtroModo:null)&&
+      (a.tipo||null)===(filtroTipo!=="all"?filtroTipo:null)&&
+      (a.ubicacion||null)===(filtroUbicacion||null)
+    );
+    if(existe){
+      // Toggle: si ya existe, eliminar
+      await sb.deleteAlertaBusqueda(existe.id,session.access_token).catch(()=>{});
+      setAlertas(prev=>prev.filter(a=>a.id!==existe.id));
+      toast("Alerta eliminada","info",2000);
+      return;
+    }
+    setSavingAlerta(true);
+    try{
+      const nombre=activeFilters.join(", ")||"Todas las clases";
+      const [created]=await sb.insertAlertaBusqueda({
+        usuario_id:session.user.id,
+        usuario_email:session.user.email,
+        nombre,
+        materia:filtroMateria||null,
+        modo:filtroModo!=="all"?filtroModo:null,
+        tipo:filtroTipo!=="all"?filtroTipo:null,
+        precio_max:(sliderMax<precioMax)?sliderMax:null,
+        ubicacion:filtroUbicacion||null,
+      },session.access_token);
+      setAlertas(prev=>[created,...prev]);
+      toast("🔔 Alerta guardada. Te avisamos cuando haya nuevas clases.","success",4000);
+    }catch(e){
+      if(e?.message?.includes("uq_alerta"))toast("Ya tenés una alerta con esos filtros","info",3000);
+      else toast("Error al guardar la alerta: "+e.message,"error");
+    }finally{setSavingAlerta(false);}
+  };
+
   const [modoVista,setModoVista]=useState("home");// "home" | "resultados"
   const PAGE_SIZE=20;
   const [pagina,setPagina]=useState(1);
@@ -853,12 +897,42 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 ))}
               </div>
             </div>
-            {activeFilters.length>0&&(
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`,alignItems:"center"}}>
-                {activeFilters.map(f=><span key={f} style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:20,padding:"2px 10px",fontSize:11,color:C.accent,fontWeight:500}}>{f}</span>)}
-                <button onClick={clearAll} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT,textDecoration:"underline",marginLeft:4}}>Limpiar todo</button>
-              </div>
-            )}
+            {activeFilters.length>0&&(()=>{
+              const alertaActual=alertas.find(a=>
+                (a.materia||null)===(filtroMateria||null)&&
+                (a.modo||null)===(filtroModo!=="all"?filtroModo:null)&&
+                (a.tipo||null)===(filtroTipo!=="all"?filtroTipo:null)&&
+                (a.ubicacion||null)===(filtroUbicacion||null)
+              );
+              return(
+                <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+                    {activeFilters.map(f=><span key={f} style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:20,padding:"2px 10px",fontSize:11,color:C.accent,fontWeight:500}}>{f}</span>)}
+                    <button onClick={clearAll} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT,textDecoration:"underline",marginLeft:4}}>Limpiar todo</button>
+                    {/* Botón guardar alerta — sólo cuando no es búsqueda IA */}
+                    {!iaResults&&(
+                      <button onClick={guardarAlerta} disabled={savingAlerta}
+                        style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,background:alertaActual?C.accentDim:"none",border:`1px solid ${alertaActual?C.accent:C.border}`,borderRadius:20,color:alertaActual?C.accent:C.muted,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:FONT,transition:"all .15s",flexShrink:0,opacity:savingAlerta?.6:1}}>
+                        <Bell size={11} strokeWidth={2}/>
+                        {savingAlerta?"Guardando…":alertaActual?"🔔 Alerta activa":"Guardar búsqueda"}
+                      </button>
+                    )}
+                  </div>
+                  {/* Alertas guardadas del usuario */}
+                  {alertas.length>0&&(
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6,alignItems:"center"}}>
+                      <span style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.3}}>MIS ALERTAS:</span>
+                      {alertas.map(a=>(
+                        <span key={a.id} style={{display:"flex",alignItems:"center",gap:4,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 8px",fontSize:10,color:C.text}}>
+                          🔔 {a.nombre}
+                          <button onClick={()=>sb.deleteAlertaBusqueda(a.id,session.access_token).then(()=>{setAlertas(p=>p.filter(x=>x.id!==a.id));toast("Alerta eliminada","info",2000);})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",padding:0,fontSize:12,lineHeight:1,marginLeft:2}} title="Eliminar alerta">×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {/* Explanation de la búsqueda */}
             {iaExplanation&&(
               <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
@@ -915,9 +989,23 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.5}}>
                     Creá una alerta y te notificamos cuando aparezca algo relacionado con <strong style={{color:C.text}}>"{iaQuery}"</strong>.
                   </div>
-                  <button onClick={()=>{toast("Función de alertas próximamente","info",4000);}}
-                    style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                    <Bell size={14} strokeWidth={2}/> Crear alerta para "{iaQuery}"
+                  <button onClick={async()=>{
+                    setSavingAlerta(true);
+                    try{
+                      const [created]=await sb.insertAlertaBusqueda({
+                        usuario_id:session.user.id,usuario_email:session.user.email,
+                        nombre:iaQuery.slice(0,80),
+                        materia:filtroMateria||null,modo:null,tipo:null,precio_max:null,ubicacion:null,
+                      },session.access_token);
+                      setAlertas(prev=>[created,...prev]);
+                      toast("🔔 Alerta guardada. Te avisamos cuando haya nuevas clases.","success",4000);
+                    }catch(e){
+                      if(e?.message?.includes("uq_alerta"))toast("Ya tenés una alerta similar","info",3000);
+                      else toast("Error: "+e.message,"error");
+                    }finally{setSavingAlerta(false);}
+                  }} disabled={savingAlerta}
+                    style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",border:"none",borderRadius:20,color:"#fff",padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,opacity:savingAlerta?.6:1}}>
+                    <Bell size={14} strokeWidth={2}/>{savingAlerta?"Guardando…":`Crear alerta para "${iaQuery.slice(0,30)}${iaQuery.length>30?"…":""}"`}
                   </button>
                 </div>
               )}
