@@ -161,10 +161,16 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
   React.useEffect(()=>{
     if(seccion!=="ingresos")return;
     setLoadingPagos(true);
-    sb.getPagosDocente(pubs[0]?.autor_email||"",session?.access_token||null).then(p=>setPagos(p||[])).catch(()=>setPagos([])).finally(()=>setLoadingPagos(false));
+    sb.getPagosDocente(session?.user?.email||"",session?.access_token||null).then(p=>setPagos(p||[])).catch(()=>setPagos([])).finally(()=>setLoadingPagos(false));
   },[seccion]);
 
-  if(todasOfertas.length===0)return null;
+  if(todasOfertas.length===0)return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px 20px",marginBottom:20,textAlign:"center"}}>
+      <div style={{fontSize:28,marginBottom:8}}>📣</div>
+      <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:6}}>Publicá tu primera clase</div>
+      <div style={{color:C.muted,fontSize:13,marginBottom:16}}>Una vez que publiques, acá vas a ver tus estadísticas de ingresos y alumnos.</div>
+    </div>
+  );
   const secciones=[{id:"resumen",label:"Resumen"},{id:"ingresos",label:"Ingresos"},{id:"publicaciones",label:"Publicaciones"}];
   const statStyle={background:C.surface,borderRadius:12,padding:"12px 14px"};
 

@@ -104,7 +104,7 @@ export const avatarColor=(l)=>["#F5C842","#4ECB71","#E05C5C","#5CA8E0","#C85CE0"
 export const fmt=(d)=>d?new Date(d).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"}):"";
 export const fmtRel=(d)=>{if(!d)return"";const diff=(Date.now()-new Date(d))/1000;if(diff<60)return"ahora";if(diff<3600)return`hace ${Math.floor(diff/60)}min`;if(diff<86400)return`hace ${Math.floor(diff/3600)}h`;if(diff<604800)return`hace ${Math.floor(diff/86400)}d`;return fmt(d);};
 export const MONEDA_SYM={"ARS":"$","USD":"US$","EUR":"€","BRL":"R$","CLP":"CLP$","COP":"COL$","MXN":"MX$","UYU":"$U","PEN":"S/","BOB":"Bs","PYG":"₲"};
-export const fmtPrice=(p,moneda)=>{if(!p)return "A convenir";const sym=MONEDA_SYM[moneda]||moneda||"$";return `${sym}${Number(p).toLocaleString("es-AR")}`;};
+export const fmtPrice=(p,moneda)=>{if(p===null||p===undefined||p==="")return "A convenir";if(p===0||p==="0")return "Gratis";const sym=MONEDA_SYM[moneda]||moneda||"$";return `${sym}${Number(p).toLocaleString("es-AR")}`;};
 export const calcAvg=(arr)=>{if(!arr||!arr.length)return null;return arr.reduce((a,r)=>a+(r.estrellas||0),0)/arr.length;};
 export const calcDuracion=(ini,fin)=>{if(!ini||!fin)return null;const d=Math.round((new Date(fin)-new Date(ini))/(86400000));if(d<=0)return null;if(d<7)return `${d} día${d!==1?"s":""}`;if(d<30)return `${Math.round(d/7)} semana${Math.round(d/7)!==1?"s":""}`;return `${Math.round(d/30)} mes${Math.round(d/30)!==1?"es":""}`;};
 
@@ -180,7 +180,7 @@ export const sanitizeContactInfo=(text)=>{
 
 // ─── MODERACIÓN DE MENSAJES ───────────────────────────────────────────────────
 const BYPASS_PATTERNS=[
-  /\b(\+?[\d][\d\s\-().]{6,14}\d)\b/,// teléfonos
+  /\b\+?(?:\d[\s\-.]?){8,15}\d\b/,// teléfonos: ≥9 dígitos con separadores estándar (no falsea horarios)
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,// emails
   /\b(instagram|ig|whatsapp|wa\.me|telegram|tg|facebook|fb\.com|twitter|x\.com|tiktok|snapchat|discord)\b/i,// redes
   /\bbit\.ly\b|\btinyurl\b|\bwa\.me\/\b/i,// links cortos y wa.me
@@ -599,24 +599,21 @@ export function useMPRetorno(onSuccess){
     const mp=params.get("mp");
     const pubId=params.get("pub");
     if(!mp)return;
-    // Limpiar params de la URL inmediatamente
     const url=new URL(window.location.href);
     url.searchParams.delete("mp");
     url.searchParams.delete("pub");
     window.history.replaceState({},"",url.toString());
 
+    let t;
     if(mp==="success"){
-      // NO inscribir aquí — el webhook de MercadoPago es quien inscribe y acredita.
-      // Solo notificamos al usuario y le avisamos que en segundos va a ver el acceso.
       toast("¡Pago recibido! Confirmando acceso…","success",4000);
-      // Sondear cada 3s hasta que aparezca la inscripción (máx 30s)
       try{localStorage.removeItem("mp_pending");}catch{}
       if(pubId&&onSuccess){
         let intentos=0;
-        const t=setInterval(()=>{
+        t=setInterval(async()=>{
           intentos++;
-          onSuccess(pubId,false);// false = solo refrescar, no navegar
-          if(intentos>=10)clearInterval(t);
+          const done=await onSuccess(pubId,false);// false = solo refrescar, no navegar
+          if(done||intentos>=10)clearInterval(t);
         },3000);
       }
     }else if(mp==="pending"){
@@ -624,6 +621,7 @@ export function useMPRetorno(onSuccess){
     }else if(mp==="failure"){
       toast("El pago no pudo completarse. Podés intentar de nuevo.","error",5000);
     }
+    return ()=>{if(t)clearInterval(t);};
   },[]);// eslint-disable-line
 }
 

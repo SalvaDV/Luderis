@@ -73,7 +73,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
       // Resolver email del docente si no vino como prop
       let emailDocente = docenteEmail;
       if (!emailDocente && docenteId) {
-        const rows = await sb.db(`/usuarios?id=eq.${docenteId}&select=email`, "GET", null, token).catch(() => []);
+        const rows = await sb.db(`usuarios?id=eq.${docenteId}&select=email`, "GET", null, token).catch(() => []);
         emailDocente = rows?.[0]?.email;
       }
       // Notificar al docente
@@ -135,7 +135,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
         razon: `[${tipoLabel}] ${razon}`,
       }, token);
       // Notificar a cada admin del sistema
-      const admins = await sb.db("/usuarios?rol=eq.admin&select=email", "GET", null, token).catch(() => []);
+      const admins = await sb.db("usuarios?rol=eq.admin&select=email", "GET", null, token).catch(() => []);
       for (const admin of (admins || [])) {
         await sb.insertNotificacion({
           usuario_id: null,

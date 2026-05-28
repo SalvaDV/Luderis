@@ -134,7 +134,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente marcó la clase como finalizada — confirmá si la recibiste</span>}
+            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente finalizó la clase — confirmá si la recibiste (tenés 7 días antes del pago automático)</span>}
             {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Bell size={10} strokeWidth={2}/>Clase finalizada — dejá tu reseña</span>}
             {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>{ti.Icon&&<ti.Icon size={10} strokeWidth={2}/>}{ti.texto}</span>
               :<span style={{fontSize:11,color:C.muted}}>Inscripto {fmt(ins.created_at)}</span>)}

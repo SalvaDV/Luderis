@@ -42,22 +42,8 @@ export default function ChatsPage({session,onOpenChat}){
   },[miEmail,session.access_token]);// eslint-disable-line
 
   useEffect(()=>{
-    let active=true;
-    setLoading(true);
-    sb.getMisChats(miEmail,session.access_token).then(async msgs=>{
-      if(!active)return;
-      msgs=msgs.filter(m=>m.para_nombre!=="__grupo__"&&m.de_nombre!=="__grupo__");
-      const pubMap={};
-      msgs.forEach(m=>{const otro=m.de_nombre===miEmail?m.para_nombre:m.de_nombre;const pKey=m.publicacion_id||"sin-pub";if(!pubMap[pKey])pubMap[pKey]={pubId:m.publicacion_id,pubTitulo:m.pub_titulo||"",chats:{},lastTime:m.created_at};if(!pubMap[pKey].pubTitulo&&m.pub_titulo)pubMap[pKey].pubTitulo=m.pub_titulo;const cKey=otro;if(!pubMap[pKey].chats[cKey])pubMap[pKey].chats[cKey]={otro,ultimo:m,unread:0};else if(m.created_at>pubMap[pKey].chats[cKey].ultimo.created_at)pubMap[pKey].chats[cKey].ultimo=m;if(m.de_nombre!==miEmail&&!m.leido)pubMap[pKey].chats[cKey].unread++;if(m.created_at>pubMap[pKey].lastTime)pubMap[pKey].lastTime=m.created_at;});
-      const sinTitulo=Object.values(pubMap).filter(g=>g.pubId&&!g.pubTitulo);
-      if(sinTitulo.length>0){try{const allPubs=await sb.getPublicaciones({},session.access_token);const pubById={};allPubs.forEach(p=>{pubById[p.id]=p.titulo;});sinTitulo.forEach(g=>{if(pubById[g.pubId])g.pubTitulo=pubById[g.pubId];});}catch{}}
-      const otroEmails=[...new Set(Object.values(pubMap).flatMap(g=>Object.values(g.chats).map(c=>c.otro)))];
-      const nMap={};await Promise.all(otroEmails.map(async email=>{try{const u=await sb.getUsuarioByEmail(email,session.access_token);nMap[email]=u?.nombre||u?.display_name||email.split("@")[0];}catch{nMap[email]=email.split("@")[0];}}));
-      if(!active)return;
-      setNombresMap(nMap);setGrupos(Object.values(pubMap).sort((a,b)=>new Date(b.lastTime)-new Date(a.lastTime)));
-    }).finally(()=>{if(active)setLoading(false);});
-    return()=>{active=false;};
-  },[miEmail,session.access_token]);// eslint-disable-line
+    cargar();
+  },[cargar]);// eslint-disable-line
 
   const borrarChat=async(pubId,otroEmail,e)=>{
     e.stopPropagation();

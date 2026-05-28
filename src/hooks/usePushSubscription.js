@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SUPABASE_URL, SUPABASE_KEY } from '../supabase';
 
-const VAPID_PUBLIC = 'BHnOLemuaXWYcphBnFBKmkdjHgumyJkyS4xz3SqDS28UtfkUkK99OQwXBhg1C09Ek3PXY2MEiERsxokoTOH98-E';
+const VAPID_PUBLIC = process.env.REACT_APP_VAPID_PUBLIC || 'BHnOLemuaXWYcphBnFBKmkdjHgumyJkyS4xz3SqDS28UtfkUkK99OQwXBhg1C09Ek3PXY2MEiERsxokoTOH98-E';
 const ASKED_KEY = 'cl_push_asked';
 
 function urlBase64ToUint8Array(b64) {

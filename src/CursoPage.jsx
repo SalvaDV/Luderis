@@ -626,7 +626,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           atBottomRef.current=atBottom;
           if(atBottom&&newMsgCount>0)setNewMsgCount(0);
         }}
-        style={{height:420,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:2,background:`linear-gradient(${C.bg},${C.bg})`,position:"relative"}}>
+        style={{height:"min(420px, calc(100dvh - 280px))",overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:2,background:`linear-gradient(${C.bg},${C.bg})`,position:"relative"}}>
         {loading?<div style={{display:"flex",justifyContent:"center",padding:"32px 0"}}><Spinner/></div>
           :msgs.length===0
             ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"32px 0",display:"flex",flexDirection:"column",gap:6,alignItems:"center"}}>

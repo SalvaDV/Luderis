@@ -31,8 +31,11 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
       }catch{}
     };
     const t=setInterval(check,500);
-    return()=>clearInterval(t);
-  },[post.id,otroEmail]);
+    return()=>{
+      clearInterval(t);
+      try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
+    };
+  },[post.id,otroEmail,miEmail]);
 
   const handleInputChange=(e)=>{
     setInput(e.target.value);

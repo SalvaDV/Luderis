@@ -17,10 +17,11 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
     const d=docenteMap[email];
     d.pubs++;
     d.materias.add(p.materia);
-    if(p.calificacion_promedio)d.rating=Math.max(d.rating,parseFloat(p.calificacion_promedio)||0);
+    if(p.calificacion_promedio){d.ratingSum=(d.ratingSum||0)+parseFloat(p.calificacion_promedio)||0;d.ratingCount=(d.ratingCount||0)+1;}
     d.inscriptos+=(p.cantidad_inscriptos||0);
   });
   const top=Object.values(docenteMap)
+    .map(d=>({...d,rating:d.ratingCount>0?d.ratingSum/d.ratingCount:0}))
     .filter(d=>d.rating>0||d.inscriptos>0)
     .map(d=>({...d,score:d.rating*2+d.inscriptos*0.3+d.pubs}))
     .sort((a,b)=>b.score-a.score)

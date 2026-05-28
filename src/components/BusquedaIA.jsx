@@ -29,7 +29,7 @@ export default function BusquedaIA({onBuscar,iaLoading,onClose,seccion}){
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}}}
             placeholder={iaPlaceholder}
             autoFocus rows={3}
-            style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",boxSizing:"border-box",marginBottom:10}}/>
+            style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,resize:"none",boxSizing:"border-box",marginBottom:10,maxHeight:160,overflowY:"auto"}}/>
           <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
             <button onClick={onClose} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>Cancelar</button>
             <button onClick={submit} disabled={!q.trim()||iaLoading}

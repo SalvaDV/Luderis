@@ -105,7 +105,8 @@ export const getSessionFromUrl = async () => {
   });
   if (!res.ok) return null;
   const user = await res.json();
-  return { access_token, refresh_token, user };
+  const expires_at = Math.floor(Date.now() / 1000) + 3600;
+  return { access_token, refresh_token, user, expires_at };
 };
 
 export const refreshSession = (rt) =>
@@ -419,13 +420,13 @@ export const callIA = async (system, userMsg, maxTokens = 600, userToken = "") =
 };
 
 // Multi-turn: acepta el historial completo como array [{role:"user"|"assistant", content:"..."}]
-export const callIAChat = async (system, messages, maxTokens = 600) => {
+export const callIAChat = async (system, messages, maxTokens = 600, userToken = "") => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-proxy`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Authorization": `Bearer ${userToken || SUPABASE_KEY}`,
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
@@ -642,14 +643,14 @@ export const sendEmail = async (template, to, data = {}, token = "") => {
 
 // ── Web Push (via Edge Function send-push) ────────────────────────────────────
 
-export const sendPush = async (to, title, body, url = "/", tag = "default") => {
+export const sendPush = async (to, title, body, url = "/", tag = "default", token) => {
   try {
     await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Authorization": `Bearer ${token || SUPABASE_KEY}`,
       },
       body: JSON.stringify({ to, title, body, url, tag }),
     });
@@ -891,22 +892,22 @@ export const dispararAlertas = async (pub, token) => {
 // ── Q&A pública en publicaciones ──────────────────────────────────────────────
 
 export const getPreguntasPublicacion = (publicacionId) =>
-  db(`/preguntas_publicacion?publicacion_id=eq.${publicacionId}&flag_pregunta=eq.false&order=created_at.asc&select=*`);
+  db(`preguntas_publicacion?publicacion_id=eq.${publicacionId}&flag_pregunta=eq.false&order=created_at.asc&select=*`);
 
 export const insertPregunta = (data, token) =>
-  db("/preguntas_publicacion", "POST", data, token, "return=representation");
+  db("preguntas_publicacion", "POST", data, token, "return=representation");
 
 export const responderPregunta = (preguntaId, respuesta, token) =>
-  db(`/preguntas_publicacion?id=eq.${preguntaId}`, "PATCH",
+  db(`preguntas_publicacion?id=eq.${preguntaId}`, "PATCH",
     { respuesta, respondido_at: new Date().toISOString() }, token, "return=representation");
 
 // ── Alertas contacto externo ──────────────────────────────────────────────────
 
 export const insertAlertaContacto = (data, token) =>
-  db("/alertas_contacto_externo", "POST", data, token, "return=representation");
+  db("alertas_contacto_externo", "POST", data, token, "return=representation");
 
 export const getAlertasContacto = (soloNoRevisadas = false, token) =>
-  db(`/alertas_contacto_externo?${soloNoRevisadas ? "revisada=eq.false&" : ""}order=created_at.desc&select=*,publicaciones(titulo)`, "GET", null, token);
+  db(`alertas_contacto_externo?${soloNoRevisadas ? "revisada=eq.false&" : ""}order=created_at.desc&select=*,publicaciones(titulo)`, "GET", null, token);
 
 export const marcarAlertaRevisada = (alertaId, token) =>
-  db(`/alertas_contacto_externo?id=eq.${alertaId}`, "PATCH", { revisada: true }, token);
+  db(`alertas_contacto_externo?id=eq.${alertaId}`, "PATCH", { revisada: true }, token);

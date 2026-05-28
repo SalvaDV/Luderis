@@ -14,9 +14,8 @@ function isValidSupabaseJwt(token: string, projectRef: string): boolean {
     if (parts.length !== 3) return false;
     const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
     const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
-    if (!["anon", "authenticated"].includes(payload.role)) return false;
-    // user JWTs have iss with project URL; anon keys have iss="supabase"
-    if (payload.role === "authenticated" && (!payload.iss || !payload.iss.includes(projectRef))) return false;
+    if (payload.role !== "authenticated") return false;
+    if (!payload.iss || !payload.iss.includes(projectRef)) return false;
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
     return true;
   } catch { return false; }

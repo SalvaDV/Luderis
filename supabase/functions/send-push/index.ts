@@ -14,8 +14,31 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function isAuthenticated(req: Request, projectRef: string): boolean {
+  try {
+    const auth = req.headers.get("Authorization") ?? req.headers.get("apikey") ?? "";
+    const token = auth.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return false;
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
+    const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
+    if (payload.role !== "authenticated") return false;
+    if (!payload.iss || !payload.iss.includes(projectRef)) return false;
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
+    return true;
+  } catch { return false; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  // Solo usuarios autenticados pueden enviar push — la anon key no es suficiente
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const projectRef = supabaseUrl.replace(/^https?:\/\//, "").split(".")[0];
+  if (!isAuthenticated(req, projectRef)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS });
+  }
 
   try {
     const VAPID_PUBLIC  = Deno.env.get("VAPID_PUBLIC_KEY")!;
