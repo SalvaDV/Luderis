@@ -21,19 +21,19 @@ function getPuzzleNumber(dateStr) {
 }
 
 // How many consecutive days the user has completed (newest-first sorted dates)
+// Compara como strings YYYY-MM-DD para evitar problemas de timezone near medianoche
 function calcStreak(resultDates) {
   if (!resultDates.length) return 0;
   const sorted = [...resultDates].sort((a, b) => b.localeCompare(a));
+  const todayStr = new Date().toLocaleDateString("sv"); // "sv" locale → YYYY-MM-DD
   let streak = 0;
-  let cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
+  let cursorStr = todayStr;
   for (const dateStr of sorted) {
-    const d = new Date(dateStr);
-    d.setHours(0, 0, 0, 0);
-    const diff = Math.round((cursor - d) / 86400000);
+    const day = dateStr.slice(0, 10);
+    const diff = (new Date(cursorStr) - new Date(day)) / 86400000;
     if (diff === 0 || diff === 1) {
       streak++;
-      cursor = d;
+      cursorStr = day;
     } else break;
   }
   return streak;

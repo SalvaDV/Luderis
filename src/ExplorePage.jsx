@@ -120,17 +120,16 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
 
 
   // Detectar ciudad del usuario via geolocalización (una sola vez)
-  const detectarUbicacion=useCallback(()=>{
+  const detectarUbicacion=useCallback((onCity)=>{
     if(!navigator.geolocation)return;
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       async(pos)=>{
         try{
-          // Reverse geocoding con API pública (no requiere key)
           const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=es`);
           const data=await res.json();
           const city=data.address?.city||data.address?.town||data.address?.village||data.address?.suburb||"";
-          if(city){setUserCity(city);try{localStorage.setItem("cl_user_city",city);}catch{}}
+          if(city){setUserCity(city);try{localStorage.setItem("cl_user_city",city);}catch{}onCity?.(city);}
         }catch{}finally{setGeoLoading(false);}
       },
       ()=>setGeoLoading(false),
@@ -258,31 +257,6 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   };
 
   const norm=(s)=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const filtered=posts.filter(p=>{
-    const q=norm(busquedaDebounced.trim());
-    if(q&&!norm(p.titulo).includes(q)&&!norm(p.descripcion).includes(q)&&!norm(p.materia).includes(q)&&!norm(safeDisplayName(p.autor_nombre,p.autor_email)).includes(q))return false;
-    if(filtroTipo!=="all"&&p.tipo!==filtroTipo)return false;
-    if(filtroModo!=="all"&&p.modo!==filtroModo)return false;
-    if(filtroModalidad!=="all"&&p.modalidad!==filtroModalidad)return false;
-    if(filtroSinc!=="all"&&p.sinc!==filtroSinc)return false;
-    if(filtroMateria&&norm(p.materia)!==norm(filtroMateria))return false;
-    if(filtroMoneda&&p.moneda&&p.moneda!==filtroMoneda)return false;
-    if(filtroUbicacion){
-      const ubQ=filtroUbicacion.toLowerCase().trim();
-      // Coincidencia parcial: incluye alguna palabra del filtro
-      const words=ubQ.split(/\s+/).filter(w=>w.length>2);
-      const ubMatch=(p.ubicacion||"").toLowerCase();
-      const matches=words.length>0?words.some(w=>ubMatch.includes(w)):ubMatch.includes(ubQ);
-      if(!matches)return false;
-    }
-    if(precioMax>0&&sliderMin>precioMin&&p.precio&&+p.precio<sliderMin)return false;
-    if(precioMax>0&&sliderMax<precioMax&&p.precio&&+p.precio>sliderMax)return false;
-    if(filtroFechaDesde&&p.fecha_inicio&&p.fecha_inicio<filtroFechaDesde)return false;
-    if(filtroFechaHasta&&p.fecha_inicio&&p.fecha_inicio>filtroFechaHasta)return false;
-    if(filtroDurMin>0&&p.fecha_inicio&&p.fecha_fin){const sem=Math.ceil((new Date(p.fecha_fin)-new Date(p.fecha_inicio))/604800000);if(sem<filtroDurMin)return false;}
-    if(p.tipo==="busqueda"&&p.autor_email!==session.user.email&&rechazadasIds.has(p.id)&&!mostrarRechazadas)return false;
-    return true;
-  });
 
   const activeFilters=[
     filtroTipo!=="all"&&(filtroTipo==="oferta"?"Clases":"Pedidos"),
@@ -438,7 +412,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={{marginBottom:16}}><FL ch="Ubicación"/>
                 <div style={{position:"relative"}}>
                   <input value={filtroUbicacion} onChange={e=>setFiltroUbicacion(e.target.value)} placeholder={userCity?`Tu ciudad: ${userCity}`:"Ej: Palermo, CABA"} style={{width:"100%",background:C.bg,border:`1px solid ${filtroUbicacion?C.accent:C.border}`,borderRadius:8,padding:"9px 36px 9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
-                  <button title="Usar mi ubicación" onClick={()=>{if(userCity){setFiltroUbicacion(userCity);}else{detectarUbicacion();setTimeout(()=>{if(userCity)setFiltroUbicacion(userCity);},2000);}}}
+                  <button title="Usar mi ubicación" onClick={()=>{if(userCity){setFiltroUbicacion(userCity);}else{detectarUbicacion((city)=>setFiltroUbicacion(city));}}}
                     style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:15,color:C.accent,padding:0,lineHeight:1}}>
                     {geoLoading?<Spinner small/>:<MapPin size={15}/>}
                   </button>

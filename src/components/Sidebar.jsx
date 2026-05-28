@@ -46,7 +46,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
         const pct=Math.round((done/criterios.length)*100);
         const siguiente=criterios.find(x=>!x.ok);
         return pct<100?(
-          <div style={{padding:"8px 16px",borderBottom:`1px solid ${C.border}`,background:C.accentDim,cursor:"pointer"}} onClick={()=>{}}>
+          <div style={{padding:"8px 16px",borderBottom:`1px solid ${C.border}`,background:C.accentDim,cursor:"pointer"}} onClick={()=>{setPage("cuenta");if(mobile)onClose();}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
               <span style={{fontSize:10,fontWeight:700,color:C.accent,letterSpacing:.3}}>PERFIL {pct}% COMPLETO</span>
               {siguiente&&<span style={{fontSize:10,color:C.muted}}>Falta: {siguiente.label}</span>}

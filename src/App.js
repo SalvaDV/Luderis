@@ -84,8 +84,7 @@ export default function App(){
   const [session,setSession]=useState(()=>sb.loadSession());
   // Tema: fuerza re-render global al cambiar
   const [,forceThemeRender]=useState(0);
-  // Exponer setter global para que MiCuentaPage lo llame
-  window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};
+  useEffect(()=>{window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};},[]); // eslint-disable-line
   const { showBanner: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushSubscription(session);
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);
@@ -346,7 +345,7 @@ export default function App(){
     }).catch(()=>{});
   },[]);// eslint-disable-line
 
-  useEffect(()=>{sb.setSessionRefreshCallback(async()=>{const c=sessionRef.current;if(!c?.refresh_token)return null;try{const s=await sb.refreshSession(c.refresh_token);sb.saveSession(s);setSession(s);return s;}catch{sb.clearSession();setSession(null);return null;}});},[]);
+  useEffect(()=>{sb.setSessionRefreshCallback(async()=>{const c=sessionRef.current;if(!c?.refresh_token)return null;try{const s=await sb.refreshSession(c.refresh_token);sb.saveSession(s);setSession(s);return s;}catch{sb.clearSession();setSession(null);toast("Tu sesión expiró. Iniciá sesión nuevamente.","error",0);return null;}});},[]);
 
   // ── Proactive token refresh — renueva el JWT 5 min antes de que expire ────────
   useEffect(()=>{
@@ -384,12 +383,13 @@ export default function App(){
 
   // Set de IDs de publicaciones donde el usuario ya está inscripto (para redirigir directo a CursoPage)
   const inscritosRef=useRef(new Set());
-  useEffect(()=>{
+  const refreshInscritos=useCallback(()=>{
     if(!session)return;
     sb.getMisInscripciones(session.user.email,session.access_token)
       .then(ins=>{inscritosRef.current=new Set((ins||[]).map(i=>i.publicacion_id));})
       .catch(()=>{});
-  },[session?.user?.email]);// eslint-disable-line
+  },[session?.user?.email,session?.access_token]);// eslint-disable-line
+  useEffect(()=>{refreshInscritos();},[refreshInscritos]);
   const openDetail=useCallback((post)=>{
     if(post?.tipo==="oferta"&&inscritosRef.current.has(post.id)){setCursoPost(post);}
     else{setDetailPost(post);}
