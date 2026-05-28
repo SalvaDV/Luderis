@@ -114,6 +114,20 @@ export default function FarosPage({ session, onBack, onWin }) {
     setCellState(prev => toggleCell(prev, r, c, puzzle.hints));
   }, [won, puzzle]);
 
+  // ── Drag fill (arrastar para llenar con cruces) ──────────────────────────────
+  const handleDragFill = useCallback((r, c, action) => {
+    if (won || !puzzle) return;
+    setCellState(prev => {
+      const isHint = puzzle.hints.some(([hr, hc]) => hr === r && hc === c);
+      if (isHint) return prev;
+      const cur = prev[r][c];
+      if (cur === 'faro') return prev; // no sobreescribir faros colocados
+      const next = prev.map(row => [...row]);
+      next[r][c] = action === 'fill' ? 'cross' : null;
+      return next;
+    });
+  }, [won, puzzle]);
+
   // ── Verify solution ─────────────────────────────────────────────────────────
   const handleVerify = useCallback(() => {
     if (!puzzle || won) return;
@@ -286,6 +300,7 @@ export default function FarosPage({ session, onBack, onWin }) {
               conflicts={conflicts}
               hints={puzzle.hints}
               onCellClick={handleCellClick}
+              onDragFill={handleDragFill}
             />
           )}
 

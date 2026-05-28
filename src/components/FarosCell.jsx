@@ -10,10 +10,10 @@ import { REGION_PALETTE, LIGHTHOUSE_SVG } from '../FarosGameLogic';
  *   colorIndex  - 0-9 index into REGION_PALETTE
  *   gridSize    - N (affects icon sizing)
  *   borderStyle - {borderTop, borderRight, borderBottom, borderLeft}
- *   onClick     - () => void
+ *   cellKey     - "r,c" string used by FarosGrid for drag hit-testing
  */
 export default function FarosCell({
-  state, isHint, isConflict, colorIndex, gridSize, borderStyle, onClick,
+  state, isHint, isConflict, colorIndex, gridSize, borderStyle, cellKey,
 }) {
   const palette = REGION_PALETTE[colorIndex] || REGION_PALETTE[0];
   const isLarge = gridSize >= 9;
@@ -22,7 +22,7 @@ export default function FarosCell({
 
   return (
     <div
-      onClick={isHint ? undefined : onClick}
+      data-cell-key={cellKey}
       style={{
         aspectRatio: '1',
         display: 'flex',
