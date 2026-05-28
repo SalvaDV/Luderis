@@ -223,15 +223,25 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
         const fU={};Object.keys(uMap).forEach(e=>{if(uMap[e].count>0)fU[e]=uMap[e].sum/uMap[e].count;});
         setReseñasUserMap(fU);
       } else {
-        // Consultar todas las publicaciones, no solo 20
-        const rData=await Promise.allSettled(activos.map(p=>sb.getReseñas(p.id,session.access_token)));
+        // S2-A5: una sola consulta bulk en lugar de N+1
+        const allIds=activos.map(p=>p.id);
+        const allReseñas=await sb.getReseñasBulk(allIds,session.access_token).catch(()=>[]);
         const pMap={};const uMap={};
-        activos.forEach((p,i)=>{
-          const r=rData[i].status==="fulfilled"?rData[i].value:[];
-          const avg=r.length?r.reduce((a,rv)=>a+(rv.estrellas||0),0)/r.length:null;
-          pMap[p.id]={avg,count:r.length};
+        activos.forEach(p=>{pMap[p.id]={avg:null,count:0};});
+        (allReseñas||[]).forEach(rv=>{
+          if(!pMap[rv.publicacion_id])return;
+          pMap[rv.publicacion_id].count++;
+          pMap[rv.publicacion_id]._sum=(pMap[rv.publicacion_id]._sum||0)+(rv.estrellas||0);
+        });
+        Object.keys(pMap).forEach(id=>{
+          const m=pMap[id];
+          if(m.count>0)m.avg=m._sum/m.count;
+          delete m._sum;
+        });
+        activos.forEach(p=>{
           if(!uMap[p.autor_email])uMap[p.autor_email]={sum:0,count:0};
-          r.forEach(rv=>{uMap[p.autor_email].sum+=(rv.estrellas||0);uMap[p.autor_email].count++;});
+          const m=pMap[p.id];
+          if(m?.avg!=null){uMap[p.autor_email].sum+=m.avg*m.count;uMap[p.autor_email].count+=m.count;}
         });
         setReseñasMap(pMap);
         const fU={};Object.keys(uMap).forEach(e=>{if(uMap[e].count>0)fU[e]=uMap[e].sum/uMap[e].count;});

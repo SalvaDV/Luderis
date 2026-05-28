@@ -235,6 +235,13 @@ export const deletePublicacion = (id, token) =>
 export const getReseñas = (pubId, token) =>
   db(`reseñas?publicacion_id=eq.${pubId}&order=created_at.desc`, "GET", null, token);
 
+// S2-A5: bulk query para evitar N+1 al cargar reseñas de muchas publicaciones
+export const getReseñasBulk = (ids, token) => {
+  if (!ids?.length) return Promise.resolve([]);
+  const inClause = ids.join(",");
+  return db(`reseñas?publicacion_id=in.(${inClause})&select=publicacion_id,estrellas,autor_email`, "GET", null, token);
+};
+
 export const getReseñasByAutor = (autorEmail, token) =>
   db(`reseñas?autor_email=eq.${encodeURIComponent(autorEmail)}`, "GET", null, token);
 
@@ -677,6 +684,12 @@ export const createMPCheckout = async (data, token) => {
 
 export const getMisPagos = (email, token) =>
   db(`pagos?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
+
+// S2-C2: verificar si un docente tiene MP Connect activo (SECURITY DEFINER bypassea RLS)
+export const getDocenteMPConnected = (email, token) =>
+  db(`rpc/get_docente_mp_connected`, "POST", { p_email: email }, token)
+    .then(r => r === true || r === "true")
+    .catch(() => null); // null = desconocido, no bloquear
 
 // Libera el pago retenido de un paquete de clases una vez que ambas partes confirman
 export const liberarPagoClase = async (claseId, token) => {

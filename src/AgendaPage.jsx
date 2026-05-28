@@ -74,13 +74,17 @@ function AgendaPage({session,onOpenCurso}){
     let mounted=true;
     Promise.all([
       sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
-    ]).then(([ins])=>{
+      // S2-A4: también cargar publicaciones propias del docente
+      sb.getMisPublicaciones(miEmail,session.access_token).catch(()=>[]),
+    ]).then(([ins,misPublis])=>{
       if(!mounted)return;
       setInscripciones(ins||[]);
-      // Cargar datos de las publicaciones inscriptas que tienen calendario
-      const ids=[...new Set((ins||[]).map(i=>i.publicacion_id))];
-      if(!ids.length){setLoading(false);return;}
-      sb.getPublicacionesByIds(ids,session.access_token).then(results=>{
+      // IDs de inscripciones + IDs de publicaciones propias (sin duplicar)
+      const idsIns=[...new Set((ins||[]).map(i=>i.publicacion_id))];
+      const idsPropias=(misPublis||[]).filter(p=>!p.finalizado&&p.activo!==false).map(p=>p.id);
+      const allIds=[...new Set([...idsIns,...idsPropias])];
+      if(!allIds.length){setLoading(false);return;}
+      sb.getPublicacionesByIds(allIds,session.access_token).then(results=>{
         if(!mounted)return;
         // Filtrar cursos finalizados — no mostrar en agenda
         const allPosts=(results||[]).filter(Boolean).filter(p=>!p.finalizado);

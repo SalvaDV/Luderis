@@ -5571,6 +5571,15 @@ function InscripcionModal({post,session,onClose,onDone}){
   const [metodo,setMetodo]=useState(null);// null | "mp" | "stripe" | "gratis"
   const [loadingInsc,setLoadingInsc]=useState(false);
   const [errInsc,setErrInsc]=useState("");
+  // S2-C2: verificar si el docente tiene MP conectado (null=cargando/desconocido)
+  const [docenteMPConn,setDocenteMPConn]=useState(null);
+  React.useEffect(()=>{
+    if(paso===2){
+      sb.getDocenteMPConnected(post.autor_email,session.access_token)
+        .then(ok=>setDocenteMPConn(ok))
+        .catch(()=>setDocenteMPConn(null));
+    }
+  },[paso]);// eslint-disable-line
 
   // Precio efectivo según paquete elegido
   const tienePrecio=post.precio&&parseFloat(post.precio)>0;
@@ -5796,14 +5805,22 @@ function InscripcionModal({post,session,onClose,onDone}){
               {!metodo&&(
                 <>
                   {(tienePrecio||esPrueba)&&(
-                    <button onClick={()=>setMetodo("mp")}
-                      style={{background:"linear-gradient(135deg,#009EE3,#0070BA)",border:"none",borderRadius:14,color:"#fff",padding:"14px 18px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",gap:12,textAlign:"left",boxShadow:"0 4px 14px rgba(0,158,227,.25)"}}>
-                      <span style={{fontSize:22}}>💳</span>
-                      <div>
-                        <div>Mercado Pago</div>
-                        <div style={{fontWeight:400,fontSize:11,opacity:.85}}>Tarjeta, débito, efectivo · Hasta 12 cuotas</div>
-                      </div>
-                    </button>
+                    docenteMPConn===false
+                      ? <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 18px",fontSize:13,color:C.muted,display:"flex",gap:10,alignItems:"flex-start"}}>
+                          <span style={{fontSize:20}}>ℹ️</span>
+                          <div>
+                            <div style={{fontWeight:600,color:C.text,marginBottom:2}}>Pago online no disponible</div>
+                            <div>Este docente aún no conectó Mercado Pago. Podés inscribirte y coordinar el pago directamente con él.</div>
+                          </div>
+                        </div>
+                      : <button onClick={()=>setMetodo("mp")}
+                          style={{background:"linear-gradient(135deg,#009EE3,#0070BA)",border:"none",borderRadius:14,color:"#fff",padding:"14px 18px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",gap:12,textAlign:"left",boxShadow:"0 4px 14px rgba(0,158,227,.25)"}}>
+                          <span style={{fontSize:22}}>💳</span>
+                          <div>
+                            <div>Mercado Pago</div>
+                            <div style={{fontWeight:400,fontSize:11,opacity:.85}}>Tarjeta, débito, efectivo · Hasta 12 cuotas</div>
+                          </div>
+                        </button>
                   )}
                   {(tienePrecio||esPrueba)&&(post.moneda==="USD"||post.moneda==="EUR")&&(
                     <button onClick={()=>setMetodo("stripe")}
