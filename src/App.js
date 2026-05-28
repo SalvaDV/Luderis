@@ -156,6 +156,7 @@ export default function App(){
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
   const [unread,setUnread]=useState(0);const [ofertasCount,setOfertasCount]=useState(0);const [notifCount,setNotifCount]=useState(0);const [notifs,setNotifs]=useState([]);const [showNotifs,setShowNotifs]=useState(false);
   const [juegosBadge,setJuegosBadge]=useState(false);
+  const [shikakuWonToday,setShikakuWonToday]=useState(false);
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Función para abrir el panel de notificaciones (pasada como prop a Sidebar)
   const openNotifPanel=useCallback(()=>setNotifPanelOpen(v=>!v),[]);
@@ -380,6 +381,17 @@ export default function App(){
         setJuegosBadge(!result);
       })
       .catch(() => { if (mounted) setJuegosBadge(false); });
+    return () => { mounted = false; };
+  }, [session?.access_token]); // eslint-disable-line
+
+  // ── Shikaku badge: inicializa desde DB; se actualiza inmediatamente al ganar ──
+  useEffect(() => {
+    if (!session?.access_token) { setShikakuWonToday(false); return; }
+    let mounted = true;
+    const today = new Date().toLocaleDateString('sv');
+    sb.getShikakuResult(session.access_token, today)
+      .then(result => { if (mounted) setShikakuWonToday(!!result); })
+      .catch(() => { if (mounted) setShikakuWonToday(false); });
     return () => { mounted = false; };
   }, [session?.access_token]); // eslint-disable-line
 
@@ -672,6 +684,8 @@ export default function App(){
                 session={session}
                 onPlayFaros={()=>setPage("faros")}
                 onPlayShikaku={()=>setPage("shikaku")}
+                farosWonToday={!juegosBadge}
+                shikakuWonToday={shikakuWonToday}
               />
             </React.Suspense>
           )}
@@ -689,7 +703,7 @@ export default function App(){
               <ShikakuPage
                 session={session}
                 onBack={()=>setPage("juegos")}
-                onWin={()=>{}}
+                onWin={()=>setShikakuWonToday(true)}
               />
             </React.Suspense>
           )}

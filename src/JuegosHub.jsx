@@ -107,14 +107,22 @@ function GameCard({ icon, gradient, title, tagline, rules, done, streak, timeStr
 
 // ── JuegosHub ─────────────────────────────────────────────────────────────────
 // Props:
-//   session       — Supabase session
-//   onPlayFaros   — () => void
-//   onPlayShikaku — () => void
-export default function JuegosHub({ session, onPlayFaros, onPlayShikaku }) {
-  const [farosDone,   setFarosDone]   = useState(false);
+//   session          — Supabase session
+//   onPlayFaros      — () => void
+//   onPlayShikaku    — () => void
+//   farosWonToday    — boolean (override desde App.js; true = ya ganó hoy)
+//   shikakuWonToday  — boolean (override desde App.js; true = ya ganó hoy)
+//
+// Los props *WonToday se usan como valor inicial del estado para evitar la
+// race condition entre el guardado en DB y la carga del hub.
+// La consulta a DB puede actualizar el estado hacia 'true' (para mostrar el
+// tiempo), pero nunca lo pisa hacia 'false' si el prop ya dijo 'true'.
+export default function JuegosHub({ session, onPlayFaros, onPlayShikaku,
+                                    farosWonToday = false, shikakuWonToday = false }) {
+  const [farosDone,   setFarosDone]   = useState(farosWonToday);
   const [farosTime,   setFarosTime]   = useState(0);
   const [farosStreak, setFarosStreak] = useState(0);
-  const [shikDone,    setShikDone]    = useState(false);
+  const [shikDone,    setShikDone]    = useState(shikakuWonToday);
   const [shikTime,    setShikTime]    = useState(0);
   const [shikStreak,  setShikStreak]  = useState(0);
   const [loading,     setLoading]     = useState(true);
@@ -137,7 +145,7 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku }) {
       // Shikaku streak
       sb.getShikakuStreak(token),
     ]).then(([farosRes, farosStreakRes, shikRes, shikStreakRes]) => {
-      // Faros done?
+      // Faros done? — solo se actualiza hacia true (el prop ya pudo haberlo marcado)
       if (farosRes.status === 'fulfilled' && farosRes.value) {
         setFarosDone(true);
         setFarosTime(farosRes.value.time_seconds ?? 0);
@@ -147,7 +155,7 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku }) {
         const dates = farosStreakRes.value ?? [];
         setFarosStreak(calcStreak(dates));
       }
-      // Shikaku done?
+      // Shikaku done? — ídem
       if (shikRes.status === 'fulfilled' && shikRes.value) {
         setShikDone(true);
         setShikTime(shikRes.value.time_seconds ?? 0);
@@ -202,7 +210,7 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku }) {
           rules="Colocá faros en cada región de color. Solo uno por fila y columna, sin que se toquen."
           done={farosDone}
           streak={farosStreak}
-          timeStr={farosDone ? fmt(farosTime) : null}
+          timeStr={farosDone ? (farosTime > 0 ? fmt(farosTime) : '···') : null}
           onClick={onPlayFaros}
           color="#1A6ED8"
         />
@@ -214,7 +222,7 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku }) {
           rules="Rodeá cada número con un rectángulo cuya área sea exactamente ese número. Todos los casilleros deben quedar cubiertos."
           done={shikDone}
           streak={shikStreak}
-          timeStr={shikDone ? fmt(shikTime) : null}
+          timeStr={shikDone ? (shikTime > 0 ? fmt(shikTime) : '···') : null}
           onClick={onPlayShikaku}
           color="#805AD5"
         />
