@@ -159,7 +159,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     );
     if(existe){
       // Toggle: si ya existe, eliminar
-      await sb.deleteAlertaBusqueda(existe.id,session.access_token).catch(()=>{});
+      await sb.deleteAlertaExploracion(existe.id,session.access_token).catch(()=>{});
       setAlertas(prev=>prev.filter(a=>a.id!==existe.id));
       toast("Alerta eliminada","info",2000);
       return;
@@ -167,7 +167,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     setSavingAlerta(true);
     try{
       const nombre=activeFilters.join(", ")||"Todas las clases";
-      const [created]=await sb.insertAlertaBusqueda({
+      const [created]=await sb.insertAlertaExploracion({
         usuario_id:session.user.id,
         usuario_email:session.user.email,
         nombre,
@@ -925,7 +925,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       {alertas.map(a=>(
                         <span key={a.id} style={{display:"flex",alignItems:"center",gap:4,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 8px",fontSize:10,color:C.text}}>
                           🔔 {a.nombre}
-                          <button onClick={()=>sb.deleteAlertaBusqueda(a.id,session.access_token).then(()=>{setAlertas(p=>p.filter(x=>x.id!==a.id));toast("Alerta eliminada","info",2000);})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",padding:0,fontSize:12,lineHeight:1,marginLeft:2}} title="Eliminar alerta">×</button>
+                          <button onClick={()=>sb.deleteAlertaExploracion(a.id,session.access_token).then(()=>{setAlertas(p=>p.filter(x=>x.id!==a.id));toast("Alerta eliminada","info",2000);})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",padding:0,fontSize:12,lineHeight:1,marginLeft:2}} title="Eliminar alerta">×</button>
                         </span>
                       ))}
                     </div>
@@ -992,7 +992,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <button onClick={async()=>{
                     setSavingAlerta(true);
                     try{
-                      const [created]=await sb.insertAlertaBusqueda({
+                      const [created]=await sb.insertAlertaExploracion({
                         usuario_id:session.user.id,usuario_email:session.user.email,
                         nombre:iaQuery.slice(0,80),
                         materia:filtroMateria||null,modo:null,tipo:null,precio_max:null,ubicacion:null,

@@ -320,14 +320,17 @@ export const insertFavorito = (data, token) =>
 export const deleteFavorito = (id, token) =>
   db(`favoritos?id=eq.${id}`, "DELETE", null, token);
 
-// ── Alertas de búsqueda (S2-M1) ──────────────────────────────────────────────
+// ── Alertas de exploracion (S2-M1) ───────────────────────────────────────────
+// Nota: 'alertas_busquedas' (plural) es una feature distinta — avisa a docentes
+// cuando alumnos buscan clases. Estas funciones son para la tabla nueva
+// 'alertas_busqueda' (singular) que avisa a alumnos cuando hay clases nuevas.
 export const getAlertasBusqueda = (token) =>
   db("alertas_busqueda?order=created_at.desc", "GET", null, token).catch(() => []);
 
-export const insertAlertaBusqueda = (data, token) =>
+export const insertAlertaExploracion = (data, token) =>
   db("alertas_busqueda", "POST", data, token, "return=representation");
 
-export const deleteAlertaBusqueda = (id, token) =>
+export const deleteAlertaExploracion = (id, token) =>
   db(`alertas_busqueda?id=eq.${id}`, "DELETE", null, token);
 
 // ── Ofertas sobre búsquedas ───────────────────────────────────────────────────
