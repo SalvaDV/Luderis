@@ -4,6 +4,7 @@ import { C, FONT, toast } from './shared';
 import * as sb from './supabase';
 import { generateShikaku } from './shikakuGenerator';
 import ShikakuGrid from './components/ShikakuGrid';
+import CountdownTimer from './components/CountdownTimer';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatTime(s) {
@@ -88,6 +89,16 @@ function WinOverlay({ show, timeSeconds, streak, N, onShare, onBack, wonOnLoad }
           </div>
         </div>
 
+        {/* Countdown */}
+        <div style={{
+          padding: '14px 0 16px',
+          borderTop: `1px solid ${C.border}`,
+          borderBottom: `1px solid ${C.border}`,
+          marginBottom: 16,
+        }}>
+          <CountdownTimer label="Próximo Shikaku en" accentColor="#805AD5" />
+        </div>
+
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onShare} style={{
@@ -164,7 +175,17 @@ function AlreadyDoneScreen({ N, timeSeconds, streak, onShare, onBack, placedRect
             won
           />
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          {/* Countdown */}
+          <div style={{
+            margin: '20px 0 16px',
+            padding: '16px 0',
+            borderTop: `1px solid ${C.border}`,
+            borderBottom: `1px solid ${C.border}`,
+          }}>
+            <CountdownTimer label="Próximo Shikaku en" accentColor="#805AD5" />
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={onShare} style={{
               flex: 1, padding: 11, borderRadius: 12, border: 'none',
               background: 'linear-gradient(135deg,#805AD5,#553C9A)',
@@ -185,10 +206,6 @@ function AlreadyDoneScreen({ N, timeSeconds, streak, onShare, onBack, placedRect
             </button>
           </div>
         </div>
-      </div>
-
-      <div style={{ textAlign: 'center', padding: '20px 0 0', fontSize: 13, color: C.muted }}>
-        Volvé mañana para el siguiente puzzle
       </div>
     </div>
   );

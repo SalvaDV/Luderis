@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Lightbulb, Flame, Share2, Trophy } from 'lucide-react';
+import React from 'react';
+import { Lightbulb, Flame, Share2 } from 'lucide-react';
 import { C, FONT } from '../shared';
 import { formatTime } from '../FarosGameLogic';
+import CountdownTimer from './CountdownTimer';
 
 const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
 const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:10,height:10,borderRadius:'50%',background:DIFF_COLOR[difficulty]||'#888',verticalAlign:'middle',marginRight:3}}/>);
@@ -21,18 +22,6 @@ const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:10,hei
 export default function FarosTomorrow({
   streak, winTime, difficulty, gridSize, puzzleNum, onShare,
 }) {
-  const [secondsLeft, setSecondsLeft] = useState(getSecondsToMidnight());
-  const intervalRef = useRef(null);
-
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft(getSecondsToMidnight());
-    }, 1000);
-    return () => clearInterval(intervalRef.current);
-  }, []);
-
-  const ready = secondsLeft <= 0;
-
   return (
     <div style={{
       maxWidth: 400,
@@ -97,35 +86,8 @@ export default function FarosTomorrow({
         </div>
 
         {/* Countdown */}
-        <div style={{
-          padding: '20px 24px',
-          textAlign: 'center',
-        }}>
-          {ready ? (
-            <>
-              <div style={{ marginBottom: 6 }}><Trophy size={28} color="#F59E0B" strokeWidth={1.5}/></div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, marginBottom: 4 }}>
-                ¡El nuevo puzzle ya está disponible!
-              </div>
-              <div style={{ fontSize: 12, color: C.muted }}>
-                Recargá la página para jugar
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Próximo Faros en
-              </div>
-              <div style={{
-                fontSize: 36, fontWeight: 800,
-                color: C.text,
-                fontVariantNumeric: 'tabular-nums',
-                letterSpacing: 2,
-              }}>
-                {formatCountdown(secondsLeft)}
-              </div>
-            </>
-          )}
+        <div style={{ padding: '20px 24px' }}>
+          <CountdownTimer label="Próximo Faros en" accentColor={C.accent} />
         </div>
 
         {/* Share button */}
@@ -148,18 +110,3 @@ export default function FarosTomorrow({
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getSecondsToMidnight() {
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0); // próxima medianoche hora local
-  return Math.max(0, Math.floor((midnight - now) / 1000));
-}
-
-function formatCountdown(totalSeconds) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
-}

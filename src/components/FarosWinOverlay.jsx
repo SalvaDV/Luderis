@@ -2,6 +2,7 @@ import React from 'react';
 import { Trophy, Flame, Share2 } from 'lucide-react';
 import { C, FONT } from '../shared';
 import { formatTime } from '../FarosGameLogic';
+import CountdownTimer from './CountdownTimer';
 
 const DIFF_COLOR={fácil:'#EAB308',medio:'#F97316',difícil:'#EF4444'};
 const DiffDot=({difficulty})=>(
@@ -60,6 +61,16 @@ export default function FarosWinOverlay({
             </div>
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>Racha</div>
           </div>
+        </div>
+
+        {/* Countdown */}
+        <div style={{
+          padding: '12px 0 16px',
+          borderTop: `1px solid ${C.border}`,
+          borderBottom: `1px solid ${C.border}`,
+          marginBottom: 14,
+        }}>
+          <CountdownTimer label="Próximo Faros en" accentColor={C.accent} />
         </div>
 
         {/* Buttons */}
