@@ -72,7 +72,12 @@ const authFetch = async (path, opts = {}) => {
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : {};
-  if (!res.ok) throw new Error(data.error_description || data.message || "Error");
+  if (!res.ok) {
+    const msg = data.error_description || data.message || data.error || "Error";
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 };
 

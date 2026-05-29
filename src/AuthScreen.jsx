@@ -28,6 +28,7 @@ function AuthScreen({onLogin}){
   const handle=async()=>{
     setErr("");setOk("");if(!email){setErr("Ingresá tu email");return;}
     if(mode!=="forgot"&&!pass){setErr("Ingresá contraseña");return;}
+    if(mode==="register"&&pass.length<6){setErr("La contraseña debe tener al menos 6 caracteres");return;}
     if(mode==="register"&&pass!==pass2){setErr("Las contraseñas no coinciden");return;}
     if(mode==="register"&&!aceptoTerminos){setErr("Debés aceptar los Términos y Condiciones");return;}
     setLoading(true);
@@ -59,7 +60,20 @@ function AuthScreen({onLogin}){
         if(uid){try{await sb.upsertUsuario({id:uid,email,nombre:email.split("@")[0]},r.access_token);}catch{}}
         trackLogin("email");sb.saveSession(r);onLogin(r);
       }
-    }catch(e){setErr(e.message||"Error al iniciar sesión");}finally{setLoading(false);}
+    }catch(e){
+      const msg=(e.message||"").toLowerCase();
+      if(msg.includes("invalid login credentials")||msg.includes("invalid_credentials")||msg.includes("email not confirmed")||msg.includes("invalid_grant")||e.status===400){
+        setErr("Usuario o contraseña incorrectos");
+      }else if(msg.includes("password should be")||msg.includes("at least")){
+        setErr("La contraseña debe tener al menos 6 caracteres");
+      }else if(msg.includes("rate limit")||msg.includes("too many")||msg.includes("security purposes")||e.status===429||msg.includes("429")){
+        setErr("Demasiados intentos. Esperá unos minutos antes de volver a intentarlo.");
+      }else if(msg.includes("user already registered")||msg.includes("already been registered")){
+        setErr("Ya existe una cuenta con ese email. Iniciá sesión.");
+      }else{
+        setErr(e.message||"Ocurrió un error. Intentá de nuevo.");
+      }
+    }finally{setLoading(false);}
   };
 
   const handleGoogle=async()=>{

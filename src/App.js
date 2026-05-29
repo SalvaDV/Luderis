@@ -105,44 +105,97 @@ function ResetPasswordScreen({ accessToken, onSuccess, onCancel }) {
       } else {
         setErr(e.message || "No se pudo actualizar la contraseña. Intentá de nuevo.");
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
+  const iS={width:"100%",background:"#F4F7FF",border:"1.5px solid #DDE5F5",borderRadius:10,padding:"12px 14px",color:"#0D1F3C",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:12};
+
   return (
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#1A6ED8 0%,#1A3E6D 100%)",fontFamily:FONT,padding:16}}>
-      <style>{`*{box-sizing:border-box}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden}input{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder{color:#A0AEC0;opacity:1}`}</style>
-      <div style={{background:"#fff",borderRadius:20,padding:"40px 32px",width:"100%",maxWidth:380,boxShadow:"0 8px 40px rgba(0,0,0,.22)"}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:30,fontWeight:800,color:"#1A6ED8",letterSpacing:"-1px",marginBottom:6}}>Luderis</div>
-          <div style={{fontSize:19,fontWeight:700,color:"#0D1F3C",marginBottom:4}}>Nueva contraseña</div>
-          <div style={{fontSize:13,color:"#64748b",lineHeight:1.5}}>Elegí una contraseña segura para tu cuenta</div>
-        </div>
-        {done ? (
-          <div style={{textAlign:"center",padding:"20px 0",color:"#16a34a",fontSize:15,fontWeight:600,lineHeight:1.6}}>
-            ✓ Contraseña actualizada correctamente.<br/>
-            <span style={{fontSize:13,color:"#64748b",fontWeight:400}}>Iniciando sesión…</span>
+    <div style={{minHeight:"100vh",display:"flex",fontFamily:FONT,background:"#F6F9FF"}}>
+      <style>{`
+        .reset-left{display:flex!important}
+        @media(max-width:720px){.reset-left{display:none!important}}
+        .reset-logo-m{display:none!important}
+        @media(max-width:720px){.reset-logo-m{display:flex!important}}
+        input{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}
+        input::placeholder{color:#A0AEC0;opacity:1}
+      `}</style>
+
+      {/* Panel izquierdo — igual que AuthScreen */}
+      <div className="reset-left" style={{flex:"0 0 400px",background:"linear-gradient(160deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%)",display:"flex",flexDirection:"column",padding:"48px 40px",position:"relative",overflow:"hidden",justifyContent:"space-between"}}>
+        <div style={{position:"relative",zIndex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:44}}>
+            <div style={{width:52,height:52,borderRadius:14,background:"rgba(255,255,255,.15)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(0,0,0,.2)"}}>
+              <img src="/logo.png" alt="Luderis" style={{width:36,height:36,objectFit:"contain"}}/>
+            </div>
+            <span style={{fontSize:26,fontWeight:800,color:"#fff",letterSpacing:"-.5px"}}>Luderis</span>
           </div>
-        ) : (
-          <>
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Nueva contraseña</label>
-              <Input type="password" value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres" onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={{width:"100%"}}/>
+          <h2 style={{color:"#fff",fontSize:31,fontWeight:800,lineHeight:1.2,margin:"0 0 14px",letterSpacing:"-.5px"}}>
+            Aprendé lo que quieras,<br/>enseñá lo que sabés.
+          </h2>
+          <p style={{color:"rgba(255,255,255,.7)",fontSize:14,lineHeight:1.75,margin:0}}>
+            Conectamos personas para compartir conocimiento.<br/>Transparente, seguro y sin cargos ocultos.
+          </p>
+        </div>
+        <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:10}}>
+          {[
+            {n:"Clases particulares",d:"Encontrá tu docente ideal",icon:"👤"},
+            {n:"Cursos completos",d:"Con evaluaciones y certificados",icon:"🎓"},
+            {n:"Búsqueda con IA",d:"Te encuentra lo mejor",icon:"✦"},
+          ].map(({n,d,icon})=>(
+            <div key={n} style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.09)",borderRadius:14,padding:"12px 16px",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.1)"}}>
+              <div style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,color:"#fff"}}>{icon}</div>
+              <div>
+                <div style={{color:"#fff",fontWeight:700,fontSize:13}}>{n}</div>
+                <div style={{color:"rgba(255,255,255,.6)",fontSize:11,marginTop:1}}>{d}</div>
+              </div>
             </div>
-            <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Confirmar contraseña</label>
-              <Input type="password" value={pass2} onChange={e=>setPass2(e.target.value)} placeholder="Repetí tu contraseña" onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={{width:"100%"}}/>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel derecho — formulario */}
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 16px"}}>
+        <div style={{width:"min(420px,100%)"}}>
+
+          {/* Logo mobile */}
+          <div className="reset-logo-m" style={{alignItems:"center",gap:10,marginBottom:24,justifyContent:"center"}}>
+            <img src="/logo.png" alt="Luderis" style={{width:40,height:40,objectFit:"contain"}}/>
+            <span style={{fontSize:22,fontWeight:800,background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Luderis</span>
+          </div>
+
+          <button onClick={onCancel} style={{background:"none",border:"none",color:"#718096",fontSize:13,cursor:"pointer",fontFamily:FONT,padding:"0 0 18px",display:"flex",alignItems:"center",gap:5}}
+            onMouseEnter={e=>e.currentTarget.style.color="#1A6ED8"} onMouseLeave={e=>e.currentTarget.style.color="#718096"}>
+            ← Volver al inicio
+          </button>
+
+          <h2 style={{color:"#0D1F3C",fontSize:24,fontWeight:800,margin:"0 0 4px",letterSpacing:"-.4px"}}>Nueva contraseña</h2>
+          <p style={{color:"#718096",fontSize:14,margin:"0 0 28px"}}>Elegí una contraseña segura para tu cuenta</p>
+
+          {done ? (
+            <div style={{textAlign:"center",padding:"24px 0",color:"#16a34a",fontSize:15,fontWeight:600,lineHeight:1.7}}>
+              ✓ Contraseña actualizada correctamente.<br/>
+              <span style={{fontSize:13,color:"#718096",fontWeight:400}}>Iniciando sesión…</span>
             </div>
-            {err && <div style={{background:"#FFF0F0",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",color:"#B91C1C",fontSize:13,marginBottom:14}}>{err}</div>}
-            <Btn onClick={handleSubmit} disabled={loading} style={{width:"100%",padding:"12px",fontSize:15,fontWeight:700,borderRadius:12}}>
-              {loading ? "Actualizando…" : "Actualizar contraseña"}
-            </Btn>
-            <button onClick={onCancel} style={{marginTop:14,width:"100%",background:"none",border:"none",color:"#64748b",fontSize:13,cursor:"pointer",textDecoration:"underline",padding:"4px 0"}}>
-              Volver al inicio
-            </button>
-          </>
-        )}
+          ) : (
+            <>
+              <div style={{marginBottom:0}}>
+                <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Nueva contraseña</label>
+                <input type="password" value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres"
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={iS}/>
+              </div>
+              <div style={{marginBottom:8}}>
+                <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Confirmar contraseña</label>
+                <input type="password" value={pass2} onChange={e=>setPass2(e.target.value)} placeholder="Repetí tu contraseña"
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={iS}/>
+              </div>
+              {err && <div style={{background:"#FFF0F0",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",color:"#B91C1C",fontSize:13,marginBottom:14}}>⚠ {err}</div>}
+              <Btn onClick={handleSubmit} disabled={loading} style={{width:"100%",padding:"13px",fontSize:15,fontWeight:700,borderRadius:12,marginTop:4}}>
+                {loading ? "Actualizando…" : "Actualizar contraseña"}
+              </Btn>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
