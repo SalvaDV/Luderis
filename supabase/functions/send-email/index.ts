@@ -410,17 +410,25 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
   alerta_digest: (data: any, appUrl: string) => {
     const matches: any[] = Array.isArray(data.matches) ? data.matches : [];
     const count = data.count ?? matches.length;
-    const matchesHtml = matches.map((m: any) => `
-      <div style="border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin:12px 0;background:#fff;">
-        <div style="font-size:16px;font-weight:700;color:${BRAND.text};margin-bottom:8px;">${esc(m.pub_titulo)}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;">
-          ${m.tipo       ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.tipo)}</span>` : ""}
-          ${m.materia    ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.materia)}</span>` : ""}
-          ${m.modalidad  ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.modalidad)}</span>` : ""}
-          ${m.precio     ? `<span style="background:#EBF8F4;border:1px solid #2EC4A040;border-radius:20px;padding:3px 10px;color:#0F7A4A;font-weight:700;">${esc(m.precio)}</span>` : ""}
+    const matchesHtml = matches.map((m: any) => {
+      const pubUrl = m.pub_id ? `${appUrl}?pub=${encodeURIComponent(m.pub_id)}` : appUrl;
+      return `
+      <div style="border:1px solid ${BRAND.border};border-radius:10px;overflow:hidden;margin:12px 0;">
+        <div style="padding:16px 20px;background:#fff;">
+          <a href="${pubUrl}" style="font-size:16px;font-weight:700;color:${BRAND.text};text-decoration:none;display:block;margin-bottom:8px;">${esc(m.pub_titulo)}</a>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;">
+            ${m.tipo      ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.tipo)}</span>` : ""}
+            ${m.materia   ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.materia)}</span>` : ""}
+            ${m.modalidad ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.modalidad)}</span>` : ""}
+            ${m.precio    ? `<span style="background:#EBF8F4;border:1px solid #2EC4A040;border-radius:20px;padding:3px 10px;color:#0F7A4A;font-weight:700;">${esc(m.precio)}</span>` : ""}
+          </div>
+          ${m.criterio_desc ? `<div style="font-size:12px;color:${BRAND.muted};margin-top:8px;font-style:italic;">Tu alerta: "${esc(m.criterio_desc)}"</div>` : ""}
         </div>
-        ${m.criterio_desc ? `<div style="font-size:12px;color:${BRAND.muted};margin-top:8px;font-style:italic;">Tu alerta: "${esc(m.criterio_desc)}"</div>` : ""}
-      </div>`).join("");
+        <div style="padding:10px 20px;background:${BRAND.bg};border-top:1px solid ${BRAND.border};text-align:right;">
+          <a href="${pubUrl}" style="font-size:13px;font-weight:700;color:${BRAND.blue};text-decoration:none;">Ver publicación →</a>
+        </div>
+      </div>`;
+    }).join("");
     return {
       subject: count === 1
         ? `🔔 Nueva publicación que puede interesarte — ${esc(matches[0]?.pub_titulo ?? "")}`

@@ -282,6 +282,16 @@ Deno.serve(async (req) => {
       console.error("Error procesando digest de alertas:", e);
     }
 
+    // ── Limpieza de filas antiguas (sent_at > 30 días) ────────────────────────
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      await supa(
+        `alertas_digest_queue?sent_at=lt.${cutoff.toISOString()}`,
+        "DELETE"
+      );
+    } catch { /* silencioso */ }
+
     return new Response(
       JSON.stringify({ ok: true, enviados, clases: pubs?.length ?? 0 }),
       { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
