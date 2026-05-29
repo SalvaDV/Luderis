@@ -334,7 +334,6 @@ async function dispararAlertasIA(pub, session){
           const j=JSON.parse(raw.match(/\{[\s\S]*?\}/)?.[0]||"{}");
           match=j.match===true;razon=j.razon||"";
         }catch{match=raw.includes('"match":true')||raw.includes('"match": true');}
-        console.log(`[Alerta] "${alerta.descripcion}" → pub:"${pub.titulo}" → match:${match} ${razon}`);
 
         if(match){
           // Encolar en digest diario
