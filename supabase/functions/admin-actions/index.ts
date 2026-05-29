@@ -22,6 +22,7 @@ const ADMIN_ONLY_ACTIONS = new Set([
   "rechazar_docente",
   "aprobar_verificacion",
   "rechazar_verificacion",
+  "resolver_denuncia",
   // Escrow & liquidaciones
   "liberar_pago_manual",
   "resolver_disputa",
@@ -98,7 +99,18 @@ serve(async (req) => {
     if (action === "toggle_bloqueo") {
       const { user_id, bloqueado } = params;
       if (!user_id) throw new Error("user_id requerido");
+      // Fetch email before updating (needed for ban email)
+      const { data: uInfo } = await adminClient
+        .from("usuarios").select("email").eq("id", user_id).maybeSingle();
       await adminClient.from("usuarios").update({ bloqueado }).eq("id", user_id);
+      // Send ban email when blocking (not when unblocking)
+      if (bloqueado && uInfo?.email) {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+          body: JSON.stringify({ to: uInfo.email, template: "ban_usuario", data: {} }),
+        }).catch(() => null);
+      }
 
     } else if (action === "eliminar_usuario") {
       const { user_id, user_email } = params;
@@ -233,6 +245,47 @@ serve(async (req) => {
           }),
         }).catch(() => null);
       }
+
+    // ── Moderación: resolver una denuncia ────────────────────────────────────
+    } else if (action === "resolver_denuncia") {
+      const { denuncia_id, accion_tomada, publicacion_id, denunciado_email, notas } = params;
+      if (!denuncia_id || !accion_tomada) throw new Error("denuncia_id y accion_tomada requeridos");
+
+      // Marcar denuncia como revisada
+      await adminClient.from("denuncias").update({
+        revisada: true,
+        accion_tomada,
+      }).eq("id", denuncia_id);
+
+      if (accion_tomada === "bloquear_usuario" && denunciado_email) {
+        // Bloquear usuario por email
+        await adminClient.from("usuarios").update({ bloqueado: true }).eq("email", denunciado_email);
+        // Enviar email de ban
+        await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+          body: JSON.stringify({
+            to: denunciado_email,
+            template: "ban_usuario",
+            data: { razon: notas || "Denuncia de otro usuario." },
+          }),
+        }).catch(() => null);
+
+      } else if (accion_tomada === "eliminar_pub" && publicacion_id) {
+        await adminClient.from("publicaciones").delete().eq("id", publicacion_id);
+
+      } else if (accion_tomada === "advertencia" && denunciado_email) {
+        const { data: uAdv } = await adminClient
+          .from("usuarios").select("id").eq("email", denunciado_email).maybeSingle();
+        await adminClient.from("notificaciones").insert({
+          usuario_id:   uAdv?.id ?? null,
+          alumno_email: denunciado_email,
+          tipo:         "sistema",
+          pub_titulo:   `⚠️ Tu cuenta recibió una advertencia por denuncia de otro usuario.${notas ? ` Motivo: ${notas}` : ""}`,
+          leida:        false,
+        }).catch(() => null);
+      }
+      result = { ok: true, accion_tomada };
 
     // ── Escrow: liberar un pago manualmente ─────────────────────────────────
     } else if (action === "liberar_pago_manual") {

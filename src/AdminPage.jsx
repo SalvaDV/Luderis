@@ -41,6 +41,20 @@ const adminAction = async (action, params, token) => {
 const getConfig = () => { try { return JSON.parse(localStorage.getItem("ldrs_admin_cfg") || "{}"); } catch { return {}; } };
 const saveConfig = (cfg) => { try { localStorage.setItem("ldrs_admin_cfg", JSON.stringify({ ...getConfig(), ...cfg })); } catch {} };
 
+// CSV export helper
+const downloadCSV = (rows, filename) => {
+  if (!rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [keys.join(","), ...rows.map(r => keys.map(k => esc(r[k])).join(","))].join("\n");
+  const a = Object.assign(document.createElement("a"), {
+    href: URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" })),
+    download: filename,
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+};
+
 // ─── ADMIN DESIGN TOKENS ─────────────────────────────────────────────────────
 const A = {
   bg:      "var(--cl-bg, #F6F9FF)",
@@ -597,8 +611,8 @@ function OverviewTab({ session }) {
       adminDb("usuarios?select=id,created_at,email,rol,bloqueado", "GET", null, session.access_token).catch(e=>{logError("admin/usuarios",e);return[];}),
       adminDb("publicaciones?select=id,created_at,activo,tipo,precio,moneda,materia,autor_id,usuarios!publicaciones_autor_id_fkey(email,nombre)", "GET", null, session.access_token).catch(e=>{logError("admin/publicaciones",e);return[];}),
       adminDb("inscripciones?select=id,created_at,publicacion_id", "GET", null, session.access_token).catch(e=>{logError("admin/inscripciones",e);return[];}),
-      adminDb("pagos?select=id,monto,estado,created_at", "GET", null, session.access_token).catch(e=>{logError("admin/pagos",e);return[];}),
-      adminDb("denuncias?select=id,created_at,revisada", "GET", null, session.access_token).catch(e=>{logError("admin/denuncias",e);return[];}),
+      adminDb("pagos?select=id,monto,estado,created_at,modo,alumno_email,docente_email", "GET", null, session.access_token).catch(e=>{logError("admin/pagos",e);return[];}),
+      adminDb("denuncias?select=id,created_at,revisada,motivo,accion_tomada", "GET", null, session.access_token).catch(e=>{logError("admin/denuncias",e);return[];}),
       adminDb("rese%C3%B1as?select=id,estrellas,created_at", "GET", null, session.access_token).catch(e=>{logError("admin/reseñas",e);return[];}),
       adminDb("quejas?select=id,estado,created_at", "GET", null, session.access_token).catch(e=>{logError("admin/quejas",e);return[];}),
     ]).then(([users, pubs, insc, pagos, denuncias, resenas, quejas]) => {
@@ -729,17 +743,6 @@ function OverviewTab({ session }) {
   const convRate = stats.totalInscripciones > 0 ? Math.round((stats.totalPagos / stats.totalInscripciones) * 100) : 0;
   const comisionTotal = Math.round(stats.ingresoTotal * (stats.comisionPct / 100));
   const ticketProm = stats.totalPagos > 0 ? Math.round(stats.ingresoTotal / stats.totalPagos) : 0;
-
-  // Datos para gráfico de área — 30 días de usuarios
-  const mesData = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (29 - i));
-    const next = new Date(d); next.setDate(next.getDate() + 1);
-    return {
-      dia: d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }),
-      usuarios: 0, inscripciones: 0,
-      _d: d, _next: next,
-    };
-  });
 
   // Donut data para roles
   const rolesData = Object.entries(stats.usuariosPorRol).map(([rol, count]) => ({
@@ -1033,7 +1036,7 @@ function DocentesTab({ session }) {
   useEffect(() => {
     let mounted=true;
     Promise.all([
-      adminDb("publicaciones?select=id,titulo,autor_id,activo,tipo,precio,usuarios!publicaciones_autor_id_fkey(email,nombre)&tipo=eq.oferta", "GET", null, session.access_token).catch(() => []),
+      adminDb("publicaciones?select=id,titulo,autor_id,activo,tipo,precio,usuarios!publicaciones_autor_id_fkey(email,nombre)", "GET", null, session.access_token).catch(() => []),
       adminDb("rese%C3%B1as?select=estrellas,publicacion_id", "GET", null, session.access_token).catch(() => []),
       adminDb("inscripciones?select=id,publicacion_id", "GET", null, session.access_token).catch(() => []),
     ]).then(([pubs, resenas, insc]) => {
@@ -1365,10 +1368,12 @@ function ReportsTab({ session }) {
   const [denuncias, setDenuncias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("pendientes");
+  const [notas, setNotas] = useState({});    // { [id]: string }
+  const [resolviendo, setResolviendo] = useState(null); // denuncia_id en curso
 
   const cargar = useCallback(() => {
     setLoading(true);
-    adminDb("denuncias?select=*&order=created_at.desc&limit=200", "GET", null, session.access_token)
+    adminDb("denuncias?select=*&order=created_at.desc&limit=300", "GET", null, session.access_token)
       .then(setDenuncias).catch(() => toast("Error cargando denuncias", "error"))
       .finally(() => setLoading(false));
   }, [session]);
@@ -1376,16 +1381,21 @@ function ReportsTab({ session }) {
   useEffect(() => { cargar(); }, [cargar]);
 
   const resolver = async (d, accion) => {
+    if (resolviendo) return;
+    setResolviendo(d.id);
     try {
       const emailBloq = d.autor_email || d.denunciado_email;
       await adminAction("resolver_denuncia", {
-        denuncia_id: d.id, accion_tomada: accion,
+        denuncia_id: d.id,
+        accion_tomada: accion,
         publicacion_id: d.publicacion_id || null,
         denunciado_email: emailBloq || null,
+        notas: notas[d.id]?.trim() || null,
       }, session.access_token);
       setDenuncias(prev => prev.map(x => x.id === d.id ? {...x, revisada: true, accion_tomada: accion} : x));
-      toast("Denuncia resuelta ✓", "success");
+      toast(`✓ Denuncia resuelta: ${accion.replace(/_/g, " ")}`, "success");
     } catch (e) { toast("Error: " + e.message, "error"); }
+    finally { setResolviendo(null); }
   };
 
   const filtered = denuncias.filter(d => {
@@ -1394,10 +1404,30 @@ function ReportsTab({ session }) {
     return true;
   });
 
+  const pendientesCount = denuncias.filter(d => !d.revisada).length;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", gap: 6 }}>
-        {["pendientes", "resueltas", "todas"].map(f => <Pill key={f} label={f.charAt(0).toUpperCase() + f.slice(1)} active={filtro === f} onClick={() => setFiltro(f)} />)}
+
+      {/* Header */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {["pendientes", "resueltas", "todas"].map(f => (
+            <Pill key={f} label={`${f.charAt(0).toUpperCase() + f.slice(1)}${f === "pendientes" && pendientesCount > 0 ? ` (${pendientesCount})` : ""}`} active={filtro === f} onClick={() => setFiltro(f)} />
+          ))}
+        </div>
+        <button onClick={cargar}
+          style={{ marginLeft: "auto", background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 12, color: C.muted, cursor: "pointer", fontFamily: FONT }}>
+          ↺ Actualizar
+        </button>
+        <button onClick={() => downloadCSV(filtered.map(d => ({
+          fecha: fmt(d.created_at), motivo: d.motivo || "", detalle: d.detalle || "",
+          denunciante: d.denunciante_email || "", denunciado: d.autor_email || d.denunciado_email || "",
+          revisada: d.revisada ? "sí" : "no", accion: d.accion_tomada || "",
+        })), `denuncias_${new Date().toISOString().slice(0,10)}.csv`)}
+          style={{ background: C.accent + "18", border: `1px solid ${C.accent}40`, borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, color: C.accent, cursor: "pointer", fontFamily: FONT }}>
+          ⬇ CSV
+        </button>
       </div>
 
       {loading ? <Spinner /> : (
@@ -1414,31 +1444,41 @@ function ReportsTab({ session }) {
                   <div style={{ fontSize: 13, color: C.text, marginBottom: 4 }}><strong>Motivo:</strong> {d.motivo || "Sin especificar"}</div>
                   {d.detalle && <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{d.detalle}</div>}
                   {d.denunciante_email && <div style={{ fontSize: 12, color: C.muted }}>Denunciante: {d.denunciante_email}</div>}
-                  {d.autor_email && <div style={{ fontSize: 12, color: C.muted }}>Denunciado: {d.autor_email}</div>}
+                  {(d.autor_email || d.denunciado_email) && <div style={{ fontSize: 12, color: C.muted }}>Denunciado: {d.autor_email || d.denunciado_email}</div>}
                   {d.publicacion_id && <div style={{ fontSize: 11, color: C.muted, fontFamily: "monospace" }}>Pub ID: {d.publicacion_id}</div>}
-                  {d.accion_tomada && <div style={{ fontSize: 12, color: C.success, marginTop: 4 }}>✓ Acción: {d.accion_tomada}</div>}
+                  {d.accion_tomada && <div style={{ fontSize: 12, color: C.success, marginTop: 4 }}>✓ Acción: {d.accion_tomada.replace(/_/g, " ")}</div>}
                 </div>
-                {!d.revisada && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
-                    <button onClick={() => resolver(d, "advertencia")}
-                      style={{ background: C.warn + "20", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, color: C.warn, cursor: "pointer", fontFamily: FONT }}>
-                      Advertencia
+              </div>
+              {!d.revisada && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+                  <textarea
+                    value={notas[d.id] || ""}
+                    onChange={e => setNotas(n => ({ ...n, [d.id]: e.target.value }))}
+                    placeholder="Notas internas / motivo (opcional — aparece en la notificación al usuario)…"
+                    rows={2}
+                    style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 12, outline: "none", fontFamily: FONT, resize: "vertical", boxSizing: "border-box", marginBottom: 10 }}
+                  />
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button onClick={() => resolver(d, "advertencia")} disabled={!!resolviendo}
+                      style={{ background: C.warn + "20", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: C.warn, cursor: "pointer", fontFamily: FONT, opacity: resolviendo === d.id ? .6 : 1 }}>
+                      {resolviendo === d.id ? "…" : "⚠️ Advertencia"}
                     </button>
-                    <button onClick={() => resolver(d, "eliminar_pub")}
-                      style={{ background: C.danger + "20", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, color: C.danger, cursor: "pointer", fontFamily: FONT }}>
-                      Eliminar pub
+                    <button onClick={() => resolver(d, "eliminar_pub")} disabled={!!resolviendo || !d.publicacion_id}
+                      title={!d.publicacion_id ? "No hay publicación asociada" : ""}
+                      style={{ background: C.danger + "20", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: C.danger, cursor: d.publicacion_id ? "pointer" : "not-allowed", fontFamily: FONT, opacity: (!d.publicacion_id || resolviendo === d.id) ? .5 : 1 }}>
+                      🗑 Eliminar pub
                     </button>
-                    <button onClick={() => resolver(d, "bloquear_usuario")}
-                      style={{ background: "#7B3FBE20", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, color: "#7B3FBE", cursor: "pointer", fontFamily: FONT }}>
-                      Bloquear usuario
+                    <button onClick={() => resolver(d, "bloquear_usuario")} disabled={!!resolviendo}
+                      style={{ background: "#7B3FBE20", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#7B3FBE", cursor: "pointer", fontFamily: FONT, opacity: resolviendo === d.id ? .6 : 1 }}>
+                      🚫 Bloquear usuario
                     </button>
-                    <button onClick={() => resolver(d, "desestimada")}
-                      style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, color: C.muted, cursor: "pointer", fontFamily: FONT }}>
+                    <button onClick={() => resolver(d, "desestimada")} disabled={!!resolviendo}
+                      style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 11, color: C.muted, cursor: "pointer", fontFamily: FONT, opacity: resolviendo === d.id ? .6 : 1 }}>
                       Desestimar
                     </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </Card>
           ))}
           {filtered.length === 0 && <div style={{ textAlign: "center", color: C.muted, padding: 32, fontSize: 13 }}>Sin denuncias {filtro}</div>}
@@ -1665,59 +1705,108 @@ function PaymentsTab({ session }) {
   const [pagos, setPagos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("todos");
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     setLoading(true);
-    adminDb("pagos?select=*&order=created_at.desc&limit=200", "GET", null, session.access_token)
+    adminDb("pagos?select=*&order=created_at.desc&limit=500", "GET", null, session.access_token)
       .then(setPagos).catch(() => toast("Error cargando pagos", "error"))
       .finally(() => setLoading(false));
   }, [session]);
 
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const norm = s => (s || "").toLowerCase();
   const filtered = pagos.filter(p => {
-    if (filtro === "aprobados") return p.estado === "approved" || p.estado === "succeeded";
-    if (filtro === "pendientes") return p.estado === "pending";
-    if (filtro === "rechazados") return p.estado === "rejected" || p.estado === "failed";
+    if (filtro === "aprobados") { if (p.estado !== "approved" && p.estado !== "succeeded") return false; }
+    else if (filtro === "pendientes") { if (p.estado !== "pending") return false; }
+    else if (filtro === "rechazados") { if (p.estado !== "rejected" && p.estado !== "failed") return false; }
+    if (search) {
+      const q = norm(search);
+      if (!norm(p.alumno_email).includes(q) && !norm(p.docente_email).includes(q)) return false;
+    }
     return true;
   });
 
-  const totalAprobado = filtered.filter(p => p.estado === "approved" || p.estado === "succeeded").reduce((a, p) => a + (Number(p.monto) || 0), 0);
+  const aprobados = filtered.filter(p => p.estado === "approved" || p.estado === "succeeded");
+  const totalAprobado = aprobados.reduce((a, p) => a + (Number(p.monto) || 0), 0);
+  const comisionTotal = Math.round(totalAprobado * ((Number(getConfig().comision_pct) || 10) / 100));
   const ESTADO_COLOR = { approved: C.success, succeeded: C.success, pending: C.warn, rejected: C.danger, failed: C.danger };
+
+  const exportCSV = () => {
+    downloadCSV(filtered.map(p => ({
+      fecha: fmt(p.created_at),
+      alumno: p.alumno_email || "",
+      docente: p.docente_email || "",
+      monto: p.monto || 0,
+      estado: p.estado || "",
+      metodo: p.modo || "mp",
+      escrow: p.estado_escrow || "",
+    })), `pagos_${new Date().toISOString().slice(0,10)}.csv`);
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        {["todos", "aprobados", "pendientes", "rechazados"].map(f => <Pill key={f} label={f.charAt(0).toUpperCase() + f.slice(1)} active={filtro === f} onClick={() => setFiltro(f)} />)}
-        <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: C.accent }}>
-          Total aprobado: ${totalAprobado.toLocaleString("es-AR")}
-        </span>
+
+      {/* Totales */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px,1fr))", gap: 12 }}>
+        <StatBox label="Pagos aprobados" value={aprobados.length} color={C.success} />
+        <StatBox label="Volumen aprobado" value={`$${totalAprobado.toLocaleString("es-AR")}`} color={C.accent} />
+        <StatBox label="Comisión Luderis" value={`$${comisionTotal.toLocaleString("es-AR")}`} color={C.warn} sub={`${getConfig().comision_pct || 10}% del total`} />
+        <StatBox label="Total filtrados" value={filtered.length} color={C.muted} />
       </div>
+
+      {/* Controles */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <SearchInput value={search} onChange={setSearch} placeholder="Buscar por email de alumno o docente…" />
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {["todos", "aprobados", "pendientes", "rechazados"].map(f =>
+            <Pill key={f} label={f.charAt(0).toUpperCase() + f.slice(1)} active={filtro === f} onClick={() => setFiltro(f)} />
+          )}
+        </div>
+        <button onClick={cargar}
+          style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 12, color: C.muted, cursor: "pointer", fontFamily: FONT }}>
+          ↺ Actualizar
+        </button>
+        <button onClick={exportCSV} disabled={filtered.length === 0}
+          style={{ background: C.accent + "18", border: `1px solid ${C.accent}40`, borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, color: C.accent, cursor: "pointer", fontFamily: FONT }}>
+          ⬇ CSV
+        </button>
+      </div>
+
+      <div style={{ fontSize: 12, color: C.muted }}>{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</div>
 
       {loading ? <Spinner /> : (
         <Card style={{ padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT }}>
-            <thead>
-              <tr style={{ background: C.bg }}>
-                {["Fecha", "Alumno", "Docente", "Monto", "Estado", "Método"].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: .3, borderBottom: `1px solid ${C.border}` }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => (
-                <tr key={p.id} style={{ borderBottom: `1px solid ${C.border}` }}>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: C.muted }}>{fmt(p.created_at)}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: C.text }}>{p.alumno_email?.split("@")[0] || "—"}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: C.text }}>{p.docente_email?.split("@")[0] || "—"}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.accent }}>${Number(p.monto || 0).toLocaleString("es-AR")}</td>
-                  <td style={{ padding: "10px 14px" }}>
-                    <Badge color={ESTADO_COLOR[p.estado] || C.muted}>{p.estado || "—"}</Badge>
-                  </td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: C.muted }}>{p.modo || "mp"}</td>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT }}>
+              <thead>
+                <tr style={{ background: C.bg }}>
+                  {["Fecha", "Alumno", "Docente", "Monto", "Estado", "Método", "Escrow"].map(h => (
+                    <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: .3, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: C.muted, fontSize: 13 }}>Sin pagos</div>}
+              </thead>
+              <tbody>
+                {filtered.map(p => (
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>{fmt(p.created_at)}</td>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: C.text }}>{p.alumno_email || "—"}</td>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: C.text }}>{p.docente_email || "—"}</td>
+                    <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>${Number(p.monto || 0).toLocaleString("es-AR")}</td>
+                    <td style={{ padding: "10px 14px" }}>
+                      <Badge color={ESTADO_COLOR[p.estado] || C.muted}>{p.estado || "—"}</Badge>
+                    </td>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: C.muted }}>{p.modo || "mp"}</td>
+                    <td style={{ padding: "10px 14px", fontSize: 11, color: C.muted }}>{p.estado_escrow || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: C.muted, fontSize: 13 }}>Sin pagos</div>}
+          </div>
         </Card>
       )}
     </div>
