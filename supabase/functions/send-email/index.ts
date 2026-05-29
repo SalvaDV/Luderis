@@ -457,6 +457,43 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
       </p>
     `, `${data.docente_nombre} te agregó como co-docente.`),
   }),
+
+  alerta_digest: (data: any, appUrl: string) => {
+    const matches: any[] = Array.isArray(data.matches) ? data.matches : [];
+    const count = data.count ?? matches.length;
+    const matchesHtml = matches.map((m: any) => `
+      <div style="border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin:12px 0;background:#fff;">
+        <div style="font-size:16px;font-weight:700;color:${BRAND.text};margin-bottom:8px;">${esc(m.pub_titulo)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;">
+          ${m.tipo       ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.tipo)}</span>` : ""}
+          ${m.materia    ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.materia)}</span>` : ""}
+          ${m.modalidad  ? `<span style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:20px;padding:3px 10px;color:${BRAND.muted};">${esc(m.modalidad)}</span>` : ""}
+          ${m.precio     ? `<span style="background:#EBF8F4;border:1px solid #2EC4A040;border-radius:20px;padding:3px 10px;color:#0F7A4A;font-weight:700;">${esc(m.precio)}</span>` : ""}
+        </div>
+        ${m.criterio_desc ? `<div style="font-size:12px;color:${BRAND.muted};margin-top:8px;font-style:italic;">Tu alerta: "${esc(m.criterio_desc)}"</div>` : ""}
+      </div>`).join("");
+    return {
+      subject: count === 1
+        ? `🔔 Nueva publicación que puede interesarte — ${esc(matches[0]?.pub_titulo ?? "")}`
+        : `🔔 ${count} nuevas publicaciones que pueden interesarte`,
+      preheader: count === 1
+        ? `Apareció algo que coincide con tu alerta: ${esc(matches[0]?.pub_titulo ?? "")}`
+        : `${count} nuevas publicaciones coinciden con tus alertas de búsqueda.`,
+      html: emailBase(`
+        <h2>${count === 1 ? "¡Apareció algo para vos!" : `¡${count} nuevas publicaciones para vos!`}</h2>
+        <p style="color:${BRAND.muted};">
+          ${count === 1
+            ? "Esta publicación coincide con una de tus alertas de búsqueda."
+            : `Estas publicaciones coinciden con tus alertas de búsqueda. Te las resumimos en un solo email.`}
+        </p>
+        ${matchesHtml}
+        <p style="text-align:center;margin:28px 0;">
+          <a href="${appUrl}" class="btn">Explorar en Luderis →</a>
+        </p>
+        <p style="font-size:12px;color:#A0AEC0;text-align:center;">Podés pausar o eliminar tus alertas desde Mi Cuenta → Alertas.</p>
+      `, count === 1 ? `Nueva publicación: ${esc(matches[0]?.pub_titulo ?? "")}` : `${count} novedades que coinciden con tus alertas`),
+    };
+  },
 };
 
 // ── Push configs (push-first para estos templates) ────────────────────────────
@@ -527,6 +564,17 @@ const PUSH_CONFIGS: Record<string, (d: Record<string, unknown>, appUrl: string) 
     url:   appUrl,
     tag:   `alerta-pub-${Date.now()}`,
   }),
+
+  alerta_digest: (d, appUrl) => {
+    const matches = Array.isArray(d.matches) ? d.matches as any[] : [];
+    const count = (d.count as number) ?? matches.length;
+    return {
+      title: count === 1 ? "🔔 Nueva publicación para vos" : `🔔 ${count} novedades para vos`,
+      body:  count === 1 ? String(matches[0]?.pub_titulo ?? "Nueva publicación") : `${count} publicaciones que coinciden con tus alertas`,
+      url:   appUrl,
+      tag:   `digest-alertas-${new Date().toISOString().slice(0, 10)}`,
+    };
+  },
 };
 
 // Llama a send-push con service role key y retorna cuántas subscripciones recibieron

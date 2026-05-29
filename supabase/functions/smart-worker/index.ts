@@ -107,15 +107,9 @@ Deno.serve(async (req) => {
       `publicaciones?sinc=eq.sinc&activo=eq.true&select=id,titulo,autor_email,autor_nombre,fecha_inicio,hora_inicio,modalidad,ubicacion&fecha_inicio=gte.${desdeStr}&fecha_inicio=lte.${hastaStr}`
     );
 
-    if (!pubs?.length) {
-      return new Response(JSON.stringify({ ok: true, enviados: 0, msg: "Sin clases mañana" }), {
-        headers: { ...CORS, "Content-Type": "application/json" },
-      });
-    }
-
     let enviados = 0;
 
-    for (const pub of pubs) {
+    for (const pub of (pubs ?? [])) {
       try {
         // Buscar inscriptos a esta clase
         const inscripciones = await supa(
@@ -242,8 +236,54 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Digest diario de alertas ──────────────────────────────────────────────
+    try {
+      const pendingAlerts = await supa(
+        "alertas_digest_queue?sent_at=is.null&select=*&order=created_at.asc"
+      ) as any[];
+
+      if (pendingAlerts?.length) {
+        // Agrupar por usuario
+        const byUser: Record<string, any[]> = {};
+        for (const row of pendingAlerts) {
+          if (!byUser[row.usuario_email]) byUser[row.usuario_email] = [];
+          byUser[row.usuario_email].push(row);
+        }
+
+        for (const [email, matches] of Object.entries(byUser)) {
+          try {
+            const count = matches.length;
+            // Intentar push primero vía send-email (que internamente llama a send-push)
+            const emailRes = await fetch(`${SUPA_URL}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                template: "alerta_digest",
+                to: email,
+                data: { matches, count },
+              }),
+            });
+            if (emailRes.ok) {
+              // Marcar como enviados
+              const ids = matches.map((m: any) => m.id).join(",");
+              await supa(
+                `alertas_digest_queue?id=in.(${ids})`,
+                "PATCH",
+                { sent_at: new Date().toISOString() }
+              );
+              enviados++;
+            }
+          } catch (e) {
+            console.error(`Error enviando digest a ${email}:`, e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error procesando digest de alertas:", e);
+    }
+
     return new Response(
-      JSON.stringify({ ok: true, enviados, clases: pubs.length }),
+      JSON.stringify({ ok: true, enviados, clases: pubs?.length ?? 0 }),
       { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
     );
 

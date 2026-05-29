@@ -979,15 +979,18 @@ export const dispararAlertas = async (pub, token) => {
         }
 
         if (score >= 2) {
-          await sendEmail("alerta_publicacion", alerta.usuario_email, {
-            pub_titulo:   pub.titulo,
-            materia:      pub.materia || "",
-            tipo:         pub.tipo === "oferta" ? "Clase/Curso" : "Búsqueda",
-            precio:       pub.precio ? `$${Number(pub.precio).toLocaleString("es-AR")}` : "Gratis",
-            modalidad:    pub.modalidad || "",
-            descripcion:  (pub.descripcion || "").slice(0, 150),
-            criterio_desc: criterios.resumen || alerta.descripcion,
-          }, token);
+          // Encolar en digest diario en lugar de enviar email inmediato
+          await db("alertas_digest_queue", "POST", {
+            usuario_email: alerta.usuario_email,
+            usuario_id:    alerta.usuario_id || null,
+            pub_id:        pub.id || null,
+            pub_titulo:    pub.titulo,
+            materia:       pub.materia || null,
+            tipo:          pub.tipo === "oferta" ? "Clase/Curso" : "Búsqueda",
+            precio:        pub.precio ? `$${Number(pub.precio).toLocaleString("es-AR")}` : null,
+            modalidad:     pub.modalidad || null,
+            criterio_desc: criterios.resumen || alerta.descripcion || null,
+          }, token).catch(() => null); // silencioso si falla
         }
       } catch { /* silencioso por alerta */ }
     }
