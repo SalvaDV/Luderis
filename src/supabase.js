@@ -990,7 +990,7 @@ export const dispararAlertas = async (pub, token) => {
             precio:        pub.precio ? `$${Number(pub.precio).toLocaleString("es-AR")}` : null,
             modalidad:     pub.modalidad || null,
             criterio_desc: criterios.resumen || alerta.descripcion || null,
-          }, token).catch(() => null); // silencioso si falla
+          }, token, "resolution=ignore-duplicates").catch(() => null); // silencioso si falla
         }
       } catch { /* silencioso por alerta */ }
     }
