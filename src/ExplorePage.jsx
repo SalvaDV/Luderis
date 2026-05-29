@@ -38,6 +38,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const [mostrarRechazadas,setMostrarRechazadas]=useState(false);
   const [filtroUbicacion,setFiltroUbicacion]=useState("");
   const [filtroMoneda,setFiltroMoneda]=useState("");
+  const [filtroNivel,setFiltroNivel]=useState("");
   const [userCity,setUserCity]=useState(()=>{try{return localStorage.getItem("cl_user_city")||"";}catch{return "";}});
   const [geoLoading,setGeoLoading]=useState(false);
   const [showBusquedaIA,setShowBusquedaIA]=useState(false);
@@ -307,7 +308,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     setModoVista("home");
     setBusqueda("");
     setFiltroTipo("all");setFiltroModo("all");setFiltroModalidad("all");
-    setFiltroMateria("");setFiltroUbicacion("");
+    setFiltroMateria("");setFiltroUbicacion("");setFiltroNivel("");
   };
 
   const norm=(s)=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -324,6 +325,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     filtroDurMin>0&&`Duración`,
     filtroUbicacion&&`📍 ${filtroUbicacion}`,
     filtroMoneda&&`💱 ${filtroMoneda}`,
+    filtroNivel&&({primaria:"Primaria",secundaria:"Secundaria",universitario:"Universitario",adultos:"Adultos / Prof.",todos:"Todos los niveles"}[filtroNivel]),
   ].filter(Boolean);
   const hasFilters=activeFilters.length>0||busqueda;
 
@@ -352,7 +354,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     return true;
   });
   const _filtroBase=modoVista==="resultados"?_seccionFiltrada:visiblePosts;
-  const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax);
+  const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax)&&(!filtroNivel||p.nivel===filtroNivel||p.nivel==="todos"||!p.nivel);
   // IA: busca dentro del tipo de sección (pedidos vs clases/cursos) pero sin restringir por modo
   const _iaBase=seccion==="pedidos"
     ?postsPorRol.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email)
@@ -397,7 +399,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     document.documentElement.style.setProperty('--cl-section-tint', sT.accent+'13');
     document.documentElement.style.setProperty('--cl-section-grad', sT.grad);
   },[sT.accent,sT.grad]);
-  const clearAll=()=>{setFiltroTipo("all");setFiltroModo("all");setFiltroModalidad("all");setFiltroSinc("all");setFiltroMateria("");setSliderMin(precioMin);setSliderMax(precioMax);setFiltroFechaDesde("");setFiltroFechaHasta("");setFiltroDurMin(0);setBusqueda("");setFiltroUbicacion("");setFiltroMoneda("");setIaResults(null);setIaQuery("");setIaExplanation("");};
+  const clearAll=()=>{setFiltroTipo("all");setFiltroModo("all");setFiltroModalidad("all");setFiltroSinc("all");setFiltroMateria("");setSliderMin(precioMin);setSliderMax(precioMax);setFiltroFechaDesde("");setFiltroFechaHasta("");setFiltroDurMin(0);setBusqueda("");setFiltroUbicacion("");setFiltroMoneda("");setFiltroNivel("");setIaResults(null);setIaQuery("");setIaExplanation("");};
   const selS={width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,cursor:"pointer",boxSizing:"border-box",colorScheme:localStorage.getItem("cl_theme")||"light"};
   const FL=({ch})=><div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:7,letterSpacing:.2}}>{ch}</div>;
   const FC=({label,active,onClick})=>(<button onClick={onClick} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:active?600:400,cursor:"pointer",fontFamily:FONT,background:active?sT.accent:"transparent",color:active?"#fff":C.muted,border:`1px solid ${active?sT.accent:C.border}`,marginBottom:5,marginRight:5,transition:"all .12s"}}>{label}</button>);
@@ -460,6 +462,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               {/* Filtros contextuales a la sección activa */}
               {seccion==="cursos"&&(<div style={{marginBottom:16}}><FL ch="Sincronismo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["sinc","En vivo"],["asinc","A tu ritmo"]].map(([v,l])=><FC key={v} label={l} active={filtroSinc===v} onClick={()=>setFiltroSinc(v)}/>)}</div></div>)}
               <div style={{marginBottom:16}}><FL ch="Modalidad"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todas"],["presencial","Presencial"],["virtual","Virtual"],["mixto","Mixto"]].map(([v,l])=><FC key={v} label={l} active={filtroModalidad===v} onClick={()=>setFiltroModalidad(v)}/>)}</div></div>
+              {seccion!=="pedidos"&&(<div style={{marginBottom:16}}><FL ch="Nivel educativo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["","Todos"],["primaria","Primaria"],["secundaria","Secundaria"],["universitario","Universitario"],["adultos","Adultos / Prof."]].map(([v,l])=><FC key={v} label={l} active={filtroNivel===v} onClick={()=>setFiltroNivel(v)}/>)}</div></div>)}
               <div style={{marginBottom:16}}><FL ch="Materia"/>
                 <SearchableSelect value={filtroMateria} onChange={setFiltroMateria} options={categorias.length>0?categorias.map(c=>c.nombre):MATERIAS} placeholder="Todas"/>
               </div>
@@ -652,10 +655,10 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               {Icon:Globe,title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
               {Icon:MapPin,title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
             ]:[
-              {Icon:User,title:"Uno a uno",desc:"Atención personalizada",onClick:()=>{setFiltroModalidad("all");setModoVista("resultados");}},
+              {Icon:Star,title:"Mejor valorados",desc:"Docentes con más reseñas",onClick:()=>{setOrdenamiento("rating");setModoVista("resultados");}},
               {Icon:Globe,title:"Online",desc:"Desde cualquier lugar",onClick:()=>{setFiltroModalidad("virtual");setModoVista("resultados");}},
               {Icon:MapPin,title:"Presencial",desc:userCity?`Cerca de ${userCity}`:"Cerca tuyo",onClick:()=>{setFiltroModalidad("presencial");if(userCity)setFiltroUbicacion(userCity);setModoVista("resultados");}},
-              {Icon:Package,title:"Por paquete",desc:"Comprá varias clases",onClick:()=>{setModoVista("resultados");}},
+              {Icon:ArrowLeftRight,title:"Más económicos",desc:"Ordenados por precio",onClick:()=>{setOrdenamiento("precio_asc");setModoVista("resultados");}},
             ]).map(item=>(
               <button key={item.title} onClick={item.onClick}
                 style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 14px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s"}}
