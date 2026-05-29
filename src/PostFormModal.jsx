@@ -247,18 +247,18 @@ async function verificarAlertas(pub,token){
         if(!match)continue;
         const res=JSON.parse(match[0]);
         if(res.coincide&&res.score>=7){
-          // Enviar email
-          const appUrl=window.location.origin;
-          await sb.sendEmail("alerta_coincidencia",alerta.usuario_email,{
-            alerta_descripcion:alerta.descripcion,
-            pub_titulo:pub.titulo,
-            pub_materia:pub.materia||"",
-            pub_tipo:pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
-            pub_precio:pub.precio?`$${Number(pub.precio).toLocaleString("es-AR")}`:"Gratis",
-            pub_modalidad:pub.modalidad||"",
-            razon:res.razon,
-            pub_url:`${appUrl}?pub=${pub.id}`,
-          },token).catch(()=>{});
+          // Encolar en digest diario
+          sb.db("alertas_digest_queue","POST",{
+            usuario_email: alerta.usuario_email,
+            usuario_id:    alerta.usuario_id||null,
+            pub_id:        pub.id||null,
+            pub_titulo:    pub.titulo,
+            materia:       pub.materia||null,
+            tipo:          pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
+            precio:        pub.precio?`$${Number(pub.precio).toLocaleString("es-AR")}`:null,
+            modalidad:     pub.modalidad||null,
+            criterio_desc: alerta.descripcion||null,
+          },token,"resolution=ignore-duplicates").catch(()=>{});
           // Actualizar stats de la alerta
           sb.db(`alertas_publicacion?id=eq.${alerta.id}`,"PATCH",{
             ultima_vez:new Date().toISOString(),
@@ -336,17 +336,18 @@ async function dispararAlertasIA(pub, session){
         console.log(`[Alerta] "${alerta.descripcion}" → pub:"${pub.titulo}" → match:${match} ${razon}`);
 
         if(match){
-          const pubUrl=`${window.location.origin}${window.location.pathname}?pub=${pub.id}`;
-          sb.sendEmail("alerta_publicacion",alerta.usuario_email,{
-            pub_titulo:pub.titulo,
-            materia:pub.materia||"",
-            tipo:pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
-            precio:pubPerfil.precio,
-            modalidad:pub.modalidad||"",
-            descripcion:(pub.descripcion||"").slice(0,150),
-            criterio_desc:alerta.descripcion,
-            pub_url:pubUrl,
-          },session.access_token).catch(()=>{});
+          // Encolar en digest diario
+          sb.db("alertas_digest_queue","POST",{
+            usuario_email: alerta.usuario_email,
+            usuario_id:    alerta.usuario_id||null,
+            pub_id:        pub.id||null,
+            pub_titulo:    pub.titulo,
+            materia:       pub.materia||null,
+            tipo:          pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
+            precio:        pub.precio?`$${Number(pub.precio).toLocaleString("es-AR")}`:null,
+            modalidad:     pub.modalidad||null,
+            criterio_desc: alerta.descripcion||null,
+          },session.access_token,"resolution=ignore-duplicates").catch(()=>{});
         }
       }catch{}
     }

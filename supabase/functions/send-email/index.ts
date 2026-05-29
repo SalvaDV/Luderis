@@ -309,57 +309,6 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
     `, "Tu docente publicó una nueva evaluación."),
   }),
 
-  alerta_coincidencia: (data, appUrl) => ({
-    subject: `🔔 Nueva clase que puede interesarte — ${data.pub_titulo}`,
-    preheader: "Encontramos una publicación que coincide con tu alerta.",
-    html: emailBase(`
-      <h2>¡Encontramos algo para vos!</h2>
-      <p>Apareció una publicación que coincide con tu alerta.</p>
-      <div class="info-box">
-        <div class="label">Tu alerta</div>
-        <div class="value" style="font-style:italic">"${data.alerta_descripcion}"</div>
-      </div>
-      <div class="divider"/>
-      <div class="info-box">
-        <div class="label">Nueva publicación</div>
-        <div class="value" style="font-size:17px;font-weight:700;">${data.pub_titulo}</div>
-      </div>
-      ${data.pub_materia ? `<div class="info-box"><div class="label">Materia</div><div class="value">${data.pub_materia}</div></div>` : ""}
-      <div class="info-box">
-        <div class="label">Tipo</div>
-        <div class="value">${data.pub_tipo}</div>
-      </div>
-      ${data.pub_precio ? `<div class="info-box"><div class="label">Precio</div><div class="value" style="color:${BRAND.blue};font-weight:700;">${data.pub_precio}</div></div>` : ""}
-      ${data.pub_modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.pub_modalidad}</div></div>` : ""}
-      ${data.razon ? `<div class="info-box" style="background:#EBF8F4;border-color:#2EC4A040;"><div class="label" style="color:#2EC4A0;">¿Por qué coincide?</div><div class="value">${data.razon}</div></div>` : ""}
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${data.pub_url || appUrl}" class="btn">Ver publicación →</a>
-      </p>
-      <p style="font-size:12px;color:#A0AEC0;text-align:center;">Podés pausar o eliminar esta alerta desde Mi Cuenta → Alertas.</p>
-    `, "Encontramos una publicación que coincide con tu alerta."),
-  }),
-
-  alerta_publicacion: (data: any, appUrl: string) => ({
-    subject: `Nueva publicación que te puede interesar — ${data.pub_titulo}`,
-    preheader: `Se publicó algo similar a lo que buscabas: ${data.criterio_desc}`,
-    html: emailBase(`
-      <h2>¡Apareció algo que te puede interesar!</h2>
-      <p>Una nueva publicación coincide con tu alerta: <em>${data.criterio_desc}</em></p>
-      <div class="info-box">
-        <div class="label">Publicación</div>
-        <div class="value">${data.pub_titulo}</div>
-      </div>
-      ${data.materia ? `<div class="info-box"><div class="label">Materia</div><div class="value">${data.materia}</div></div>` : ""}
-      ${data.modalidad ? `<div class="info-box"><div class="label">Modalidad</div><div class="value">${data.modalidad}</div></div>` : ""}
-      ${data.precio ? `<div class="info-box"><div class="label">Precio</div><div class="value">${data.precio}</div></div>` : ""}
-      ${data.descripcion ? `<div class="info-box"><div class="label">Descripción</div><div class="value" style="font-size:13px">${data.descripcion}…</div></div>` : ""}
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${appUrl}" class="btn">Ver publicación →</a>
-      </p>
-      <p style="font-size:12px;color:#718096;text-align:center;">Podés gestionar tus alertas desde Mi Cuenta → Alertas.</p>
-    `, `Nueva publicación: ${data.pub_titulo}`),
-  }),
-
   docente_aprobado: (data: any, appUrl: string) => ({
     subject: "¡Tu solicitud como docente fue aprobada! 🎉",
     preheader: "Ya podés publicar clases y cursos en Luderis.",
@@ -549,20 +498,6 @@ const PUSH_CONFIGS: Record<string, (d: Record<string, unknown>, appUrl: string) 
     body:  String(d.pub_titulo),
     url:   d.pub_id ? `${appUrl}?pub=${d.pub_id}` : appUrl,
     tag:   `eval-${d.pub_id ?? Date.now()}`,
-  }),
-
-  alerta_coincidencia: (d, appUrl) => ({
-    title: "🔔 Nueva clase para vos",
-    body:  String(d.pub_titulo),
-    url:   String(d.pub_url ?? appUrl),
-    tag:   `alerta-${d.pub_id ?? Date.now()}`,
-  }),
-
-  alerta_publicacion: (d, appUrl) => ({
-    title: "Nueva publicación que te puede interesar",
-    body:  String(d.pub_titulo),
-    url:   appUrl,
-    tag:   `alerta-pub-${Date.now()}`,
   }),
 
   alerta_digest: (d, appUrl) => {
