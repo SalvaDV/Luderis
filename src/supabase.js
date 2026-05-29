@@ -83,7 +83,10 @@ export const signIn = (e, p) =>
   authFetch("/auth/v1/token?grant_type=password", { method: "POST", body: JSON.stringify({ email: e, password: p }) });
 
 export const resetPassword = (e) =>
-  authFetch("/auth/v1/recover", { method: "POST", body: JSON.stringify({ email: e }) });
+  authFetch("/auth/v1/recover", {
+    method: "POST",
+    body: JSON.stringify({ email: e, redirect_to: window.location.origin }),
+  });
 
 export const updatePassword = async (accessToken, newPassword) => {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
