@@ -64,6 +64,9 @@ export default function CountdownTimer({ label = 'Próximo puzzle en', accentCol
       }}>
         {formatCountdown(secondsLeft)}
       </div>
+      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>
+        El nuevo puzzle se publica a las 00:00 hs
+      </div>
     </div>
   );
 }
