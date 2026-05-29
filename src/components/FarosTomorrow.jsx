@@ -20,7 +20,8 @@ const DiffDot=({difficulty})=>(<span style={{display:'inline-block',width:10,hei
  *   onShare   - () => void
  */
 export default function FarosTomorrow({
-  streak, winTime, difficulty, gridSize, puzzleNum, onShare,
+  streak, winTime, difficulty, gridSize, puzzleNum, onShare, onBack,
+  avgSeconds, playerCount,
 }) {
   return (
     <div style={{
@@ -85,25 +86,54 @@ export default function FarosTomorrow({
           </div>
         </div>
 
+        {/* Community average */}
+        {avgSeconds > 0 && (
+          <div style={{
+            padding: '10px 24px',
+            fontSize: 12, color: C.muted, textAlign: 'center',
+          }}>
+            Promedio de la comunidad: <strong style={{ color: C.text }}>{formatTime(avgSeconds)}</strong>
+            {playerCount > 1 && (
+              <span style={{ color: C.muted }}> · {playerCount} jugador{playerCount !== 1 ? 'es' : ''}</span>
+            )}
+          </div>
+        )}
+
         {/* Countdown */}
-        <div style={{ padding: '20px 24px' }}>
+        <div style={{ padding: avgSeconds > 0 ? '12px 24px 20px' : '20px 24px' }}>
           <CountdownTimer label="Próximo Faros en" accentColor={C.accent} />
         </div>
 
-        {/* Share button */}
-        <div style={{ padding: '0 16px 16px' }}>
+        {/* Buttons */}
+        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'row', gap: 8 }}>
           <button
             onClick={onShare}
             style={{
-              width: '100%', padding: 12,
+              flex: 1, padding: 12,
               borderRadius: 11, border: 'none',
               background: `linear-gradient(135deg,${C.accent},#2EC4A0)`,
               color: '#fff', fontSize: 13, fontWeight: 700,
               cursor: 'pointer', fontFamily: FONT,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}
           >
-            <Share2 size={14} strokeWidth={2} style={{marginRight:6}}/> Compartir resultado
+            <Share2 size={14} strokeWidth={2}/> Compartir
           </button>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                flex: 1, padding: 11,
+                borderRadius: 11,
+                border: `1.5px solid ${C.border}`,
+                background: 'transparent',
+                color: C.muted, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: FONT,
+              }}
+            >
+              Juegos
+            </button>
+          )}
         </div>
       </div>
     </div>

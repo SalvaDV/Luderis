@@ -42,7 +42,7 @@ const DIFFICULTY = { 6: 'fácil', 7: 'medio', 8: 'difícil' };
 const DIFF_COLOR  = { fácil: '#EAB308', medio: '#F97316', difícil: '#EF4444' };
 
 // ── Win overlay (shown immediately when all rects are placed) ─────────────────
-function WinOverlay({ show, timeSeconds, streak, N, onShare, onBack, wonOnLoad }) {
+function WinOverlay({ show, timeSeconds, streak, N, onShare, onBack, wonOnLoad, avgSeconds, playerCount }) {
   if (!show) return null;
   return (
     <div style={{
@@ -72,12 +72,12 @@ function WinOverlay({ show, timeSeconds, streak, N, onShare, onBack, wonOnLoad }
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: avgSeconds > 0 ? 10 : 24 }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: C.accent }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#805AD5' }}>
               {formatTime(timeSeconds)}
             </div>
-            <div style={{ fontSize: 11, color: C.muted }}>tiempo</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Tu tiempo</div>
           </div>
           <div style={{ width: 1, background: C.border }} />
           <div style={{ textAlign: 'center' }}>
@@ -85,9 +85,24 @@ function WinOverlay({ show, timeSeconds, streak, N, onShare, onBack, wonOnLoad }
                           display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
               <Flame size={20} color="#F97316" strokeWidth={2} /> {streak}
             </div>
-            <div style={{ fontSize: 11, color: C.muted }}>racha</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Racha</div>
           </div>
         </div>
+
+        {/* Community average */}
+        {avgSeconds > 0 && (
+          <div style={{
+            fontSize: 12, color: C.muted,
+            background: C.surface,
+            borderRadius: 8, padding: '7px 12px',
+            marginBottom: 20,
+          }}>
+            Promedio de la comunidad: <strong style={{ color: C.text }}>{formatTime(avgSeconds)}</strong>
+            {playerCount > 1 && (
+              <span style={{ color: C.muted }}> · {playerCount} jugador{playerCount !== 1 ? 'es' : ''}</span>
+            )}
+          </div>
+        )}
 
         {/* Countdown */}
         <div style={{
@@ -126,85 +141,122 @@ function WinOverlay({ show, timeSeconds, streak, N, onShare, onBack, wonOnLoad }
 }
 
 // ── Already-completed screen (shown when wonOnLoad) ────────────────────────────
-function AlreadyDoneScreen({ N, timeSeconds, streak, onShare, onBack, placedRects, clues, puzzle }) {
+function AlreadyDoneScreen({ N, timeSeconds, streak, onShare, onBack, avgSeconds, playerCount }) {
+  const diff = DIFFICULTY[N];
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', fontFamily: FONT, padding: '0 0 48px' }}>
-      {/* Header card */}
+    <div style={{
+      maxWidth: 400,
+      margin: '0 auto',
+      fontFamily: FONT,
+      padding: '0 0 40px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 16,
+    }}>
       <div style={{
+        width: '100%',
         background: C.card,
         borderRadius: 20,
         border: `1px solid ${C.border}`,
         overflow: 'hidden',
-        boxShadow: '0 4px 32px rgba(128,90,213,.08)',
+        boxShadow: '0 4px 32px rgba(128,90,213,.05)',
       }}>
+        {/* Gradient header */}
         <div style={{
           background: 'linear-gradient(135deg,#4A1D96,#805AD5,#553C9A)',
-          padding: '16px 20px 14px',
+          padding: '20px 24px 16px',
+          textAlign: 'center',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.7)',
-                        letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 3 }}>
-            <Grid3x3 size={11} color="rgba(255,255,255,.7)" strokeWidth={2}
-                     style={{ verticalAlign: 'middle', marginRight: 4 }} />
-            Puzzle del día
+          <div style={{ marginBottom: 6 }}>
+            <Grid3x3 size={40} color="#fff" strokeWidth={1.5} />
           </div>
-          <div style={{ fontSize: 21, fontWeight: 800, color: '#fff' }}>
-            Shikaku <span style={{ fontSize: 13, fontWeight: 400, opacity: .75 }}>
-              {N}×{N}
-            </span>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+            ¡Ya jugaste hoy!
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', fontWeight: 500 }}>
+            Shikaku · {N}×{N} · {diff}
           </div>
         </div>
 
-        <div style={{ padding: '24px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 42, marginBottom: 8 }}>🟦</div>
-          <div style={{ fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>
-            ¡Ya lo resolviste hoy!
+        {/* Stats */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 32,
+          padding: '18px 24px',
+          background: C.surface,
+          borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#805AD5' }}>
+              {formatTime(timeSeconds)}
+            </div>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 2 }}>
+              Tu tiempo
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>
-            Tiempo: <strong style={{ color: C.accent }}>{formatTime(timeSeconds)}</strong>
-            {'  ·  '}
-            Racha: <strong style={{ color: '#F97316' }}>🔥 {streak}</strong>
+          <div style={{ width: 1, background: C.border }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#E8881A',
+                          display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Flame size={20} color="#E8881A" strokeWidth={1.8} />{streak}
+            </div>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 2 }}>
+              {streak === 1 ? 'día seguido' : 'días seguidos'}
+            </div>
           </div>
+        </div>
 
-          {/* Solution grid (read-only) */}
-          <ShikakuGrid
-            N={N}
-            clues={clues}
-            placedRects={placedRects}
-            onPlace={() => {}}
-            onRemove={() => {}}
-            won
-          />
-
-          {/* Countdown */}
+        {/* Community average */}
+        {avgSeconds > 0 && (
           <div style={{
-            margin: '20px 0 16px',
-            padding: '16px 0',
+            padding: '10px 24px',
+            fontSize: 12, color: C.muted, textAlign: 'center',
             borderTop: `1px solid ${C.border}`,
-            borderBottom: `1px solid ${C.border}`,
           }}>
-            <CountdownTimer label="Próximo Shikaku en" accentColor="#805AD5" />
+            Promedio de la comunidad: <strong style={{ color: C.text }}>{formatTime(avgSeconds)}</strong>
+            {playerCount > 1 && (
+              <span style={{ color: C.muted }}> · {playerCount} jugador{playerCount !== 1 ? 'es' : ''}</span>
+            )}
           </div>
+        )}
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={onShare} style={{
-              flex: 1, padding: 11, borderRadius: 12, border: 'none',
+        {/* Countdown */}
+        <div style={{ padding: avgSeconds > 0 ? '12px 24px 20px' : '20px 24px' }}>
+          <CountdownTimer label="Próximo Shikaku en" accentColor="#805AD5" />
+        </div>
+
+        {/* Buttons */}
+        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'row', gap: 8 }}>
+          <button
+            onClick={onShare}
+            style={{
+              flex: 1, padding: 12,
+              borderRadius: 11, border: 'none',
               background: 'linear-gradient(135deg,#805AD5,#553C9A)',
               color: '#fff', fontSize: 13, fontWeight: 700,
               cursor: 'pointer', fontFamily: FONT,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            }}>
-              <Share2 size={15} strokeWidth={2} /> Compartir
-            </button>
-            <button onClick={onBack} style={{
-              flex: 1, padding: 11, borderRadius: 12,
-              border: `1.5px solid ${C.border}`,
-              background: 'transparent',
-              color: C.muted, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: FONT,
-            }}>
+            }}
+          >
+            <Share2 size={14} strokeWidth={2} /> Compartir
+          </button>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                flex: 1, padding: 11,
+                borderRadius: 11,
+                border: `1.5px solid ${C.border}`,
+                background: 'transparent',
+                color: C.muted, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: FONT,
+              }}
+            >
               Juegos
             </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -231,6 +283,8 @@ export default function ShikakuPage({ session, onBack, onWin }) {
   const [winTime,    setWinTime]    = useState(0);
   const [streak,     setStreak]     = useState(0);
   const [elapsed,    setElapsed]    = useState(0);
+  const [avgSeconds, setAvgSeconds] = useState(0);
+  const [playerCount,setPlayerCount]= useState(0);
 
   const startTimeRef   = useRef(Date.now());
   const timerRef       = useRef(null);
@@ -257,6 +311,9 @@ export default function ShikakuPage({ session, onBack, onWin }) {
           }));
           setPlacedRects(solutionRects);
           onWin?.();
+          // Community avg (non-blocking)
+          sb.getAvgTimeShikaku(session.access_token, date)
+            .then(stats => { if (mounted && stats) { setAvgSeconds(stats.avg_seconds ?? 0); setPlayerCount(stats.player_count ?? 0); } });
         }
       })
       .catch(() => {/* no data = not solved */})
@@ -294,6 +351,8 @@ export default function ShikakuPage({ session, onBack, onWin }) {
     clearInterval(timerRef.current);
     onWin?.();
     sb.submitShikakuResult(session.access_token, date, time)
+      .then(() => sb.getAvgTimeShikaku(session.access_token, date))
+      .then(stats => { if (stats) { setAvgSeconds(stats.avg_seconds ?? 0); setPlayerCount(stats.player_count ?? 0); } })
       .catch(e => console.error('[Shikaku] save error', e));
   }, [isWon]); // eslint-disable-line
 
@@ -357,9 +416,8 @@ export default function ShikakuPage({ session, onBack, onWin }) {
         streak={streak}
         onShare={handleShare}
         onBack={onBack}
-        placedRects={placedRects}
-        clues={puzzle.clues}
-        puzzle={puzzle}
+        avgSeconds={avgSeconds}
+        playerCount={playerCount}
       />
     );
   }
@@ -553,6 +611,8 @@ export default function ShikakuPage({ session, onBack, onWin }) {
         onShare={handleShare}
         onBack={onBack}
         wonOnLoad={wonOnLoad}
+        avgSeconds={avgSeconds}
+        playerCount={playerCount}
       />
     </div>
   );

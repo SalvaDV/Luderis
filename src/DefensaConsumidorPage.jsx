@@ -129,13 +129,13 @@ function BotonesOficiales() {
     {
       emoji: "⚖️",
       label: "Iniciar conciliación\nen COPREC",
-      url: "https://www.coprec.gob.ar",
+      url: "https://www.argentina.gob.ar/produccion/defensadelconsumidor",
       color: "#2E7D52",
     },
     {
       emoji: "📋",
-      label: "Libro de Quejas\nDigital",
-      url: "https://www.argentina.gob.ar/libro-de-quejas-digital",
+      label: "Libro de Quejas\nde Luderis",
+      url: "/quejas",
       color: "#7B3FBE",
     },
   ];
@@ -145,8 +145,8 @@ function BotonesOficiales() {
         <a
           key={b.label}
           href={b.url}
-          target="_blank"
-          rel="noopener noreferrer"
+          target={b.url.startsWith("/") ? undefined : "_blank"}
+          rel={b.url.startsWith("/") ? undefined : "noopener noreferrer"}
           style={{
             flex: "1 1 180px", minWidth: 160,
             background: b.color, color: "#fff",
@@ -420,7 +420,7 @@ export default function DefensaConsumidorPage() {
             </P>
             <div style={{ marginTop: 16 }}>
               <a
-                href="https://www.coprec.gob.ar"
+                href="https://www.argentina.gob.ar/produccion/defensadelconsumidor"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -445,13 +445,11 @@ export default function DefensaConsumidorPage() {
               registrar sus quejas de manera formal.
             </P>
             <P>
-              Podés acceder al Libro de Quejas Digital de Luderis a través del sitio oficial del gobierno:
+              Podés registrar tu queja formal en el Libro de Quejas de Luderis:
             </P>
             <div style={{ marginTop: 12, marginBottom: 20 }}>
               <a
-                href="https://www.argentina.gob.ar/libro-de-quejas-digital"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/quejas"
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   background: ACCENT, color: "#fff", borderRadius: 10,
@@ -461,7 +459,7 @@ export default function DefensaConsumidorPage() {
                 onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                📋 Acceder al Libro de Quejas Digital →
+                📋 Acceder al Libro de Quejas de Luderis →
               </a>
             </div>
             <Badge type="neutral">

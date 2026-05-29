@@ -11,6 +11,7 @@ const DiffDot=({difficulty})=>(
 
 export default function FarosWinOverlay({
   show, timeSeconds, streak, puzzleNum, difficulty, gridSize, onShare, onBack,
+  avgSeconds, playerCount,
 }) {
   if (!show) return null;
   return (
@@ -47,13 +48,13 @@ export default function FarosWinOverlay({
           padding: 14,
           background: C.surface,
           borderRadius: 12,
-          marginBottom: 16,
+          marginBottom: avgSeconds ? 10 : 16,
         }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: C.accent }}>
               {formatTime(timeSeconds)}
             </div>
-            <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>Tiempo</div>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>Tu tiempo</div>
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: '#E8881A', display:'flex', alignItems:'center', gap:4 }}>
@@ -62,6 +63,21 @@ export default function FarosWinOverlay({
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>Racha</div>
           </div>
         </div>
+
+        {/* Community average */}
+        {avgSeconds > 0 && (
+          <div style={{
+            fontSize: 12, color: C.muted,
+            background: C.surface,
+            borderRadius: 8, padding: '7px 12px',
+            marginBottom: 14,
+          }}>
+            Promedio de la comunidad: <strong style={{ color: C.text }}>{formatTime(avgSeconds)}</strong>
+            {playerCount > 1 && (
+              <span style={{ color: C.muted }}> · {playerCount} jugador{playerCount !== 1 ? 'es' : ''}</span>
+            )}
+          </div>
+        )}
 
         {/* Countdown */}
         <div style={{

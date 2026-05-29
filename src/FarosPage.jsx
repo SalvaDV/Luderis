@@ -55,6 +55,8 @@ export default function FarosPage({ session, onBack, onWin }) {
   const [wonOnLoad, setWonOnLoad] = useState(false); // ganado en sesión anterior
   const [winTime, setWinTime] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [avgSeconds, setAvgSeconds] = useState(0);
+  const [playerCount, setPlayerCount] = useState(0);
   const startTimeRef = React.useRef(Date.now());
 
   // ── Load puzzle + check if already won today ────────────────────────────────
@@ -82,6 +84,9 @@ export default function FarosPage({ session, onBack, onWin }) {
           // Show full solution in won state
           setCellState(createCellState(p.grid_size, p.solution));
           onWin?.();
+          // Community avg (non-blocking)
+          sb.getAvgTimeFaros(session.access_token, p.id)
+            .then(stats => { if (mounted && stats) { setAvgSeconds(stats.avg_seconds ?? 0); setPlayerCount(stats.player_count ?? 0); } });
         } else {
           startTimeRef.current = Date.now();
         }
@@ -142,9 +147,10 @@ export default function FarosPage({ session, onBack, onWin }) {
     setStreak(s => s + 1);
     onWin?.();
 
-    sb.submitPuzzleResult(session.access_token, puzzle.id, elapsed).catch(e => {
-      console.error('[Faros] submitResult error', e);
-    });
+    sb.submitPuzzleResult(session.access_token, puzzle.id, elapsed)
+      .then(() => sb.getAvgTimeFaros(session.access_token, puzzle.id))
+      .then(stats => { if (stats) { setAvgSeconds(stats.avg_seconds ?? 0); setPlayerCount(stats.player_count ?? 0); } })
+      .catch(e => { console.error('[Faros] submitResult error', e); });
   }, [puzzle, won, cellState, session?.access_token, onWin]);
 
   // ── Share ───────────────────────────────────────────────────────────────────
@@ -211,6 +217,9 @@ export default function FarosPage({ session, onBack, onWin }) {
         gridSize={puzzle.grid_size}
         puzzleNum={getPuzzleNumber(puzzle.date)}
         onShare={handleShare}
+        onBack={onBack}
+        avgSeconds={avgSeconds}
+        playerCount={playerCount}
       />
     );
   }
@@ -410,6 +419,8 @@ export default function FarosPage({ session, onBack, onWin }) {
         gridSize={N}
         onShare={handleShare}
         onBack={onBack}
+        avgSeconds={avgSeconds}
+        playerCount={playerCount}
       />
     </div>
   );

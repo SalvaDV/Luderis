@@ -22,6 +22,13 @@ const CATEGORIAS = [
   "Otro",
 ];
 
+// Categorías donde tiene sentido pedir ID de transacción/referencia de pago
+const CATEGORIAS_PAGO = new Set([
+  "Pago / Cobro",
+  "Solicitud de devolución no resuelta",
+  "Demoras en acreditación",
+]);
+
 function genNumero() {
   const year  = new Date().getFullYear();
   const rand  = Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -94,9 +101,6 @@ function Confirmacion({ numero, email, onNueva }) {
           <a href="/ayuda" style={{ fontSize: 13, color: MUTED }}>Centro de ayuda</a>
           <span style={{ color: BORDER }}>·</span>
           <a href="/consumidor" style={{ fontSize: 13, color: MUTED }}>Defensa al Consumidor</a>
-          <span style={{ color: BORDER }}>·</span>
-          <a href="https://www.coprec.gob.ar" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 13, color: MUTED }}>COPREC</a>
         </div>
       </div>
     </div>
@@ -268,10 +272,12 @@ export default function LibroQuejasPage() {
                 </div>
               </Campo>
 
-              <Campo label="Número de transacción o referencia" hint="Opcional. Si tenés el ID de tu pago o la URL de la publicación, pegalo acá.">
-                <input value={form.referencia} onChange={e => set("referencia", e.target.value)}
-                  placeholder="Ej: MP-123456789 o https://luderis.com.ar/curso/..." style={iS("referencia")} />
-              </Campo>
+              {CATEGORIAS_PAGO.has(form.categoria) && (
+                <Campo label="Número de transacción o referencia" hint="Opcional. Si tenés el ID de tu pago, pegalo acá.">
+                  <input value={form.referencia} onChange={e => set("referencia", e.target.value)}
+                    placeholder="Ej: MP-123456789" style={iS("referencia")} />
+                </Campo>
+              )}
 
               {apiError && (
                 <div style={{
@@ -340,13 +346,9 @@ export default function LibroQuejasPage() {
                   <a href="/consumidor" style={{ fontSize: 13, color: ACCENT, fontWeight: 600 }}>
                     ⚖️ Defensa al Consumidor →
                   </a>
-                  <a href="https://www.coprec.gob.ar" target="_blank" rel="noopener noreferrer"
+                  <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 13, color: ACCENT, fontWeight: 600 }}>
-                    🏛️ Conciliación COPREC →
-                  </a>
-                  <a href="https://www.argentina.gob.ar/libro-de-quejas-digital" target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 13, color: ACCENT, fontWeight: 600 }}>
-                    📋 Libro de Quejas oficial →
+                    🏛️ Defensa del Consumidor (Argentina.gob.ar) →
                   </a>
                 </div>
               </div>

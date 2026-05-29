@@ -62,8 +62,8 @@ const A = {
 };
 
 // ─── COMPONENTES UI ───────────────────────────────────────────────────────────
-const Card = ({ children, style = {} }) => (
-  <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 14, padding: "20px 22px", ...style }}>
+const Card = ({ children, style = {}, ...rest }) => (
+  <div style={{ background: A.surface, border: `1px solid ${A.border}`, borderRadius: 14, padding: "20px 22px", ...style }} {...rest}>
     {children}
   </div>
 );
