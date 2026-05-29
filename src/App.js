@@ -630,6 +630,7 @@ export default function App(){
       nueva_pregunta:    {icon:"❓",label:"Nueva pregunta en tu publicación",type:"info"},
       pregunta_respondida:{icon:"✅",label:"Tu pregunta fue respondida",type:"success"},
       alerta_contacto:   {icon:"🔇",label:"Alerta de moderación",type:"error"},
+      pago_liberado:     {icon:"💰",label:"Pago acreditado",type:"success"},
       retiro_procesado:  {icon:"💰",label:"Retiro procesado",type:"success"},
       retiro_rechazado:  {icon:"❌",label:"Retiro rechazado",type:"error"},
       retiro_solicitado: {icon:"💳",label:"Solicitud de retiro recibida",type:"info"},

@@ -407,6 +407,22 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
     `, `${data.docente_nombre} te agregó como co-docente.`),
   }),
 
+  ban_usuario: (data: any, appUrl: string) => ({
+    subject: "Tu cuenta en Luderis fue suspendida",
+    preheader: "Tu acceso a Luderis ha sido restringido.",
+    html: emailBase(`
+      <h2>Tu cuenta fue suspendida</h2>
+      <p>Lamentamos informarte que tu cuenta en Luderis ha sido <strong>suspendida</strong>.</p>
+      ${data.razon ? `
+      <div class="info-box" style="border-color:#F87171;background:#FEF2F2;">
+        <div class="label" style="color:#DC2626;">Motivo</div>
+        <div class="value">${data.razon}</div>
+      </div>` : ""}
+      <p>Si creés que esto es un error o querés apelar esta decisión, escribinos a <a href="mailto:contacto@luderis.com" style="color:${BRAND.blue};">contacto@luderis.com</a> explicando tu caso.</p>
+      <p style="font-size:13px;color:${BRAND.muted};">Toda la comunicación con docentes y alumnos debe realizarse exclusivamente dentro de la plataforma Luderis para garantizar la seguridad de todos los usuarios.</p>
+    `, "Tu acceso a Luderis ha sido restringido."),
+  }),
+
   alerta_digest: (data: any, appUrl: string) => {
     const matches: any[] = Array.isArray(data.matches) ? data.matches : [];
     const count = data.count ?? matches.length;

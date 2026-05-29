@@ -167,11 +167,12 @@ Deno.serve(async (req) => {
       }).catch((e: Error) => console.error("billetera insert error:", e.message));
     }
 
-    // 6. Notificar al docente (Fix #6: alumno_email = email real del alumno, no del docente)
+    // 6. Notificar al docente (alumno_email = campo "destinatario" de la notif, aquí el docente)
     await supabase.from("notificaciones").insert({
       usuario_id:     docenteUser?.id ?? null,
-      alumno_email:   pago.alumno_email,
+      alumno_email:   pago.docente_email,
       tipo:           "pago_liberado",
+      pub_titulo:     `Tu pago de $${montoNeto.toLocaleString("es")} fue acreditado en tu billetera.`,
       publicacion_id: pago.publicacion_id,
       leida:          false,
     }).catch(() => {});

@@ -254,8 +254,12 @@ serve(async (req) => {
       // estado: "resuelta_alumno" | "resuelta_docente"
       if (!disputa_id || !estado) throw new Error("disputa_id y estado requeridos");
 
-      // Obtener pago_id de la disputa
-      const { data: disputa } = await adminClient.from("disputas").select("pago_id").eq("id", disputa_id).single();
+      // Obtener pago_id y emails de las partes
+      const { data: disputa } = await adminClient
+        .from("disputas")
+        .select("pago_id, alumno_email, docente_email")
+        .eq("id", disputa_id)
+        .single();
 
       // Actualizar disputa
       await adminClient.from("disputas").update({
@@ -268,7 +272,7 @@ serve(async (req) => {
 
       if (disputa?.pago_id) {
         if (estado === "resuelta_docente") {
-          // Liberar pago al docente
+          // Liberar pago al docente (liberar-pago ya notifica al docente internamente)
           await adminClient.from("pagos").update({ estado_escrow: "retenido" }).eq("id", disputa.pago_id);
           const liberarSecret = Deno.env.get("LIBERAR_PAGO_SECRET") ?? "";
           await fetch(`${SUPABASE_URL}/functions/v1/liberar-pago`, {
@@ -276,9 +280,33 @@ serve(async (req) => {
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${liberarSecret}` },
             body: JSON.stringify({ pago_id: disputa.pago_id }),
           });
+          // Notificar al alumno que la disputa se resolvió a favor del docente
+          if (disputa.alumno_email) {
+            await adminClient.from("notificaciones").insert({
+              alumno_email: disputa.alumno_email,
+              tipo:         "sistema",
+              pub_titulo:   `La disputa fue resuelta: el pago fue liberado al docente.${resolucion ? ` Nota: ${resolucion}` : ""}`,
+              leida:        false,
+            }).catch(() => null);
+          }
         } else if (estado === "resuelta_alumno") {
           // Marcar como reembolsado (el admin gestiona el reembolso en MP manualmente)
           await adminClient.from("pagos").update({ estado_escrow: "reembolsado" }).eq("id", disputa.pago_id);
+          // Notificar a ambas partes
+          const notifAlumno = disputa.alumno_email ? {
+            alumno_email: disputa.alumno_email,
+            tipo:         "sistema",
+            pub_titulo:   `La disputa fue resuelta a tu favor. El reembolso será procesado en los próximos días.${resolucion ? ` Nota: ${resolucion}` : ""}`,
+            leida:        false,
+          } : null;
+          const notifDocente = disputa.docente_email ? {
+            alumno_email: disputa.docente_email,
+            tipo:         "sistema",
+            pub_titulo:   `La disputa fue resuelta a favor del alumno. El pago será reembolsado.${resolucion ? ` Nota: ${resolucion}` : ""}`,
+            leida:        false,
+          } : null;
+          const notifs = [notifAlumno, notifDocente].filter(Boolean);
+          if (notifs.length) await adminClient.from("notificaciones").insert(notifs).catch(() => null);
         }
       }
       result = { ok: true, estado, pago_id: disputa?.pago_id ?? null };
