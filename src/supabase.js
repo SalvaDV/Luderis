@@ -46,7 +46,7 @@ export const insertUsuario = (data, token) =>
 
 // ── Quejas (libro de quejas público) ─────────────────────────────────────────
 export const insertQueja = (data) =>
-  db("quejas", "POST", data, null, "return=representation");
+  db("quejas", "POST", data, null, "return=minimal");
 
 // Actualiza campos del perfil (nombre, bio, etc.) en la tabla usuarios
 export const updateUsuario = (id, data, token) =>
@@ -84,6 +84,22 @@ export const signIn = (e, p) =>
 
 export const resetPassword = (e) =>
   authFetch("/auth/v1/recover", { method: "POST", body: JSON.stringify({ email: e }) });
+
+export const updatePassword = async (accessToken, newPassword) => {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!res.ok) throw new Error(data.error_description || data.msg || data.message || "Error al actualizar la contraseña");
+  return data;
+};
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────
 
@@ -854,6 +870,31 @@ export const submitPuzzleResult = async (token, puzzleId, timeSeconds) => {
     throw e;
   }
 };
+
+// ── Leaderboard & community stats ────────────────────────────────────────────
+
+// {avg_seconds, player_count} for a Faros puzzle (all users, SECURITY DEFINER)
+export const getAvgTimeFaros = (token, puzzleId) =>
+  rpc('get_avg_time_faros', { p_puzzle_id: puzzleId }, token)
+    .then(rows => rows?.[0] ?? null)
+    .catch(() => null);
+
+// {avg_seconds, player_count} for a Shikaku date (all users, SECURITY DEFINER)
+export const getAvgTimeShikaku = (token, dateStr) =>
+  rpc('get_avg_time_shikaku', { p_date: dateStr }, token)
+    .then(rows => rows?.[0] ?? null)
+    .catch(() => null);
+
+// [{pos, nombre, total_score, games_played, best_time, is_me}] — top 10 + current user
+export const getLeaderboardFaros = (token, limit = 10) =>
+  rpc('get_leaderboard_faros', { lim: limit }, token)
+    .then(rows => (Array.isArray(rows) ? rows : []))
+    .catch(() => []);
+
+export const getLeaderboardShikaku = (token, limit = 10) =>
+  rpc('get_leaderboard_shikaku', { lim: limit }, token)
+    .then(rows => (Array.isArray(rows) ? rows : []))
+    .catch(() => []);
 
 // ── Shikaku puzzle helpers ────────────────────────────────────────────────────
 

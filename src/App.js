@@ -82,8 +82,75 @@ export { FavBtn, OfertarBtn, ShareBtn, DenunciaModal, PostChatBtn,
          MyPostCard, OfertasRecibidasModal, FinalizarClaseModal,
          ContraofertaModal };
 
+// ── Pantalla de nueva contraseña (recovery flow desde email) ─────────────────
+function ResetPasswordScreen({ accessToken, onSuccess, onCancel }) {
+  const [pass1, setPass1] = useState("");
+  const [pass2, setPass2] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = async () => {
+    if (pass1.length < 6) { setErr("La contraseña debe tener al menos 6 caracteres"); return; }
+    if (pass1 !== pass2) { setErr("Las contraseñas no coinciden"); return; }
+    setLoading(true); setErr("");
+    try {
+      await sb.updatePassword(accessToken, pass1);
+      setDone(true);
+      setTimeout(onSuccess, 1800);
+    } catch (e) {
+      const msg = (e.message || "").toLowerCase();
+      if (msg.includes("at least") || msg.includes("password should")) {
+        setErr("La contraseña debe tener al menos 6 caracteres");
+      } else {
+        setErr(e.message || "No se pudo actualizar la contraseña. Intentá de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#1A6ED8 0%,#1A3E6D 100%)",fontFamily:FONT,padding:16}}>
+      <style>{`*{box-sizing:border-box}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden}input{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder{color:#A0AEC0;opacity:1}`}</style>
+      <div style={{background:"#fff",borderRadius:20,padding:"40px 32px",width:"100%",maxWidth:380,boxShadow:"0 8px 40px rgba(0,0,0,.22)"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:30,fontWeight:800,color:"#1A6ED8",letterSpacing:"-1px",marginBottom:6}}>Luderis</div>
+          <div style={{fontSize:19,fontWeight:700,color:"#0D1F3C",marginBottom:4}}>Nueva contraseña</div>
+          <div style={{fontSize:13,color:"#64748b",lineHeight:1.5}}>Elegí una contraseña segura para tu cuenta</div>
+        </div>
+        {done ? (
+          <div style={{textAlign:"center",padding:"20px 0",color:"#16a34a",fontSize:15,fontWeight:600,lineHeight:1.6}}>
+            ✓ Contraseña actualizada correctamente.<br/>
+            <span style={{fontSize:13,color:"#64748b",fontWeight:400}}>Iniciando sesión…</span>
+          </div>
+        ) : (
+          <>
+            <div style={{marginBottom:14}}>
+              <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Nueva contraseña</label>
+              <Input type="password" value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres" onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={{width:"100%"}}/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Confirmar contraseña</label>
+              <Input type="password" value={pass2} onChange={e=>setPass2(e.target.value)} placeholder="Repetí tu contraseña" onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={{width:"100%"}}/>
+            </div>
+            {err && <div style={{background:"#FFF0F0",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",color:"#B91C1C",fontSize:13,marginBottom:14}}>{err}</div>}
+            <Btn onClick={handleSubmit} disabled={loading} style={{width:"100%",padding:"12px",fontSize:15,fontWeight:700,borderRadius:12}}>
+              {loading ? "Actualizando…" : "Actualizar contraseña"}
+            </Btn>
+            <button onClick={onCancel} style={{marginTop:14,width:"100%",background:"none",border:"none",color:"#64748b",fontSize:13,cursor:"pointer",textDecoration:"underline",padding:"4px 0"}}>
+              Volver al inicio
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App(){
   const [session,setSession]=useState(()=>sb.loadSession());
+  const [recoverySession,setRecoverySession]=useState(null);
   // Tema: fuerza re-render global al cambiar
   const [,forceThemeRender]=useState(0);
   useEffect(()=>{window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};},[]); // eslint-disable-line
@@ -155,8 +222,10 @@ export default function App(){
   const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
   const [unread,setUnread]=useState(0);const [ofertasCount,setOfertasCount]=useState(0);const [notifCount,setNotifCount]=useState(0);const [notifs,setNotifs]=useState([]);const [showNotifs,setShowNotifs]=useState(false);
-  const [juegosBadge,setJuegosBadge]=useState(false);
+  const [farosWonToday,setFarosWonToday]=useState(false);
   const [shikakuWonToday,setShikakuWonToday]=useState(false);
+  // Badge rojo en "Juegos": visible mientras quede al menos 1 juego pendiente
+  const juegosBadge = !farosWonToday || !shikakuWonToday;
   const [notifPanelOpen,setNotifPanelOpen]=useState(false);
   // Función para abrir el panel de notificaciones (pasada como prop a Sidebar)
   const openNotifPanel=useCallback(()=>setNotifPanelOpen(v=>!v),[]);
@@ -331,9 +400,17 @@ export default function App(){
 
   useEffect(()=>{
     if(!window.location.hash.includes("access_token"))return;
+    const hashParams=new URLSearchParams(window.location.hash.replace("#",""));
+    const isRecovery=hashParams.get("type")==="recovery";
     sb.getSessionFromUrl().then(async s=>{
       if(!s)return;
       window.location.hash="";
+      if(isRecovery){
+        // Flujo de reset de contraseña — mostrar formulario en vez de loguear
+        setRecoverySession(s);
+        return;
+      }
+      // Flujo normal de Google OAuth
       sb.saveSession(s);
       trackLogin("google");
       try{
@@ -367,9 +444,9 @@ export default function App(){
     return()=>clearTimeout(t);
   },[session?.expires_at,session?.refresh_token]);// eslint-disable-line
 
-  // ── Faros badge: show until user wins today's puzzle ─────────────────────────
+  // ── Faros: inicializa desde DB; se actualiza inmediatamente al ganar ──────────
   useEffect(() => {
-    if (!session?.access_token) { setJuegosBadge(false); return; }
+    if (!session?.access_token) { setFarosWonToday(false); return; }
     let mounted = true;
     sb.getTodaysPuzzle(session.access_token)
       .then(p => {
@@ -378,9 +455,9 @@ export default function App(){
       })
       .then(result => {
         if (!mounted) return;
-        setJuegosBadge(!result);
+        setFarosWonToday(!!result);
       })
-      .catch(() => { if (mounted) setJuegosBadge(false); });
+      .catch(() => { if (mounted) setFarosWonToday(false); });
     return () => { mounted = false; };
   }, [session?.access_token]); // eslint-disable-line
 
@@ -604,6 +681,20 @@ export default function App(){
   if(window.location.pathname==="/quejas")return <React.Suspense fallback={_SF}><LibroQuejasPage/></React.Suspense>;
   if(window.location.pathname==="/accesibilidad")return <React.Suspense fallback={_SF}><AccesibilidadPage/></React.Suspense>;
   if(window.location.pathname==="/privacidad")return <React.Suspense fallback={_SF}><PrivacidadPage/></React.Suspense>;
+  // Flujo de reset de contraseña (link desde email)
+  if(recoverySession){
+    return <ResetPasswordScreen
+      accessToken={recoverySession.access_token}
+      onSuccess={()=>{
+        sb.saveSession(recoverySession);
+        setRecoverySession(null);
+        setSession(recoverySession);
+      }}
+      onCancel={()=>{
+        setRecoverySession(null);
+      }}
+    />;
+  }
   if(!session){
     const showAuth=window.location.hash==="#auth"||sessionStorage.getItem("ld_auth")==="1";
     const goAuth=()=>{sessionStorage.setItem("ld_auth","1");window.location.hash="#auth";forceThemeRender(n=>n+1);};
@@ -684,7 +775,7 @@ export default function App(){
                 session={session}
                 onPlayFaros={()=>setPage("faros")}
                 onPlayShikaku={()=>setPage("shikaku")}
-                farosWonToday={!juegosBadge}
+                farosWonToday={farosWonToday}
                 shikakuWonToday={shikakuWonToday}
               />
             </React.Suspense>
@@ -694,7 +785,7 @@ export default function App(){
               <FarosPage
                 session={session}
                 onBack={()=>setPage("juegos")}
-                onWin={()=>setJuegosBadge(false)}
+                onWin={()=>setFarosWonToday(true)}
               />
             </React.Suspense>
           )}
