@@ -127,6 +127,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
   const registrarAlerta = async (textoBloqueado, tipo, razon, tipoInfraccion) => {
     try {
       const tipoLabel = { contacto_externo: "Contacto externo", lenguaje_agresivo: "Lenguaje agresivo", violencia: "Violencia/amenaza" }[tipoInfraccion] || "Contenido inapropiado";
+      // Solo guardar el registro; los admins lo ven en el dashboard de Moderación
       await sb.insertAlertaContacto({
         publicacion_id: publicacionId,
         autor_email: session?.user?.email || "desconocido",
@@ -134,17 +135,6 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
         texto_bloqueado: textoBloqueado,
         razon: `[${tipoLabel}] ${razon}`,
       }, token);
-      // Notificar a cada admin del sistema
-      const admins = await sb.db("usuarios?rol=eq.admin&select=email", "GET", null, token).catch(() => []);
-      for (const admin of (admins || [])) {
-        await sb.insertNotificacion({
-          usuario_id: null,
-          alumno_email: admin.email,
-          tipo: "alerta_contacto",
-          pub_titulo: `🔇 Contacto externo bloqueado — ${session?.user?.email}. Razón: ${razon}`,
-          leida: false,
-        }, token).catch(() => {});
-      }
     } catch {}
   };
 
