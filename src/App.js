@@ -399,18 +399,37 @@ export default function App(){
   },[mostrarNotifPush]);
 
   useEffect(()=>{
-    if(!window.location.hash.includes("access_token"))return;
-    const hashParams=new URLSearchParams(window.location.hash.replace("#",""));
+    const hash=window.location.hash;
+    if(!hash.includes("access_token"))return;
+    const hashParams=new URLSearchParams(hash.replace("#",""));
     const isRecovery=hashParams.get("type")==="recovery";
+
+    if(isRecovery){
+      // Flujo de reset: parsear JWT localmente (sin API call que puede fallar)
+      const access_token=hashParams.get("access_token");
+      const refresh_token=hashParams.get("refresh_token");
+      if(!access_token)return;
+      window.location.hash="";
+      try{
+        const b64=access_token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+        const payload=JSON.parse(atob(b64));
+        const user={id:payload.sub,email:payload.email,user_metadata:payload.user_metadata||{}};
+        const expires_at=payload.exp||Math.floor(Date.now()/1000)+3600;
+        setRecoverySession({access_token,refresh_token,user,expires_at});
+      }catch{
+        // Si falla el parseo del JWT, intentar vía API como fallback
+        fetch(`${sb.SUPABASE_URL}/auth/v1/user`,{headers:{"apikey":sb.SUPABASE_KEY,"Authorization":`Bearer ${access_token}`}})
+          .then(r=>r.ok?r.json():null)
+          .then(user=>{if(user)setRecoverySession({access_token,refresh_token,user,expires_at:Math.floor(Date.now()/1000)+3600});})
+          .catch(()=>{});
+      }
+      return;
+    }
+
+    // Flujo normal de Google OAuth
     sb.getSessionFromUrl().then(async s=>{
       if(!s)return;
       window.location.hash="";
-      if(isRecovery){
-        // Flujo de reset de contraseña — mostrar formulario en vez de loguear
-        setRecoverySession(s);
-        return;
-      }
-      // Flujo normal de Google OAuth
       sb.saveSession(s);
       trackLogin("google");
       try{
