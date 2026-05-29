@@ -6,12 +6,26 @@ import * as sb from "./supabase";
 export default function ChatsPage({session,onOpenChat}){
   const [grupos,setGrupos]=useState([]);const [loading,setLoading]=useState(true);
   const [nombresMap,setNombresMap]=useState({});
+  const [busquedaChat,setBusquedaChat]=useState("");
+  const [grupoChats,setGrupoChats]=useState([]);
   const miEmail=session.user.email;
   const {confirm,confirmEl}=useConfirm();
 
   const cargar=useCallback(()=>{
     setLoading(true);
     sb.getMisChats(miEmail,session.access_token).then(async msgs=>{
+      // ── Extraer chats grupales antes de filtrar ──────────────────────────────
+      const gMap={};
+      msgs.filter(m=>m.para_nombre==="__grupo__").forEach(m=>{
+        const pk=m.publicacion_id;
+        if(!pk)return;
+        if(!gMap[pk]||m.created_at>gMap[pk].lastTime){
+          gMap[pk]={pubId:pk,pubTitulo:m.pub_titulo||"Curso",lastTime:m.created_at,lastTexto:m.texto};
+        }
+      });
+      setGrupoChats(Object.values(gMap).sort((a,b)=>new Date(b.lastTime)-new Date(a.lastTime)));
+
+      // ── Chats directos (lógica original) ─────────────────────────────────────
       msgs=msgs.filter(m=>m.para_nombre!=="__grupo__"&&m.de_nombre!=="__grupo__");
       const pubMap={};
       msgs.forEach(m=>{
@@ -63,13 +77,72 @@ export default function ChatsPage({session,onOpenChat}){
 
   const getNombre=(email)=>nombresMap[email]||email.split("@")[0];
 
+  const normChat=(s)=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const q=normChat(busquedaChat.trim());
+  const gruposFiltrados=busquedaChat.trim()
+    ?grupos.filter(g=>{
+        if(normChat(g.pubTitulo||"").includes(q))return true;
+        return Object.values(g.chats).some(c=>normChat(getNombre(c.otro)).includes(q)||normChat(c.otro).includes(q));
+      })
+    :grupos;
+  const gruposChatsFiltrados=busquedaChat.trim()
+    ?grupoChats.filter(g=>normChat(g.pubTitulo||"").includes(q))
+    :grupoChats;
+
+  const hayAlgo=grupos.length>0||grupoChats.length>0;
+  const hayResultados=gruposFiltrados.length>0||gruposChatsFiltrados.length>0;
+
   return(
     <div style={{fontFamily:FONT}}>
       {confirmEl}
-      <h2 style={{fontSize:20,color:C.text,margin:"0 0 16px",fontWeight:700}}>Mis chats</h2>
-      {loading?<Spinner/>:grupos.length===0?(<div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12,color:C.border}}>◻</div><p style={{color:C.muted,fontSize:13,marginBottom:8}}>No iniciaste ninguna conversación.</p><p style={{color:C.muted,fontSize:12}}>Inscribite en una clase o que acepten tu oferta para poder chatear.</p></div>):(
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:12}}>
+        <h2 style={{fontSize:20,color:C.text,margin:0,fontWeight:700}}>Mis chats</h2>
+        {(grupos.length+grupoChats.length)>3&&(
+          <div style={{display:"flex",alignItems:"center",gap:7,background:C.bg,border:`1px solid ${busquedaChat?C.accent:C.border}`,borderRadius:9,padding:"7px 12px",flex:1,maxWidth:240,transition:"border-color .15s"}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} placeholder="Buscar chat…" style={{background:"none",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,flex:1,minWidth:0}}/>
+            {busquedaChat&&<button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.muted,fontSize:15,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>×</button>}
+          </div>
+        )}
+      </div>
+      {loading?<Spinner/>:!hayAlgo?(
+        <div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12,color:C.border}}>◻</div><p style={{color:C.muted,fontSize:13,marginBottom:8}}>No iniciaste ninguna conversación.</p><p style={{color:C.muted,fontSize:12}}>Inscribite en una clase o que acepten tu oferta para poder chatear.</p></div>
+      ):!hayResultados?(
+        <div style={{textAlign:"center",padding:"40px 0"}}><div style={{fontSize:32,marginBottom:10,color:C.border}}>🔍</div><p style={{color:C.muted,fontSize:13}}>Sin resultados para "{busquedaChat}"</p><button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,textDecoration:"underline"}}>Limpiar búsqueda</button></div>
+      ):(
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
-          {grupos.map((g,gi)=>(
+
+          {/* ── Chats grupales ─────────────────────────────────────────────── */}
+          {gruposChatsFiltrados.length>0&&(
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <div style={{height:1,flex:1,background:C.border}}/>
+                <span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.5,display:"flex",alignItems:"center",gap:4}}>
+                  <span>👥</span> CHATS GRUPALES
+                </span>
+                <div style={{height:1,flex:1,background:C.border}}/>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {gruposChatsFiltrados.map((g,i)=>(
+                  <div key={i}
+                    onClick={()=>{if(window.__openPub)window.__openPub(g.pubId);}}
+                    style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:13,padding:"11px 15px",display:"flex",alignItems:"center",gap:11,cursor:"pointer",transition:"border-color .12s"}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                    <div style={{width:34,height:34,borderRadius:"50%",background:C.accent+"18",border:`1px solid ${C.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16}}>👥</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{g.pubTitulo}</div>
+                      <div style={{color:C.muted,fontSize:12}}>Chat grupal · {g.lastTexto?.startsWith("[img]")?"📷 Imagen":g.lastTexto||"—"}</div>
+                    </div>
+                    <span style={{fontSize:12,color:C.accent,fontWeight:600,flexShrink:0}}>Ver →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Chats directos ─────────────────────────────────────────────── */}
+          {gruposFiltrados.map((g,gi)=>(
             <div key={gi}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                 <div style={{height:1,flex:1,background:C.border}}/>

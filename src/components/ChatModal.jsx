@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "../supabase";
-import { C, FONT, safeDisplayName, sanitizeContactInfo, moderarMensaje, Avatar, Spinner, toast } from "../shared";
+import { C, FONT, safeDisplayName, sanitizeContactInfo, moderarMensaje, Avatar, Spinner, toast, fmtRel } from "../shared";
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
@@ -55,14 +55,9 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     if(cargandoRef.current)return;// evitar requests simultáneos
     cargandoRef.current=true;
     try{
-      // Traer todos los mensajes del usuario y filtrar por esta conversación
-      const todos=await sb.getMisChats(miEmail,session.access_token);
-      const data=todos.filter(m=>
-        String(m.publicacion_id)===String(post.id)&&
-        m.para_nombre!=="__grupo__"&&
-        (m.de_nombre===otroEmail||m.para_nombre===otroEmail||m.de_nombre===miEmail)
-      );
-      setMsgs(data);setLoading(false);
+      // Query dirigida: solo los mensajes de esta conversación (evita traer todos)
+      const data=await sb.getMensajes(post.id,miEmail,otroEmail,session.access_token);
+      setMsgs(data||[]);setLoading(false);
       setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:"smooth"}),50);
       const tieneNoLeidos=data.some(m=>m.para_nombre===miEmail&&!m.leido);
       if(tieneNoLeidos||!markedRef.current){await marcar();markedRef.current=true;}
@@ -156,11 +151,12 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
               const imgSrc=isImg?m.texto.match(/\[img\]([\s\S]*?)\[\/img\]/)?.[1]:null;
               const textoPosterImg=isImg?m.texto.replace(/\[img\][\s\S]*?\[\/img\]/,"").trim():"";
               return(
-                <div key={i} style={{display:"flex",justifyContent:esPropio?"flex-end":"flex-start"}}>
+                <div key={i} style={{display:"flex",flexDirection:"column",alignItems:esPropio?"flex-end":"flex-start",gap:2}}>
                   <div style={{background:esPropio?C.accent:C.accentDim||"#EEF4FF",color:esPropio?"#fff":C.text,padding:imgSrc?"6px 6px":undefined,borderRadius:13,maxWidth:"78%",overflow:"hidden",border:`1px solid ${esPropio?"transparent":C.border}`}}>
                     {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:220,borderRadius:9,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")}/>}
                     {(textoPosterImg||!isImg)&&<div style={{padding:"8px 12px",fontSize:13,lineHeight:1.5}}>{sanitizeContactInfo(isImg?textoPosterImg:m.texto)}</div>}
                   </div>
+                  {m.created_at&&<div style={{fontSize:10,color:C.muted,paddingInline:4}}>{fmtRel(m.created_at)}</div>}
                 </div>
               );
             })}

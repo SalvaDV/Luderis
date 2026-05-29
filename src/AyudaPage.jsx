@@ -54,7 +54,7 @@ const CATEGORIAS = [
       },
       {
         q: "¿Cuándo se acredita el cobro al docente?",
-        a: "Los tiempos de acreditación dependen del método de pago. Con MercadoPago suele ser entre 2 y 14 días hábiles según el medio utilizado.",
+        a: "Los tiempos de acreditación dependen del método de pago y la antigüedad de la cuenta. Con MercadoPago, para cuentas nuevas puede demorar hasta 21 días corridos (período de 'disponibilización'). Para cuentas con historial, suele ser entre 2 y 14 días hábiles según el medio de cobro utilizado.",
       },
       {
         q: "¿Puedo pedir una devolución?",

@@ -23,7 +23,7 @@ export default function FinalizarClaseModal({post,session,onClose,onFinalizado})
       publicacion_id:post.id,
       pub_titulo:post.titulo,
       leida:false,
-    }).catch(e=>logError("notif confirmar_clase",e))));
+    },session.access_token).catch(e=>logError("notif confirmar_clase",e))));
     onFinalizado();onClose();
   }catch(e){toast("Error al finalizar: "+e.message,"error");}finally{setSaving(false);}};
   return(

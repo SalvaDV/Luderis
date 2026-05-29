@@ -17,8 +17,9 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
   const descripcionDebounced=useDebounce(descripcion,5000);
   useEffect(()=>{
     if(!tituloDebounced||!materia)return;
-    // Esperar que haya suficiente descripcion para una pregunta contextual
-    if(descripcionDebounced&&descripcionDebounced.length<20)return;
+    // Esperar título significativo y descripción suficiente para contextualizar la pregunta
+    if(tituloDebounced.length<10)return;
+    if(!descripcionDebounced||descripcionDebounced.length<20)return;
     setEstado("cargando");setRespuesta("");setPregunta("");setFeedback("");
     if(onEstadoChange)onEstadoChange("cargando");
     let mounted=true;
@@ -170,7 +171,7 @@ function AsistentePublicacion({tipo,materia,titulo,descripcion,modo,session,onAp
           ?`Ya tiene título. Generá una descripción que lo complemente bien.`
           :`Generá un título atractivo y descripción clara para esta publicación.`;
       const raw=await sb.callIA(
-        `Sos un asistente para docentes de una plataforma educativa argentina (ClasseLink).\n${instruccion}\nSIEMPRE respondé con JSON válido sin markdown:\n{"titulo":"...","descripcion":"...","precio_sugerido":null,"consejos":["...","..."]}\n- titulo: máximo 60 caracteres, específico y atractivo\n- descripcion: 2-3 oraciones, máximo 250 caracteres, mencionar metodología o beneficios\n- precio_sugerido: número en ARS o null si no aplica\n- consejos: 2 tips concretos para mejorar la publicación`,
+        `Sos un asistente para docentes de una plataforma educativa argentina (Luderis).\n${instruccion}\nSIEMPRE respondé con JSON válido sin markdown:\n{"titulo":"...","descripcion":"...","precio_sugerido":null,"consejos":["...","..."]}\n- titulo: máximo 60 caracteres, específico y atractivo\n- descripcion: 2-3 oraciones, máximo 250 caracteres, mencionar metodología o beneficios\n- precio_sugerido: número en ARS o null si no aplica\n- consejos: 2 tips concretos para mejorar la publicación`,
         `${contexto}\n\n${instruccion}\nRespondé SOLO JSON.`,
         400,
         session?.access_token
@@ -377,6 +378,30 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const [frecuencia,setFrecuencia]=useState(postToEdit?.frecuencia||"");
   const [otorgaCertificado,setOtorgaCertificado]=useState(postToEdit?.otorga_certificado||false);
   const [aprobacionPct,setAprobacionPct]=useState(postToEdit?.aprobacion_pct??80);
+  // ─── BORRADOR AUTO-GUARDADO ────────────────────────────────────────────────
+  const DRAFT_KEY="ldrs_draft_"+session.user.email;
+  const [hasDraft,setHasDraft]=useState(false);
+  // Al abrir (solo para nuevas publis): verificar si hay borrador guardado
+  useEffect(()=>{
+    if(editing)return;
+    try{const s=localStorage.getItem(DRAFT_KEY);if(s){const d=JSON.parse(s);if(d.titulo||d.descripcion)setHasDraft(true);}}catch{}
+  },[]);// eslint-disable-line
+  // Auto-guardar cuando el usuario escribe (no guarda si todos los campos están vacíos)
+  useEffect(()=>{
+    if(editing||(!titulo&&!descripcion&&!materia))return;
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify({tipo,materia,titulo,descripcion,modo,precio,precioTipo,modalidadForm,nivel,moneda,requisitos}));}catch{}
+  },[titulo,descripcion,materia,tipo,modo,precio,precioTipo,modalidadForm,nivel,moneda,requisitos]);// eslint-disable-line
+  const clearDraft=()=>{try{localStorage.removeItem(DRAFT_KEY);}catch{}};
+  const restoreDraft=()=>{
+    try{
+      const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||"{}");
+      if(d.tipo)setTipo(d.tipo);if(d.materia)setMateria(d.materia);if(d.titulo)setTitulo(d.titulo);
+      if(d.descripcion)setDescripcion(d.descripcion);if(d.modo)setModo(d.modo);if(d.precio)setPrecio(d.precio);
+      if(d.precioTipo)setPrecioTipo(d.precioTipo);if(d.modalidadForm)setModalidadForm(d.modalidadForm);
+      if(d.nivel)setNivel(d.nivel);if(d.moneda)setMoneda(d.moneda);if(d.requisitos)setRequisitos(d.requisitos);
+      setHasDraft(false);
+    }catch{}
+  };
   const DESC_MAX=2000;
   const addClase=()=>setClasesSinc(prev=>[...prev,{dia:"Lunes",hora_inicio:"09:00",hora_fin:"10:00"}]);
   const updClase=(i,f,v)=>setClasesSinc(prev=>prev.map((c,idx)=>idx===i?{...c,[f]:v}:c));
@@ -446,6 +471,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       if(savedPub&&activoInicial===false)savedPub.activo=false;
       // Inyectar autor_email/id: el INSERT no devuelve JOIN con usuarios, CursoPage lo necesita para esMio
       if(savedPub){savedPub.autor_email=session.user.email;savedPub.autor_id=session.user.id;}
+      clearDraft();
       onSave(savedPub,{esCursoNuevo,esParticularNuevo});
       onClose();
     }catch(e){setErr("Error: "+e.message);}
@@ -509,6 +535,16 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
           })}
         </div>
 
+        {/* Borrador guardado */}
+        {hasDraft&&!editing&&(
+          <div style={{background:"#F59E0B12",border:"1px solid #F59E0B40",borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:8,flexWrap:"wrap"}}>
+            <span style={{fontSize:12,color:"#92400E",fontFamily:FONT,flex:1}}>📝 Tenés un borrador guardado de la última vez</span>
+            <div style={{display:"flex",gap:8,flexShrink:0}}>
+              <button onClick={restoreDraft} style={{background:"#F59E0B",border:"none",borderRadius:8,color:"#fff",padding:"5px 12px",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:FONT}}>Restaurar</button>
+              <button onClick={()=>{clearDraft();setHasDraft(false);}} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Descartar</button>
+            </div>
+          </div>
+        )}
         {/* ── PASO 1: Tipo + Formato ── */}
         {paso===1&&(
           <div style={{display:"flex",flexDirection:"column",gap:16}}>

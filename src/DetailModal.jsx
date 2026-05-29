@@ -393,15 +393,23 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       </div>
 
       {/* ── Barra CTA fija en mobile ── */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,zIndex:20,boxShadow:"0 -2px 16px rgba(0,0,0,.08)"}}
-        className="detail-cta-mobile">
-        <style>{`.detail-cta-mobile{display:none!important}@media(max-width:768px){.detail-cta-mobile{display:flex!important}}`}</style>
-        {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:getPubTipo(post).accent,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.success}}>Gratis</div>}
-        <div style={{display:"flex",gap:8}}>
-          {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
-          {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}
-          {post.tipo==="oferta"&&(esMio||esAyudante||inscripcion)&&<button onClick={()=>{onClose();onOpenCurso(post);}} style={{background:C.success+"15",color:C.success,border:`1px solid ${C.success}44`,borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Ver curso</button>}
-          {post.tipo==="busqueda"&&!esMio&&<OfertarBtn post={post} session={session}/>}
+      <div className="detail-cta-mobile" style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,zIndex:20,boxShadow:"0 -2px 16px rgba(0,0,0,.08)"}}>
+        <style>{`.detail-cta-mobile{display:none!important}@media(max-width:768px){.detail-cta-mobile{display:block!important}}`}</style>
+        {/* Aviso anti-puenteo — visible en mobile */}
+        {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&(
+          <div style={{padding:"6px 16px",background:C.warn+"10",borderBottom:`1px solid ${C.warn}25`,display:"flex",alignItems:"center",gap:6}}>
+            <AlertTriangle size={11} strokeWidth={2} color={C.warn} style={{flexShrink:0}}/>
+            <span style={{fontSize:11,color:C.muted,lineHeight:1.3}}>Realizá el pago a través de la plataforma. Las transacciones fuera de Luderis no tienen protección.</span>
+          </div>
+        )}
+        <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12}}>
+          {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:getPubTipo(post).accent,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.success}}>Gratis</div>}
+          <div style={{display:"flex",gap:8}}>
+            {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
+            {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}
+            {post.tipo==="oferta"&&(esMio||esAyudante||inscripcion)&&<button onClick={()=>{onClose();onOpenCurso(post);}} style={{background:C.success+"15",color:C.success,border:`1px solid ${C.success}44`,borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Ver curso</button>}
+            {post.tipo==="busqueda"&&!esMio&&<OfertarBtn post={post} session={session}/>}
+          </div>
         </div>
       </div>
     </div>

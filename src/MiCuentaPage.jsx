@@ -157,12 +157,19 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
     ?Math.round((avg/5)*Math.min(totalAlumnos/10,1)*Math.min(todasOfertas.length/3,1)*100)
     :null;
 
-  const [pagos,setPagos]=useState([]);const [loadingPagos,setLoadingPagos]=useState(false);
+  const [pagos,setPagos]=useState([]);const [loadingPagos,setLoadingPagos]=useState(false);const [pagosVisible,setPagosVisible]=useState(10);
+  const [comisionPct,setComisionPct]=useState(10);
   React.useEffect(()=>{
     if(seccion!=="ingresos")return;
     setLoadingPagos(true);
-    sb.getPagosDocente(session?.user?.email||"",session?.access_token||null).then(p=>setPagos(p||[])).catch(()=>setPagos([])).finally(()=>setLoadingPagos(false));
-  },[seccion]);
+    Promise.all([
+      sb.getPagosDocente(session?.user?.email||"",session?.access_token||null).catch(()=>[]),
+      sb.getConfigValor("comision_pct",session?.access_token||null),
+    ]).then(([p,cfg])=>{
+      setPagos(p||[]);
+      if(cfg!==null)setComisionPct(Number(cfg)||10);
+    }).finally(()=>setLoadingPagos(false));
+  },[seccion]);// eslint-disable-line
 
   if(todasOfertas.length===0)return(
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px 20px",marginBottom:20,textAlign:"center"}}>
@@ -216,9 +223,9 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
           {/* Ingresos estimados + conversión */}
           <div style={{...statStyle,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Ingresos estimados</div>
+              <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Facturación potencial</div>
               <div style={{fontSize:22,fontWeight:700,color:C.success}}>{fmtARS(ingresosEst)}</div>
-              <div style={{fontSize:10,color:C.muted}}>Suma de precio × inscriptos por clase</div>
+              <div style={{fontSize:10,color:C.muted}}>Precio × inscriptos · no refleja pagos reales</div>
             </div>
             {tasaConversion&&<div style={{textAlign:"right"}}>
               <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Conversión</div>
@@ -350,7 +357,6 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
               {(()=>{
                 const aprobados=pagos.filter(p=>p.estado==="approved"||p.estado==="succeeded");
                 const totalBruto=aprobados.reduce((a,p)=>a+(Number(p.monto)||0),0);
-                const comisionPct=Number(JSON.parse(localStorage.getItem("ldrs_admin_cfg")||"{}").comision_pct||10);
                 const totalNeto=totalBruto*(1-comisionPct/100);
                 const pendientes=pagos.filter(p=>p.estado==="pending").length;
                 const porMes={};
@@ -389,21 +395,31 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
                     )}
                     {/* Historial de pagos */}
                     <div style={{background:C.surface,borderRadius:12,padding:"14px 16px"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:10}}>HISTORIAL</div>
-                      {pagos.length===0?<div style={{color:C.muted,fontSize:13}}>Sin pagos registrados aún.</div>:
-                        pagos.slice(0,10).map((p,i)=>{
-                          const color=p.estado==="approved"||p.estado==="succeeded"?C.success:p.estado==="pending"?C.warn:C.danger;
-                          return(
-                            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<pagos.length-1?`1px solid ${C.border}`:"none"}}>
-                              <div>
-                                <div style={{fontSize:13,color:C.text,fontWeight:600}}>${Number(p.monto||0).toLocaleString("es-AR")}</div>
-                                <div style={{fontSize:11,color:C.muted}}>{new Date(p.created_at).toLocaleDateString("es-AR")} · {p.modo||"mp"}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                        <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8}}>HISTORIAL</div>
+                        {pagos.length>0&&<div style={{fontSize:11,color:C.muted}}>{Math.min(pagosVisible,pagos.length)} de {pagos.length}</div>}
+                      </div>
+                      {pagos.length===0?<div style={{color:C.muted,fontSize:13}}>Sin pagos registrados aún.</div>:(
+                        <>
+                          {pagos.slice(0,pagosVisible).map((p,i)=>{
+                            const color=p.estado==="approved"||p.estado==="succeeded"?C.success:p.estado==="pending"?C.warn:C.danger;
+                            return(
+                              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<Math.min(pagosVisible,pagos.length)-1?`1px solid ${C.border}`:"none"}}>
+                                <div>
+                                  <div style={{fontSize:13,color:C.text,fontWeight:600}}>${Number(p.monto||0).toLocaleString("es-AR")}</div>
+                                  <div style={{fontSize:11,color:C.muted}}>{new Date(p.created_at).toLocaleDateString("es-AR")} · {p.modo||"mp"}</div>
+                                </div>
+                                <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,background:color+"20",color}}>{p.estado}</span>
                               </div>
-                              <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,background:color+"20",color}}>{p.estado}</span>
-                            </div>
-                          );
-                        })
-                      }
+                            );
+                          })}
+                          {pagos.length>pagosVisible&&(
+                            <button onClick={()=>setPagosVisible(v=>v+20)} style={{marginTop:10,width:"100%",background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"7px",fontSize:12,cursor:"pointer",fontFamily:FONT,fontWeight:600,transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                              Ver {Math.min(20,pagos.length-pagosVisible)} más ↓
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </>
                 );

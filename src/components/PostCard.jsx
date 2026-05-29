@@ -100,6 +100,8 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
         {post.fecha_inicio&&<span style={{fontSize:12,color:C.muted,background:C.bg,borderRadius:6,padding:"3px 8px",border:`1px solid ${C.border}`}}>Inicia {fmt(post.fecha_inicio)}</span>}
         {yaOferte&&!esMio&&<span style={{fontSize:12,fontWeight:600,padding:"3px 8px",borderRadius:6,background:"#F59E0B12",border:"1px solid #F59E0B30",color:"#B45309"}}>Oferta enviada</span>}
         {fueRechazado&&<span style={{fontSize:12,fontWeight:600,padding:"3px 8px",borderRadius:6,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`}}>Oferta rechazada</span>}
+        {post.tipo==="oferta"&&post.inscripciones_cerradas&&!post.finalizado&&<span style={{fontSize:12,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#71717A12",color:"#71717A",border:"1px solid #71717A30"}}>Cupos llenos</span>}
+        {post.tipo==="oferta"&&post.finalizado&&<span style={{fontSize:12,fontWeight:700,padding:"3px 8px",borderRadius:6,background:C.success+"12",color:C.success,border:`1px solid ${C.success}30`}}>Finalizado</span>}
         {post.tipo==="busqueda"&&post.expires_at&&(()=>{const d=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(d<=3&&d>0)return<span style={{fontSize:11,color:"#B45309",fontWeight:600}}>Expira en {d}d</span>;return null;})()}
       </div>
 

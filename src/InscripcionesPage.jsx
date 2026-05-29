@@ -5,7 +5,7 @@ import * as sb from "./supabase";
 import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
 
 // ─── INSCRIPCIONES PAGE — con tiempo hasta inicio / hasta fin ─────────────────
-export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead}){
+export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead,onGoExplore}){
   // Marcar notifs como leídas cuando el usuario cliquea una pub concreta, no al montar
   const [inscripciones,setInscripciones]=useState([]);const [posts,setPosts]=useState({});const [loading,setLoading]=useState(true);const [ayudantePubs,setAyudantePubs]=useState([]);
   const [clasesAcordadas,setClasesAcordadas]=useState([]);
@@ -17,38 +17,46 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
   useEffect(()=>{
     const miEmail2=session.user.email;const miUid2=session.user.id;
     let mounted=true;
-    Promise.all([
-      sb.getMisInscripciones(miEmail2,session.access_token),
-      sb.getPublicaciones({},session.access_token),
-      sb.getMisOfertas(miEmail2,session.access_token).catch(()=>[]),
-      sb.getOfertasAceptadasRecibidas(miEmail2,session.access_token).catch(()=>[]),
-      sb.getNotificaciones(miEmail2,session.access_token).catch(()=>[]),
-    ]).then(([ins,todasPubs,misOfertas,ofertasRecibidas,notifs])=>{
-      if(!mounted)return;
-      const insArr=ins||[];
-      setInscripciones(insArr);
-      const ids=[...new Set(insArr.map(i=>i.publicacion_id))];
-      // ayudantes es uuid[] — comparar con UUID del usuario, no su email
-      const ayudanteDe=todasPubs.filter(p=>(p.ayudantes||[]).includes(miUid2)&&!ids.includes(p.id));
-      setAyudantePubs(ayudanteDe);
-      const map={};
-      todasPubs.filter(p=>ids.includes(p.id)||ayudanteDe.some(a=>a.id===p.id)).forEach(p=>map[p.id]=p);
-      setPosts(map);
-      const comoDocente=(misOfertas||[]).filter(o=>o.estado==="aceptada"&&!o.finalizada_cuenta).map(o=>({...o,_rol:"docente"}));
-      const comoAlumno=(ofertasRecibidas||[]).filter(o=>!o.finalizada_cuenta).map(o=>({...o,_rol:"alumno"}));
-      setClasesAcordadas([...comoDocente,...comoAlumno]);
-      // Indexar notifs de nuevo_ayudante por publicacion_id
-      const nMap={};
-      (notifs||[]).filter(n=>n.tipo==="nuevo_ayudante").forEach(n=>{nMap[n.publicacion_id]=n;});
-      setAyudanteNotifs(nMap);
-      // Indexar IDs de publicaciones con notif de valorar_curso no leídas
-      const pendSet=new Set();
-      (notifs||[]).filter(n=>n.tipo==="valorar_curso"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
-      // También marcar clases acordadas recién aceptadas
-      (notifs||[]).filter(n=>n.tipo==="busqueda_acordada"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
-      (notifs||[]).filter(n=>n.tipo==="nuevo_contenido"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
-      setPubsNotifPend(pendSet);
-    }).finally(()=>{if(mounted)setLoading(false);});
+    const load=async()=>{
+      try{
+        // Fase 1: paralelo — mis inscripciones, mis pubs como ayudante (query exacta),
+        // mis ofertas, ofertas recibidas y notifs. NO carga todas las publicaciones.
+        const [ins,ayudanteDe,misOfertas,ofertasRecibidas,notifs]=await Promise.all([
+          sb.getMisInscripciones(miEmail2,session.access_token),
+          sb.db(`publicaciones_con_autor?ayudantes=cs.{${miUid2}}&activo=eq.true`,"GET",null,session.access_token).catch(()=>[]),
+          sb.getMisOfertas(miEmail2,session.access_token).catch(()=>[]),
+          sb.getOfertasAceptadasRecibidas(miEmail2,session.access_token).catch(()=>[]),
+          sb.getNotificaciones(miEmail2,session.access_token).catch(()=>[]),
+        ]);
+        if(!mounted)return;
+        const insArr=ins||[];
+        setInscripciones(insArr);
+        const ids=[...new Set(insArr.map(i=>i.publicacion_id))];
+        // Fase 2: sólo las pubs de mis inscripciones (by ID, sin traer todo)
+        const inscPubs=await sb.getPublicacionesByIds(ids,session.access_token);
+        if(!mounted)return;
+        const map={};
+        (inscPubs||[]).forEach(p=>{map[p.id]=p;});
+        setPosts(map);
+        // ayudanteDe ya vino filtrado por UUID desde Supabase; excluir los que ya están en inscripciones
+        setAyudantePubs((ayudanteDe||[]).filter(p=>!ids.includes(p.id)));
+        const comoDocente=(misOfertas||[]).filter(o=>o.estado==="aceptada"&&!o.finalizada_cuenta).map(o=>({...o,_rol:"docente"}));
+        const comoAlumno=(ofertasRecibidas||[]).filter(o=>!o.finalizada_cuenta).map(o=>({...o,_rol:"alumno"}));
+        setClasesAcordadas([...comoDocente,...comoAlumno]);
+        // Indexar notifs de nuevo_ayudante por publicacion_id
+        const nMap={};
+        (notifs||[]).filter(n=>n.tipo==="nuevo_ayudante").forEach(n=>{nMap[n.publicacion_id]=n;});
+        setAyudanteNotifs(nMap);
+        // Indexar IDs de publicaciones con notif pendiente
+        const pendSet=new Set();
+        (notifs||[]).filter(n=>n.tipo==="valorar_curso"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
+        (notifs||[]).filter(n=>n.tipo==="busqueda_acordada"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
+        (notifs||[]).filter(n=>n.tipo==="nuevo_contenido"&&!n.leida).forEach(n=>{if(n.publicacion_id)pendSet.add(n.publicacion_id);});
+        setPubsNotifPend(pendSet);
+      }catch(e){logError("cargar inscripciones",e);}
+      finally{if(mounted)setLoading(false);}
+    };
+    load();
     return()=>{mounted=false;};
   },[session]);
 
@@ -134,7 +142,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente finalizó la clase — confirmá si la recibiste (tenés 7 días antes del pago automático)</span>}
+            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente finalizó · Confirmá para liberar el pago (o se acredita automático en 7 días)</span>}
             {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Bell size={10} strokeWidth={2}/>Clase finalizada — dejá tu reseña</span>}
             {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>{ti.Icon&&<ti.Icon size={10} strokeWidth={2}/>}{ti.texto}</span>
               :<span style={{fontSize:11,color:C.muted}}>Inscripto {fmt(ins.created_at)}</span>)}
@@ -146,10 +154,17 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
             ✓ Confirmar
           </button>
         )}
-        <button onClick={()=>onOpenChat({id:p.id,autor_email:p.autor_email,titulo:p.titulo,autor_nombre:p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)})}
-          style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
-          Contactar
-        </button>
+        {(p.modo==="grupal"||p.modo==="curso")?(
+          <button onClick={()=>{if(window.__openPub)window.__openPub(p.id);}}
+            style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
+            Chat grupal
+          </button>
+        ):(
+          <button onClick={()=>onOpenChat({id:p.id,autor_email:p.autor_email,titulo:p.titulo,autor_nombre:p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)})}
+            style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
+            Contactar
+          </button>
+        )}
       </div>
     );
   };
@@ -245,7 +260,12 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
         </div>
       )}
       {inscripciones.length===0&&ayudantePubs.length===0&&clasesAcordadas.length===0&&!loading&&(
-        <div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:36,marginBottom:12,color:C.border}}>◎</div><p style={{color:C.muted,fontSize:13}}>No estás inscripto en ningún curso ni clase.</p></div>
+        <div style={{textAlign:"center",padding:"60px 0"}}>
+          <div style={{fontSize:52,marginBottom:12}}>🎓</div>
+          <p style={{color:C.muted,fontSize:14,fontWeight:600,margin:"0 0 6px",fontFamily:FONT}}>Todavía no te inscribiste en ninguna clase</p>
+          <p style={{color:C.muted,fontSize:13,margin:"0 0 20px",lineHeight:1.5,fontFamily:FONT}}>Encontrá un curso o docente y empezá a aprender hoy.</p>
+          {onGoExplore&&<button onClick={onGoExplore} style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:20,color:"#fff",padding:"12px 28px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)"}}>Explorar clases →</button>}
+        </div>
       )}
       {espacioActivo&&<EspacioClaseModal oferta={espacioActivo} session={session} onClose={()=>setEspacioActivo(null)}/>}
     </div>

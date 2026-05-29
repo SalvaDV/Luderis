@@ -29,31 +29,31 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
   };
 
   const TIPO_INFO={
-    nueva_inscripcion:{Icon:GraduationCap,color:"#2EC4A0",label:"Nueva inscripción"},
-    nueva_oferta:{Icon:Inbox,color:"#1A6ED8",label:"Nueva oferta"},
-    oferta_aceptada:{Icon:CheckCircle,color:"#2EC4A0",label:"Oferta aceptada"},
-    oferta_rechazada:{Icon:XCircle,color:"#E53E3E",label:"Oferta rechazada"},
-    contraoferta:{Icon:RefreshCw,color:"#F59E0B",label:"Contraoferta"},
-    nuevo_mensaje:{Icon:MessageCircle,color:"#7B3FBE",label:"Mensaje nuevo"},
-    chat_grupal:{Icon:MessageCircle,color:"#1A6ED8",label:"Mensaje en grupo"},
-    clase_iniciada:{Icon:Video,color:"#C80000",label:"¡Clase en vivo!"},
-    nuevo_contenido:{Icon:BookOpen,color:"#1A6ED8",label:"Nuevo contenido"},
-    nuevo_ayudante:{Icon:Users,color:"#2EC4A0",label:"Co-docente agregado"},
-    valorar_curso:{Icon:Star,color:"#F59E0B",label:"Valorar curso"},
-    alerta_publicacion:{Icon:Bell,color:"#1A6ED8",label:"Alerta de búsqueda"},
-    alerta_busqueda:{Icon:Bell,color:"#1A6ED8",label:"Nueva clase disponible"},
-    pago_aprobado_mp:{Icon:CreditCard,color:"#009EE3",label:"Pago aprobado"},
-    sistema:{Icon:Megaphone,color:"#7B3FBE",label:"Anuncio de Luderis"},
-    alerta_contacto:   {Icon:VolumeX,   color:"#c62828",label:"Alerta de moderación"},
-    nueva_pregunta:    {Icon:HelpCircle,color:"#1565c0",label:"Nueva pregunta en tu publicación"},
+    nueva_inscripcion:{Icon:GraduationCap,color:"#2EC4A0",label:"Nuevo alumno inscripto 🎉"},
+    nueva_oferta:     {Icon:Inbox,        color:"#1A6ED8",label:"Recibiste una oferta"},
+    oferta_aceptada:  {Icon:CheckCircle,  color:"#2EC4A0",label:"Tu oferta fue aceptada ✓"},
+    oferta_rechazada: {Icon:XCircle,      color:"#E53E3E",label:"Tu oferta no fue seleccionada"},
+    contraoferta:     {Icon:RefreshCw,    color:"#F59E0B",label:"Recibiste una contraoferta"},
+    nuevo_mensaje:    {Icon:MessageCircle,color:"#7B3FBE",label:"Nuevo mensaje"},
+    chat_grupal:      {Icon:MessageCircle,color:"#1A6ED8",label:"Nuevo mensaje en el grupo"},
+    clase_iniciada:   {Icon:Video,        color:"#C80000",label:"¡La clase está en vivo ahora! 🔴"},
+    nuevo_contenido:  {Icon:BookOpen,     color:"#1A6ED8",label:"Nuevo contenido disponible"},
+    nuevo_ayudante:   {Icon:Users,        color:"#2EC4A0",label:"Fuiste agregado como co-docente"},
+    valorar_curso:    {Icon:Star,         color:"#F59E0B",label:"¡Calificá tu experiencia!"},
+    alerta_publicacion:{Icon:Bell,        color:"#1A6ED8",label:"Publicación que te puede interesar 🔔"},
+    alerta_busqueda:  {Icon:Bell,         color:"#1A6ED8",label:"Nueva clase disponible para vos 🔔"},
+    pago_aprobado_mp: {Icon:CreditCard,   color:"#009EE3",label:"Pago aprobado ✓"},
+    sistema:          {Icon:Megaphone,    color:"#7B3FBE",label:"Anuncio de Luderis"},
+    alerta_contacto:  {Icon:VolumeX,      color:"#c62828",label:"Mensaje con datos de contacto detectado"},
+    nueva_pregunta:   {Icon:HelpCircle,   color:"#1565c0",label:"Nueva pregunta en tu publicación"},
     pregunta_respondida:{Icon:CheckCircle,color:"#2e7d32",label:"Tu pregunta fue respondida"},
-    pago_liberado:     {Icon:CreditCard, color:"#2EC4A0",label:"Pago acreditado"},
-    retiro_procesado:  {Icon:CreditCard, color:"#2EC4A0",label:"Retiro procesado"},
-    retiro_rechazado:  {Icon:XCircle,    color:"#E53E3E",label:"Retiro rechazado"},
-    retiro_solicitado: {Icon:CreditCard, color:"#F59E0B",label:"Solicitud de retiro recibida"},
-    busqueda_acordada: {Icon:CheckCircle,color:"#2EC4A0",label:"Búsqueda acordada"},
-    busqueda_eliminada:{Icon:XCircle,    color:"#E53E3E",label:"Búsqueda eliminada"},
-    acuerdo_confirmado:{Icon:CheckCircle,color:"#2EC4A0",label:"Acuerdo confirmado"},
+    pago_liberado:    {Icon:CreditCard,   color:"#2EC4A0",label:"Pago acreditado en tu saldo 💰"},
+    retiro_procesado: {Icon:CreditCard,   color:"#2EC4A0",label:"Retiro procesado ✓"},
+    retiro_rechazado: {Icon:XCircle,      color:"#E53E3E",label:"Retiro rechazado"},
+    retiro_solicitado:{Icon:CreditCard,   color:"#F59E0B",label:"Solicitud de retiro recibida"},
+    busqueda_acordada:{Icon:CheckCircle,  color:"#2EC4A0",label:"Clase acordada ✓"},
+    busqueda_eliminada:{Icon:XCircle,     color:"#E53E3E",label:"El pedido fue eliminado"},
+    acuerdo_confirmado:{Icon:CheckCircle, color:"#2EC4A0",label:"Acuerdo confirmado ✓"},
   };
 
   const tabs=[
@@ -63,6 +63,30 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
 
   const filtradas=notifs.filter(n=>tab==="noLeidas"?!n.leida:true);
   const sinLeer=notifs.filter(n=>!n.leida).length;
+
+  // Agrupar notificaciones por fecha
+  const agruparPorFecha=(lista)=>{
+    const hoy=new Date();hoy.setHours(0,0,0,0);
+    const ayer=new Date(hoy);ayer.setDate(ayer.getDate()-1);
+    const semana=new Date(hoy);semana.setDate(semana.getDate()-6);
+    const grupos=[];
+    const porGrupo={};
+    const labelDe=(ts)=>{
+      const d=new Date(ts||0);d.setHours(0,0,0,0);
+      if(d>=hoy)return"Hoy";
+      if(d>=ayer)return"Ayer";
+      if(d>=semana)return"Esta semana";
+      return"Anteriores";
+    };
+    const orden=["Hoy","Ayer","Esta semana","Anteriores"];
+    lista.forEach(n=>{
+      const g=labelDe(n.created_at);
+      if(!porGrupo[g]){porGrupo[g]=[];grupos.push(g);}
+      porGrupo[g].push(n);
+    });
+    return orden.filter(g=>porGrupo[g]).map(g=>({label:g,items:porGrupo[g]}));
+  };
+  const grupos=agruparPorFecha(filtradas);
 
   if(!open)return null;
   return(
@@ -101,37 +125,45 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
               <div style={{color:C.muted,fontSize:14}}>{tab==="noLeidas"?"Todo leído ✓":"Sin notificaciones aún"}</div>
             </div>
           ):(
-            filtradas.map((n,i)=>{
-              const info=TIPO_INFO[n.tipo]||{Icon:Bell,color:C.muted,label:n.tipo};
-              return(
-                <div key={n.id||i}
-                  onClick={()=>{
-                    if(n.publicacion_id){
-                      sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});
-                      setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
-                      onClose();
-                      const fn=(n.tipo==="nueva_pregunta"||n.tipo==="pregunta_respondida")
-                        ?window.__openDetail:window.__openPub;
-                      if(fn)fn(n.publicacion_id);
-                    }
-                  }}
-                  style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,cursor:n.publicacion_id?"pointer":"default",background:n.leida?"transparent":C.accentDim+"80",display:"flex",gap:12,alignItems:"flex-start",transition:"background .12s"}}
-                  onMouseEnter={e=>{if(n.publicacion_id)e.currentTarget.style.background=C.bg;}}
-                  onMouseLeave={e=>e.currentTarget.style.background=n.leida?"transparent":C.accentDim+"80"}>
-                  {/* Icono */}
-                  <div style={{width:40,height:40,borderRadius:"50%",background:info.color+"18",border:`1px solid ${info.color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <info.Icon size={18} color={info.color} strokeWidth={1.8}/>
-                  </div>
-                  {/* Contenido */}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:n.leida?400:700,color:C.text,fontSize:13,marginBottom:2}}>{info.label}</div>
-                    <div style={{fontSize:12,color:C.muted,lineHeight:1.5,wordBreak:"break-word"}}>{n.pub_titulo||""}</div>
-                    <div style={{fontSize:11,color:C.muted,marginTop:4}}>{fmtRel(n.created_at)}</div>
-                  </div>
-                  {!n.leida&&<div style={{width:8,height:8,borderRadius:"50%",background:C.accent,flexShrink:0,marginTop:4}}/>}
+            grupos.map(grupo=>(
+              <div key={grupo.label}>
+                {/* Separador de grupo */}
+                <div style={{padding:"8px 20px 4px",background:C.bg,borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:1}}>
+                  <span style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:"uppercase"}}>{grupo.label}</span>
                 </div>
-              );
-            })
+                {grupo.items.map((n,i)=>{
+                  const info=TIPO_INFO[n.tipo]||{Icon:Bell,color:C.muted,label:n.tipo};
+                  return(
+                    <div key={n.id||i}
+                      onClick={()=>{
+                        if(n.publicacion_id){
+                          sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});
+                          setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
+                          onClose();
+                          const fn=(n.tipo==="nueva_pregunta"||n.tipo==="pregunta_respondida")
+                            ?window.__openDetail:window.__openPub;
+                          if(fn)fn(n.publicacion_id);
+                        }
+                      }}
+                      style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,cursor:n.publicacion_id?"pointer":"default",background:n.leida?"transparent":C.accentDim+"80",display:"flex",gap:12,alignItems:"flex-start",transition:"background .12s"}}
+                      onMouseEnter={e=>{if(n.publicacion_id)e.currentTarget.style.background=C.bg;}}
+                      onMouseLeave={e=>e.currentTarget.style.background=n.leida?"transparent":C.accentDim+"80"}>
+                      {/* Icono */}
+                      <div style={{width:40,height:40,borderRadius:"50%",background:info.color+"18",border:`1px solid ${info.color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <info.Icon size={18} color={info.color} strokeWidth={1.8}/>
+                      </div>
+                      {/* Contenido */}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:n.leida?400:700,color:C.text,fontSize:13,marginBottom:2}}>{info.label}</div>
+                        <div style={{fontSize:12,color:C.muted,lineHeight:1.5,wordBreak:"break-word"}}>{n.pub_titulo||""}</div>
+                        <div style={{fontSize:11,color:C.muted,marginTop:4}}>{fmtRel(n.created_at)}</div>
+                      </div>
+                      {!n.leida&&<div style={{width:8,height:8,borderRadius:"50%",background:C.accent,flexShrink:0,marginTop:4}}/>}
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
       </div>

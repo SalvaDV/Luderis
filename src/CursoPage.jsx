@@ -196,14 +196,9 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
           const score=catScores[cat.id];
           return(
             <div key={cat.id} style={{background:C.surface,borderRadius:9,padding:"10px 12px",border:`1px solid ${score?C.accent+"30":C.border}`}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:6}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:600,color:C.text}}>{cat.label}</div>
-                  <div style={{fontSize:11,color:C.muted,marginTop:1}}>{cat.desc}</div>
-                </div>
-                <div style={{fontSize:10,color:C.muted,background:C.bg,borderRadius:20,padding:"2px 7px",flexShrink:0}}>
-                  peso {cat.peso}x
-                </div>
+              <div style={{marginBottom:6}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.text}}>{cat.label}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:1}}>{cat.desc}</div>
               </div>
               <div style={{display:"flex",gap:4}}>
                 {[1,2,3,4,5].map(n=>(

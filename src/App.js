@@ -843,10 +843,10 @@ export default function App(){
             exit={{opacity:0,y:-6}}
             transition={{duration:0.18,ease:"easeOut"}}>
           {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/>}
-          {page==="agenda"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><AgendaPage session={session} onOpenCurso={setCursoPost}/></React.Suspense>}
+          {page==="agenda"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><AgendaPage session={session} onOpenCurso={setCursoPost} onGoExplore={()=>setPage("explore")}/></React.Suspense>}
           {page==="chats"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/></React.Suspense>}
-          {page==="favoritos"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={openPerfil}/></React.Suspense>}
-          {page==="inscripciones"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>
+          {page==="favoritos"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={openPerfil} onGoExplore={()=>setPage("explore")}/></React.Suspense>}
+          {page==="inscripciones"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><InscripcionesPage session={session} onOpenCurso={setCursoPost} onOpenChat={openChat} onGoExplore={()=>setPage("explore")} onMarkNotifsRead={()=>{sb.marcarNotifsTipoLeidas(session.user.email,["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido"],session.access_token).then(refreshUnread).catch(()=>{});}}/>
           </React.Suspense>}
           {page==="juegos"&&(
             <React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}>

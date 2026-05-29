@@ -280,7 +280,7 @@ export const getMensajes = (pubId, miEmail, otroEmail, token) => {
 };
 
 export const getMisChats = (miEmail, token) =>
-  db(`mensajes?or=(de_nombre.eq.${encodeURIComponent(miEmail)},para_nombre.eq.${encodeURIComponent(miEmail)})&order=created_at.asc`, "GET", null, token);
+  db(`mensajes?or=(de_nombre.eq.${encodeURIComponent(miEmail)},para_nombre.eq.${encodeURIComponent(miEmail)})&order=created_at.desc&limit=400`, "GET", null, token);
 
 export const getMensajesGrupo = (pubId, token) =>
   rpc("get_mensajes_grupo", { pub_id: pubId }, token);
@@ -787,6 +787,12 @@ export const getPagosDocenteEscrow = (email, token) =>
 // Liquidaciones del docente
 export const getLiquidaciones = (email, token) =>
   db(`liquidaciones?docente_email=eq.${encodeURIComponent(email)}&order=periodo.desc&limit=24`, "GET", null, token).catch(() => []);
+
+// Lee un valor de la tabla config (ej: "comision_pct")
+export const getConfigValor = (clave, token) =>
+  db(`config?clave=eq.${encodeURIComponent(clave)}&select=valor`, "GET", null, token)
+    .then(rows => rows?.[0]?.valor ?? null)
+    .catch(() => null);
 
 // Genera una URL firmada (1hs) para descargar el PDF de una liquidación
 // Path en Storage: "{docente_email}/{periodo}.pdf"

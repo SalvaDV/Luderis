@@ -61,7 +61,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
 }
 
 // ─── AGENDA PERSONAL ──────────────────────────────────────────────────────────
-function AgendaPage({session,onOpenCurso}){
+function AgendaPage({session,onOpenCurso,onGoExplore}){
   const [inscripciones,setInscripciones]=useState([]);
   const [posts,setPosts]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -266,7 +266,12 @@ function AgendaPage({session,onOpenCurso}){
             {proximasOpen&&(
             <div>{proximas.length===0?(
               <div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"20px 0"}}>
-                {posts.length===0?"No tenés clases inscriptas aún.":"No hay clases programadas este mes."}
+                {posts.length===0?(
+                  <>
+                    <p style={{margin:"0 0 14px",fontFamily:FONT}}>No tenés clases agendadas aún.</p>
+                    {onGoExplore&&<button onClick={onGoExplore} style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:20,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(26,110,216,.25)"}}>Buscar clases →</button>}
+                  </>
+                ):"No hay clases programadas este mes."}
               </div>
             ):proximas.slice(0,10).map((item,i)=>{
               const esMesmo=item.fecha.getDate()===hoy.getDate()&&item.fecha.getMonth()===hoy.getMonth();
@@ -293,6 +298,39 @@ function AgendaPage({session,onOpenCurso}){
             })}
           </div>)}
           </div>
+          {/* Cursos sin horario fijo — asincrónicos o sin clases_sinc */}
+          {(()=>{
+            const sinHorario=posts.filter(p=>p.sinc!=="sinc"||!p.clases_sinc);
+            if(sinHorario.length===0)return null;
+            return(
+              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px",marginTop:12}}>
+                <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12,display:"flex",alignItems:"center",gap:7}}>
+                  <span style={{fontSize:16}}>📚</span> Sin horario fijo
+                  <span style={{fontSize:11,color:C.muted,fontWeight:400}}>({sinHorario.length})</span>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                  {sinHorario.map(p=>(
+                    <div key={p.id} onClick={()=>onOpenCurso(p)}
+                      style={{display:"flex",gap:11,alignItems:"center",background:C.surface,border:`1px solid ${C.border}`,borderRadius:11,padding:"10px 14px",cursor:"pointer",transition:"all .15s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateX(3px)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="none";}}>
+                      <div style={{width:36,height:36,borderRadius:9,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14}}>
+                        {p.sinc==="asinc"?"▶":"📖"}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:600,color:C.text,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
+                        <div style={{fontSize:11,color:C.muted,marginTop:1}}>
+                          {p.sinc==="asinc"?"Asincrónico · a tu ritmo":p.modo==="particular"?"Clase particular":!p.sinc?"Sin horario definido":"Sin calendario cargado"}
+                          {p.materia&&<span style={{marginLeft:5,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"0px 7px"}}>{p.materia}</span>}
+                        </div>
+                      </div>
+                      <span style={{fontSize:11,color:C.accent,fontWeight:700,flexShrink:0}}>Ver →</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>

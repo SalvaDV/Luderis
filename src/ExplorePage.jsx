@@ -490,8 +490,11 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               {maxDurSemanas>0&&(<div style={{marginBottom:16}}><FL ch="Duración mínima"/><select value={filtroDurMin} onChange={e=>setFiltroDurMin(+e.target.value)} style={selS}><option value={0}>Cualquier duración</option>{[1,2,4,8,12,16].filter(v=>v<maxDurSemanas).map(v=><option key={v} value={v}>{v} sem.</option>)}</select></div>)}
             </div>
             <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,position:"sticky",bottom:0,background:C.surface}}>
-              <button onClick={()=>{setPanelOpen(false);setModoVista("resultados");}} style={{width:"100%",background:sT.grad,border:"none",borderRadius:20,color:"#fff",padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:`0 4px 14px ${sT.accent}40`}}>
-                Ver {countForPanel} resultado{countForPanel!==1?"s":""}
+              <button
+                onClick={()=>{if(countForPanel>0){setPanelOpen(false);setModoVista("resultados");}}}
+                disabled={countForPanel===0}
+                style={{width:"100%",background:countForPanel===0?C.bg:sT.grad,border:`1px solid ${countForPanel===0?C.border:"transparent"}`,borderRadius:20,color:countForPanel===0?C.muted:"#fff",padding:"13px",fontWeight:600,fontSize:14,cursor:countForPanel===0?"not-allowed":"pointer",fontFamily:FONT,boxShadow:countForPanel===0?"none":`0 4px 14px ${sT.accent}40`,transition:"all .2s"}}>
+                {countForPanel===0?"Sin resultados con estos filtros":`Ver ${countForPanel} resultado${countForPanel!==1?"s":""}`}
               </button>
             </div>
           </div>

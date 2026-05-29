@@ -482,22 +482,26 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       // Matching con IA para alumnos — buscar clases recomendadas
       if(!esDocente&&materias.length>0){
         setMatchLoading(true);
+        const matchTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),15000));
         try{
           const pubs=await sb.getPublicaciones({},session.access_token).catch(()=>[]);
           const candidatos=pubs.filter(p=>p.tipo==="oferta"&&p.activo!==false).slice(0,80).map(p=>({
             id:p.id,titulo:p.titulo,materia:p.materia,precio:p.precio,modalidad:p.modalidad,descripcion:(p.descripcion||"").slice(0,80)
           }));
           const presupGte={gratis:"0",bajo:"5000",medio:"15000",alto:"999999"}[presupuesto]||"0";
-          const raw=await sb.callIA(
-            `Sos un asistente de recomendación para Luderis, plataforma educativa argentina. Respondé SOLO con JSON válido: {"ids":["id1","id2","id3"]}. Máximo 3 publicaciones, ordenadas por relevancia. Sin resultados: {"ids":[]}`,
-            `Alumno nuevo. Materias de interés: ${materias.join(", ")}. Modalidad preferida: ${modalidadPref||"cualquiera"}. Presupuesto máximo: ${presupGte==="999999"?"sin límite":"$"+Number(presupGte).toLocaleString("es-AR")}/hora.
+          const raw=await Promise.race([
+            sb.callIA(
+              `Sos un asistente de recomendación para Luderis, plataforma educativa argentina. Respondé SOLO con JSON válido: {"ids":["id1","id2","id3"]}. Máximo 3 publicaciones, ordenadas por relevancia. Sin resultados: {"ids":[]}`,
+              `Alumno nuevo. Materias de interés: ${materias.join(", ")}. Modalidad preferida: ${modalidadPref||"cualquiera"}. Presupuesto máximo: ${presupGte==="999999"?"sin límite":"$"+Number(presupGte).toLocaleString("es-AR")}/hora.
 
 Publicaciones disponibles:
 ${JSON.stringify(candidatos)}
 
 Respondé SOLO JSON.`,
-            400, session.access_token
-          );
+              400, session.access_token
+            ),
+            matchTimeout,
+          ]);
           const match=raw.match(/\{[\s\S]*\}/);
           if(match){
             const parsed=JSON.parse(match[0]);

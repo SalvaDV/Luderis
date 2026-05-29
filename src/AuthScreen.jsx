@@ -20,11 +20,25 @@ const FORM_VARIANT={
   animate:{y:0,opacity:1,transition:{type:"spring",stiffness:130,damping:22,delay:0.1}}
 };
 
+// Calcula fortaleza de contraseña: 0-4
+function passStrength(p){
+  if(!p)return 0;
+  let s=0;
+  if(p.length>=8)s++;
+  if(/[A-Z]/.test(p))s++;
+  if(/[0-9]/.test(p))s++;
+  if(/[^A-Za-z0-9]/.test(p))s++;
+  return s;
+}
+const STRENGTH_LABELS=["Muy débil","Débil","Regular","Buena","Excelente"];
+const STRENGTH_COLORS=["#E53E3E","#E53E3E","#F59E0B","#2EC4A0","#1A6ED8"];
+
 function AuthScreen({onLogin}){
   const [mode,setMode]=useState("login");const [email,setEmail]=useState("");const [pass,setPass]=useState("");const [pass2,setPass2]=useState("");
   const [loading,setLoading]=useState(false);const [err,setErr]=useState("");const [ok,setOk]=useState("");
   const [aceptoTerminos,setAceptoTerminos]=useState(false);
   const [showTerminos,setShowTerminos]=useState(false);
+  const [showPass,setShowPass]=useState(false);const [showPass2,setShowPass2]=useState(false);
   const handle=async()=>{
     setErr("");setOk("");if(!email){setErr("Ingresá tu email");return;}
     if(mode!=="forgot"&&!pass){setErr("Ingresá contraseña");return;}
@@ -229,7 +243,7 @@ function AuthScreen({onLogin}){
           {mode!=="forgot"&&(
             <div style={{display:"flex",background:"#EEF3FF",borderRadius:12,padding:4,marginBottom:24,position:"relative"}}>
               {["login","register"].map(m=>(
-                <button key={m} onClick={()=>{setMode(m);setErr("");setOk("");}}
+                <button key={m} onClick={()=>{setMode(m);setErr("");setOk("");setShowPass(false);setShowPass2(false);}}
                   style={{flex:1,padding:"9px 0",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:600,
                     background:mode===m?"#fff":"transparent",
                     color:mode===m?LUD.blue:"#718096",
@@ -260,9 +274,46 @@ function AuthScreen({onLogin}){
               ):(
                 <>
                   <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
-                  <input type="password" placeholder="Contraseña" value={pass} onChange={e=>setPass(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                  {/* Contraseña con ojo */}
+                  <div style={{position:"relative",marginBottom:12}}>
+                    <input type={showPass?"text":"password"} placeholder="Contraseña" value={pass} onChange={e=>setPass(e.target.value)}
+                      style={{...iS,marginBottom:0,paddingRight:40}}
+                      onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                    <button type="button" onClick={()=>setShowPass(v=>!v)}
+                      style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",fontSize:15,padding:0,lineHeight:1}}>
+                      {showPass?"🙈":"👁"}
+                    </button>
+                  </div>
+                  {/* Medidor de fortaleza — solo en registro */}
+                  {mode==="register"&&pass.length>0&&(()=>{
+                    const s=passStrength(pass);
+                    return(
+                      <div style={{marginBottom:10}}>
+                        <div style={{display:"flex",gap:3,marginBottom:3}}>
+                          {[1,2,3,4].map(i=>(
+                            <div key={i} style={{flex:1,height:3,borderRadius:2,background:s>=i?STRENGTH_COLORS[s]:"#E2E8F0",transition:"background .2s"}}/>
+                          ))}
+                        </div>
+                        <div style={{fontSize:11,color:STRENGTH_COLORS[s]}}>{STRENGTH_LABELS[s]}{s<2?" — usá al menos 8 caracteres, mayúsculas y números":""}</div>
+                      </div>
+                    );
+                  })()}
                   {mode==="register"&&(
-                    <input type="password" placeholder="Repetir contraseña" value={pass2} onChange={e=>setPass2(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI}/>
+                    <div style={{position:"relative",marginBottom:4}}>
+                      <input type={showPass2?"text":"password"} placeholder="Repetir contraseña" value={pass2} onChange={e=>setPass2(e.target.value)}
+                        style={{...iS,marginBottom:0,paddingRight:40}}
+                        onFocus={focusI} onBlur={blurI}/>
+                      <button type="button" onClick={()=>setShowPass2(v=>!v)}
+                        style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",fontSize:15,padding:0,lineHeight:1}}>
+                        {showPass2?"🙈":"👁"}
+                      </button>
+                    </div>
+                  )}
+                  {/* Checkmark de coincidencia — solo en registro cuando pass2 tiene algo */}
+                  {mode==="register"&&pass2.length>0&&(
+                    <div style={{fontSize:11,marginBottom:8,marginTop:4,color:pass===pass2?"#2EC4A0":"#E53E3E"}}>
+                      {pass===pass2?"✓ Las contraseñas coinciden":"✗ No coinciden"}
+                    </div>
                   )}
                   {mode==="register"&&(
                     <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:16}}>

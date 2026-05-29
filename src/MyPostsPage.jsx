@@ -59,7 +59,7 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
           </p>
           <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
             {post.precio&&<span style={{fontSize:12,color:C.accent,fontWeight:600}}>{fmtPrice(post.precio,post.moneda)}</span>}
-            {post.tipo==="oferta"&&inscriptos!==undefined&&<span style={{fontSize:12,color:C.muted}}>{inscriptos} inscripto{inscriptos!==1?"s":""}</span>}
+            {post.tipo==="oferta"&&(()=>{const n=inscriptos??post.cantidad_inscriptos;return n!==undefined&&n!==null?<span style={{fontSize:12,color:C.muted}}>{n} inscripto{n!==1?"s":""}</span>:null;})()}
             {post.vistas>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:3}}><Eye size={11} strokeWidth={2}/>{post.vistas}</span>}
             {post.created_at&&<span style={{fontSize:12,color:C.muted}}>{fmt(post.created_at)}</span>}
           </div>
