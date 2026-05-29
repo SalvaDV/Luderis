@@ -33,10 +33,16 @@ function isAuthenticated(req: Request, projectRef: string): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  // Solo usuarios autenticados pueden enviar push — la anon key no es suficiente
+  // Permite: service role key (llamadas internas desde send-email / smart-worker)
+  //          O JWT de usuario autenticado (llamadas desde el frontend)
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const projectRef = supabaseUrl.replace(/^https?:\/\//, "").split(".")[0];
-  if (!isAuthenticated(req, projectRef)) {
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const projectRef  = supabaseUrl.replace(/^https?:\/\//, "").split(".")[0];
+  const authToken   = (req.headers.get("Authorization") ?? req.headers.get("apikey") ?? "")
+                        .replace(/^Bearer\s+/i, "").trim();
+
+  const isServiceRole = SERVICE_KEY && authToken === SERVICE_KEY;
+  if (!isServiceRole && !isAuthenticated(req, projectRef)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS });
   }
 

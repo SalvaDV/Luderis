@@ -1,16 +1,11 @@
 /**
  * Supabase Edge Function: send-email
- * Envía emails transaccionales usando Resend (resend.com)
- * Templates: bienvenida, nueva_inscripcion, oferta_aceptada, pago_aprobado, etc.
+ * Envía emails transaccionales usando Resend (resend.com).
+ * Para templates elegibles intenta push primero (via send-push);
+ * solo manda email si el push no llegó a ninguna subscripción.
  *
- * Deploy:
- *   supabase functions deploy send-email
- *   (JWT verification habilitado — se requiere token de usuario o service role key)
- *
- * Secrets a configurar en Supabase Dashboard → Edge Functions → Secrets:
- *   RESEND_API_KEY   → tu API key de resend.com (re_xxxx)
- *   FROM_EMAIL       → ej: hola@luderis.com (debe estar verificado en Resend)
- *   APP_URL          → https://classelink.vercel.app
+ * Secrets:
+ *   RESEND_API_KEY, FROM_EMAIL, APP_URL
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -21,22 +16,17 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// ── Seguridad: escape HTML para prevenir inyección en templates ───────────────
+// ── Helpers de seguridad ───────────────────────────────────────────────────────
 const esc = (s: unknown): string =>
   String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-// Solo permite URLs con esquema https?:// (bloquea javascript:, data:, etc.)
 const safeUrl = (u: unknown, fallback = "#"): string => {
   const s = String(u ?? "").trim();
   return /^https?:\/\//i.test(s) ? s : fallback;
 };
 
-// Escapa todos los valores string del objeto data antes de pasar a los templates
 const URL_KEYS = new Set(["pdf_url", "pub_url"]);
 function escapeData(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -47,45 +37,45 @@ function escapeData(obj: Record<string, unknown>): Record<string, unknown> {
   );
 }
 
-// ── Paleta de colores Luderis ──────────────────────────────────────────────────
+// ── Paleta ─────────────────────────────────────────────────────────────────────
 const BRAND = {
   blue:   "#1A6ED8",
   teal:   "#2EC4A0",
-  dark:   "#0F3F7A",
   bg:     "#F6F9FF",
   text:   "#0D1F3C",
   muted:  "#5A7294",
   border: "#DDE5F5",
 };
 
-// ── Base HTML del email ────────────────────────────────────────────────────────
+// ── Base HTML ──────────────────────────────────────────────────────────────────
 const emailBase = (content: string, preheader = "") => `
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Luderis</title>
   <style>
-    body { margin:0; padding:0; background:${BRAND.bg}; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; color:${BRAND.text}; }
-    .wrapper { max-width:600px; margin:0 auto; padding:32px 16px; }
-    .card { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(26,110,216,.08); border:1px solid ${BRAND.border}; }
-    .header { background:linear-gradient(135deg,${BRAND.dark},${BRAND.blue},${BRAND.teal}); padding:32px 40px; text-align:center; }
-    .header img { width:48px; height:48px; margin-bottom:12px; }
-    .header h1 { color:#fff; margin:0; font-size:28px; font-weight:800; letter-spacing:-.5px; }
-    .body { padding:32px 40px; }
-    .body h2 { color:${BRAND.text}; font-size:20px; font-weight:700; margin:0 0 12px; }
-    .body p { color:${BRAND.muted}; font-size:15px; line-height:1.7; margin:0 0 16px; }
-    .body strong { color:${BRAND.text}; }
-    .btn { display:inline-block; background:linear-gradient(135deg,${BRAND.blue},${BRAND.teal}); color:#fff!important; text-decoration:none; padding:14px 32px; border-radius:24px; font-weight:700; font-size:15px; margin:8px 0; box-shadow:0 4px 14px rgba(26,110,216,.3); }
-    .info-box { background:${BRAND.bg}; border:1px solid ${BRAND.border}; border-radius:10px; padding:16px 20px; margin:16px 0; }
-    .info-box .label { font-size:11px; color:${BRAND.muted}; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:4px; }
-    .info-box .value { font-size:15px; color:${BRAND.text}; font-weight:600; }
-    .divider { height:1px; background:${BRAND.border}; margin:24px 0; }
-    .footer { padding:24px 40px; text-align:center; border-top:1px solid ${BRAND.border}; background:${BRAND.bg}; }
-    .footer p { color:${BRAND.muted}; font-size:12px; margin:4px 0; }
-    .footer a { color:${BRAND.blue}; text-decoration:none; }
-    @media(max-width:480px){ .body,.header,.footer{ padding:24px 20px!important; } }
+    body{margin:0;padding:0;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:${BRAND.text};}
+    .wrapper{max-width:600px;margin:0 auto;padding:32px 16px;}
+    .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,110,216,.08);border:1px solid ${BRAND.border};}
+    .header{background:linear-gradient(160deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%);padding:32px 40px;text-align:center;}
+    .header img{width:56px;height:56px;border-radius:14px;display:block;margin:0 auto 10px;}
+    .header h1{color:#fff;margin:0;font-size:28px;font-weight:800;letter-spacing:-.5px;}
+    .header p{color:rgba(255,255,255,.75);margin:6px 0 0;font-size:13px;letter-spacing:0.3px;}
+    .body{padding:32px 40px;}
+    .body h2{color:${BRAND.text};font-size:20px;font-weight:700;margin:0 0 12px;}
+    .body p{color:${BRAND.muted};font-size:15px;line-height:1.7;margin:0 0 16px;}
+    .body strong{color:${BRAND.text};}
+    .btn{display:inline-block;background:linear-gradient(135deg,${BRAND.blue},${BRAND.teal});color:#fff!important;text-decoration:none;padding:14px 32px;border-radius:24px;font-weight:700;font-size:15px;margin:8px 0;box-shadow:0 4px 14px rgba(26,110,216,.3);}
+    .info-box{background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin:16px 0;}
+    .info-box .label{font-size:11px;color:${BRAND.muted};font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+    .info-box .value{font-size:15px;color:${BRAND.text};font-weight:600;}
+    .divider{height:1px;background:${BRAND.border};margin:24px 0;}
+    .footer{padding:24px 40px;text-align:center;border-top:1px solid ${BRAND.border};background:${BRAND.bg};}
+    .footer p{color:${BRAND.muted};font-size:12px;margin:4px 0;}
+    .footer a{color:${BRAND.blue};text-decoration:none;}
+    @media(max-width:480px){.body,.header,.footer{padding:24px 20px!important;}}
   </style>
 </head>
 <body>
@@ -93,8 +83,9 @@ const emailBase = (content: string, preheader = "") => `
   <div class="wrapper">
     <div class="card">
       <div class="header">
+        <img src="https://classelink.vercel.app/logo.png" alt="Luderis"/>
         <h1>Luderis</h1>
-        <p style="color:rgba(255,255,255,.75);margin:4px 0 0;font-size:14px;">Aprendé lo que quieras, enseñá lo que sabés.</p>
+        <p>Aprendé lo que quieras · Enseñá lo que sabés</p>
       </div>
       <div class="body">
         ${content}
@@ -468,13 +459,100 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
   }),
 };
 
+// ── Push configs (push-first para estos templates) ────────────────────────────
+// Si el push llega a ≥1 subscripción → se omite el email.
+// Si sent=0 (sin subscripción activa) → se envía el email como fallback.
+type PushCfg = { title: string; body: string; url: string; tag: string };
+const PUSH_CONFIGS: Record<string, (d: Record<string, unknown>, appUrl: string) => PushCfg> = {
+
+  nuevo_mensaje: (d, appUrl) => ({
+    title: `Nuevo mensaje de ${d.de_nombre}`,
+    body:  d.preview ? `"${String(d.preview).slice(0, 80)}"` : "Tenés un mensaje nuevo",
+    url:   `${appUrl}?page=chats`,
+    tag:   `msg-${d.de_nombre}`,
+  }),
+
+  nueva_inscripcion: (d, appUrl) => ({
+    title: "¡Nuevo alumno!",
+    body:  `${d.alumno_nombre} se inscribió en "${d.pub_titulo}"`,
+    url:   d.pub_id ? `${appUrl}?pub=${d.pub_id}` : `${appUrl}?page=cuenta`,
+    tag:   `insc-${d.pub_id ?? Date.now()}`,
+  }),
+
+  oferta_recibida: (d, appUrl) => ({
+    title: "¡Recibiste una oferta!",
+    body:  `${d.docente_nombre} quiere enseñarte "${d.pub_titulo}"`,
+    url:   `${appUrl}?page=cuenta&tab=ofertas`,
+    tag:   `oferta-${d.pub_id ?? Date.now()}`,
+  }),
+
+  oferta_aceptada: (d, appUrl) => ({
+    title: "¡Tu oferta fue aceptada! 🎉",
+    body:  `${d.alumno_nombre} aceptó tu oferta en "${d.pub_titulo}"`,
+    url:   `${appUrl}?page=chats`,
+    tag:   `oferta-ok-${d.pub_id ?? Date.now()}`,
+  }),
+
+  contraoferta: (d, appUrl) => ({
+    title: "Nueva contraoferta",
+    body:  `${d.de_nombre} propone $${Number(d.precio_nuevo).toLocaleString("es-AR")} / ${d.tipo_precio ?? "hora"}`,
+    url:   `${appUrl}?page=cuenta&tab=ofertas`,
+    tag:   `contra-${d.pub_id ?? Date.now()}`,
+  }),
+
+  clase_finalizada: (d, appUrl) => ({
+    title: "¿Cómo fue tu clase?",
+    body:  `Dejá tu reseña de "${d.pub_titulo}"`,
+    url:   appUrl,
+    tag:   `resena-${d.pub_id ?? Date.now()}`,
+  }),
+
+  nueva_evaluacion: (d, appUrl) => ({
+    title: "Nueva evaluación disponible",
+    body:  String(d.pub_titulo),
+    url:   d.pub_id ? `${appUrl}?pub=${d.pub_id}` : appUrl,
+    tag:   `eval-${d.pub_id ?? Date.now()}`,
+  }),
+
+  alerta_coincidencia: (d, appUrl) => ({
+    title: "🔔 Nueva clase para vos",
+    body:  String(d.pub_titulo),
+    url:   String(d.pub_url ?? appUrl),
+    tag:   `alerta-${d.pub_id ?? Date.now()}`,
+  }),
+
+  alerta_publicacion: (d, appUrl) => ({
+    title: "Nueva publicación que te puede interesar",
+    body:  String(d.pub_titulo),
+    url:   appUrl,
+    tag:   `alerta-pub-${Date.now()}`,
+  }),
+};
+
+// Llama a send-push con service role key y retorna cuántas subscripciones recibieron
+async function tryPush(supaUrl: string, serviceKey: string, email: string, cfg: PushCfg): Promise<number> {
+  try {
+    const res = await fetch(`${supaUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ to: email, ...cfg }),
+    });
+    if (!res.ok) return 0;
+    const json = await res.json();
+    return (json.sent as number) ?? 0;
+  } catch {
+    return 0;
+  }
+}
 
 // ── Handler principal ──────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    // ── Autenticación: requiere JWT de usuario o service role key ──────────────
     const SUPA_URL  = Deno.env.get("SUPABASE_URL")!;
     const SUPA_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -486,7 +564,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Permite: service role key (llamadas internas) O JWT de usuario válido
+    // Permite service role key (llamadas internas) O JWT de usuario válido
     if (token !== SUPA_KEY) {
       const supaAuth = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
       const { data: { user }, error: authErr } = await supaAuth.auth.getUser(token);
@@ -499,14 +577,7 @@ Deno.serve(async (req) => {
 
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
     const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "hola@luderis.com";
-    const APP_URL    = Deno.env.get("APP_URL")    ?? "https://classelink.vercel.app";
-
-    if (!RESEND_KEY) {
-      return new Response(
-        JSON.stringify({ error: "RESEND_API_KEY no configurado", code: "NO_KEY" }),
-        { status: 503, headers: { ...CORS, "Content-Type": "application/json" } }
-      );
-    }
+    const APP_URL    = Deno.env.get("APP_URL")    ?? "https://luderis.com";
 
     const body = await req.json();
     const { template, to, data = {} } = body;
@@ -526,8 +597,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Escapar todos los datos del usuario antes de pasarlos al template
     const safeData = escapeData(data as Record<string, unknown>);
+
+    // ── Intentar push primero para templates elegibles ─────────────────────────
+    const pushCfgFn = PUSH_CONFIGS[template];
+    if (pushCfgFn) {
+      const pushCfg = pushCfgFn(safeData, APP_URL);
+      const targets = Array.isArray(to) ? (to as string[]) : [to as string];
+      let pushSent = 0;
+      for (const email of targets) {
+        pushSent += await tryPush(SUPA_URL, SUPA_KEY, email, pushCfg);
+      }
+      if (pushSent > 0) {
+        console.log(`Push delivered | template=${template} | to=${targets.join(",")} | sent=${pushSent}`);
+        return new Response(
+          JSON.stringify({ ok: true, channel: "push", sent: pushSent }),
+          { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      // sent=0 → sin subscripción activa → continuar con email como fallback
+    }
+
+    // ── Enviar email ───────────────────────────────────────────────────────────
+    if (!RESEND_KEY) {
+      return new Response(
+        JSON.stringify({ error: "RESEND_API_KEY no configurado", code: "NO_KEY" }),
+        { status: 503, headers: { ...CORS, "Content-Type": "application/json" } }
+      );
+    }
+
     const { subject, html } = tplFn(safeData, APP_URL);
     const htmlFinal = html.replace(/\{APP_URL\}/g, APP_URL);
 
@@ -551,10 +649,10 @@ Deno.serve(async (req) => {
       throw new Error(result.message ?? `Resend error ${res.status}`);
     }
 
-    console.log(`Email sent | template=${template} | to=${Array.isArray(to)?to.join(","):to} | from=${FROM_EMAIL} | id=${result.id}`);
+    console.log(`Email sent | template=${template} | to=${Array.isArray(to)?to.join(","):to} | id=${result.id}`);
 
     return new Response(
-      JSON.stringify({ ok: true, id: result.id }),
+      JSON.stringify({ ok: true, channel: "email", id: result.id }),
       { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
     );
 

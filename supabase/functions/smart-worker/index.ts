@@ -24,6 +24,21 @@ const RESEND_KEY  = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL  = Deno.env.get("FROM_EMAIL") ?? "hola@luderis.com";
 const APP_URL     = Deno.env.get("APP_URL") ?? "https://luderis.com";
 
+// Intenta push via send-push. Retorna cantidad de subscripciones que recibieron.
+const tryPush = async (email: string, title: string, body: string, tag: string): Promise<number> => {
+  if (!SUPA_URL || !SERVICE_KEY) return 0;
+  try {
+    const res = await fetch(`${SUPA_URL}/functions/v1/send-push`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ to: email, title, body, url: APP_URL, tag }),
+    });
+    if (!res.ok) return 0;
+    const j = await res.json();
+    return (j.sent as number) ?? 0;
+  } catch { return 0; }
+};
+
 const supa = async (path: string, method = "GET", body: unknown = null) => {
   const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
     method,
@@ -131,9 +146,10 @@ Deno.serve(async (req) => {
 <body style="margin:0;padding:0;background:#F6F9FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
   <div style="max-width:600px;margin:0 auto;padding:32px 16px">
     <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,110,216,.08);border:1px solid #DDE5F5">
-      <div style="background:linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0);padding:32px 40px;text-align:center">
-        <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800">⏰ Recordatorio de clase</h1>
-        <p style="color:rgba(255,255,255,.8);margin:8px 0 0;font-size:14px">Tu clase es mañana</p>
+      <div style="background:linear-gradient(160deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%);padding:32px 40px;text-align:center">
+        <img src="https://classelink.vercel.app/logo.png" width="56" height="56" style="border-radius:14px;display:block;margin:0 auto 10px" alt=""/>
+        <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;letter-spacing:-.5px">Luderis</h1>
+        <p style="color:rgba(255,255,255,.75);margin:6px 0 0;font-size:13px">⏰ Recordatorio de clase</p>
       </div>
       <div style="padding:32px 40px">
         <h2 style="color:#0D1F3C;font-size:20px;margin:0 0 16px">${pub.titulo}</h2>
@@ -165,11 +181,16 @@ Deno.serve(async (req) => {
   </div>
 </body></html>`;
 
-          await sendEmail(
+          // Push primero; email solo si no hay subscripción activa
+          const pushSent = await tryPush(
             insc.alumno_email,
-            `⏰ Recordatorio: "${pub.titulo}" es mañana`,
-            html
+            `⏰ Tu clase es mañana`,
+            `${pub.titulo} — ${fechaFormateada}${hora}`,
+            `recordatorio-${pub.id}`
           );
+          if (pushSent === 0) {
+            await sendEmail(insc.alumno_email, `⏰ Recordatorio: "${pub.titulo}" es mañana`, html);
+          }
           enviados++;
         }
 
@@ -179,9 +200,10 @@ Deno.serve(async (req) => {
 <body style="margin:0;padding:0;background:#F6F9FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
   <div style="max-width:600px;margin:0 auto;padding:32px 16px">
     <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,110,216,.08);border:1px solid #DDE5F5">
-      <div style="background:linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0);padding:32px 40px;text-align:center">
-        <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800">📋 Tus clases de mañana</h1>
-        <p style="color:rgba(255,255,255,.8);margin:8px 0 0;font-size:14px">Tenés ${inscripciones.length} alumno${inscripciones.length !== 1 ? "s" : ""} inscripto${inscripciones.length !== 1 ? "s" : ""}</p>
+      <div style="background:linear-gradient(160deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%);padding:32px 40px;text-align:center">
+        <img src="https://classelink.vercel.app/logo.png" width="56" height="56" style="border-radius:14px;display:block;margin:0 auto 10px" alt=""/>
+        <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;letter-spacing:-.5px">Luderis</h1>
+        <p style="color:rgba(255,255,255,.75);margin:6px 0 0;font-size:13px">📋 Tus clases de mañana · ${inscripciones.length} alumno${inscripciones.length !== 1 ? "s" : ""} inscripto${inscripciones.length !== 1 ? "s" : ""}</p>
       </div>
       <div style="padding:32px 40px">
         <h2 style="color:#0D1F3C;font-size:20px;margin:0 0 16px">${pub.titulo}</h2>
@@ -203,11 +225,16 @@ Deno.serve(async (req) => {
   </div>
 </body></html>`;
 
-        await sendEmail(
+        // Push primero al docente; email si no tiene subscripción
+        const pushDoc = await tryPush(
           pub.autor_email,
-          `📋 Tenés clases mañana — "${pub.titulo}"`,
-          htmlDocente
+          `📋 Tus clases de mañana`,
+          `${inscripciones.length} alumno${inscripciones.length !== 1 ? "s" : ""} en "${pub.titulo}"`,
+          `recordatorio-doc-${pub.id}`
         );
+        if (pushDoc === 0) {
+          await sendEmail(pub.autor_email, `📋 Tenés clases mañana — "${pub.titulo}"`, htmlDocente);
+        }
         enviados++;
 
       } catch (e) {
