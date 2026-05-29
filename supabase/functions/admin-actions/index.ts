@@ -129,23 +129,34 @@ serve(async (req) => {
       await adminClient.from("publicaciones").delete().eq("id", pub_id);
 
     } else if (action === "enviar_anuncio") {
-      const { titulo, mensaje, tipo } = params;
+      const { titulo, mensaje, tipo, enviada_por } = params;
       if (!titulo || !mensaje) throw new Error("titulo y mensaje requeridos");
-      // Insertar notificación global (todos los usuarios)
-      const { data: usuarios } = await adminClient.from("usuarios").select("id");
-      if (usuarios && usuarios.length > 0) {
-        const notifs = usuarios.map((u: { id: string }) => ({
-          usuario_id: u.id,
-          tipo: tipo || "anuncio",
-          titulo,
-          mensaje,
+      // Fetch all users — necesitamos id Y email para alumno_email
+      const { data: usuarios } = await adminClient.from("usuarios").select("id, email");
+      const count = usuarios?.length ?? 0;
+      if (usuarios && count > 0) {
+        const pubTitulo = `${titulo} — ${mensaje}`.slice(0, 255);
+        const notifs = (usuarios as Array<{ id: string; email: string }>).map(u => ({
+          usuario_id:    u.id,
+          alumno_email:  u.email,   // sin esto la notif nunca aparece en el panel
+          tipo:          "sistema", // consistente con TIPO_INFO del frontend
+          pub_titulo:    pubTitulo,
+          leida:         false,
         }));
         // Insertar en lotes de 500
         for (let i = 0; i < notifs.length; i += 500) {
           await adminClient.from("notificaciones").insert(notifs.slice(i, i + 500));
         }
       }
-      result = { ok: true, total: usuarios?.length ?? 0 };
+      // Guardar en historial para el panel de admin
+      await adminClient.from("anuncios_globales").insert({
+        titulo,
+        mensaje,
+        tipo:          tipo ?? "info",
+        enviada_por:   enviada_por ?? user.email,
+        destinatarios: count,
+      }).catch(() => null); // silencioso si la tabla no existe aún
+      result = { ok: true, destinatarios: count };
 
     } else if (action === "aprobar_docente") {
       const { user_id } = params;

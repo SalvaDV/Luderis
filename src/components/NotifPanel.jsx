@@ -44,9 +44,15 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     alerta_busqueda:{Icon:Bell,color:"#1A6ED8",label:"Nueva clase disponible"},
     pago_aprobado_mp:{Icon:CreditCard,color:"#009EE3",label:"Pago aprobado"},
     sistema:{Icon:Megaphone,color:"#7B3FBE",label:"Anuncio de Luderis"},
-    alerta_contacto:{Icon:VolumeX,color:"#c62828",label:"Alerta de moderación"},
-    nueva_pregunta:{Icon:HelpCircle,color:"#1565c0",label:"Nueva pregunta en tu publicación"},
+    alerta_contacto:   {Icon:VolumeX,   color:"#c62828",label:"Alerta de moderación"},
+    nueva_pregunta:    {Icon:HelpCircle,color:"#1565c0",label:"Nueva pregunta en tu publicación"},
     pregunta_respondida:{Icon:CheckCircle,color:"#2e7d32",label:"Tu pregunta fue respondida"},
+    retiro_procesado:  {Icon:CreditCard, color:"#2EC4A0",label:"Retiro procesado"},
+    retiro_rechazado:  {Icon:XCircle,    color:"#E53E3E",label:"Retiro rechazado"},
+    retiro_solicitado: {Icon:CreditCard, color:"#F59E0B",label:"Solicitud de retiro recibida"},
+    busqueda_acordada: {Icon:CheckCircle,color:"#2EC4A0",label:"Búsqueda acordada"},
+    busqueda_eliminada:{Icon:XCircle,    color:"#E53E3E",label:"Búsqueda eliminada"},
+    acuerdo_confirmado:{Icon:CheckCircle,color:"#2EC4A0",label:"Acuerdo confirmado"},
   };
 
   const tabs=[

@@ -464,14 +464,14 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
 
         // Notificar a todos los admins que hay un nuevo docente pendiente de verificación
         try{
-          const admins=await sb.db("usuarios?rol=eq.admin&select=id","GET",null,session.access_token).catch(()=>[]);
+          const admins=await sb.db("usuarios?rol=eq.admin&select=id,email","GET",null,session.access_token).catch(()=>[]);
           if(admins?.length){
             await sb.db("notificaciones","POST",
               admins.map(a=>({
                 usuario_id:a.id,
                 tipo:"sistema",
-                pub_titulo:`Nuevo docente pendiente: ${session.user.email}`,
-                alumno_email:session.user.email,
+                pub_titulo:`Nuevo docente pendiente de verificación: ${session.user.email}`,
+                alumno_email:a.email, // email del admin, no del solicitante
                 leida:false,
               })),
               session.access_token,"return=minimal");

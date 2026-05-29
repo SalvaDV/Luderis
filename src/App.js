@@ -283,7 +283,7 @@ export default function App(){
   // Función para abrir el panel de notificaciones (pasada como prop a Sidebar)
   const openNotifPanel=useCallback(()=>setNotifPanelOpen(v=>!v),[]);
   // Tipos de notif que alimentan cada badge
-  const TIPOS_CUENTA=["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema"];
+  const TIPOS_CUENTA=["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema","retiro_procesado","retiro_rechazado"];
   const TIPOS_INSC=["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido","clase_iniciada"];
   // Badge Actividad: MiCuentaPage llama esto al abrir la tab → marca como leídas en DB
   useEffect(()=>{
@@ -599,7 +599,7 @@ export default function App(){
       // Push para notificaciones nuevas
       if(notifsCuenta.length>0&&document.hidden&&window.__pushNotif){
         const lastNotif=notifsCuenta[0];
-        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta",oferta_rechazada:"❌ Oferta rechazada",contraoferta:"🔄 Contraoferta recibida"};
+        const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta",oferta_rechazada:"❌ Oferta rechazada",contraoferta:"🔄 Contraoferta recibida",retiro_procesado:"💰 Retiro procesado",retiro_rechazado:"❌ Retiro rechazado"};
         window.__pushNotif(
           LABELS[lastNotif.tipo]||"🔔 Notificación",
           lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis",
@@ -627,9 +627,15 @@ export default function App(){
       valorar_curso:{icon:"⭐",label:"Valorar curso",type:"info"},
       pago_aprobado_mp:{icon:"💳",label:"Pago aprobado",type:"success"},
       sistema:{icon:"📣",label:"Anuncio de Luderis",type:"info"},
-      nueva_pregunta:{icon:"❓",label:"Nueva pregunta en tu publicación",type:"info"},
+      nueva_pregunta:    {icon:"❓",label:"Nueva pregunta en tu publicación",type:"info"},
       pregunta_respondida:{icon:"✅",label:"Tu pregunta fue respondida",type:"success"},
-      alerta_contacto:{icon:"🔇",label:"Alerta de moderación",type:"error"},
+      alerta_contacto:   {icon:"🔇",label:"Alerta de moderación",type:"error"},
+      retiro_procesado:  {icon:"💰",label:"Retiro procesado",type:"success"},
+      retiro_rechazado:  {icon:"❌",label:"Retiro rechazado",type:"error"},
+      retiro_solicitado: {icon:"💳",label:"Solicitud de retiro recibida",type:"info"},
+      busqueda_acordada: {icon:"🤝",label:"Búsqueda acordada",type:"success"},
+      busqueda_eliminada:{icon:"❌",label:"Búsqueda eliminada",type:"error"},
+      acuerdo_confirmado:{icon:"🤝",label:"Acuerdo confirmado",type:"success"},
     };
     let ws,heartbeat,dead=false,retries=0;
     const MAX_RETRIES=5;
