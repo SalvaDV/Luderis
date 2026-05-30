@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as sb from "./supabase";
 import { C, FONT, LUD, t, Btn, logError } from "./shared";
 import { trackRegister, trackLogin } from "./analytics";
+import { User, GraduationCap, Sparkles, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 const ORB_VARIANTS={animate:(i)=>({
   y:[0,-18,0],x:[0,i%2===0?8:-8,0],
@@ -183,9 +184,9 @@ function AuthScreen({onLogin}){
         <motion.div variants={CONTAINER} initial="initial" animate="animate"
           style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:10}}>
           {[
-            {n:"Clases particulares",d:"Encontrá tu docente ideal",icon:"👤"},
-            {n:"Cursos completos",d:"Con evaluaciones y certificados",icon:"🎓"},
-            {n:"Búsqueda con IA",d:"Te encuentra lo mejor",icon:"✦"},
+            {n:"Clases particulares",d:"Encontrá tu docente ideal",icon:<User size={14} strokeWidth={2}/>},
+            {n:"Cursos completos",d:"Con evaluaciones y certificados",icon:<GraduationCap size={14} strokeWidth={2}/>},
+            {n:"Búsqueda con IA",d:"Te encuentra lo mejor",icon:<Sparkles size={14} strokeWidth={2}/>},
           ].map(({n,d,icon})=>(
             <motion.div key={n} variants={FEATURE_ITEM}
               style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.09)",borderRadius:14,padding:"12px 16px",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.1)"}}>
@@ -260,7 +261,7 @@ function AuthScreen({onLogin}){
               {mode==="forgot"?(
                 <>
                   <input type="email" placeholder="tu@email.com" value={email} onChange={e=>setEmail(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI}/>
-                  {err&&<div style={{color:"#E53E3E",fontSize:12,marginBottom:10,display:"flex",gap:5,alignItems:"center"}}>⚠ {err}</div>}
+                  {err&&<div style={{color:"#E53E3E",fontSize:12,marginBottom:10,display:"flex",gap:5,alignItems:"center"}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0}}/>{err}</div>}
                   {ok&&<div style={{color:"#2E7D52",fontSize:13,marginBottom:10,background:"#E8F5EE",borderRadius:8,padding:"8px 12px"}}>{ok}</div>}
                   <motion.button onClick={handle} disabled={loading} whileHover={{scale:1.01}} whileTap={{scale:.98}}
                     style={{width:"100%",background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:FONT,marginBottom:14,opacity:loading?.6:1,boxShadow:"0 4px 14px rgba(26,110,216,.3)"}}>
@@ -280,8 +281,8 @@ function AuthScreen({onLogin}){
                       style={{...iS,marginBottom:0,paddingRight:40}}
                       onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                     <button type="button" onClick={()=>setShowPass(v=>!v)}
-                      style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",fontSize:15,padding:0,lineHeight:1}}>
-                      {showPass?"🙈":"👁"}
+                      style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",padding:0,lineHeight:1,display:"flex"}}>
+                      {showPass?<EyeOff size={15}/>:<Eye size={15}/>}
                     </button>
                   </div>
                   {/* Medidor de fortaleza — solo en registro */}
@@ -304,8 +305,8 @@ function AuthScreen({onLogin}){
                         style={{...iS,marginBottom:0,paddingRight:40}}
                         onFocus={focusI} onBlur={blurI}/>
                       <button type="button" onClick={()=>setShowPass2(v=>!v)}
-                        style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",fontSize:15,padding:0,lineHeight:1}}>
-                        {showPass2?"🙈":"👁"}
+                        style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",padding:0,lineHeight:1,display:"flex"}}>
+                        {showPass2?<EyeOff size={15}/>:<Eye size={15}/>}
                       </button>
                     </div>
                   )}
@@ -329,7 +330,7 @@ function AuthScreen({onLogin}){
                       </span>
                     </div>
                   )}
-                  {err&&<motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} style={{color:"#E53E3E",fontSize:12,marginBottom:12,display:"flex",gap:5,alignItems:"center"}}>⚠ {err}</motion.div>}
+                  {err&&<motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} style={{color:"#E53E3E",fontSize:12,marginBottom:12,display:"flex",gap:5,alignItems:"center"}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0}}/>{err}</motion.div>}
                   {ok&&<motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} style={{color:"#2E7D52",fontSize:13,marginBottom:12,background:"#E8F5EE",borderRadius:8,padding:"9px 12px"}}>{ok}</motion.div>}
                   <motion.button onClick={handle} disabled={loading||(mode==="register"&&!aceptoTerminos)} whileHover={{scale:1.01,boxShadow:"0 6px 24px rgba(26,110,216,.4)"}} whileTap={{scale:.98}}
                     style={{width:"100%",background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:FONT,marginBottom:14,

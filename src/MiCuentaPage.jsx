@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Trophy } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Trophy, Megaphone, MessageCircle, Video, ExternalLink, Send } from "lucide-react";
 import * as sb from "./supabase";
 import {
   C, FONT, toast,
@@ -173,7 +173,7 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
 
   if(todasOfertas.length===0)return(
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px 20px",marginBottom:20,textAlign:"center"}}>
-      <div style={{fontSize:28,marginBottom:8}}>📣</div>
+      <div style={{marginBottom:8,color:C.muted}}><Megaphone size={28} strokeWidth={1.5}/></div>
       <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:6}}>Publicá tu primera clase</div>
       <div style={{color:C.muted,fontSize:13,marginBottom:16}}>Una vez que publiques, acá vas a ver tus estadísticas de ingresos y alumnos.</div>
     </div>
@@ -715,8 +715,8 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
               <button onClick={aceptar} disabled={saving} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:10,color:C.success,padding:"11px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,opacity:saving?0.5:1}}>
                 ✓ Aceptar y acordar
               </button>
-              {onChat&&<button onClick={()=>{cerrar();onChat(oferta);}} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,color:C.accent,padding:"11px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>
-                💬 Negociar por chat
+              {onChat&&<button onClick={()=>{cerrar();onChat(oferta);}} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,color:C.accent,padding:"11px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <MessageCircle size={14} strokeWidth={2}/> Negociar por chat
               </button>}
               <button onClick={rechazar} disabled={saving} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:10,color:C.danger,padding:"11px",cursor:"pointer",fontSize:13,fontFamily:FONT,opacity:saving?0.5:1}}>
                 ✗ Rechazar
@@ -791,7 +791,7 @@ function ClasesTab({session,misPubs}){
     try{
       await sb.liberarPagoClase(clase.id,session.access_token);
       setLiberados(prev=>({...prev,[clase.id]:true}));
-      toast("💰 Pago liberado al docente","success");
+      toast("Pago liberado al docente","success");
     }catch(e){toast("Error al liberar: "+e.message,"error");}finally{setLiberando(null);}
   };
 
@@ -943,7 +943,7 @@ function PagosTab({session}){
   useEffect(()=>{
     const p=new URLSearchParams(window.location.search);
     const r=p.get("mp_connect");
-    if(r==="success"){toast("✅ Mercado Pago conectado correctamente","success");cargar();}
+    if(r==="success"){toast("Mercado Pago conectado correctamente","success");cargar();}
     if(r==="error"){toast("Error al conectar Mercado Pago. Intentá de nuevo.","error");}
     if(r){const u=new URL(window.location.href);u.searchParams.delete("mp_connect");window.history.replaceState({},"",u);}
   },[]);// eslint-disable-line
@@ -1403,12 +1403,12 @@ ${refUrl}`;
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <button onClick={compartirWhatsApp}
             style={{display:"flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:"#25D36615",border:"1px solid #25D36640",color:"#25D366",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
-            💬 WhatsApp
+            <MessageCircle size={14} strokeWidth={2}/>WhatsApp
           </button>
-          <a href={`https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${encodeURIComponent("¡Sumate a Luderis! La plataforma para aprender y enseñar en Argentina 🎓")}`}
+          <a href={`https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${encodeURIComponent("¡Sumate a Luderis! La plataforma para aprender y enseñar en Argentina")}`}
             target="_blank" rel="noreferrer"
             style={{display:"flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:"#0088cc15",border:"1px solid #0088cc40",color:"#0088cc",fontWeight:600,fontSize:13,textDecoration:"none",fontFamily:FONT}}>
-            ✈️ Telegram
+            <Send size={13} strokeWidth={2}/>Telegram
           </a>
           <a href={`mailto:?subject=${encodeURIComponent("Te invito a Luderis")}&body=${encodeURIComponent("¡Hola! Te invito a Luderis. Registrate con mi link: "+refUrl)}`}
             style={{display:"flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:C.accentDim,border:`1px solid ${C.accent}40`,color:C.accent,fontWeight:600,fontSize:13,textDecoration:"none",fontFamily:FONT}}>
@@ -1630,7 +1630,7 @@ function AlertasTab({session}){
         activa:true,
       },session.access_token,"return=representation");
       setDesc("");setShowForm(false);
-      toast("Alerta creada. Te avisaremos cuando aparezca algo similar 🔔","success",4000);
+      toast("Alerta creada. Te avisaremos cuando aparezca algo similar","success",4000);
       cargar();
     }catch(e){toast("Error al crear la alerta: "+e.message,"error");}
     finally{setSaving(false);}
@@ -2044,7 +2044,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 <StreakBadge session={session}/>
               </div>
               {bio&&<p style={{color:C.muted,fontSize:13,margin:"4px 0 0",lineHeight:1.5}}>{bio}</p>}
-              {ubicacionPerfil&&<div style={{color:C.muted,fontSize:12,marginTop:4}}>📍 {ubicacionPerfil}</div>}
+              {ubicacionPerfil&&<div style={{color:C.muted,fontSize:12,marginTop:4,display:"flex",alignItems:"center",gap:3}}><MapPin size={11} strokeWidth={2}/>{ubicacionPerfil}</div>}
               <div style={{display:"flex",gap:12,marginTop:8,flexWrap:"wrap"}}>
                 <span style={{fontSize:13,color:C.muted}}><span style={{color:C.text,fontWeight:600}}>{pubs.length}</span> publicaciones</span>
                 <span style={{fontSize:13,color:C.muted}}><span style={{color:C.text,fontWeight:600}}>{reseñas.length}</span> reseñas</span>
@@ -2091,7 +2091,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 <span style={{position:"absolute",bottom:6,right:10,fontSize:10,color:bio.length>=200?C.danger:C.muted}}>{bio.length}/200</span>
               </div>
               <div>
-                <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>🎬 Video de presentación (YouTube)</label>
+                <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"flex",alignItems:"center",gap:4,marginBottom:4}}><Video size={12} strokeWidth={2}/>Video de presentación (YouTube)</label>
                 <input value={videoPresentacion} onChange={e=>setVideoPresentacion(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 <div style={{fontSize:10,color:C.muted,marginTop:3}}>Se muestra en tu perfil público.</div>
               </div>
@@ -2154,7 +2154,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                   <button onClick={()=>setDisponibleAhora(v=>!v)} style={{width:38,height:22,borderRadius:11,background:disponibleAhora?C.success:C.border,border:"none",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,padding:0}}>
                     <span style={{position:"absolute",top:3,left:disponibleAhora?18:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",display:"block",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
                   </button>
-                  <label style={{fontSize:13,color:disponibleAhora?C.success:C.text,fontWeight:600,cursor:"pointer"}} onClick={()=>setDisponibleAhora(v=>!v)}>🟢 Estoy disponible ahora</label>
+                  <label style={{fontSize:13,color:disponibleAhora?C.success:C.text,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}} onClick={()=>setDisponibleAhora(v=>!v)}>{disponibleAhora&&<span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:C.success,flexShrink:0}}/>}Estoy disponible ahora</label>
                 </div>
                 {disponibleAhora&&(
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -2465,9 +2465,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                   <div style={{fontWeight:600,color:C.text,fontSize:14}}>{d.titulo}</div>
                   {d.institucion&&<div style={{color:C.muted,fontSize:12,marginTop:2}}>{d.institucion}</div>}
                   {d.año&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{d.año}</div>}
-                  {d.pais&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>🌎 {d.pais}</div>}
+                  {d.pais&&<div style={{color:C.muted,fontSize:11,marginTop:2,display:"flex",alignItems:"center",gap:3}}><Globe size={10} strokeWidth={2}/>{d.pais}</div>}
                   {d.descripcion&&<div style={{color:C.muted,fontSize:12,marginTop:6,lineHeight:1.5}}>{d.descripcion}</div>}
-                  {safeUrl(d.url_verificacion)&&<a href={safeUrl(d.url_verificacion)} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:C.accent,marginTop:4,display:"inline-flex",alignItems:"center",gap:4}}>🔗 Verificar credencial</a>}
+                  {safeUrl(d.url_verificacion)&&<a href={safeUrl(d.url_verificacion)} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:C.accent,marginTop:4,display:"inline-flex",alignItems:"center",gap:4}}><ExternalLink size={11} strokeWidth={2}/>Verificar credencial</a>}
                 </div>
                 <button onClick={()=>removeDoc(d.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,cursor:"pointer",fontSize:12,padding:"4px 9px",flexShrink:0,transition:"all .12s"}}
                   onMouseEnter={e=>{e.currentTarget.style.color=C.danger;e.currentTarget.style.borderColor=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}>Eliminar</button>

@@ -29,6 +29,7 @@ import ShareBtn, { useShareToast } from "./components/ShareBtn";
 import OfertarBtn from "./components/OfertarBtn";
 import PostCard from "./components/PostCard";
 import Sidebar from "./components/Sidebar";
+import { User, GraduationCap, Sparkles } from "lucide-react";
 import ScrollToTopBtn from "./components/ScrollToTopBtn";
 import CookieBanner from "./components/CookieBanner";
 import UpdateBanner from "./components/UpdateBanner";
@@ -139,9 +140,9 @@ function ResetPasswordScreen({ accessToken, onSuccess, onCancel }) {
         </div>
         <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:10}}>
           {[
-            {n:"Clases particulares",d:"Encontrá tu docente ideal",icon:"👤"},
-            {n:"Cursos completos",d:"Con evaluaciones y certificados",icon:"🎓"},
-            {n:"Búsqueda con IA",d:"Te encuentra lo mejor",icon:"✦"},
+            {n:"Clases particulares",d:"Encontrá tu docente ideal",icon:<User size={14} strokeWidth={2}/>},
+            {n:"Cursos completos",d:"Con evaluaciones y certificados",icon:<GraduationCap size={14} strokeWidth={2}/>},
+            {n:"Búsqueda con IA",d:"Te encuentra lo mejor",icon:<Sparkles size={14} strokeWidth={2}/>},
           ].map(({n,d,icon})=>(
             <div key={n} style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.09)",borderRadius:14,padding:"12px 16px",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.1)"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,color:"#fff"}}>{icon}</div>
