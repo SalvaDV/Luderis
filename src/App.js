@@ -265,7 +265,7 @@ export default function App(){
   useEffect(()=>{
     if(cursoPost||detailPost){
       const pub=cursoPost||detailPost;
-      document.title=`${pub.titulo} — Luderis`;
+      document.title=`Luderis | ${pub.titulo}`;
       let meta=document.querySelector("meta[name='description']");
       if(!meta){meta=document.createElement("meta");meta.name="description";document.head.appendChild(meta);}
       meta.content=((pub.descripcion||"").slice(0,155))||`Clases de ${pub.materia||"educación"} en Luderis`;
@@ -724,9 +724,9 @@ export default function App(){
     if(page==="faros")trackFarosPlay();
   },[page]);// eslint-disable-line
 
-  const PAGE_TITLES={explore:"Explorar — Luderis",chats:"Mis chats — Luderis",favoritos:"Favoritos — Luderis",inscripciones:"Mis inscripciones — Luderis",cuenta:"Mi cuenta — Luderis"};
+  const PAGE_TITLES={explore:"Luderis",agenda:"Luderis | Agenda",chats:"Luderis | Chats",favoritos:"Luderis | Favoritos",inscripciones:"Luderis | Mis clases",cuenta:"Luderis | Mi cuenta",juegos:"Luderis | Juegos",faros:"Luderis | Faros",shikaku:"Luderis | Shikaku"};
   useEffect(()=>{
-    document.title=PAGE_TITLES[page]||"Luderis — Aprendé y enseñá lo que quieras";
+    document.title=PAGE_TITLES[page]||"Luderis";
     // Update meta description per page
     const descs={
       explore:"Explorá clases particulares, cursos online y presenciales en Argentina. Matemática, inglés, guitarra, programación y mucho más.",

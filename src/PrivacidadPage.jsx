@@ -144,7 +144,7 @@ export default function PrivacidadPage() {
   const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
-    document.title = "Política de Privacidad — Luderis";
+    document.title = "Luderis | Privacidad";
     const handler = () => {
       const sections = SECCIONES.map(s => document.getElementById(s.id)).filter(Boolean);
       const scrollY = window.scrollY + 120;

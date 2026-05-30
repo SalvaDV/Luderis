@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 
 const FONT = "'Inter','Segoe UI',system-ui,sans-serif";
 const ACCENT = "#7B3FBE";
@@ -13,17 +13,17 @@ const DANGER = "#C53030";
 
 const SECCIONES = [
   { id: "s1",  titulo: "1. Principios Generales" },
-  { id: "s2",  titulo: "2. Casos en que aplica una devolución" },
-  { id: "s3",  titulo: "3. Casos en que NO aplica una devolución" },
-  { id: "s4",  titulo: "4. Cómo solicitar una devolución" },
-  { id: "s5",  titulo: "5. Plazos y proceso de revisión" },
-  { id: "s6",  titulo: "6. Formas de devolución" },
+  { id: "s2",  titulo: "2. Casos en que aplica una devoluciÃ³n" },
+  { id: "s3",  titulo: "3. Casos en que NO aplica una devoluciÃ³n" },
+  { id: "s4",  titulo: "4. CÃ³mo solicitar una devoluciÃ³n" },
+  { id: "s5",  titulo: "5. Plazos y proceso de revisiÃ³n" },
+  { id: "s6",  titulo: "6. Formas de devoluciÃ³n" },
   { id: "s7",  titulo: "7. Pagos con MercadoPago" },
   { id: "s8",  titulo: "8. Pagos con Stripe" },
-  { id: "s9",  titulo: "9. Disputas y mediación" },
+  { id: "s9",  titulo: "9. Disputas y mediaciÃ³n" },
   { id: "s10", titulo: "10. Responsabilidad del Docente" },
   { id: "s11", titulo: "11. Abusos del sistema de devoluciones" },
-  { id: "s12", titulo: "12. Modificaciones de esta política" },
+  { id: "s12", titulo: "12. Modificaciones de esta polÃ­tica" },
   { id: "s13", titulo: "13. Contacto" },
 ];
 
@@ -85,11 +85,11 @@ function Badge({ type, children }) {
 
 function TablaPlazos() {
   const rows = [
-    { motivo: "Error de la plataforma (cobro duplicado, error técnico)", plazo: "24–48 hs", resultado: "Devolución automática" },
-    { motivo: "Clase cancelada por el Docente", plazo: "2–5 días hábiles", resultado: "Devolución completa" },
-    { motivo: "Clase no iniciada (sin aviso previo del Docente)", plazo: "2–5 días hábiles", resultado: "Devolución completa" },
-    { motivo: "Contenido engañoso verificado", plazo: "5–10 días hábiles", resultado: "Devolución completa o parcial" },
-    { motivo: "Acuerdo mutuo entre Alumno y Docente", plazo: "3–7 días hábiles", resultado: "Según lo acordado" },
+    { motivo: "Error de la plataforma (cobro duplicado, error tÃ©cnico)", plazo: "24â€“48 hs", resultado: "DevoluciÃ³n automÃ¡tica" },
+    { motivo: "Clase cancelada por el Docente", plazo: "2â€“5 dÃ­as hÃ¡biles", resultado: "DevoluciÃ³n completa" },
+    { motivo: "Clase no iniciada (sin aviso previo del Docente)", plazo: "2â€“5 dÃ­as hÃ¡biles", resultado: "DevoluciÃ³n completa" },
+    { motivo: "Contenido engaÃ±oso verificado", plazo: "5â€“10 dÃ­as hÃ¡biles", resultado: "DevoluciÃ³n completa o parcial" },
+    { motivo: "Acuerdo mutuo entre Alumno y Docente", plazo: "3â€“7 dÃ­as hÃ¡biles", resultado: "SegÃºn lo acordado" },
   ];
   return (
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
@@ -117,10 +117,10 @@ function TablaPlazos() {
 
 function PasosContacto() {
   const pasos = [
-    { n: "1", titulo: "Contactá a Luderis", desc: 'Enviá un email a contacto@luderis.com.ar con el asunto "Solicitud de devolución".' },
-    { n: "2", titulo: "Incluí los datos necesarios", desc: "Email de tu cuenta, nombre de la clase/curso, fecha de pago, monto abonado y motivo detallado de la solicitud." },
-    { n: "3", titulo: "Adjuntá evidencia", desc: "Capturas de pantalla, conversaciones del chat interno u otros elementos que respalden tu reclamo (si los tenés)." },
-    { n: "4", titulo: "Esperá la confirmación", desc: "Te enviaremos un acuse de recibo dentro de las 48 hs hábiles e iniciaremos el proceso de revisión." },
+    { n: "1", titulo: "ContactÃ¡ a Luderis", desc: 'EnviÃ¡ un email a contacto@luderis.com.ar con el asunto "Solicitud de devoluciÃ³n".' },
+    { n: "2", titulo: "IncluÃ­ los datos necesarios", desc: "Email de tu cuenta, nombre de la clase/curso, fecha de pago, monto abonado y motivo detallado de la solicitud." },
+    { n: "3", titulo: "AdjuntÃ¡ evidencia", desc: "Capturas de pantalla, conversaciones del chat interno u otros elementos que respalden tu reclamo (si los tenÃ©s)." },
+    { n: "4", titulo: "EsperÃ¡ la confirmaciÃ³n", desc: "Te enviaremos un acuse de recibo dentro de las 48 hs hÃ¡biles e iniciaremos el proceso de revisiÃ³n." },
   ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
@@ -152,7 +152,7 @@ export default function PoliticaDevoluciones() {
   const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
-    document.title = "Política de Devoluciones — Luderis";
+    document.title = “Luderis | Devoluciones”;
     const handler = () => {
       const sections = SECCIONES.map(s => document.getElementById(s.id)).filter(Boolean);
       const scrollY = window.scrollY + 120;
@@ -197,24 +197,24 @@ export default function PoliticaDevoluciones() {
               <button
                 onClick={() => setMenuOpen(v => !v)}
                 style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TEXT, padding: "4px 6px" }}
-              >☰</button>
+              >â˜°</button>
             )}
             <a href="/" style={{ textDecoration: "none" }}>
               <span style={{ fontSize: 20, fontWeight: 800, color: ACCENT, letterSpacing: "-.4px" }}>Luderis</span>
             </a>
             <span style={{ color: BORDER, fontSize: 18, margin: "0 4px" }}>|</span>
-            <span style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>Política de Devoluciones</span>
+            <span style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>PolÃ­tica de Devoluciones</span>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <a href="/terminos" style={{ fontSize: 12, color: MUTED, padding: "6px 10px" }}>
-              Términos y Condiciones
+              TÃ©rminos y Condiciones
             </a>
             <a href="/" style={{
               fontSize: 13, color: ACCENT, fontWeight: 600,
               padding: "6px 14px", border: `1px solid ${ACCENT}`,
               borderRadius: 20, textDecoration: "none"
             }}>
-              ← Volver a Luderis
+              â† Volver a Luderis
             </a>
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function PoliticaDevoluciones() {
           {menuOpen && (
             <button onClick={() => setMenuOpen(false)}
               style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TEXT, marginBottom: 16, display: "block" }}>
-              ✕ Cerrar
+              âœ• Cerrar
             </button>
           )}
           <div style={{
@@ -254,10 +254,10 @@ export default function PoliticaDevoluciones() {
               </button>
             ))}
             <div style={{ borderTop: `1px solid ${BORDER}`, margin: "12px 16px 0", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-              <a href="/terminos" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📄 Términos y Condiciones</a>
-              <a href="/consumidor" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>⚖️ Defensa al Consumidor</a>
-              <a href="/privacidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>🔒 Política de Privacidad</a>
-              <a href="/accesibilidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>♿ Accesibilidad</a>
+              <a href="/terminos" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ“„ TÃ©rminos y Condiciones</a>
+              <a href="/consumidor" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>âš–ï¸ Defensa al Consumidor</a>
+              <a href="/privacidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ”’ PolÃ­tica de Privacidad</a>
+              <a href="/accesibilidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>â™¿ Accesibilidad</a>
             </div>
           </div>
         </aside>
@@ -268,128 +268,128 @@ export default function PoliticaDevoluciones() {
           {/* Intro */}
           <div style={{ marginBottom: 48 }}>
             <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, marginBottom: 10, lineHeight: 1.2 }}>
-              Política de Devoluciones y Reembolsos
+              PolÃ­tica de Devoluciones y Reembolsos
             </h1>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>
-              <strong>Última actualización:</strong> Abril de 2026
+              <strong>Ãšltima actualizaciÃ³n:</strong> Abril de 2026
             </p>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 24 }}>
               <strong>Aplicable a:</strong> todas las transacciones realizadas en luderis.com.ar
             </p>
             <Badge type="info">
               En Luderis queremos que tanto Alumnos como Docentes tengan una experiencia justa.
-              Esta política explica con claridad en qué situaciones se puede solicitar un reembolso,
-              cómo hacerlo y qué esperar del proceso. Si tenés alguna duda,
+              Esta polÃ­tica explica con claridad en quÃ© situaciones se puede solicitar un reembolso,
+              cÃ³mo hacerlo y quÃ© esperar del proceso. Si tenÃ©s alguna duda,
               escribinos a <a href="mailto:contacto@luderis.com.ar">contacto@luderis.com.ar</a>.
             </Badge>
           </div>
 
-          {/* ── S1 ── */}
+          {/* â”€â”€ S1 â”€â”€ */}
           <Seccion id="s1" titulo="1. Principios Generales">
             <P>
-              Luderis actúa como intermediario tecnológico entre Alumnos y Docentes.
+              Luderis actÃºa como intermediario tecnolÃ³gico entre Alumnos y Docentes.
               Los pagos realizados en la Plataforma corresponden a servicios educativos brindados
               directamente por los Docentes, y no por Luderis.
             </P>
             <P>
-              Esta política se aplica a todos los pagos procesados a través de la Plataforma,
+              Esta polÃ­tica se aplica a todos los pagos procesados a travÃ©s de la Plataforma,
               ya sea mediante <strong>MercadoPago</strong> o <strong>Stripe</strong>.
-              Los pagos realizados fuera de Luderis (en efectivo, transferencia directa u otras vías)
-              <strong> no están cubiertos por esta política</strong> y Luderis no puede intervenir en ellos.
+              Los pagos realizados fuera de Luderis (en efectivo, transferencia directa u otras vÃ­as)
+              <strong> no estÃ¡n cubiertos por esta polÃ­tica</strong> y Luderis no puede intervenir en ellos.
             </P>
             <Badge type="warn">
-              ⚠️ Te recomendamos siempre realizar los pagos dentro de la plataforma.
-              Las transacciones externas no tienen protección de Luderis.
+              âš ï¸ Te recomendamos siempre realizar los pagos dentro de la plataforma.
+              Las transacciones externas no tienen protecciÃ³n de Luderis.
             </Badge>
             <P>
-              Las solicitudes de devolución son evaluadas caso por caso por el equipo de Luderis,
-              en base a los criterios establecidos en esta política y a la legislación argentina vigente,
-              especialmente la <strong>Ley N° 24.240 de Defensa del Consumidor</strong>.
+              Las solicitudes de devoluciÃ³n son evaluadas caso por caso por el equipo de Luderis,
+              en base a los criterios establecidos en esta polÃ­tica y a la legislaciÃ³n argentina vigente,
+              especialmente la <strong>Ley NÂ° 24.240 de Defensa del Consumidor</strong>.
             </P>
           </Seccion>
 
-          {/* ── S2 ── */}
-          <Seccion id="s2" titulo="2. Casos en que aplica una devolución">
-            <P>Luderis reconoce el derecho a solicitar una devolución en los siguientes casos:</P>
+          {/* â”€â”€ S2 â”€â”€ */}
+          <Seccion id="s2" titulo="2. Casos en que aplica una devoluciÃ³n">
+            <P>Luderis reconoce el derecho a solicitar una devoluciÃ³n en los siguientes casos:</P>
 
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: SUCCESS, margin: "16px 0 8px" }}>✅ Devolución completa</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: SUCCESS, margin: "16px 0 8px" }}>âœ… DevoluciÃ³n completa</h3>
             <Ul>
               <Li><strong>Clase o curso cancelado por el Docente</strong> sin aviso previo o sin ofrecerle al Alumno una alternativa aceptable.</Li>
-              <Li><strong>Clase no iniciada</strong>: el Docente no se presentó y no brindó acceso a los contenidos en el plazo acordado.</Li>
-              <Li><strong>Error técnico de la plataforma</strong>: el pago fue procesado pero el Alumno no pudo acceder a la clase por fallas de Luderis.</Li>
+              <Li><strong>Clase no iniciada</strong>: el Docente no se presentÃ³ y no brindÃ³ acceso a los contenidos en el plazo acordado.</Li>
+              <Li><strong>Error tÃ©cnico de la plataforma</strong>: el pago fue procesado pero el Alumno no pudo acceder a la clase por fallas de Luderis.</Li>
               <Li><strong>Cobro duplicado</strong>: se procesaron dos pagos por el mismo concepto.</Li>
-              <Li><strong>Derecho de arrepentimiento</strong>: si el pago fue realizado de forma remota (online), el Alumno puede solicitar la devolución dentro de las <strong>72 horas posteriores al pago</strong> y siempre que no haya comenzado a consumir el servicio, conforme al artículo 34 de la Ley N° 24.240.</Li>
+              <Li><strong>Derecho de arrepentimiento</strong>: si el pago fue realizado de forma remota (online), el Alumno puede solicitar la devoluciÃ³n dentro de las <strong>72 horas posteriores al pago</strong> y siempre que no haya comenzado a consumir el servicio, conforme al artÃ­culo 34 de la Ley NÂ° 24.240.</Li>
             </Ul>
 
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: WARN, margin: "16px 0 8px" }}>🔶 Devolución parcial (a evaluar)</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: WARN, margin: "16px 0 8px" }}>ðŸ”¶ DevoluciÃ³n parcial (a evaluar)</h3>
             <Ul>
-              <Li><strong>Contenido engañoso verificado</strong>: la descripción de la clase o curso no corresponde a lo efectivamente dictado, y el Alumno ya cursó parte del contenido.</Li>
-              <Li><strong>Interrupción parcial del servicio</strong>: el curso fue suspendido antes de finalizar sin causa justificada por parte del Docente, y ya se había dictado una parte.</Li>
-              <Li><strong>Acuerdo mutuo</strong>: Alumno y Docente acuerdan una devolución parcial y lo notifican a Luderis.</Li>
+              <Li><strong>Contenido engaÃ±oso verificado</strong>: la descripciÃ³n de la clase o curso no corresponde a lo efectivamente dictado, y el Alumno ya cursÃ³ parte del contenido.</Li>
+              <Li><strong>InterrupciÃ³n parcial del servicio</strong>: el curso fue suspendido antes de finalizar sin causa justificada por parte del Docente, y ya se habÃ­a dictado una parte.</Li>
+              <Li><strong>Acuerdo mutuo</strong>: Alumno y Docente acuerdan una devoluciÃ³n parcial y lo notifican a Luderis.</Li>
             </Ul>
           </Seccion>
 
-          {/* ── S3 ── */}
-          <Seccion id="s3" titulo="3. Casos en que NO aplica una devolución">
+          {/* â”€â”€ S3 â”€â”€ */}
+          <Seccion id="s3" titulo="3. Casos en que NO aplica una devoluciÃ³n">
             <Badge type="danger">
-              ❌ Las siguientes situaciones <strong>no generan derecho a devolución</strong> por parte de Luderis.
+              âŒ Las siguientes situaciones <strong>no generan derecho a devoluciÃ³n</strong> por parte de Luderis.
             </Badge>
             <Ul>
-              <Li>El Alumno asistió a la clase o accedió al contenido del curso y simplemente no le gustó o cambió de opinión.</Li>
-              <Li>El Alumno no se presentó a la clase o no accedió al contenido sin aviso previo al Docente.</Li>
-              <Li>El Alumno solicitó la devolución más de <strong>14 días corridos</strong> después de la fecha de la clase o del vencimiento del acceso al curso.</Li>
-              <Li>La insatisfacción se debe a expectativas personales no mencionadas en la descripción del curso.</Li>
+              <Li>El Alumno asistiÃ³ a la clase o accediÃ³ al contenido del curso y simplemente no le gustÃ³ o cambiÃ³ de opiniÃ³n.</Li>
+              <Li>El Alumno no se presentÃ³ a la clase o no accediÃ³ al contenido sin aviso previo al Docente.</Li>
+              <Li>El Alumno solicitÃ³ la devoluciÃ³n mÃ¡s de <strong>14 dÃ­as corridos</strong> despuÃ©s de la fecha de la clase o del vencimiento del acceso al curso.</Li>
+              <Li>La insatisfacciÃ³n se debe a expectativas personales no mencionadas en la descripciÃ³n del curso.</Li>
               <Li>El pago fue realizado fuera de la plataforma (efectivo, transferencia directa, etc.).</Li>
               <Li>El curso fue marcado como finalizado por el Docente y aceptado por el Alumno.</Li>
-              <Li>El reclamo fue presentado luego de que el Alumno haya dejado una reseña positiva sobre la clase.</Li>
-              <Li>Se detectó que el reclamo es fraudulento o abusivo (ver Sección 11).</Li>
+              <Li>El reclamo fue presentado luego de que el Alumno haya dejado una reseÃ±a positiva sobre la clase.</Li>
+              <Li>Se detectÃ³ que el reclamo es fraudulento o abusivo (ver SecciÃ³n 11).</Li>
             </Ul>
           </Seccion>
 
-          {/* ── S4 ── */}
-          <Seccion id="s4" titulo="4. Cómo solicitar una devolución">
-            <P>Para iniciar una solicitud de devolución, seguí estos pasos:</P>
+          {/* â”€â”€ S4 â”€â”€ */}
+          <Seccion id="s4" titulo="4. CÃ³mo solicitar una devoluciÃ³n">
+            <P>Para iniciar una solicitud de devoluciÃ³n, seguÃ­ estos pasos:</P>
             <PasosContacto />
             <Badge type="info">
-              📧 Email para solicitudes: <strong>contacto@luderis.com.ar</strong><br/>
-              Asunto recomendado: <strong>"Solicitud de devolución — [nombre del curso/clase]"</strong>
+              ðŸ“§ Email para solicitudes: <strong>contacto@luderis.com.ar</strong><br/>
+              Asunto recomendado: <strong>"Solicitud de devoluciÃ³n â€” [nombre del curso/clase]"</strong>
             </Badge>
             <P>
-              También podés contactarnos directamente desde la sección de <strong>Ayuda</strong> dentro de la aplicación,
-              si ya tenés una cuenta activa.
+              TambiÃ©n podÃ©s contactarnos directamente desde la secciÃ³n de <strong>Ayuda</strong> dentro de la aplicaciÃ³n,
+              si ya tenÃ©s una cuenta activa.
             </P>
           </Seccion>
 
-          {/* ── S5 ── */}
-          <Seccion id="s5" titulo="5. Plazos y proceso de revisión">
+          {/* â”€â”€ S5 â”€â”€ */}
+          <Seccion id="s5" titulo="5. Plazos y proceso de revisiÃ³n">
             <P>
-              Una vez recibida la solicitud, Luderis iniciará un proceso de revisión que incluye:
+              Una vez recibida la solicitud, Luderis iniciarÃ¡ un proceso de revisiÃ³n que incluye:
             </P>
             <Ul>
-              <Li>Verificación de los datos del pago en el sistema.</Li>
+              <Li>VerificaciÃ³n de los datos del pago en el sistema.</Li>
               <Li>Consulta al Docente involucrado (cuando corresponda).</Li>
-              <Li>Revisión de las conversaciones del chat interno (si aplica).</Li>
-              <Li>Evaluación según los criterios de esta política.</Li>
+              <Li>RevisiÃ³n de las conversaciones del chat interno (si aplica).</Li>
+              <Li>EvaluaciÃ³n segÃºn los criterios de esta polÃ­tica.</Li>
             </Ul>
-            <P>Los plazos estimados según el tipo de reclamo son:</P>
+            <P>Los plazos estimados segÃºn el tipo de reclamo son:</P>
             <TablaPlazos />
             <P style={{ fontSize: 13, color: MUTED }}>
-              * Los plazos son estimativos y pueden variar según la complejidad del caso y la disponibilidad de las partes.
-              En períodos de alto volumen de solicitudes, los plazos pueden extenderse hasta un máximo de 15 días hábiles.
+              * Los plazos son estimativos y pueden variar segÃºn la complejidad del caso y la disponibilidad de las partes.
+              En perÃ­odos de alto volumen de solicitudes, los plazos pueden extenderse hasta un mÃ¡ximo de 15 dÃ­as hÃ¡biles.
             </P>
           </Seccion>
 
-          {/* ── S6 ── */}
-          <Seccion id="s6" titulo="6. Formas de devolución">
+          {/* â”€â”€ S6 â”€â”€ */}
+          <Seccion id="s6" titulo="6. Formas de devoluciÃ³n">
             <P>Las devoluciones aprobadas se realizan siempre por el mismo medio de pago utilizado originalmente:</P>
             <Ul>
               <Li>
                 <strong>MercadoPago:</strong> el monto se acredita en el saldo de MercadoPago del Alumno.
-                El tiempo de acreditación depende de MercadoPago y puede tardar entre 2 y 15 días hábiles.
+                El tiempo de acreditaciÃ³n depende de MercadoPago y puede tardar entre 2 y 15 dÃ­as hÃ¡biles.
               </Li>
               <Li>
-                <strong>Stripe:</strong> el monto se devuelve al método de pago original (tarjeta de crédito/débito).
-                El tiempo de acreditación depende del banco emisor y puede tardar entre 5 y 10 días hábiles.
+                <strong>Stripe:</strong> el monto se devuelve al mÃ©todo de pago original (tarjeta de crÃ©dito/dÃ©bito).
+                El tiempo de acreditaciÃ³n depende del banco emisor y puede tardar entre 5 y 10 dÃ­as hÃ¡biles.
               </Li>
             </Ul>
             <P>
@@ -398,22 +398,22 @@ export default function PoliticaDevoluciones() {
             </P>
             <Badge type="warn">
               Las comisiones de los procesadores de pago (MercadoPago o Stripe) pueden no ser recuperables
-              dependiendo de la política de cada proveedor. En esos casos, la devolución será por el monto
+              dependiendo de la polÃ­tica de cada proveedor. En esos casos, la devoluciÃ³n serÃ¡ por el monto
               neto recibido por Luderis.
             </Badge>
           </Seccion>
 
-          {/* ── S7 ── */}
+          {/* â”€â”€ S7 â”€â”€ */}
           <Seccion id="s7" titulo="7. Pagos con MercadoPago">
             <P>
-              Los pagos procesados a través de MercadoPago están sujetos también a las políticas de
-              devolución y contracargos de MercadoPago. En caso de disputas iniciadas directamente
-              con MercadoPago (contracargo), Luderis cooperará en el proceso pero no garantiza
+              Los pagos procesados a travÃ©s de MercadoPago estÃ¡n sujetos tambiÃ©n a las polÃ­ticas de
+              devoluciÃ³n y contracargos de MercadoPago. En caso de disputas iniciadas directamente
+              con MercadoPago (contracargo), Luderis cooperarÃ¡ en el proceso pero no garantiza
               el resultado de la disputa.
             </P>
             <P>
-              Para operaciones con MercadoPago, recomendamos iniciar primero el reclamo a través de
-              Luderis antes de escalar a MercadoPago, ya que un proceso interno puede resolverse más rápido.
+              Para operaciones con MercadoPago, recomendamos iniciar primero el reclamo a travÃ©s de
+              Luderis antes de escalar a MercadoPago, ya que un proceso interno puede resolverse mÃ¡s rÃ¡pido.
             </P>
             <P>
               Los pagos en cuotas solo pueden ser devueltos de forma total, ya que MercadoPago
@@ -422,113 +422,113 @@ export default function PoliticaDevoluciones() {
             </P>
           </Seccion>
 
-          {/* ── S8 ── */}
+          {/* â”€â”€ S8 â”€â”€ */}
           <Seccion id="s8" titulo="8. Pagos con Stripe">
             <P>
-              Los pagos procesados a través de Stripe en moneda extranjera (USD u otras divisas)
-              serán devueltos en la misma moneda de origen, al tipo de cambio vigente al momento
+              Los pagos procesados a travÃ©s de Stripe en moneda extranjera (USD u otras divisas)
+              serÃ¡n devueltos en la misma moneda de origen, al tipo de cambio vigente al momento
               del reembolso. Luderis no se hace responsable por diferencias cambiarias entre la
-              fecha del pago y la fecha de la devolución.
+              fecha del pago y la fecha de la devoluciÃ³n.
             </P>
             <P>
-              Los Alumnos que hayan pagado con Stripe también pueden iniciar un proceso de disputa
+              Los Alumnos que hayan pagado con Stripe tambiÃ©n pueden iniciar un proceso de disputa
               (chargeback) directamente con su entidad bancaria o tarjeta. En ese caso, Stripe puede
               suspender temporalmente los fondos mientras dura la disputa, lo que puede afectar el
               pago al Docente.
             </P>
             <P>
               Recomendamos siempre contactar a Luderis primero antes de iniciar un chargeback,
-              ya que esto permite una resolución más ágil y evita costos adicionales.
+              ya que esto permite una resoluciÃ³n mÃ¡s Ã¡gil y evita costos adicionales.
             </P>
           </Seccion>
 
-          {/* ── S9 ── */}
-          <Seccion id="s9" titulo="9. Disputas y mediación">
+          {/* â”€â”€ S9 â”€â”€ */}
+          <Seccion id="s9" titulo="9. Disputas y mediaciÃ³n">
             <P>
               En caso de desacuerdo entre un Alumno y un Docente, Luderis puede actuar como
-              mediador para facilitar una solución. El proceso de mediación es:
+              mediador para facilitar una soluciÃ³n. El proceso de mediaciÃ³n es:
             </P>
             <Ul>
-              <Li>Voluntario para ambas partes, aunque Luderis puede requerirlo como condición para procesar una devolución.</Li>
-              <Li>Confidencial: las comunicaciones durante la mediación no serán divulgadas a terceros.</Li>
-              <Li>No vinculante: si no se llega a un acuerdo, Luderis tomará una decisión en base a las evidencias disponibles.</Li>
+              <Li>Voluntario para ambas partes, aunque Luderis puede requerirlo como condiciÃ³n para procesar una devoluciÃ³n.</Li>
+              <Li>Confidencial: las comunicaciones durante la mediaciÃ³n no serÃ¡n divulgadas a terceros.</Li>
+              <Li>No vinculante: si no se llega a un acuerdo, Luderis tomarÃ¡ una decisiÃ³n en base a las evidencias disponibles.</Li>
             </Ul>
             <P>
-              La decisión final de Luderis sobre una devolución es definitiva dentro del ámbito de
+              La decisiÃ³n final de Luderis sobre una devoluciÃ³n es definitiva dentro del Ã¡mbito de
               la plataforma. Los Usuarios conservan siempre el derecho de recurrir a las instancias
               legales correspondientes (organismos de defensa del consumidor, justicia ordinaria).
             </P>
             <P>
-              Para reclamos ante organismos de defensa del consumidor en Argentina, podés ingresar a{" "}
+              Para reclamos ante organismos de defensa del consumidor en Argentina, podÃ©s ingresar a{" "}
               <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener noreferrer">
                 www.argentina.gob.ar/defensadelconsumidor
               </a>.
             </P>
           </Seccion>
 
-          {/* ── S10 ── */}
+          {/* â”€â”€ S10 â”€â”€ */}
           <Seccion id="s10" titulo="10. Responsabilidad del Docente">
             <P>
-              Cuando una devolución se aprueba por causa imputable al Docente (cancelación, no presentación,
-              contenido engañoso), Luderis puede:
+              Cuando una devoluciÃ³n se aprueba por causa imputable al Docente (cancelaciÃ³n, no presentaciÃ³n,
+              contenido engaÃ±oso), Luderis puede:
             </P>
             <Ul>
-              <Li>Descontar el monto a reembolsar del saldo pendiente de acreditación al Docente.</Li>
-              <Li>Solicitar al Docente que cubra el monto de la devolución si el mismo ya fue acreditado.</Li>
+              <Li>Descontar el monto a reembolsar del saldo pendiente de acreditaciÃ³n al Docente.</Li>
+              <Li>Solicitar al Docente que cubra el monto de la devoluciÃ³n si el mismo ya fue acreditado.</Li>
               <Li>Registrar el incidente en el historial del Docente, lo que puede afectar su posicionamiento en la Plataforma.</Li>
-              <Li>Suspender temporalmente al Docente si se registran múltiples incidentes en un período corto.</Li>
+              <Li>Suspender temporalmente al Docente si se registran mÃºltiples incidentes en un perÃ­odo corto.</Li>
             </Ul>
             <P>
-              Los Docentes serán notificados de cualquier reclamo en su contra y tendrán la oportunidad
-              de presentar su versión antes de que Luderis tome una decisión final.
+              Los Docentes serÃ¡n notificados de cualquier reclamo en su contra y tendrÃ¡n la oportunidad
+              de presentar su versiÃ³n antes de que Luderis tome una decisiÃ³n final.
             </P>
           </Seccion>
 
-          {/* ── S11 ── */}
+          {/* â”€â”€ S11 â”€â”€ */}
           <Seccion id="s11" titulo="11. Abusos del sistema de devoluciones">
             <P>
               Luderis monitorea el uso del sistema de devoluciones para detectar patrones de abuso.
               Se considera abuso del sistema:
             </P>
             <Ul>
-              <Li>Solicitar devoluciones de forma reiterada sin motivo legítimo.</Li>
+              <Li>Solicitar devoluciones de forma reiterada sin motivo legÃ­timo.</Li>
               <Li>Acceder al contenido de un curso y luego reclamar que no tuvo acceso.</Li>
               <Li>Presentar evidencia falsa o manipulada para sustentar un reclamo.</Li>
               <Li>Coordinar con terceros para realizar reclamos fraudulentos.</Li>
             </Ul>
             <P>
-              Los Usuarios que abusen del sistema de devoluciones podrán ser suspendidos de la
+              Los Usuarios que abusen del sistema de devoluciones podrÃ¡n ser suspendidos de la
               Plataforma de forma temporal o permanente, y Luderis se reserva el derecho de
               iniciar las acciones legales correspondientes.
             </P>
           </Seccion>
 
-          {/* ── S12 ── */}
-          <Seccion id="s12" titulo="12. Modificaciones de esta política">
+          {/* â”€â”€ S12 â”€â”€ */}
+          <Seccion id="s12" titulo="12. Modificaciones de esta polÃ­tica">
             <P>
-              Luderis puede modificar esta Política de Devoluciones en cualquier momento.
-              Los cambios significativos serán notificados con al menos <strong>15 (quince) días de anticipación</strong> mediante:
+              Luderis puede modificar esta PolÃ­tica de Devoluciones en cualquier momento.
+              Los cambios significativos serÃ¡n notificados con al menos <strong>15 (quince) dÃ­as de anticipaciÃ³n</strong> mediante:
             </P>
             <Ul>
-              <Li>Correo electrónico a la dirección registrada en la cuenta.</Li>
+              <Li>Correo electrÃ³nico a la direcciÃ³n registrada en la cuenta.</Li>
               <Li>Aviso destacado dentro de la Plataforma.</Li>
             </Ul>
             <P>
-              La política vigente al momento de realizar un pago es la que aplica para ese pago en particular,
+              La polÃ­tica vigente al momento de realizar un pago es la que aplica para ese pago en particular,
               independientemente de modificaciones posteriores.
             </P>
           </Seccion>
 
-          {/* ── S13 ── */}
+          {/* â”€â”€ S13 â”€â”€ */}
           <Seccion id="s13" titulo="13. Contacto">
-            <P>Para solicitudes de devolución o consultas sobre esta política:</P>
+            <P>Para solicitudes de devoluciÃ³n o consultas sobre esta polÃ­tica:</P>
             <div style={{
               background: SURFACE, border: `1px solid ${BORDER}`,
               borderRadius: 12, padding: "20px 24px", marginTop: 12
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>📧</span>
+                  <span style={{ fontSize: 20 }}>ðŸ“§</span>
                   <div>
                     <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>Email</div>
                     <a href="mailto:contacto@luderis.com.ar" style={{ fontSize: 15, color: ACCENT, fontWeight: 600 }}>
@@ -537,17 +537,17 @@ export default function PoliticaDevoluciones() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>⏱️</span>
+                  <span style={{ fontSize: 20 }}>â±ï¸</span>
                   <div>
                     <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>Tiempo de respuesta</div>
-                    <span style={{ fontSize: 15, color: TEXT }}>Hasta 48 horas hábiles</span>
+                    <span style={{ fontSize: 15, color: TEXT }}>Hasta 48 horas hÃ¡biles</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>📋</span>
+                  <span style={{ fontSize: 20 }}>ðŸ“‹</span>
                   <div>
-                    <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>También podés consultar</div>
-                    <a href="/terminos" style={{ fontSize: 15, color: ACCENT }}>Términos y Condiciones →</a>
+                    <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>TambiÃ©n podÃ©s consultar</div>
+                    <a href="/terminos" style={{ fontSize: 15, color: ACCENT }}>TÃ©rminos y Condiciones â†’</a>
                   </div>
                 </div>
               </div>
@@ -560,7 +560,7 @@ export default function PoliticaDevoluciones() {
             display: "flex", flexDirection: "column", gap: 8
           }}>
             <p style={{ fontSize: 13, color: MUTED }}>
-              © {new Date().getFullYear()} Luderis. Todos los derechos reservados.
+              Â© {new Date().getFullYear()} Luderis. Todos los derechos reservados.
             </p>
           </div>
 

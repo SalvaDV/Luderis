@@ -967,7 +967,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   useEffect(()=>{
     if(!loading&&perfilData){
       const n=perfilData.display_name||perfilData.nombre||nombre;
-      document.title=`${n} — Docente en Luderis`;
+      document.title=`Luderis | ${n}`;
       const url=window.location.origin+"?perfil="+encodeURIComponent(autorEmail);
       window.history.pushState({},"",url);
     }

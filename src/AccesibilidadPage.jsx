@@ -107,7 +107,7 @@ export default function AccesibilidadPage() {
   const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
-    document.title = "Accesibilidad — Luderis";
+    document.title = "Luderis | Accesibilidad";
     const handler = () => {
       const sections = SECCIONES.map(s => document.getElementById(s.id)).filter(Boolean);
       const scrollY = window.scrollY + 120;
