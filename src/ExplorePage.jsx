@@ -1094,7 +1094,7 @@ function TourGuide({session,esDocente,onDone}){
     {targetId:"tour-tab-cursos",icon:"🎓",title:"Cursos",
       desc:"Clases estructuradas con contenido, seguimiento y certificado al terminar."},
     {targetId:"tour-tab-clases",icon:"📚",title:"Clases particulares",
-      desc:"Clases 1 a 1 con atención personalizada. El docente define su disponibilidad y condiciones."},
+      desc:"Clases 1 a 1 con atención personalizada."},
     ...(esDocente?[{targetId:"tour-tab-pedidos",icon:"📣",title:"Pedidos de alumnos",
       desc:"Alumnos que necesitan un docente. Podés ver sus pedidos y ofrecerte directamente."}]:[]),
     {targetId:"tour-btn-publicar",icon:"✦",title:"Publicar",
@@ -1111,9 +1111,14 @@ function TourGuide({session,esDocente,onDone}){
     const el=document.getElementById(cur.targetId);
     if(!el){setRect(null);return;}
     el.classList.add("tour-ring");
-    const r=el.getBoundingClientRect();
-    setRect({top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height});
-    return()=>el.classList.remove("tour-ring");
+    // rAF + pequeño delay para que el elemento esté pintado y en su posición final
+    let raf;const t=setTimeout(()=>{
+      raf=requestAnimationFrame(()=>{
+        const r=el.getBoundingClientRect();
+        setRect({top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height});
+      });
+    },60);
+    return()=>{clearTimeout(t);cancelAnimationFrame(raf);el.classList.remove("tour-ring");};
   },[step,cur.targetId]);
 
   const done=()=>{try{localStorage.setItem(TOUR_KEY,"1");}catch{}onDone();};

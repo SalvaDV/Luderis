@@ -100,7 +100,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
             <span style={{flex:1}}>Panel de control</span>
           </button>
         )}
-        <button onClick={()=>{onNewPost();if(mobile)onClose();}}
+        <button id="tour-btn-publicar" onClick={()=>{onNewPost();if(mobile)onClose();}}
           style={{width:"100%",padding:"9px 12px",borderRadius:20,border:"none",background:LUD.grad,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:"0 4px 12px rgba(26,110,216,.3)",transition:"opacity .15s"}}
           onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
           onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
