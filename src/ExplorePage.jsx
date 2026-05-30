@@ -704,9 +704,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <div style={{display:"flex",gap:14}} className="cl-hscroll">
                   {data.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s",borderTop:`3px solid ${getPubTipo(p).accent}`}}
-                      onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
-                      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s"}}
+                      onMouseEnter={e=>{const acc=getPubTipo(p).accent;e.currentTarget.style.boxShadow=`0 8px 24px ${acc}28,0 2px 8px rgba(0,0,0,.06)`;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.borderColor=acc+"66";}}
+                      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";e.currentTarget.style.borderColor=p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;}}>
                       {/* Avatar + nombre */}
                       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
                         {(()=>{const av=_avatarCache[p.autor_email]||localStorage.getItem("cl_avatar_"+p.autor_email)||null;return av&&av.startsWith("http")?<div style={{width:32,height:32,borderRadius:"50%",overflow:"hidden",flexShrink:0}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={32}/>;})()}
