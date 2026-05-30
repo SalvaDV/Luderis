@@ -36,7 +36,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
         <button onClick={()=>setVisible(v=>!v)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT}}>{visible?"▴":"▾"}</button>
       </div>
       {visible&&(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,paddingTop:10}}>
           {top.map((d,i)=>(
             <div key={d.email} onClick={()=>onOpenPerfil(d.email)}
               style={{background:C.card,border:`1px solid ${i===0?C.accent:C.border}`,borderRadius:12,

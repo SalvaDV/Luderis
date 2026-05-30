@@ -584,9 +584,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"40px",color:C.muted,fontSize:14}}>No hay pedidos activos en este momento.</div>
                   :todosPedidos.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
-                      style={{background:TIPO_PUB.pedido.dim,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",borderTop:`3px solid ${TIPO_PUB.pedido.accent}`,transition:"all .18s"}}
-                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.dim}`;}}
-                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+                      style={{background:TIPO_PUB.pedido.dim,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",transition:"all .18s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.accent}22`;e.currentTarget.style.borderColor=TIPO_PUB.pedido.accent+"66";}}
+                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=TIPO_PUB.pedido.border;}}>
                       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
                         <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={30}/>
                         <div style={{minWidth:0,flex:1}}>

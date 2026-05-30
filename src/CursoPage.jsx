@@ -1575,7 +1575,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
         <button onClick={()=>setVisible(v=>!v)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT}}>{visible?"▴":"▾"}</button>
       </div>
       {visible&&(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,paddingTop:10}}>
           {top.map((d,i)=>(
             <div key={d.email} onClick={()=>onOpenPerfil(d.email)}
               style={{background:C.card,border:`1px solid ${i===0?C.accent:C.border}`,borderRadius:12,
@@ -5960,9 +5960,9 @@ function RelacionadasSection({post,session,onOpenDetail2}){
           {relacionadas.some(p=>p.materia===post.materia)?"Más clases de "+post.materia:"También te puede interesar"}
         </h2>
       </div>
-      <div style={{display:"flex",gap:12,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8}}>
+      <div style={{display:"flex",gap:12,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8,paddingTop:6}}>
         <style>{`.rel-scroll::-webkit-scrollbar{display:none}`}</style>
-        <div style={{display:"flex",gap:12}} className="rel-scroll">
+        <div style={{display:"flex",gap:12,paddingTop:2}} className="rel-scroll">
           {relacionadas.map(p=>{
             const catData=CATEGORIAS_DATA[p.materia]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)"};
             const autorNombre=p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)||"Docente";
