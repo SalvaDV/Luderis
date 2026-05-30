@@ -14,6 +14,7 @@ import {
   MATERIAS_CON_DIAGNOSTICO,
   getPubTipo,
   SkeletonList,
+  _avatarCache,
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal, ContraofertaModal } from "./App";
@@ -1586,7 +1587,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
               {i===0&&<div style={{position:"absolute",top:-8,left:"50%",transform:"translateX(-50%)",
                 background:C.accent,color:"#fff",fontSize:9,fontWeight:700,borderRadius:20,
                 padding:"2px 8px",whiteSpace:"nowrap"}}>⭐ Top docente</div>}
-              <Avatar letra={d.nombre[0]} size={36} style={{margin:"0 auto 6px"}}/>
+              <Avatar letra={d.nombre[0]} size={36} style={{margin:"0 auto 6px"}} img={_avatarCache[d.email]||localStorage.getItem("cl_avatar_"+d.email)||undefined}/>
               <div style={{fontWeight:700,color:C.text,fontSize:12,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.nombre}</div>
               {d.rating>0&&<div style={{color:C.accent,fontSize:11,marginBottom:2}}>{"★".repeat(Math.round(d.rating))} {d.rating.toFixed(1)}</div>}
               <div style={{color:C.muted,fontSize:10}}>{[...d.materias].slice(0,2).join(", ")}</div>
@@ -2649,7 +2650,7 @@ function ForoCurso({post,session,esMio,esAyudante}){
           <div key={p.id} style={{background:C.card,border:`1px solid ${isQA?"#F59E0B44":C.border}`,borderRadius:12,overflow:"hidden"}}>
             <div style={{padding:"12px 14px"}}>
               <div style={{display:"flex",gap:9,alignItems:"flex-start"}}>
-                <Avatar letra={(p.autor_nombre||"?")[0]} size={28}/>
+                <Avatar letra={(p.autor_nombre||"?")[0]} size={28} img={_avatarCache[p.autor_email]||localStorage.getItem("cl_avatar_"+p.autor_email)||undefined}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                     <span style={{fontWeight:600,color:C.text,fontSize:12}}>
@@ -2683,7 +2684,7 @@ function ForoCurso({post,session,esMio,esAyudante}){
                       const esDocR=r.autor_email===post.autor_email;
                       return(
                         <div key={r.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                          <Avatar letra={(r.autor_nombre||"?")[0]} size={22}/>
+                          <Avatar letra={(r.autor_nombre||"?")[0]} size={22} img={_avatarCache[r.autor_email]||localStorage.getItem("cl_avatar_"+r.autor_email)||undefined}/>
                           <div style={{flex:1,background:esDocR?"#2EC4A010":C.card,border:`1px solid ${esDocR?"#2EC4A033":C.border}`,borderRadius:8,padding:"7px 10px"}}>
                             <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
                               <span style={{fontWeight:600,color:C.text,fontSize:11}}>

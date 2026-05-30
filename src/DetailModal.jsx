@@ -12,7 +12,7 @@ import {
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, CATEGORIAS_DATA, CalendarioCurso,
-  LUD, getPubTipo,
+  LUD, getPubTipo, useAutorAvatar,
 } from "./shared";
 import { FavBtn, OfertarBtn, ShareBtn } from "./App";
 import { DescExpandible, InscribirseBtn, RelacionadasSection, ReseñasSeccion } from "./CursoPage";
@@ -27,6 +27,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   const nombre=post.autor_nombre||sb.getDisplayName(post.autor_email)||safeDisplayName(post.autor_nombre,post.autor_email)||"Usuario";
   const esMio=post.autor_email===session.user.email;
   const esAyudante=(post.ayudantes||[]).includes(session.user.id);
+  const autorAvatar=useAutorAvatar(post.autor_email,session?.access_token);
 
   useEffect(()=>{
     // JSON-LD Course schema para SEO
@@ -143,7 +144,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
             {/* Autor */}
             <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20,paddingBottom:20,borderBottom:`1px solid ${C.border}`}}>
-              <button onClick={()=>{onClose();onOpenPerfil(post.autor_email);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}><Avatar letra={nombre[0]} size={52}/></button>
+              <button onClick={()=>{onClose();onOpenPerfil(post.autor_email);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}><Avatar letra={nombre[0]} size={52} img={autorAvatar||undefined}/></button>
               <div style={{flex:1,minWidth:0}}>
                 <button onClick={()=>{onClose();onOpenPerfil(post.autor_email);}}
                   style={{fontWeight:700,color:C.text,fontSize:16,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,textAlign:"left",display:"block",marginBottom:3}}

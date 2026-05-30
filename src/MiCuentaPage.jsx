@@ -2034,7 +2034,12 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         <div style={{padding:"0 24px 20px",position:"relative"}}>
           {/* Avatar flotante sobre el banner */}
           <div style={{position:"relative",display:"inline-block",marginTop:-30,marginBottom:10}}>
-            <div style={{width:64,height:64,borderRadius:"50%",background:currentColor,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:26,color:"#fff",fontFamily:FONT,border:`3px solid ${C.surface}`}}>{nombre[0].toUpperCase()}</div>
+            <div style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.surface}`,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
+              {avatarUrl&&avatarUrl.startsWith("https://")
+                ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
+                :<div style={{width:"100%",height:"100%",background:currentColor,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:26,color:"#fff",fontFamily:FONT}}>{nombre[0].toUpperCase()}</div>
+              }
+            </div>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
             <div style={{flex:1}}>
