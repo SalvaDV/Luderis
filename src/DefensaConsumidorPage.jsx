@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const FONT = "'Inter','Segoe UI',system-ui,sans-serif";
 const ACCENT = "#7B3FBE";
@@ -12,11 +12,11 @@ const WARN_C = "#B45309";
 
 const SECCIONES = [
   { id: "s1",  titulo: "1. Tus derechos como consumidor" },
-  { id: "s2",  titulo: "2. CÃ³mo reclamar ante Luderis" },
+  { id: "s2",  titulo: "2. Cómo reclamar ante Luderis" },
   { id: "s3",  titulo: "3. Organismos oficiales de defensa" },
-  { id: "s4",  titulo: "4. COPREC â€” ConciliaciÃ³n gratuita" },
+  { id: "s4",  titulo: "4. COPREC — Conciliación gratuita" },
   { id: "s5",  titulo: "5. Libro de Quejas Digital" },
-  { id: "s6",  titulo: "6. GarantÃ­as legales" },
+  { id: "s6",  titulo: "6. Garantías legales" },
   { id: "s7",  titulo: "7. Datos de contacto" },
 ];
 
@@ -111,7 +111,7 @@ function OrganismoCard({ emoji, nombre, desc, url, urlLabel }) {
             display: "inline-flex", alignItems: "center", gap: 5,
             fontSize: 13, color: ACCENT, fontWeight: 600, marginTop: 4
           }}>
-          {urlLabel || url} â†’
+          {urlLabel || url} →
         </a>
       )}
     </div>
@@ -121,19 +121,19 @@ function OrganismoCard({ emoji, nombre, desc, url, urlLabel }) {
 function BotonesOficiales() {
   const botones = [
     {
-      emoji: "ðŸ›ï¸",
+      emoji: "🏛️",
       label: "Presentar reclamo ante\nDefensa al Consumidor",
       url: "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario",
       color: "#1A6ED8",
     },
     {
-      emoji: "âš–ï¸",
-      label: "Iniciar conciliaciÃ³n\nen COPREC",
+      emoji: "⚖️",
+      label: "Iniciar conciliación\nen COPREC",
       url: "https://www.argentina.gob.ar/produccion/defensadelconsumidor",
       color: "#2E7D52",
     },
     {
-      emoji: "ðŸ“‹",
+      emoji: "📋",
       label: "Libro de Quejas\nde Luderis",
       url: "/quejas",
       color: "#7B3FBE",
@@ -167,12 +167,12 @@ function BotonesOficiales() {
 
 function DerechosGrid() {
   const derechos = [
-    { emoji: "ðŸ“‹", titulo: "InformaciÃ³n clara", desc: "TenÃ©s derecho a recibir informaciÃ³n veraz, detallada y suficiente sobre los servicios que contratÃ¡s." },
-    { emoji: "ðŸ’°", titulo: "Precio transparente", desc: "El precio informado en la plataforma es el precio final. No pueden existir cargos ocultos." },
-    { emoji: "â†©ï¸", titulo: "Arrepentimiento", desc: "PodÃ©s cancelar una compra online dentro de las 72 hs sin necesidad de dar ninguna explicaciÃ³n (art. 34, Ley 24.240)." },
-    { emoji: "ðŸ”’", titulo: "Datos personales", desc: "Tus datos no pueden ser cedidos sin tu consentimiento (Ley 25.326 de ProtecciÃ³n de Datos Personales)." },
-    { emoji: "âš–ï¸", titulo: "Trato digno", desc: "TenÃ©s derecho a ser tratado con respeto y sin discriminaciÃ³n en todas las interacciones con la plataforma." },
-    { emoji: "ðŸ“£", titulo: "Reclamo gratuito", desc: "PodÃ©s presentar un reclamo ante Luderis o ante organismos pÃºblicos sin costo alguno." },
+    { emoji: "📋", titulo: "Información clara", desc: "Tenés derecho a recibir información veraz, detallada y suficiente sobre los servicios que contratás." },
+    { emoji: "💰", titulo: "Precio transparente", desc: "El precio informado en la plataforma es el precio final. No pueden existir cargos ocultos." },
+    { emoji: "↩️", titulo: "Arrepentimiento", desc: "Podés cancelar una compra online dentro de las 72 hs sin necesidad de dar ninguna explicación (art. 34, Ley 24.240)." },
+    { emoji: "🔒", titulo: "Datos personales", desc: "Tus datos no pueden ser cedidos sin tu consentimiento (Ley 25.326 de Protección de Datos Personales)." },
+    { emoji: "⚖️", titulo: "Trato digno", desc: "Tenés derecho a ser tratado con respeto y sin discriminación en todas las interacciones con la plataforma." },
+    { emoji: "📣", titulo: "Reclamo gratuito", desc: "Podés presentar un reclamo ante Luderis o ante organismos públicos sin costo alguno." },
   ];
   return (
     <div style={{
@@ -200,7 +200,7 @@ export default function DefensaConsumidorPage() {
   const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
-    document.title = “Luderis | Defensa al Consumidor”;
+    document.title = "Luderis | Defensa al Consumidor";
     const handler = () => {
       const sections = SECCIONES.map(s => document.getElementById(s.id)).filter(Boolean);
       const scrollY = window.scrollY + 120;
@@ -240,7 +240,7 @@ export default function DefensaConsumidorPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {isMobile && (
               <button onClick={() => setMenuOpen(v => !v)}
-                style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TEXT, padding: "4px 6px" }}>â˜°</button>
+                style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TEXT, padding: "4px 6px" }}>☰</button>
             )}
             <a href="/" style={{ textDecoration: "none" }}>
               <span style={{ fontSize: 20, fontWeight: 800, color: ACCENT, letterSpacing: "-.4px" }}>Luderis</span>
@@ -255,7 +255,7 @@ export default function DefensaConsumidorPage() {
               fontSize: 13, color: ACCENT, fontWeight: 600,
               padding: "6px 14px", border: `1px solid ${ACCENT}`,
               borderRadius: 20, textDecoration: "none"
-            }}>â† Volver</a>
+            }}>← Volver</a>
           </div>
         </div>
       </header>
@@ -267,7 +267,7 @@ export default function DefensaConsumidorPage() {
           {menuOpen && (
             <button onClick={() => setMenuOpen(false)}
               style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TEXT, marginBottom: 16, display: "block" }}>
-              âœ• Cerrar
+              ✕ Cerrar
             </button>
           )}
           <div style={{
@@ -291,12 +291,12 @@ export default function DefensaConsumidorPage() {
                 }}>{s.titulo}</button>
             ))}
             <div style={{ borderTop: `1px solid ${BORDER}`, margin: "12px 16px 0", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              <a href="/terminos"     style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ“„ TÃ©rminos y Condiciones</a>
-              <a href="/devoluciones" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ’¸ PolÃ­tica de Devoluciones</a>
-              <a href="/privacidad"   style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ”’ PolÃ­tica de Privacidad</a>
-              <a href="/accesibilidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>â™¿ Accesibilidad</a>
-              <a href="/ayuda"        style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ™‹ Centro de Ayuda</a>
-              <a href="/quejas"       style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>ðŸ“‹ Libro de Quejas</a>
+              <a href="/terminos"     style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📄 Términos y Condiciones</a>
+              <a href="/devoluciones" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>💸 Política de Devoluciones</a>
+              <a href="/privacidad"   style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>🔒 Política de Privacidad</a>
+              <a href="/accesibilidad" style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>♿ Accesibilidad</a>
+              <a href="/ayuda"        style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>🙋 Centro de Ayuda</a>
+              <a href="/quejas"       style={{ fontSize: 12, color: MUTED, display: "block", padding: "2px 0" }}>📋 Libro de Quejas</a>
             </div>
           </div>
         </aside>
@@ -311,112 +311,112 @@ export default function DefensaConsumidorPage() {
             </h1>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 24 }}>
               En Luderis creemos en relaciones de consumo justas y transparentes.
-              Esta pÃ¡gina te explica cuÃ¡les son tus derechos, cÃ³mo reclamar ante nosotros
-              y cÃ³mo acceder a los organismos oficiales del Estado argentino si lo necesitÃ¡s.
+              Esta página te explica cuáles son tus derechos, cómo reclamar ante nosotros
+              y cómo acceder a los organismos oficiales del Estado argentino si lo necesitás.
             </p>
             <Badge type="info">
-              âš–ï¸ Luderis opera bajo la <strong>Ley NÂ° 24.240 de Defensa del Consumidor</strong> de la RepÃºblica Argentina
+              ⚖️ Luderis opera bajo la <strong>Ley N° 24.240 de Defensa del Consumidor</strong> de la República Argentina
               y sus modificatorias. Como usuario de la plataforma, sos un consumidor protegido por esta ley.
             </Badge>
           </div>
 
-          {/* â”€â”€ S1 â”€â”€ */}
+          {/* ── S1 ── */}
           <Seccion id="s1" titulo="1. Tus derechos como consumidor">
             <P>
-              La Ley NÂ° 24.240 y sus modificatorias te garantizan, entre otros, los siguientes derechos:
+              La Ley N° 24.240 y sus modificatorias te garantizan, entre otros, los siguientes derechos:
             </P>
             <DerechosGrid />
             <P>
-              Estos derechos no pueden ser renunciados ni limitados por contrato. Si alguna clÃ¡usula
-              de los <a href="/terminos">TÃ©rminos y Condiciones</a> de Luderis contradijera estos derechos,
+              Estos derechos no pueden ser renunciados ni limitados por contrato. Si alguna cláusula
+              de los <a href="/terminos">Términos y Condiciones</a> de Luderis contradijera estos derechos,
               prevalece siempre la ley.
             </P>
           </Seccion>
 
-          {/* â”€â”€ S2 â”€â”€ */}
-          <Seccion id="s2" titulo="2. CÃ³mo reclamar ante Luderis">
+          {/* ── S2 ── */}
+          <Seccion id="s2" titulo="2. Cómo reclamar ante Luderis">
             <P>
               Antes de recurrir a organismos externos, te pedimos que intentes resolver el problema
-              directamente con Luderis. En la mayorÃ­a de los casos podemos resolverlo de forma mÃ¡s
-              Ã¡gil y sin trÃ¡mites adicionales.
+              directamente con Luderis. En la mayoría de los casos podemos resolverlo de forma más
+              ágil y sin trámites adicionales.
             </P>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <PasoReclamo n="1" titulo="Contactanos por email"
-                desc='EnviÃ¡ tu reclamo a contacto@luderis.com.ar con el asunto "Reclamo â€” [descripciÃ³n breve". DescribÃ­ el problema con el mayor detalle posible.' />
+                desc='Enviá tu reclamo a contacto@luderis.com.ar con el asunto "Reclamo — [descripción breve". Describí el problema con el mayor detalle posible.' />
               <PasoReclamo n="2" titulo="Plazo de respuesta"
-                desc="Nos comprometemos a acusar recibo dentro de las 48 horas hÃ¡biles e iniciar la revisiÃ³n del caso. El plazo de resoluciÃ³n varÃ­a segÃºn la complejidad." />
-              <PasoReclamo n="3" titulo="Si no quedÃ¡s conforme"
-                desc="Si nuestra respuesta no te satisface, podÃ©s escalar el reclamo a los organismos oficiales que se detallan en la secciÃ³n siguiente." />
+                desc="Nos comprometemos a acusar recibo dentro de las 48 horas hábiles e iniciar la revisión del caso. El plazo de resolución varía según la complejidad." />
+              <PasoReclamo n="3" titulo="Si no quedás conforme"
+                desc="Si nuestra respuesta no te satisface, podés escalar el reclamo a los organismos oficiales que se detallan en la sección siguiente." />
             </div>
             <Badge type="success">
-              âœ… <strong>Nota:</strong> TambiÃ©n podÃ©s ver nuestra{" "}
-              <a href="/devoluciones">PolÃ­tica de Devoluciones</a> para reclamos especÃ­ficos sobre pagos y reembolsos.
+              ✅ <strong>Nota:</strong> También podés ver nuestra{" "}
+              <a href="/devoluciones">Política de Devoluciones</a> para reclamos específicos sobre pagos y reembolsos.
             </Badge>
           </Seccion>
 
-          {/* â”€â”€ S3 â”€â”€ */}
+          {/* ── S3 ── */}
           <Seccion id="s3" titulo="3. Organismos oficiales de defensa">
             <P>
-              Si no llegamos a una soluciÃ³n satisfactoria, tenÃ©s derecho a presentar tu reclamo
-              ante los siguientes organismos pÃºblicos, de forma <strong>gratuita</strong>:
+              Si no llegamos a una solución satisfactoria, tenés derecho a presentar tu reclamo
+              ante los siguientes organismos públicos, de forma <strong>gratuita</strong>:
             </P>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <OrganismoCard
-                emoji="ðŸ›ï¸"
-                nombre="DirecciÃ³n Nacional de Defensa del Consumidor"
-                desc="Organismo del Ministerio de EconomÃ­a que recibe reclamos de consumidores de todo el paÃ­s. PodÃ©s presentar tu denuncia online."
+                emoji="🏛️"
+                nombre="Dirección Nacional de Defensa del Consumidor"
+                desc="Organismo del Ministerio de Economía que recibe reclamos de consumidores de todo el país. Podés presentar tu denuncia online."
                 url="https://www.argentina.gob.ar/produccion/defensadelconsumidor"
                 urlLabel="argentina.gob.ar/defensadelconsumidor"
               />
               <OrganismoCard
-                emoji="ðŸ“±"
-                nombre="Ventanilla Ãšnica Federal (VUF)"
-                desc="Sistema centralizado para presentar reclamos ante organismos de defensa del consumidor de todo el paÃ­s desde un solo lugar."
+                emoji="📱"
+                nombre="Ventanilla Única Federal (VUF)"
+                desc="Sistema centralizado para presentar reclamos ante organismos de defensa del consumidor de todo el país desde un solo lugar."
                 url="https://www.argentina.gob.ar/produccion/defensadelconsumidor/ventanilla-unica-federal"
                 urlLabel="Acceder a VUF"
               />
               <OrganismoCard
-                emoji="ðŸ™ï¸"
+                emoji="🏙️"
                 nombre="Defensa al Consumidor de CABA"
-                desc="Para usuarios de la Ciudad AutÃ³noma de Buenos Aires, podÃ©s iniciar el reclamo ante la DirecciÃ³n General de Defensa y ProtecciÃ³n del Consumidor porteÃ±a."
+                desc="Para usuarios de la Ciudad Autónoma de Buenos Aires, podés iniciar el reclamo ante la Dirección General de Defensa y Protección del Consumidor porteña."
                 url="https://www.buenosaires.gob.ar/defensaconsumidor"
                 urlLabel="buenosaires.gob.ar/defensaconsumidor"
               />
               <OrganismoCard
-                emoji="ðŸ“ž"
-                nombre="LÃ­nea gratuita 0800-666-1518"
-                desc="LÃ­nea de atenciÃ³n al consumidor del Ministerio de EconomÃ­a de la NaciÃ³n. AtenciÃ³n de lunes a viernes en horario hÃ¡bil."
+                emoji="📞"
+                nombre="Línea gratuita 0800-666-1518"
+                desc="Línea de atención al consumidor del Ministerio de Economía de la Nación. Atención de lunes a viernes en horario hábil."
                 url={null}
               />
             </div>
             <BotonesOficiales />
           </Seccion>
 
-          {/* â”€â”€ S4 â”€â”€ */}
-          <Seccion id="s4" titulo="4. COPREC â€” ConciliaciÃ³n gratuita">
+          {/* ── S4 ── */}
+          <Seccion id="s4" titulo="4. COPREC — Conciliación gratuita">
             <P>
-              El <strong>COPREC (Servicio de ConciliaciÃ³n Previa en las Relaciones de Consumo)</strong>
+              El <strong>COPREC (Servicio de Conciliación Previa en las Relaciones de Consumo)</strong>
               {" "}es un sistema oficial del Estado argentino que permite resolver disputas entre
-              consumidores y empresas de forma <strong>gratuita, rÃ¡pida y sin necesidad de un abogado</strong>.
+              consumidores y empresas de forma <strong>gratuita, rápida y sin necesidad de un abogado</strong>.
             </P>
             <div style={{
               background: "#ECFDF5", border: `1px solid #A7F3D0`,
               borderRadius: 12, padding: "18px 20px", marginBottom: 16
             }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: SUCCESS, marginBottom: 12 }}>
-                âœ… Ventajas del COPREC
+                ✅ Ventajas del COPREC
               </div>
               <Ul>
                 <Li>Es completamente <strong>gratuito</strong> para el consumidor.</Li>
-                <Li>No necesitÃ¡s abogado para iniciar el proceso.</Li>
-                <Li>El trÃ¡mite es en lÃ­nea y sin necesidad de presentarte fÃ­sicamente.</Li>
+                <Li>No necesitás abogado para iniciar el proceso.</Li>
+                <Li>El trámite es en línea y sin necesidad de presentarte físicamente.</Li>
                 <Li>Si se llega a un acuerdo, tiene la misma validez que una sentencia judicial.</Li>
-                <Li>La empresa estÃ¡ <strong>obligada a participar</strong> del proceso de conciliaciÃ³n.</Li>
+                <Li>La empresa está <strong>obligada a participar</strong> del proceso de conciliación.</Li>
               </Ul>
             </div>
             <P>
-              El COPREC aplica cuando el monto reclamado no supera <strong>55 salarios mÃ­nimos</strong>
-              {" "}(umbral que se actualiza periÃ³dicamente). Para montos mayores, corresponde la vÃ­a judicial ordinaria.
+              El COPREC aplica cuando el monto reclamado no supera <strong>55 salarios mínimos</strong>
+              {" "}(umbral que se actualiza periódicamente). Para montos mayores, corresponde la vía judicial ordinaria.
             </P>
             <div style={{ marginTop: 16 }}>
               <a
@@ -432,12 +432,12 @@ export default function DefensaConsumidorPage() {
                 onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                âš–ï¸ Iniciar conciliaciÃ³n en COPREC â†’
+                ⚖️ Iniciar conciliación en COPREC →
               </a>
             </div>
           </Seccion>
 
-          {/* â”€â”€ S5 â”€â”€ */}
+          {/* ── S5 ── */}
           <Seccion id="s5" titulo="5. Libro de Quejas Digital">
             <P>
               El <strong>Libro de Quejas Digital</strong> es una herramienta oficial del Estado argentino
@@ -445,7 +445,7 @@ export default function DefensaConsumidorPage() {
               registrar sus quejas de manera formal.
             </P>
             <P>
-              PodÃ©s registrar tu queja formal en el Libro de Quejas de Luderis:
+              Podés registrar tu queja formal en el Libro de Quejas de Luderis:
             </P>
             <div style={{ marginTop: 12, marginBottom: 20 }}>
               <a
@@ -459,57 +459,57 @@ export default function DefensaConsumidorPage() {
                 onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                ðŸ“‹ Acceder al Libro de Quejas de Luderis â†’
+                📋 Acceder al Libro de Quejas de Luderis →
               </a>
             </div>
             <Badge type="neutral">
-              ðŸ’¡ El registro en el Libro de Quejas no reemplaza el reclamo directo ante Luderis ni ante los
-              organismos de defensa del consumidor, pero es un derecho que podÃ©s ejercer en cualquier momento.
+              💡 El registro en el Libro de Quejas no reemplaza el reclamo directo ante Luderis ni ante los
+              organismos de defensa del consumidor, pero es un derecho que podés ejercer en cualquier momento.
             </Badge>
           </Seccion>
 
-          {/* â”€â”€ S6 â”€â”€ */}
-          <Seccion id="s6" titulo="6. GarantÃ­as legales">
+          {/* ── S6 ── */}
+          <Seccion id="s6" titulo="6. Garantías legales">
             <P>
               Luderis garantiza el cumplimiento de las obligaciones establecidas en la
-              Ley NÂ° 24.240 de Defensa del Consumidor, en particular:
+              Ley N° 24.240 de Defensa del Consumidor, en particular:
             </P>
             <Ul>
               <Li>
-                <strong>Derecho de arrepentimiento (art. 34):</strong> podÃ©s cancelar cualquier contrataciÃ³n
+                <strong>Derecho de arrepentimiento (art. 34):</strong> podés cancelar cualquier contratación
                 realizada de forma remota dentro de las <strong>72 horas</strong> sin costo ni penalidad,
                 siempre que no hayas comenzado a consumir el servicio.
               </Li>
               <Li>
-                <strong>InformaciÃ³n veraz (art. 4):</strong> Luderis se compromete a brindar informaciÃ³n
+                <strong>Información veraz (art. 4):</strong> Luderis se compromete a brindar información
                 clara, detallada y suficiente sobre todos los servicios disponibles en la plataforma.
               </Li>
               <Li>
                 <strong>Trato digno (art. 8 bis):</strong> todos los usuarios tienen derecho a ser tratados
-                con respeto, sin discriminaciÃ³n y sin prÃ¡cticas abusivas.
+                con respeto, sin discriminación y sin prácticas abusivas.
               </Li>
               <Li>
                 <strong>Precio final (art. 10 bis):</strong> el precio mostrado en la plataforma incluye
                 todos los impuestos y cargos aplicables. No existen costos ocultos.
               </Li>
               <Li>
-                <strong>ProtecciÃ³n en servicios de plataformas digitales (Res. 171/2023):</strong>{" "}
-                Luderis cumple con las obligaciones de transparencia e informaciÃ³n aplicables a plataformas
-                digitales de intermediaciÃ³n.
+                <strong>Protección en servicios de plataformas digitales (Res. 171/2023):</strong>{" "}
+                Luderis cumple con las obligaciones de transparencia e información aplicables a plataformas
+                digitales de intermediación.
               </Li>
             </Ul>
           </Seccion>
 
-          {/* â”€â”€ S7 â”€â”€ */}
+          {/* ── S7 ── */}
           <Seccion id="s7" titulo="7. Datos de contacto">
-            <P>Para ejercer tus derechos como consumidor podÃ©s contactarnos por:</P>
+            <P>Para ejercer tus derechos como consumidor podés contactarnos por:</P>
             <div style={{
               background: SURFACE, border: `1px solid ${BORDER}`,
               borderRadius: 12, padding: "20px 24px", marginBottom: 20
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>ðŸ“§</span>
+                  <span style={{ fontSize: 22 }}>📧</span>
                   <div>
                     <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px" }}>Email de reclamos</div>
                     <a href="mailto:contacto@luderis.com.ar" style={{ fontSize: 15, color: ACCENT, fontWeight: 700 }}>
@@ -518,24 +518,24 @@ export default function DefensaConsumidorPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>ðŸ“</span>
+                  <span style={{ fontSize: 22 }}>📍</span>
                   <div>
                     <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px" }}>Domicilio legal</div>
-                    <span style={{ fontSize: 15, color: TEXT }}>Ciudad AutÃ³noma de Buenos Aires, Argentina</span>
+                    <span style={{ fontSize: 15, color: TEXT }}>Ciudad Autónoma de Buenos Aires, Argentina</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>â±ï¸</span>
+                  <span style={{ fontSize: 22 }}>⏱️</span>
                   <div>
                     <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px" }}>Tiempo de respuesta</div>
-                    <span style={{ fontSize: 15, color: TEXT }}>Hasta 48 horas hÃ¡biles</span>
+                    <span style={{ fontSize: 15, color: TEXT }}>Hasta 48 horas hábiles</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>âš–ï¸</span>
+                  <span style={{ fontSize: 22 }}>⚖️</span>
                   <div>
                     <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px" }}>Fuero aplicable</div>
-                    <span style={{ fontSize: 15, color: TEXT }}>Tribunales Ordinarios de CABA Â· Ley 24.240</span>
+                    <span style={{ fontSize: 15, color: TEXT }}>Tribunales Ordinarios de CABA · Ley 24.240</span>
                   </div>
                 </div>
               </div>
@@ -547,19 +547,19 @@ export default function DefensaConsumidorPage() {
                 fontSize: 13, color: ACCENT, fontWeight: 600,
                 padding: "8px 14px", border: `1px solid ${ACCENT}`,
                 borderRadius: 20, textDecoration: "none"
-              }}>ðŸ“„ TÃ©rminos y Condiciones</a>
+              }}>📄 Términos y Condiciones</a>
               <a href="/devoluciones" style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 fontSize: 13, color: ACCENT, fontWeight: 600,
                 padding: "8px 14px", border: `1px solid ${ACCENT}`,
                 borderRadius: 20, textDecoration: "none"
-              }}>ðŸ’¸ PolÃ­tica de Devoluciones</a>
+              }}>💸 Política de Devoluciones</a>
             </div>
           </Seccion>
 
           {/* Footer */}
           <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 32, marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-            <p style={{ fontSize: 13, color: MUTED }}>Â© {new Date().getFullYear()} Luderis. Todos los derechos reservados.</p>
+            <p style={{ fontSize: 13, color: MUTED }}>© {new Date().getFullYear()} Luderis. Todos los derechos reservados.</p>
           </div>
         </main>
       </div>
