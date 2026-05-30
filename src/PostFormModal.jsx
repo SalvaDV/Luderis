@@ -1017,7 +1017,10 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
         <div style={{background:`linear-gradient(135deg,${perfilColor}CC,${perfilColor}88)`,padding:"32px 24px 0",position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:-30,right:-30,width:160,height:160,borderRadius:"50%",background:"rgba(255,255,255,.08)"}}/>
           <div style={{display:"flex",gap:18,alignItems:"flex-end"}}>
-            <div style={{width:88,height:88,borderRadius:"50%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:34,color:perfilColor,flexShrink:0,boxShadow:"0 4px 20px rgba(0,0,0,.2)",marginBottom:-20,position:"relative",zIndex:1}}>
+            <div style={{width:88,height:88,borderRadius:"50%",overflow:"hidden",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:34,color:perfilColor,flexShrink:0,boxShadow:"0 4px 20px rgba(0,0,0,.2)",marginBottom:-20,position:"relative",zIndex:1,border:"3px solid rgba(255,255,255,.9)"}}>
+              {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")&&(
+                <img src={perfilData.avatar_url} alt={displayNombre} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
+              )}
               {displayNombre[0].toUpperCase()}
             </div>
             <div style={{paddingBottom:24,flex:1,minWidth:0}}>
