@@ -1083,13 +1083,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               )}
               {perfilData?.idiomas&&perfilData.idiomas.length>0&&(
                 <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-                  {perfilData.idiomas.map(id=><span key={id} style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 9px"}}>🌐 {id}</span>)}
-                </div>
-              )}
-              {(perfilData?.linkedin_url||perfilData?.sitio_web)&&(
-                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:10}}>
-                  {perfilData.linkedin_url&&<a href={perfilData.linkedin_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>🔗 LinkedIn</a>}
-                  {perfilData.sitio_web&&<a href={perfilData.sitio_web} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.accent,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>🌐 Sitio web</a>}
+                  {perfilData.idiomas.map(id=><span key={id} style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 9px"}}>{id}</span>)}
                 </div>
               )}
             </div>

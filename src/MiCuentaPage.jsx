@@ -1918,8 +1918,6 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const [metodologia,setMetodologia]=useState("");
   const [franjaHoraria,setFranjaHoraria]=useState("");
   const [idiomas,setIdiomas]=useState([]);
-  const [linkedinUrl,setLinkedinUrl]=useState("");
-  const [sitioWeb,setSitioWeb]=useState("");
   // Disponibilidad ahora
   const [disponibleAhora,setDisponibleAhora]=useState(false);
   const [disponibleMensaje,setDisponibleMensaje]=useState("");
@@ -1938,8 +1936,6 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         if(u.metodologia)setMetodologia(u.metodologia);
         if(u.franja_horaria)setFranjaHoraria(u.franja_horaria);
         if(u.idiomas)setIdiomas(u.idiomas||[]);
-        if(u.linkedin_url)setLinkedinUrl(u.linkedin_url);
-        if(u.sitio_web)setSitioWeb(u.sitio_web);
         // Disponibilidad: verificar si sigue vigente
         const dispActiva=u.disponible_ahora&&u.disponible_hasta&&new Date(u.disponible_hasta)>new Date();
         setDisponibleAhora(!!dispActiva);
@@ -2115,21 +2111,15 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     </div>
                     <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Metodología de enseñanza</label>
                     <textarea value={metodologia} onChange={e=>setMetodologia(e.target.value)} placeholder="Describí tu metodología de enseñanza..." rows={2} style={{...iDoc,resize:"vertical",marginBottom:10}}/>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:10,marginBottom:10}}>
-                      <div>
-                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Franja horaria</label>
-                        <select value={franjaHoraria} onChange={e=>setFranjaHoraria(e.target.value)} style={iDoc}>
-                          <option value="">— Seleccionar —</option>
-                          <option value="Mañana (8-12hs)">Mañana (8-12hs)</option>
-                          <option value="Tarde (12-18hs)">Tarde (12-18hs)</option>
-                          <option value="Noche (18-22hs)">Noche (18-22hs)</option>
-                          <option value="Flexible">Flexible</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>LinkedIn</label>
-                        <input value={linkedinUrl} onChange={e=>setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/..." style={iDoc}/>
-                      </div>
+                    <div style={{marginBottom:10}}>
+                      <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Franja horaria</label>
+                      <select value={franjaHoraria} onChange={e=>setFranjaHoraria(e.target.value)} style={iDoc}>
+                        <option value="">— Seleccionar —</option>
+                        <option value="Mañana (8-12hs)">Mañana (8-12hs)</option>
+                        <option value="Tarde (12-18hs)">Tarde (12-18hs)</option>
+                        <option value="Noche (18-22hs)">Noche (18-22hs)</option>
+                        <option value="Flexible">Flexible</option>
+                      </select>
                     </div>
                     <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Idiomas</label>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
@@ -2143,8 +2133,6 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                         </button>
                       ))}
                     </div>
-                    <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Sitio web</label>
-                    <input value={sitioWeb} onChange={e=>setSitioWeb(e.target.value)} placeholder="https://mipagina.com" style={iDoc}/>
                   </div>
                 );
               })()}
@@ -2189,8 +2177,6 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                       metodologia:metodologia.trim()||null,
                       franja_horaria:franjaHoraria||null,
                       idiomas:idiomas.length?idiomas:null,
-                      linkedin_url:linkedinUrl.trim()||null,
-                      sitio_web:sitioWeb.trim()||null,
                     },session.access_token);
                     // Guardar bio y ciudad en localStorage para el progreso de perfil
                     try{
