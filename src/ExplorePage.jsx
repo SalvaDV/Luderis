@@ -699,9 +699,9 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:700,color:C.text,fontSize:15}}><LabelIcon size={15} color={C.accent} strokeWidth={2}/>{label}</div>
                 <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todos →</button>
               </div>
-              <div style={{display:"flex",gap:14,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8}}>
+              <div style={{display:"flex",gap:14,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8,paddingTop:6}}>
                 <style>{`.cl-hscroll::-webkit-scrollbar{display:none}`}</style>
-                <div style={{display:"flex",gap:14}} className="cl-hscroll">
+                <div style={{display:"flex",gap:14,paddingTop:2}} className="cl-hscroll">
                   {data.map(p=>(
                     <div key={p.id} onClick={()=>onOpenDetail(p)}
                       style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s"}}
