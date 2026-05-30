@@ -3,6 +3,11 @@ import { Trophy } from "lucide-react";
 import * as sb from "./supabase";
 import { C, FONT, Avatar, Spinner, LUD } from "./shared";
 
+// Badge compacto que indica si el usuario es docente o alumno en esa publicación
+const RolBadge=({rol})=>rol==="docente"
+  ?<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"1px 7px",whiteSpace:"nowrap",flexShrink:0}}>🎓 Docente</span>
+  :<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,background:"#2EC4A012",color:"#0F6E56",border:"1px solid #2EC4A033",borderRadius:20,padding:"1px 7px",whiteSpace:"nowrap",flexShrink:0}}>📚 Alumno</span>;
+
 function DocentesDestacados({posts,onOpenPerfil,session}){
   const [visible,setVisible]=useState(true);
 
@@ -74,20 +79,22 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
     let mounted=true;
     Promise.all([
       sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
-      // S2-A4: también cargar publicaciones propias del docente
       sb.getMisPublicaciones(miEmail,session.access_token).catch(()=>[]),
     ]).then(([ins,misPublis])=>{
       if(!mounted)return;
       setInscripciones(ins||[]);
-      // IDs de inscripciones + IDs de publicaciones propias (sin duplicar)
-      const idsIns=[...new Set((ins||[]).map(i=>i.publicacion_id))];
-      const idsPropias=(misPublis||[]).filter(p=>!p.finalizado&&p.activo!==false).map(p=>p.id);
+      const idsIns=new Set((ins||[]).map(i=>i.publicacion_id));
+      const idsPropias=new Set((misPublis||[]).filter(p=>!p.finalizado&&p.activo!==false).map(p=>p.id));
       const allIds=[...new Set([...idsIns,...idsPropias])];
       if(!allIds.length){setLoading(false);return;}
       sb.getPublicacionesByIds(allIds,session.access_token).then(results=>{
         if(!mounted)return;
-        // Filtrar cursos finalizados — no mostrar en agenda
-        const allPosts=(results||[]).filter(Boolean).filter(p=>!p.finalizado);
+        const allPosts=(results||[]).filter(Boolean).filter(p=>!p.finalizado).map(p=>({
+          ...p,
+          // _rol: "docente" si es publicación propia, "alumno" si es inscripción
+          // puede ser ambos si el docente se inscribe a su propio curso
+          _rol: idsPropias.has(p.id) ? "docente" : "alumno",
+        }));
         setPosts(allPosts);
       }).finally(()=>{if(mounted)setLoading(false);});
     });
@@ -162,18 +169,22 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
 
   return(
     <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto",fontFamily:FONT}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
-        <div>
-          <div style={{fontWeight:800,color:C.text,fontSize:20,marginBottom:4,letterSpacing:"-.3px"}}>📅 Mi agenda</div>
-          <div style={{color:C.muted,fontSize:13}}>{mesLabel} · {diasConClase.size} día{diasConClase.size!==1?"s":""} con clase{diasConClase.size!==1?"s":""}</div>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          {posts.map((p,i)=>(
-            <div key={p.id} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:colorPost(p)}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:colorPost(p),flexShrink:0}}/>
-              <span style={{maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.muted}}>{p.titulo}</span>
-            </div>
-          ))}
+      <div style={{marginBottom:20}}>
+        <div style={{fontWeight:800,color:C.text,fontSize:20,marginBottom:6,letterSpacing:"-.3px"}}>📅 Mi agenda</div>
+        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+          <span style={{color:C.muted,fontSize:13}}>{mesLabel} · {diasConClase.size} día{diasConClase.size!==1?"s":""} con clase{diasConClase.size!==1?"s":""}</span>
+          {(()=>{
+            const nDocente=posts.filter(p=>p._rol==="docente").length;
+            const nAlumno=posts.filter(p=>p._rol==="alumno").length;
+            return(<>
+              {nDocente>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px"}}>
+                🎓 {nDocente} como docente
+              </span>}
+              {nAlumno>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:"#2EC4A012",color:C.success||"#2EC4A0",border:`1px solid ${C.success||"#2EC4A0"}33`,borderRadius:20,padding:"3px 10px"}}>
+                📚 {nAlumno} como alumno
+              </span>}
+            </>);
+          })()}
         </div>
       </div>
 
@@ -217,9 +228,13 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                     <span>{d}</span>
                     {nClases>0&&(
                       <div style={{display:"flex",gap:2,justifyContent:"center"}}>
-                        {clasesEnDia(d).slice(0,3).map((item,ci)=>(
-                          <div key={ci} style={{width:5,height:5,borderRadius:"50%",background:selec?"rgba(255,255,255,.8)":colorPost(item.post),boxShadow:"0 1px 2px rgba(0,0,0,.15)"}}/>
-                        ))}
+                        {clasesEnDia(d).slice(0,3).map((item,ci)=>{
+                          const col=selec?"rgba(255,255,255,.8)":colorPost(item.post);
+                          const esDoc=item.post._rol==="docente";
+                          return esDoc
+                            ?<div key={ci} style={{width:5,height:5,borderRadius:"50%",background:col,boxShadow:"0 1px 2px rgba(0,0,0,.15)"}}/>
+                            :<div key={ci} style={{width:5,height:5,borderRadius:"50%",background:"transparent",border:`1.5px solid ${col}`,boxShadow:"0 1px 2px rgba(0,0,0,.1)"}}/>;
+                        })}
                       </div>
                     )}
                   </button>
@@ -243,7 +258,10 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                       onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${colorPost(item.post)}15`;}}>
                       <div style={{width:5,background:colorPost(item.post),flexShrink:0}}/>
                       <div style={{padding:"12px 14px",flex:1}}>
-                        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:5}}>{item.post.titulo}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4,flexWrap:"wrap"}}>
+                          <div style={{fontWeight:700,color:C.text,fontSize:14,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.post.titulo}</div>
+                          <RolBadge rol={item.post._rol}/>
+                        </div>
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                           <span style={{fontWeight:700,color:colorPost(item.post),fontSize:13,display:"flex",alignItems:"center",gap:4}}>🕐 {item.clase.hora_inicio}</span>
                           <span style={{color:C.muted,fontSize:12}}>→ {item.clase.hora_fin}</span>
@@ -289,7 +307,10 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                     </div>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:600,color:C.text,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.post.titulo}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:1}}>
+                      <div style={{fontWeight:600,color:C.text,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{item.post.titulo}</div>
+                      <RolBadge rol={item.post._rol}/>
+                    </div>
                     <div style={{color:C.muted,fontSize:11}}>{item.clase.hora_inicio} → {item.clase.hora_fin} · {item.clase.dia}</div>
                   </div>
                   {esMesmo&&<span style={{fontSize:10,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 8px",border:`1px solid ${C.accent}33`,flexShrink:0}}>Hoy</span>}
@@ -318,8 +339,11 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                         {p.sinc==="asinc"?"▶":"📖"}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:600,color:C.text,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
-                        <div style={{fontSize:11,color:C.muted,marginTop:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:1}}>
+                          <div style={{fontWeight:600,color:C.text,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{p.titulo}</div>
+                          <RolBadge rol={p._rol}/>
+                        </div>
+                        <div style={{fontSize:11,color:C.muted}}>
                           {p.sinc==="asinc"?"Asincrónico · a tu ritmo":p.modo==="particular"?"Clase particular":!p.sinc?"Sin horario definido":"Sin calendario cargado"}
                           {p.materia&&<span style={{marginLeft:5,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"0px 7px"}}>{p.materia}</span>}
                         </div>
