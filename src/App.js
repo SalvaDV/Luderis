@@ -801,7 +801,7 @@ export default function App(){
                 {totalNoLeidas>0&&<span style={{position:"absolute",top:0,right:0,background:C.danger,color:"#fff",borderRadius:10,fontSize:9,fontWeight:700,padding:"2px 5px",lineHeight:1.3,minWidth:16,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,.25)"}}>{totalNoLeidas>9?"9+":totalNoLeidas}</span>}
               </button>
               );})()}
-              <Btn onClick={()=>{setEditPost(null);setShowForm(true);}} style={{padding:"6px 14px",fontSize:12,borderRadius:16}}>{t("newPost")}</Btn>
+              <Btn id="tour-btn-publicar" onClick={()=>{setEditPost(null);setShowForm(true);}} style={{padding:"6px 14px",fontSize:12,borderRadius:16}}>{t("newPost")}</Btn>
             </div>
           </div>
           {/* Bottom navbar mobile — SVG icons + pill active state */}

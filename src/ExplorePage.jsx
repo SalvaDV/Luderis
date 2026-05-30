@@ -42,6 +42,19 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const [userCity,setUserCity]=useState(()=>{try{return localStorage.getItem("cl_user_city")||"";}catch{return "";}});
   const [geoLoading,setGeoLoading]=useState(false);
   const [showBusquedaIA,setShowBusquedaIA]=useState(false);
+  const [showTour,setShowTour]=useState(false);
+  useEffect(()=>{
+    const tourKey=`ldrs_tour_done_${session.user.email}`;
+    const onbKey=`cl_onboarding_done_${session.user.email}`;
+    try{if(localStorage.getItem(tourKey))return;}catch{return;}
+    let tries=0;
+    const check=()=>{
+      tries++;
+      try{if(localStorage.getItem(onbKey)){setTimeout(()=>setShowTour(true),700);return;}}catch{}
+      if(tries<20)setTimeout(check,500);
+    };
+    setTimeout(check,500);
+  },[]);// eslint-disable-line
   const [iaQuery,setIaQuery]=useState("");// texto de la última búsqueda IA
   const [iaResults,setIaResults]=useState(null);// null=sin búsqueda, [ids]=resultados IA
   const [iaExplanation,setIaExplanation]=useState("");
@@ -524,7 +537,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   {id:"clases",Icon:User,label:"Clases",color:"#C8660A"},
                   ...(esDocente?[{id:"pedidos",Icon:Megaphone,label:"Pedidos",color:"#7B5CF0"}]:[]),
                 ].map(tab=>(
-                  <button key={tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");if(tab.id!=="cursos")setFiltroSinc("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
+                  <button key={tab.id} id={"tour-tab-"+tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");if(tab.id!=="cursos")setFiltroSinc("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
                     style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
                       background:seccion===tab.id?"#fff":"transparent",
                       color:seccion===tab.id?tab.color:"rgba(255,255,255,.8)",
@@ -1067,5 +1080,85 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
 
     </div>
     {showBusquedaIA&&<BusquedaIA onBuscar={buscarConIA} iaLoading={iaLoading} onClose={()=>setShowBusquedaIA(false)} seccion={seccion}/>}
+    {showTour&&<TourGuide session={session} esDocente={esDocente} onDone={()=>setShowTour(false)}/>}
+  </>);
+}
+
+// ─── TOUR GUIDE ───────────────────────────────────────────────────────────────
+function TourGuide({session,esDocente,onDone}){
+  const TOUR_KEY=`ldrs_tour_done_${session.user.email}`;
+  const [step,setStep]=useState(0);
+  const [rect,setRect]=useState(null);
+
+  const steps=[
+    {targetId:"tour-tab-cursos",icon:"🎓",title:"Cursos",
+      desc:"Clases estructuradas con contenido, seguimiento y certificado al terminar."},
+    {targetId:"tour-tab-clases",icon:"📚",title:"Clases particulares",
+      desc:"Clases 1 a 1 con atención personalizada. El docente define su disponibilidad y condiciones."},
+    ...(esDocente?[{targetId:"tour-tab-pedidos",icon:"📣",title:"Pedidos de alumnos",
+      desc:"Alumnos que necesitan un docente. Podés ver sus pedidos y ofrecerte directamente."}]:[]),
+    {targetId:"tour-btn-publicar",icon:"✦",title:"Publicar",
+      desc:esDocente
+        ?"Publicá tus clases o cursos, o creá un pedido para encontrar alumnos nuevos."
+        :"Publicá tu clase, curso o un pedido de docente. Todo en pocos minutos."},
+  ];
+
+  const cur=steps[step];
+  const total=steps.length;
+  const isLast=step===total-1;
+
+  useEffect(()=>{
+    const el=document.getElementById(cur.targetId);
+    if(!el){setRect(null);return;}
+    el.classList.add("tour-ring");
+    const r=el.getBoundingClientRect();
+    setRect({top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height});
+    return()=>el.classList.remove("tour-ring");
+  },[step,cur.targetId]);
+
+  const done=()=>{try{localStorage.setItem(TOUR_KEY,"1");}catch{}onDone();};
+  const next=()=>isLast?done():setStep(s=>s+1);
+
+  const W=Math.min(300,window.innerWidth-24);
+  let top=80,left=12,arrowL=20,showArrow=false;
+  if(rect){
+    top=rect.bottom+10;
+    left=Math.max(12,Math.min(rect.left,window.innerWidth-W-12));
+    arrowL=Math.max(12,Math.min(rect.left+rect.width/2-left-8,W-28));
+    showArrow=top>rect.bottom-5;
+    if(top+170>window.innerHeight)top=Math.max(60,rect.top-170);
+  }
+
+  return(<>
+    <style>{`.tour-ring{outline:2.5px solid #1A6ED8!important;outline-offset:3px;border-radius:10px!important;position:relative;z-index:1200!important;animation:tourPulse 1.5s ease-in-out infinite}@keyframes tourPulse{0%,100%{outline-color:#1A6ED8}50%{outline-color:#2EC4A0}}`}</style>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.22)",zIndex:1198,pointerEvents:"none"}}/>
+    <div style={{position:"fixed",top:Math.max(60,top),left,width:W,background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px 14px",zIndex:1200,boxShadow:"0 8px 32px rgba(0,0,0,.18)",animation:"fadeUp .2s ease",fontFamily:FONT}}>
+      {showArrow&&(
+        <div style={{position:"absolute",top:-8,left:arrowL,width:16,height:8,overflow:"hidden"}}>
+          <div style={{width:14,height:14,background:C.surface,border:`1px solid ${C.border}`,transform:"rotate(45deg)",transformOrigin:"100% 100%",position:"absolute",bottom:0,left:0}}/>
+        </div>
+      )}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <span style={{fontSize:16}}>{cur.icon}</span>
+          <span style={{fontWeight:700,color:C.text,fontSize:14}}>{cur.title}</span>
+        </div>
+        <button onClick={done} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"0 0 2px 8px",flexShrink:0}}>×</button>
+      </div>
+      <div style={{fontSize:13,color:C.muted,lineHeight:1.55,marginBottom:14}}>{cur.desc}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{display:"flex",gap:5,alignItems:"center"}}>
+          {Array.from({length:total}).map((_,i)=>(
+            <div key={i} style={{width:i===step?18:6,height:6,borderRadius:3,background:i===step?C.accent:C.border,transition:"all .25s"}}/>
+          ))}
+        </div>
+        <button onClick={next}
+          style={{background:C.accent,color:"#fff",border:"none",borderRadius:20,padding:"7px 18px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT}}
+          onMouseEnter={e=>e.currentTarget.style.opacity=".88"}
+          onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+          {isLast?"¡Entendí! ✓":"Siguiente →"}
+        </button>
+      </div>
+    </div>
   </>);
 }
