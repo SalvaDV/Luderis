@@ -291,6 +291,9 @@ export const insertMensaje = (data, token) =>
 export const updateReseñasNombre = (autorEmail, nuevoNombre, token) =>
   db(`reseñas?autor_email=eq.${encodeURIComponent(autorEmail)}`, "PATCH", { autor_nombre: nuevoNombre }, token);
 
+export const updatePublicacionesNombre = (autorEmail, nuevoNombre, token) =>
+  db(`publicaciones?autor_email=eq.${encodeURIComponent(autorEmail)}`, "PATCH", { autor_nombre: nuevoNombre }, token);
+
 export const updateMensajesNombre = (email, nuevoNombre, token) =>
   Promise.all([
     db(`mensajes?de_nombre=eq.${encodeURIComponent(email)}`, "PATCH", { de_nombre: nuevoNombre }, token).catch(() => {}),

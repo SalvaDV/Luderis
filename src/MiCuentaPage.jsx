@@ -2061,22 +2061,22 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
           {/* Form edición inline */}
           {editingPerfil&&(
             <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginTop:14}}>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:12}}>
+              {/* Foto de perfil */}
+              <Label>Foto de perfil</Label>
+              <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
+                <div style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",flexShrink:0,border:`2px solid ${avatarUrl?C.accent:C.border}`,background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:avatarUrl?"0 2px 12px rgba(26,110,216,.2)":"none"}}>
+                  {avatarUrl&&avatarUrl.startsWith("https://")
+                    ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
+                    :<Avatar letra={nombre[0]||session.user.email[0]} size={64}/>
+                  }
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} placeholder="https://..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",marginBottom:4}}/>
+                  <div style={{fontSize:11,color:C.muted}}>Foto cuadrada, mínimo 200×200px.</div>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12,marginBottom:12}}>
                 <div>
-                  {/* Foto de perfil */}
-                  <Label>Foto de perfil</Label>
-                  <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}>
-                    <div style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",flexShrink:0,border:`2px solid ${avatarUrl?C.accent:C.border}`,background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:avatarUrl?"0 2px 12px rgba(26,110,216,.2)":"none"}}>
-                      {avatarUrl&&avatarUrl.startsWith("https://")
-                        ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
-                        :<Avatar letra={nombre[0]||session.user.email[0]} size={64}/>
-                      }
-                    </div>
-                    <div style={{flex:1}}>
-                      <input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} placeholder="URL de tu foto (ej: https://...)" style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",marginBottom:4}}/>
-                      <div style={{fontSize:11,color:C.muted}}>Pegá la URL de una imagen. Recomendado: foto cuadrada, mínimo 200×200px.</div>
-                    </div>
-                  </div>
                   <Label>Nombre visible</Label>
                   <input value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={nombre} style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 </div>
@@ -2103,7 +2103,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 return(
                   <div style={{background:C.accentDim,border:`1px solid ${C.accent}22`,borderRadius:10,padding:"12px 14px",marginTop:8}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:1,marginBottom:10}}>PERFIL DOCENTE</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:10,marginBottom:10}}>
                       <div>
                         <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Título profesional</label>
                         <input value={tituloProfesional} onChange={e=>setTituloProfesional(e.target.value)} placeholder="Ej: Lic. en Matemática, Ing. Civil..." style={iDoc}/>
@@ -2115,7 +2115,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     </div>
                     <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Metodología de enseñanza</label>
                     <textarea value={metodologia} onChange={e=>setMetodologia(e.target.value)} placeholder="Describí tu metodología de enseñanza..." rows={2} style={{...iDoc,resize:"vertical",marginBottom:10}}/>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:10,marginBottom:10}}>
                       <div>
                         <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Franja horaria</label>
                         <select value={franjaHoraria} onChange={e=>setFranjaHoraria(e.target.value)} style={iDoc}>
@@ -2205,6 +2205,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     try{window.dispatchEvent(new Event("avatar-updated"));}catch{}
                     await sb.updateReseñasNombre(email,newName,session.access_token).catch(()=>{});
                     await sb.updateMensajesNombre(email,newName,session.access_token).catch(()=>{});
+                    await sb.updatePublicacionesNombre(email,newName,session.access_token).catch(()=>{});
                     setEditingPerfil(false);
                   }catch(e){toast("Error: "+e.message,"error");}
                   finally{setSavingDisplayName(false);}

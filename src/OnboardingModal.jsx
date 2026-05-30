@@ -428,11 +428,12 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
     setSaving(true);
     try{
       // Guardar preferencias en tabla usuarios
+      const nombreFinal=nombre.trim();
       const updates={
         onboarding_completado:true,
         // Docentes quedan como "alumno" hasta aprobación de admin
         rol:esDocente?"alumno":rol,
-        ...(nombre.trim()&&{nombre:nombre.trim()}),
+        ...(nombreFinal&&{nombre:nombreFinal,display_name:nombreFinal}),
         materias_interes:materias,
         nivel_educativo:nivelEdu||null,
         objetivo:objetivo||null,
@@ -441,6 +442,11 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       };
       if(ubicacion.trim())updates.ubicacion=ubicacion.trim();
       await sb.updateUsuario(session.user.id,updates,session.access_token).catch(()=>{});
+      // Sincronizar display name en localStorage y en publicaciones existentes
+      if(nombreFinal){
+        sb.setDisplayName(session.user.email,nombreFinal);
+        await sb.updatePublicacionesNombre(session.user.email,nombreFinal,session.access_token).catch(()=>{});
+      }
 
       // Si es docente, subir foto DNI y guardar verificación KYC
       if(esDocente){
