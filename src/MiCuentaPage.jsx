@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Trophy, Megaphone, MessageCircle, Video, ExternalLink, Send } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Trophy, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload } from "lucide-react";
 import * as sb from "./supabase";
 import {
   C, FONT, toast,
@@ -1910,6 +1910,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const [ubicacionPerfil,setUbicacionPerfil]=useState("");
   const [videoPresentacion,setVideoPresentacion]=useState("");
   const [avatarUrl,setAvatarUrl]=useState("");
+  const [avatarFile,setAvatarFile]=useState(null);
+  const [avatarPreview,setAvatarPreview]=useState(null);
+  const avatarInputRef=useRef(null);
   const [savingDisplayName,setSavingDisplayName]=useState(false);
   const [perfilLoaded,setPerfilLoaded]=useState(false);
   // Docente extra fields
@@ -2059,16 +2062,35 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginTop:14}}>
               {/* Foto de perfil */}
               <Label>Foto de perfil</Label>
-              <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
-                <div style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",flexShrink:0,border:`2px solid ${avatarUrl?C.accent:C.border}`,background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:avatarUrl?"0 2px 12px rgba(26,110,216,.2)":"none"}}>
-                  {avatarUrl&&avatarUrl.startsWith("https://")
-                    ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
-                    :<Avatar letra={nombre[0]||session.user.email[0]} size={64}/>
-                  }
+              <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:14}}>
+                <div style={{position:"relative",flexShrink:0}}>
+                  <div onClick={()=>avatarInputRef.current?.click()} style={{width:72,height:72,borderRadius:"50%",overflow:"hidden",border:`2px solid ${(avatarPreview||avatarUrl)?C.accent:C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:(avatarPreview||avatarUrl)?"0 2px 12px rgba(26,110,216,.2)":"none"}}>
+                    {avatarPreview
+                      ?<img src={avatarPreview} alt="preview" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      :avatarUrl&&avatarUrl.startsWith("https://")
+                      ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
+                      :<Avatar letra={nombre[0]||session.user.email[0]} size={72}/>
+                    }
+                  </div>
+                  <div onClick={()=>avatarInputRef.current?.click()} style={{position:"absolute",bottom:0,right:0,width:22,height:22,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 1px 6px rgba(26,110,216,.4)"}}>
+                    <Camera size={11} color="#fff" strokeWidth={2.5}/>
+                  </div>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} placeholder="https://..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",marginBottom:4}}/>
-                  <div style={{fontSize:11,color:C.muted}}>Foto cuadrada, mínimo 200×200px.</div>
+                  <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{
+                    const f=e.target.files[0];
+                    if(!f)return;
+                    if(f.size>5*1024*1024){toast("La imagen no puede superar 5MB","error");return;}
+                    setAvatarFile(f);
+                    setAvatarPreview(URL.createObjectURL(f));
+                  }}/>
+                  <button onClick={()=>avatarInputRef.current?.click()} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"8px 14px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <Upload size={13} strokeWidth={2}/>{avatarFile?"Cambiar imagen":"Subir foto"}
+                  </button>
+                  {avatarFile
+                    ?<div style={{fontSize:11,color:C.success,display:"flex",alignItems:"center",gap:4}}><CheckCircle2 size={10} strokeWidth={2.5}/>{avatarFile.name}</div>
+                    :<div style={{fontSize:11,color:C.muted}}>JPG, PNG o WebP · Máx. 5 MB</div>
+                  }
                 </div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12,marginBottom:12}}>
@@ -2165,12 +2187,26 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                   setSavingDisplayName(true);
                   try{
                     sb.setDisplayName(email,newName);
+                    // Subir avatar si hay un archivo nuevo seleccionado
+                    let finalAvatarUrl=avatarUrl;
+                    if(avatarFile){
+                      try{
+                        finalAvatarUrl=await sb.uploadAvatar(session.user.id,avatarFile,session.access_token);
+                        setAvatarUrl(finalAvatarUrl);
+                        setAvatarFile(null);
+                        setAvatarPreview(null);
+                      }catch(uploadErr){
+                        toast("Error al subir la foto: "+uploadErr.message,"error");
+                        setSavingDisplayName(false);
+                        return;
+                      }
+                    }
                     // Calcular disponible_hasta según duración seleccionada
                     const durMap={"2h":2*3600000,"4h":4*3600000,"8h":8*3600000,"mañana":24*3600000};
                     const dispHasta=disponibleAhora?new Date(Date.now()+(durMap[disponibleDuracion]||4*3600000)).toISOString():null;
                     await sb.updateUsuario(uid,{
                       display_name:newName,nombre:newName,bio:bio.trim()||null,ubicacion:ubicacionPerfil.trim()||null,
-                      avatar_url:(avatarUrl.trim().startsWith("https://")?avatarUrl.trim():null),video_presentacion:videoPresentacion.trim()||null,
+                      avatar_url:finalAvatarUrl||null,video_presentacion:videoPresentacion.trim()||null,
                       disponible_ahora:disponibleAhora,disponible_hasta:dispHasta,disponible_mensaje:disponibleAhora?disponibleMensaje.trim()||null:null,
                       titulo_profesional:tituloProfesional.trim()||null,
                       anios_experiencia:aniosExperiencia?parseInt(aniosExperiencia):null,
@@ -2184,7 +2220,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                       if(ubicacionPerfil.trim())localStorage.setItem("cl_user_city",ubicacionPerfil.trim());
                     }catch{}
                     // Actualizar cache local de avatar
-                    const avTrim=avatarUrl.trim()||null;
+                    const avTrim=finalAvatarUrl||null;
                     _avatarCache[session.user.email]=avTrim;
                     try{if(avTrim)localStorage.setItem("cl_avatar_"+session.user.email,avTrim);else localStorage.removeItem("cl_avatar_"+session.user.email);}catch{}
                     // Forzar re-render del sidebar

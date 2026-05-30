@@ -751,6 +751,24 @@ export const liberarPagoClase = async (claseId, token) => {
 
 // ── Verificaciones docente (KYC) ──────────────────────────────────────────────
 
+// Sube foto de avatar al bucket público "avatars" y devuelve la URL pública
+export const uploadAvatar = async (userId, file, token) => {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace("jpeg","jpg");
+  const path = `${userId}/avatar_${Date.now()}.${ext}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": file.type || "image/jpeg",
+      "apikey": SUPABASE_KEY,
+      "x-upsert": "true",
+    },
+    body: file,
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
+  return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+};
+
 export const uploadDniFoto = async (userId, file, token) => {
   const ext = file.name.split(".").pop() || "jpg";
   const path = `${userId}/dni_frente_${Date.now()}.${ext}`;
