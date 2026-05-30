@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Trophy } from "lucide-react";
+import { Trophy, Calendar, GraduationCap, BookOpen, Star, Clock, Play } from "lucide-react";
 import * as sb from "./supabase";
 import { C, FONT, Avatar, Spinner, LUD } from "./shared";
 
 // Badge compacto que indica si el usuario es docente o alumno en esa publicación
 const RolBadge=({rol})=>rol==="docente"
-  ?<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"1px 7px",whiteSpace:"nowrap",flexShrink:0}}>🎓 Docente</span>
-  :<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,background:"#2EC4A012",color:"#0F6E56",border:"1px solid #2EC4A033",borderRadius:20,padding:"1px 7px",whiteSpace:"nowrap",flexShrink:0}}>📚 Alumno</span>;
+  ?<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"2px 7px",whiteSpace:"nowrap",flexShrink:0}}><GraduationCap size={10} strokeWidth={2.5}/>Docente</span>
+  :<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,background:"#2EC4A012",color:"#0F6E56",border:"1px solid #2EC4A033",borderRadius:20,padding:"2px 7px",whiteSpace:"nowrap",flexShrink:0}}><BookOpen size={10} strokeWidth={2.5}/>Alumno</span>;
 
 function DocentesDestacados({posts,onOpenPerfil,session}){
   const [visible,setVisible]=useState(true);
@@ -51,7 +51,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
               {i===0&&<div style={{position:"absolute",top:-8,left:"50%",transform:"translateX(-50%)",
                 background:C.accent,color:"#fff",fontSize:9,fontWeight:700,borderRadius:20,
-                padding:"2px 8px",whiteSpace:"nowrap"}}>⭐ Top docente</div>}
+                padding:"2px 8px",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3}}><Star size={8} strokeWidth={2.5} fill="#fff"/>Top docente</div>}
               <Avatar letra={d.nombre[0]} size={36} style={{margin:"0 auto 6px"}}/>
               <div style={{fontWeight:700,color:C.text,fontSize:12,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.nombre}</div>
               {d.rating>0&&<div style={{color:C.accent,fontSize:11,marginBottom:2}}>{"★".repeat(Math.round(d.rating))} {d.rating.toFixed(1)}</div>}
@@ -170,7 +170,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   return(
     <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto",fontFamily:FONT}}>
       <div style={{marginBottom:20}}>
-        <div style={{fontWeight:800,color:C.text,fontSize:20,marginBottom:6,letterSpacing:"-.3px"}}>📅 Mi agenda</div>
+        <div style={{fontWeight:800,color:C.text,fontSize:20,marginBottom:6,letterSpacing:"-.3px",display:"flex",alignItems:"center",gap:8}}><Calendar size={20} strokeWidth={2} color={C.accent}/>Mi agenda</div>
         <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
           <span style={{color:C.muted,fontSize:13}}>{mesLabel} · {diasConClase.size} día{diasConClase.size!==1?"s":""} con clase{diasConClase.size!==1?"s":""}</span>
           {(()=>{
@@ -178,10 +178,10 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
             const nAlumno=posts.filter(p=>p._rol==="alumno").length;
             return(<>
               {nDocente>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px"}}>
-                🎓 {nDocente} como docente
+                <GraduationCap size={12} strokeWidth={2}/>{nDocente} como docente
               </span>}
               {nAlumno>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:"#2EC4A012",color:C.success||"#2EC4A0",border:`1px solid ${C.success||"#2EC4A0"}33`,borderRadius:20,padding:"3px 10px"}}>
-                📚 {nAlumno} como alumno
+                <BookOpen size={12} strokeWidth={2}/>{nAlumno} como alumno
               </span>}
             </>);
           })()}
@@ -263,7 +263,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                           <RolBadge rol={item.post._rol}/>
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                          <span style={{fontWeight:700,color:colorPost(item.post),fontSize:13,display:"flex",alignItems:"center",gap:4}}>🕐 {item.clase.hora_inicio}</span>
+                          <span style={{fontWeight:700,color:colorPost(item.post),fontSize:13,display:"flex",alignItems:"center",gap:4}}><Clock size={13} strokeWidth={2}/>{item.clase.hora_inicio}</span>
                           <span style={{color:C.muted,fontSize:12}}>→ {item.clase.hora_fin}</span>
                           {item.post.materia&&<span style={{fontSize:11,color:"#fff",background:colorPost(item.post),borderRadius:20,padding:"2px 10px",fontWeight:600}}>{item.post.materia}</span>}
                         </div>
@@ -326,7 +326,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
             return(
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px",marginTop:12}}>
                 <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12,display:"flex",alignItems:"center",gap:7}}>
-                  <span style={{fontSize:16}}>📚</span> Sin horario fijo
+                  <BookOpen size={16} strokeWidth={2} color={C.accent}/> Sin horario fijo
                   <span style={{fontSize:11,color:C.muted,fontWeight:400}}>({sinHorario.length})</span>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
@@ -336,7 +336,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateX(3px)";}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="none";}}>
                       <div style={{width:36,height:36,borderRadius:9,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14}}>
-                        {p.sinc==="asinc"?"▶":"📖"}
+                        {p.sinc==="asinc"?<Play size={15} strokeWidth={2} color={C.accent}/>:<BookOpen size={15} strokeWidth={2} color={C.accent}/>}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:1}}>
