@@ -8,7 +8,7 @@ export default function ChatBotWidget(){
   const [msgs,setMsgs]=useState([{from:"bot",text:"¡Hola! Soy Ludy 🦊, la asistente virtual de Luderis. Podés preguntarme cualquier cosa sobre la plataforma — cómo publicar, inscribirte, usar el chat, exámenes, pagos, o lo que necesites. ¿En qué te ayudo?"}]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
-  const [failCount,setFailCount]=useState(0);
+  const [,setFailCount]=useState(0);
   const endRef=useRef(null);
   useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,open]);
 

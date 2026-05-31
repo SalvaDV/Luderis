@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { C, FONT, Spinner, Btn, Modal, logError, toast } from "../shared";
+import { C, Spinner, Btn, Modal, logError, toast } from "../shared";
 import * as sb from "../supabase";
 
 export default function FinalizarClaseModal({post,session,onClose,onFinalizado}){

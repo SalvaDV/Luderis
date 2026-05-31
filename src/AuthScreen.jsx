@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as sb from "./supabase";
-import { C, FONT, LUD, t, Btn, logError } from "./shared";
+import { FONT, LUD, t, logError } from "./shared";
 import { trackRegister, trackLogin } from "./analytics";
 import { User, GraduationCap, Sparkles, AlertTriangle, Eye, EyeOff } from "lucide-react";
 

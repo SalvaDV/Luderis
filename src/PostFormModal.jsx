@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
 import {
-  C, FONT, useDebounce, t, LUD,
-  Avatar, Spinner, Btn, Label, ErrMsg, Chip, Modal,
-  StarRating, Tag, VerifiedBadge, SearchableSelect,
-  fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
+  C, FONT, useDebounce, toast,
+  Spinner, Btn, Label, ErrMsg, Modal,
+  SearchableSelect,
+  fmtRel, calcAvg, calcDuracion,
   safeDisplayName, avatarColor, MATERIAS,
-  getPubTipo, TIPO_PUB,
+  getPubTipo,
 } from "./shared";
+import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, Share2, GraduationCap, ScrollText, Briefcase, FileText } from "lucide-react";
 
 function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,token}){
   const [pregunta,setPregunta]=useState("");const [respuesta,setRespuesta]=useState("");const [estado,setEstado]=useState("cargando");const [feedback,setFeedback]=useState("");
@@ -329,10 +330,10 @@ async function dispararAlertasIA(pub, session){
           120,session.access_token
         );
 
-        let match=false;let razon="";
+        let match=false;
         try{
           const j=JSON.parse(raw.match(/\{[\s\S]*?\}/)?.[0]||"{}");
-          match=j.match===true;razon=j.razon||"";
+          match=j.match===true;
         }catch{match=raw.includes('"match":true')||raw.includes('"match": true');}
 
         if(match){
@@ -368,13 +369,11 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const [modalidadForm,setModalidadForm]=useState(postToEdit?.modalidad||"");
   const [nivel,setNivel]=useState(postToEdit?.nivel||"");
   const [requisitos,setRequisitos]=useState(postToEdit?.requisitos||"");
-  const [maxAlumnos,setMaxAlumnos]=useState(postToEdit?.max_alumnos||"");
-  const [bannerUrl,setBannerUrl]=useState(postToEdit?.banner_url||"");
+  const [maxAlumnos]=useState(postToEdit?.max_alumnos||"");
   const [moneda,setMoneda]=useState(postToEdit?.moneda||"ARS");
-  const [showPreview,setShowPreview]=useState(false);
   const [verificacionPendiente,setVerificacionPendiente]=useState(false);
   const [idioma,setIdioma]=useState(postToEdit?.idioma||"");
-  const [frecuencia,setFrecuencia]=useState(postToEdit?.frecuencia||"");
+  const [frecuencia]=useState(postToEdit?.frecuencia||"");
   const [otorgaCertificado,setOtorgaCertificado]=useState(postToEdit?.otorga_certificado||false);
   const [aprobacionPct,setAprobacionPct]=useState(postToEdit?.aprobacion_pct??80);
   // ─── BORRADOR AUTO-GUARDADO ────────────────────────────────────────────────
@@ -485,7 +484,6 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const canNext1=!!tipo&&(tipo==="busqueda"||!!modo);
   const canNext2=titulo.trim().length>=3&&!!materia&&descripcion.trim().length>=20;
   const canNext3=tipo==="busqueda"||(!!modalidadForm&&!!nivel);
-  const canPublish=tipo==="busqueda"||(!!precio&&parseFloat(precio)>0&&!verificacionPendiente);
 
   const nextPaso=()=>{
     if(paso===1&&!canNext1)return;
@@ -576,7 +574,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             {/* Tipo de publicación — para busquedas siempre es clase particular */}
             {tipo==="busqueda"&&modo!=="particular"&&(()=>{setModo("particular");return null;})()}
             {tipo==="busqueda"&&(
-              <div style={{background:"#7B5CF0"+"15",border:"2px solid #7B5CF0",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+              <div style={{background:"#7B5CF015",border:"2px solid #7B5CF0",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:32}}>🎯</span>
                 <div>
                   <div style={{fontSize:14,fontWeight:700,color:"#7B5CF0"}}>Pedido de clase particular</div>
@@ -981,14 +979,15 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const materias=[...new Set(pubs.map(p=>p.materia).filter(Boolean))];
   const perfilColor=localStorage.getItem("avatarColor_"+autorEmail)||avatarColor(displayNombre[0]);
   const videoUrl=perfilData?.video_presentacion||null;
-  const TIPO_ICON={titulo:"🎓",certificado:"📜",experiencia:"💼",otro:"📄"};
+  const TIPO_ICON={titulo:<GraduationCap size={20}/>,certificado:<ScrollText size={20}/>,experiencia:<Briefcase size={20}/>,otro:<FileText size={20}/>};
+  const [bannerUrl,setBannerUrl]=useState(null);
+  useEffect(()=>{if(perfilData?.banner_url)setBannerUrl(perfilData.banner_url);},[perfilData]);
 
   const compartir=()=>{
     const url=window.location.origin+"?perfil="+encodeURIComponent(autorEmail);
     if(navigator.share)navigator.share({title:displayNombre+" en Luderis",url});
     else navigator.clipboard.writeText(url).then(()=>{
-      const b=document.getElementById("btn-comp-perf");
-      if(b){b.textContent="✓ Copiado";setTimeout(()=>b.textContent="🔗 Compartir",2000);}
+      toast("Enlace copiado","success");
     }).catch(()=>{});
   };
 
@@ -1001,11 +1000,13 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
           <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayNombre}</div>
           <div style={{fontSize:11,color:C.muted}}>Docente en Luderis</div>
         </div>
-        <button id="btn-comp-perf" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0}}>🔗 Compartir</button>
+        <button id="btn-comp-perf" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
+          <Share2 size={13}/> Compartir
+        </button>
         {onOpenChat&&autorEmail!==session.user.email&&(
           <button onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
-            style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:600,flexShrink:0}}>
-            💬 Consultar
+            style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:600,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
+            <MessageCircle size={14}/> Consultar
           </button>
         )}
       </div>
@@ -1013,31 +1014,45 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
       {error?<div style={{color:C.danger,textAlign:"center",padding:40}}>{error}</div>:(
       <div style={{maxWidth:720,margin:"0 auto"}}>
 
-        {/* Hero banner */}
-        <div style={{background:`linear-gradient(135deg,${perfilColor}CC,${perfilColor}88)`,padding:"32px 24px 0",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:-30,right:-30,width:160,height:160,borderRadius:"50%",background:"rgba(255,255,255,.08)"}}/>
-          <div style={{display:"flex",gap:18,alignItems:"flex-end"}}>
-            <div style={{width:88,height:88,borderRadius:"50%",overflow:"hidden",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:34,color:perfilColor,flexShrink:0,boxShadow:"0 4px 20px rgba(0,0,0,.2)",marginBottom:-20,position:"relative",zIndex:1,border:"3px solid rgba(255,255,255,.9)"}}>
-              {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")&&(
-                <img src={perfilData.avatar_url} alt={displayNombre} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
-              )}
-              {displayNombre[0].toUpperCase()}
-            </div>
-            <div style={{paddingBottom:24,flex:1,minWidth:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <h1 style={{color:"#fff",fontSize:22,fontWeight:800,margin:"0 0 4px",textShadow:"0 1px 4px rgba(0,0,0,.2)"}}>{displayNombre}</h1>
-                {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
-                  <span style={{fontSize:11,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"3px 10px",boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>🟢 Disponible hoy</span>
-                )}
-              </div>
-              {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&perfilData?.disponible_mensaje&&(
-                <div style={{color:"rgba(255,255,255,.9)",fontSize:12,marginBottom:2,fontStyle:"italic"}}>"{perfilData.disponible_mensaje}"</div>
-              )}
-              {perfilData?.ubicacion&&<div style={{color:"rgba(255,255,255,.85)",fontSize:13}}>📍 {perfilData.ubicacion}</div>}
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-                {materias.slice(0,4).map(m=><span key={m} style={{fontSize:11,background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:20,padding:"2px 10px",fontWeight:600}}>{m}</span>)}
+        {/* Hero — LinkedIn style: fixed banner + avatar overlapping below */}
+        <div style={{position:"relative"}}>
+          {/* Banner */}
+          <div style={{height:110,background:bannerUrl?undefined:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+            {bannerUrl&&<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>}
+          </div>
+          {/* Avatar — overlaps banner */}
+          <div style={{position:"absolute",bottom:-44,left:20,zIndex:2}}>
+            <div style={{width:88,height:88,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.bg}`,boxShadow:"0 4px 16px rgba(0,0,0,.18)"}}>
+              {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")
+                ?<img src={perfilData.avatar_url} alt={displayNombre} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.currentTarget.style.display="none";e.currentTarget.nextSibling.style.display="flex";}}/>
+                :null
+              }
+              <div style={{width:"100%",height:"100%",background:perfilColor,display:perfilData?.avatar_url?"none":"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:34,color:"#fff"}}>
+                {displayNombre[0].toUpperCase()}
               </div>
             </div>
+          </div>
+        </div>
+        {/* Name / badges / location below banner */}
+        <div style={{paddingTop:56,paddingLeft:20,paddingRight:20,paddingBottom:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <h1 style={{color:C.text,fontSize:20,fontWeight:800,margin:0}}>{displayNombre}</h1>
+            {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
+              <span style={{fontSize:11,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"3px 10px",display:"flex",alignItems:"center",gap:4}}>
+                <span style={{width:7,height:7,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>Disponible hoy
+              </span>
+            )}
+          </div>
+          {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&perfilData?.disponible_mensaje&&(
+            <div style={{color:C.muted,fontSize:12,marginTop:2,fontStyle:"italic"}}>"{perfilData.disponible_mensaje}"</div>
+          )}
+          {perfilData?.ubicacion&&(
+            <div style={{color:C.muted,fontSize:13,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+              <MapPin size={12}/>{perfilData.ubicacion}
+            </div>
+          )}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
+            {materias.slice(0,4).map(m=><span key={m} style={{fontSize:11,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 10px",fontWeight:600}}>{m}</span>)}
           </div>
         </div>
 
@@ -1045,13 +1060,13 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
           {/* Stats bar */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:20}}>
             {[
-              {n:avg?avg.toFixed(1):"—",label:"Rating",icon:"⭐",color:"#F59E0B"},
-              {n:reseñas.length,label:"Reseñas",icon:"💬",color:C.accent},
-              {n:pubs.length,label:"Clases",icon:"📚",color:C.success},
-              {n:totalInscriptos,label:"Alumnos",icon:"👥",color:C.purple||"#7B3FBE"},
+              {n:avg?avg.toFixed(1):"—",label:"Rating",icon:<Star size={14} color="#F59E0B"/>,color:"#F59E0B"},
+              {n:reseñas.length,label:"Reseñas",icon:<MessageCircle size={14} color={C.accent}/>,color:C.accent},
+              {n:pubs.length,label:"Clases",icon:<BookOpen size={14} color={C.success}/>,color:C.success},
+              {n:totalInscriptos,label:"Alumnos",icon:<Users size={14} color={C.purple||"#7B3FBE"}/>,color:C.purple||"#7B3FBE"},
             ].map(s=>(
               <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px",textAlign:"center"}}>
-                <div style={{fontSize:11}}>{s.icon}</div>
+                <div style={{display:"flex",justifyContent:"center",marginBottom:2}}>{s.icon}</div>
                 <div style={{fontSize:18,fontWeight:800,color:s.color}}>{s.n}</div>
                 <div style={{fontSize:10,color:C.muted}}>{s.label}</div>
               </div>
@@ -1069,7 +1084,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
                   <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"2px 10px",fontWeight:700}}>{perfilData.anios_experiencia} {perfilData.anios_experiencia===1?"año":"años"} de experiencia</span>
                 )}
                 {perfilData?.franja_horaria&&(
-                  <span style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 10px"}}>🕐 {perfilData.franja_horaria}</span>
+                  <span style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 10px",display:"inline-flex",alignItems:"center",gap:4}}><Clock size={11}/>{perfilData.franja_horaria}</span>
                 )}
               </div>
               {perfilData?.bio&&(
@@ -1095,9 +1110,9 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
           {/* Video de presentación */}
           {videoUrl&&(
             <div style={{marginBottom:16}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8}}>🎬 Video de presentación</div>
+              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><Video size={14}/>Video de presentación</div>
               <div style={{borderRadius:14,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
-                <iframe src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl}
+                <iframe title={`Video de presentación de ${displayNombre}`} src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl}
                   style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
               </div>
             </div>
@@ -1198,7 +1213,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               :<div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {docs.map((d,i)=>(
                   <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",gap:12,alignItems:"center"}}>
-                    <span style={{fontSize:22,flexShrink:0}}>{TIPO_ICON[d.tipo_doc]||"📄"}</span>
+                    <span style={{flexShrink:0,color:C.accent}}>{TIPO_ICON[d.tipo_doc]||<FileText size={20}/>}</span>
                     <div>
                       <div style={{fontWeight:600,color:C.text,fontSize:13}}>{d.titulo}</div>
                       {d.descripcion&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{d.descripcion}</div>}

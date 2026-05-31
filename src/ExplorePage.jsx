@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import * as sb from "./supabase";
 import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
   C, FONT, LUD, toast,
-  Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect, Btn, Chip,
+  Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect,
   fmtPrice, fmtRel, fmt,
   safeDisplayName, _avatarCache,
   MATERIAS, CATEGORIAS_DATA, getPubTipo, TIPO_PUB,
@@ -17,7 +17,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Package, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, CheckCircle, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer } from "lucide-react";
 
 export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);
@@ -35,7 +35,6 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const [rechazadasIds,setRechazadasIds]=useState(new Set());
   const [seenRechazadas,setSeenRechazadas]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("cl_seen_rechazadas")||"[]"));}catch{return new Set();}});
   const [pendientesIds,setPendientesIds]=useState(new Set());
-  const [mostrarRechazadas,setMostrarRechazadas]=useState(false);
   const [filtroUbicacion,setFiltroUbicacion]=useState("");
   const [filtroMoneda,setFiltroMoneda]=useState("");
   const [filtroNivel,setFiltroNivel]=useState("");
@@ -417,27 +416,6 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   const FL=({ch})=><div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:7,letterSpacing:.2}}>{ch}</div>;
   const FC=({label,active,onClick})=>(<button onClick={onClick} style={{padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:active?600:400,cursor:"pointer",fontFamily:FONT,background:active?sT.accent:"transparent",color:active?"#fff":C.muted,border:`1px solid ${active?sT.accent:C.border}`,marginBottom:5,marginRight:5,transition:"all .12s"}}>{label}</button>);
 
-  // Barra de búsqueda — click abre el modal IA (es el buscador principal)
-  const searchBarJSX=(
-    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-      {/* El input actúa como trigger del modal IA */}
-      <button onClick={()=>setShowBusquedaIA(true)}
-        style={{flex:1,minWidth:200,display:"flex",alignItems:"center",gap:10,background:C.surface,border:`2px solid ${iaQuery?C.accent:C.border}`,borderRadius:10,padding:"12px 16px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"border-color .2s",boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}
-        onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-        onMouseLeave={e=>e.currentTarget.style.borderColor=iaQuery?C.accent:C.border}>
-        <span style={{fontSize:16,flexShrink:0,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>✦</span>
-        <span style={{color:iaQuery?C.text:C.muted,fontSize:14,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-          {iaQuery?iaQuery:"Describí lo que querés aprender…"}
-        </span>
-        {iaQuery&&<span onClick={e=>{e.stopPropagation();setIaQuery("");setIaResults(null);setIaExplanation("");}} style={{color:C.muted,fontSize:16,lineHeight:1,flexShrink:0,cursor:"pointer"}}>×</span>}
-      </button>
-      <button onClick={()=>setPanelOpen(v=>!v)}
-        style={{display:"flex",alignItems:"center",gap:6,background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"12px 16px",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:600,flexShrink:0,whiteSpace:"nowrap"}}>
-        ≡ Filtros{activeFilters.length>0&&<span style={{background:C.accent,color:"#fff",borderRadius:"50%",width:18,height:18,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,marginLeft:2}}>{activeFilters.length}</span>}
-      </button>
-    </div>
-  );
-
   const [viewMode,setViewMode]=useState("cards");// "cards" | "lista"
   // Categorías visuales para el home — cuenta solo posts de la sección activa
   const cats=(categorias.length>0
@@ -448,14 +426,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   // Categorías para la sección pedidos (conteo desde busquedas)
   const catsPedidos=MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.tipo==="busqueda"&&p.materia===m&&p.autor_email!==session.user.email).length})).filter(c=>c.count>0).slice(0,19);
 
-  // Publicaciones destacadas para el home (las más recientes con mejor rating)
-  const destacadas=posts.filter(p=>p.tipo==="oferta").slice(0,6);
-  const recientes=posts.slice(0,8);
   const cursos=posts.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")).slice(0,6);
   const particulares=posts.filter(p=>p.tipo==="oferta"&&p.modo==="particular").slice(0,6);
-  // Búsquedas de alumnos visibles al docente en cada sección
-  const busquedasCursos=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="curso"||p.modo==="grupal"||!p.modo)).slice(0,8);
-  const busquedasClases=posts.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email&&(p.modo==="particular"||!p.modo)).slice(0,8);
 
   return(<>
     {/* Drawer de filtros — fuera del div animado para evitar z-index scoping por animation */}

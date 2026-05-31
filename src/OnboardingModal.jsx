@@ -19,7 +19,6 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const [cuit,setCuit]=useState("");
   const [esPep,setEsPep]=useState(false);
   const [terminosAceptados,setTerminosAceptados]=useState(false);
-  const [kycStep,setKycStep]=useState(0);// 0=datos 1=foto 2=fiscal 3=terminos
   const [fotoDniFrente,setFotoDniFrente]=useState(null);
   const [fotoDniPreview,setFotoDniPreview]=useState(null);
 

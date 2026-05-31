@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { C, FONT, Spinner, SkeletonList } from "./shared";
+import { C, FONT, SkeletonList } from "./shared";
 import * as sb from "./supabase";
 import PostCard from "./components/PostCard";
 

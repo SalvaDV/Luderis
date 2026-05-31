@@ -8,7 +8,6 @@ const MUTED   = "#6B7A99";
 const BORDER  = "#E2E8F0";
 const BG      = "#FAFBFF";
 const SURFACE = "#FFFFFF";
-const SUCCESS = "#2E7D52";
 const DANGER  = "#C53030";
 
 const CATEGORIAS = [

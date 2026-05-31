@@ -3,31 +3,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as sb from "./supabase";
 import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
-  C, FONT, LUD, _themeKey,
-  applyTheme, toast, ToastContainer, logError,
-  MATERIAS, CATEGORIAS_DATA, getPubTipo, TIPO_PUB,
-  avatarColor, fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
-  MONEDA_SYM, setLang, STRINGS, t,
-  maskEmail, safeDisplayName, CONTACT_REGEX, sanitizeContactInfo,
-  _avatarCache, useAutorAvatar,
-  Spinner, SkeletonCard, SkeletonList,
-  Avatar, Tag, StatusBadge, VerifiedBadge, StarRating,
-  Input, Btn, SearchableSelect,
-  ErrMsg, Label, Modal, Chip, MiniStars, useConfirm,
-  CalendarioCurso,
+  C, FONT, _themeKey,
+  applyTheme, toast, ToastContainer,
+  t,
+  _avatarCache,
+  Btn,
   useMPRetorno,
-  useDebounce,
-  useIntersectionObserver,
   LegalModal,
 } from "./shared";
 // ─── EAGER IMPORTS (shell crítico) ────────────────────────────────────────────
 import FavBtn from "./components/FavBtn";
-import DocBadge from "./components/DocBadge";
 import DenunciaModal from "./components/DenunciaModal";
 import PostChatBtn from "./components/PostChatBtn";
-import ShareBtn, { useShareToast } from "./components/ShareBtn";
+import ShareBtn from "./components/ShareBtn";
 import OfertarBtn from "./components/OfertarBtn";
-import PostCard from "./components/PostCard";
 import Sidebar from "./components/Sidebar";
 import { User, GraduationCap, Sparkles } from "lucide-react";
 import ScrollToTopBtn from "./components/ScrollToTopBtn";
@@ -36,10 +25,8 @@ import UpdateBanner from "./components/UpdateBanner";
 import PushPermissionBanner from "./components/PushPermissionBanner";
 import usePushSubscription from "./hooks/usePushSubscription";
 import ChatBotWidget from "./components/ChatBotWidget";
-import BusquedaIA from "./components/BusquedaIA";
-import MiniDropdown from "./components/MiniDropdown";
 import FinalizarClaseModal from "./components/FinalizarClaseModal";
-import MyPostsPage, { MyPostCard, ContraofertaModal, OfertasRecibidasModal } from "./MyPostsPage";
+import { MyPostCard, ContraofertaModal, OfertasRecibidasModal } from "./MyPostsPage";
 import ExplorePage from "./ExplorePage";
 
 // ─── LAZY IMPORTS (páginas y modales que no se necesitan en el primer render) ──
@@ -275,7 +262,7 @@ export default function App(){
   const [page,setPageRaw]=useState(()=>{try{return sessionStorage.getItem("cl_page")||"explore";}catch{return "explore";}});
   const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
-  const [unread,setUnread]=useState(0);const [ofertasCount,setOfertasCount]=useState(0);const [notifCount,setNotifCount]=useState(0);const [notifs,setNotifs]=useState([]);const [showNotifs,setShowNotifs]=useState(false);
+  const [unread,setUnread]=useState(0);const [ofertasCount,setOfertasCount]=useState(0);const [notifCount,setNotifCount]=useState(0);const [notifs,setNotifs]=useState([]);
   const [farosWonToday,setFarosWonToday]=useState(false);
   const [shikakuWonToday,setShikakuWonToday]=useState(false);
   // Badge rojo en "Juegos": visible mientras quede al menos 1 juego pendiente
@@ -353,7 +340,7 @@ export default function App(){
   // Siempre inicia como false — se confirma desde DB (no localStorage) para evitar spoofing
   const [esAdmin,setEsAdmin]=useState(false);
   // Rol real del usuario (DB-verified, no localStorage)
-  const [rolSesion,setRolSesion]=useState("alumno");
+  const [,setRolSesion]=useState("alumno");
 
   // Re-sync rol from DB on app load and on window focus
   useEffect(()=>{

@@ -430,7 +430,7 @@ export const deleteDocumento = (id, token) =>
 // ── Verificación IA ───────────────────────────────────────────────────────────
 
 export const getUsuarioByIdFull = (id, token) =>
-  db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
+  db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,banner_url,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
     .then(r => r?.[0] || null).catch(() => null);
 
 export const getUsuarioById = (id, token) =>
@@ -438,7 +438,7 @@ export const getUsuarioById = (id, token) =>
     .then(r => r?.[0] || null).catch(() => null);
 
 export const getUsuarioByEmail = (email, token) =>
-  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes`, "GET", null, token)
+  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,banner_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes`, "GET", null, token)
     .then(r => r?.[0] || null).catch(() => null);
 
 // ── IA helper — llama a la Supabase Edge Function "ai-proxy" ─────────────────
@@ -755,6 +755,23 @@ export const liberarPagoClase = async (claseId, token) => {
 export const uploadAvatar = async (userId, file, token) => {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace("jpeg","jpg");
   const path = `${userId}/avatar_${Date.now()}.${ext}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": file.type || "image/jpeg",
+      "apikey": SUPABASE_KEY,
+      "x-upsert": "true",
+    },
+    body: file,
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
+  return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+};
+
+export const uploadBanner = async (userId, file, token) => {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace("jpeg","jpg");
+  const path = `${userId}/banner_${Date.now()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
     method: "POST",
     headers: {

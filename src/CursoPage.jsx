@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Trophy } from "lucide-react";
 import * as sb from "./supabase";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
-  C, FONT, toast, t,
-  Avatar, Spinner, Btn, Input, Modal, Label, ErrMsg, Chip,
-  MiniStars, StarRating, StatusBadge, VerifiedBadge, Tag,
-  fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
+  C, FONT, toast,
+  Avatar, Spinner, Btn, Modal, ErrMsg, Chip,
+  VerifiedBadge, Tag,
+  fmt, fmtRel, fmtPrice, calcDuracion,
   safeDisplayName, sanitizeContactInfo, moderarMensaje, useConfirm,
   CalendarioCurso,
-  LUD,
   CATEGORIAS_DATA,
   MATERIAS_CON_DIAGNOSTICO,
   getPubTipo,
@@ -17,7 +15,7 @@ import {
   _avatarCache,
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
-import { DenunciaModal, FinalizarClaseModal, ContraofertaModal } from "./App";
+import { DenunciaModal, FinalizarClaseModal } from "./App";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
@@ -157,12 +155,6 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
       if(inscripcion?.clase_finalizada)await sb.updateInscripcion(inscripcion.id,{valorado:true},session.access_token).catch(()=>{});
       await cargar();setTexto("");setCatScores({});
     }catch(e){setErr("Error: "+e.message);}finally{setSaving(false);}
-  };
-
-  // Helper: mostrar las categorías de una reseña existente (si tiene metadata)
-  const getCatDisplay=(r)=>{
-    const prom=r.estrellas||0;
-    return `${prom.toFixed?prom.toFixed(1):prom} ★`;
   };
 
   return(<>
@@ -1116,284 +1108,6 @@ function QuizEditor({item,session,onSaved,onClose}){
   );
 }
 
-// ─── ENTREGA TEXTO — renderiza texto o archivo de una entrega ─────────────────
-function EntregaTexto({texto}){
-  if(!texto)return null;
-  const esArchivo=texto.includes("[Archivo:")&&texto.includes("data:");
-  if(esArchivo){
-    const lines=texto.split("\n");
-    const nombreLine=lines.find(l=>l.startsWith("[Archivo:"));
-    const nombre=nombreLine?.match(/\[Archivo: (.+)\]/)?.[1]||"archivo";
-    const dataLine=lines.find(l=>l.startsWith("data:"));
-    const textoPlano=lines.filter(l=>!l.startsWith("[Archivo:")&&!l.startsWith("data:")).join("\n").trim();
-    return(
-      <>
-        {textoPlano&&<p style={{color:C.muted,fontSize:12,margin:"0 0 6px",lineHeight:1.5,background:C.surface,borderRadius:7,padding:"7px 10px"}}>{textoPlano}</p>}
-        {dataLine&&<a href={dataLine} download={nombre} style={{display:"inline-flex",alignItems:"center",gap:6,background:"#5CA8E015",border:"1px solid #5CA8E033",borderRadius:8,padding:"5px 11px",color:C.info,fontSize:12,textDecoration:"none",marginBottom:8}}>📎 Descargar {nombre}</a>}
-      </>
-    );
-  }
-  return <p style={{color:C.muted,fontSize:12,margin:"0 0 8px",lineHeight:1.5,background:C.surface,borderRadius:7,padding:"7px 10px"}}>{texto}</p>;
-}
-
-// ─── QUIZ VIEWER (para alumnos y docentes) ─────────────────────────────────────
-function QuizViewer({item,session,esMio,esAyudante,onReabrir}){
-  // Parsear datos del quiz (antes de hooks para inicializar estado)
-  let quizData={};
-  try{quizData=JSON.parse(item?.texto||"{}"); }catch{}
-  const {tipo_quiz,preguntas:_pregs,consigna,fecha_inicio,fecha_cierre}=quizData;
-  const preguntas=Array.isArray(_pregs)?_pregs:[];
-
-  // Hooks siempre primero — sin returns condicionales antes de ellos
-  const [miEntrega,setMiEntrega]=useState(null);
-  const [loadingEntrega,setLoadingEntrega]=useState(true);
-  const [respuestas,setRespuestas]=useState(()=>preguntas.map(()=>null));
-  const [textoEntrega,setTextoEntrega]=useState("");
-  const [archivoEntrega,setArchivoEntrega]=useState(null);
-  const [enviando,setEnviando]=useState(false);
-  const [resultado,setResultado]=useState(null);
-  const [entregas,setEntregas]=useState([]);
-  const [loadingEntregas,setLoadingEntregas]=useState(false);
-  const [notaEditing,setNotaEditing]=useState({});
-  const [savingNota,setSavingNota]=useState(null);
-
-  useEffect(()=>{
-    if(!item?.id)return;
-    if(esMio||esAyudante){
-      setLoadingEntregas(true);
-      sb.getQuizEntregas(item.id,session.access_token)
-        .then(e=>setEntregas(e||[]))
-        .catch(()=>setEntregas([]))
-        .finally(()=>setLoadingEntregas(false));
-      setLoadingEntrega(false);
-    } else {
-      sb.getMiEntregaQuiz(item.id,session.user.email,session.access_token)
-        .then(e=>{
-          setMiEntrega(e);
-          if(e&&tipo_quiz==="multiple"&&e.resultado_json){
-            try{setResultado(JSON.parse(e.resultado_json));}catch{}
-          }
-        })
-        .catch(()=>setMiEntrega(null))
-        .finally(()=>setLoadingEntrega(false));
-    }
-  },[item?.id,session.user.email,esMio,esAyudante]);// eslint-disable-line
-
-  // Early return después de hooks
-  if(!item?.id)return<div style={{fontSize:12,color:C.muted,padding:"8px 0"}}>⚠ Quiz guardado — recargá la página para verlo.</div>;
-
-  const ahora=new Date();
-  const inicio=fecha_inicio?new Date(fecha_inicio):null;
-  const cierre=fecha_cierre?new Date(fecha_cierre):null;
-  const noEmpezado=inicio&&ahora<inicio;
-  const cerrado=cierre&&ahora>cierre;
-  const abierto=!noEmpezado&&!cerrado;
-
-  const enviarMultiple=async()=>{
-    if(respuestas.some(r=>r===null))return;
-    setEnviando(true);
-    try{
-      let correctas=0;
-      const detalle=preguntas.map((q,i)=>{const ok=respuestas[i]===q.correcta;if(ok)correctas++;return{pregunta:q.texto,elegida:q.opciones[respuestas[i]],correcta:q.opciones[q.correcta],ok};});
-      const nota=Math.round((correctas/preguntas.length)*10*100)/100;
-      const resJson=JSON.stringify({nota,correctas,total:preguntas.length,detalle});
-      const r=await sb.insertEntregaQuiz({quiz_id:item.id,publicacion_id:item.publicacion_id,alumno_email:session.user.email,tipo:"multiple",resultado_json:resJson,nota},session.access_token);
-      setMiEntrega(r?.[0]);
-      setResultado({nota,correctas,total:preguntas.length,detalle});
-    }catch(e){toast(e.message,"error");}finally{setEnviando(false);}
-  };
-
-  const ALLOWED_ENTREGA_TYPES=["application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","text/plain","image/jpeg","image/png","application/zip","application/x-zip-compressed"];
-  const leerArchivo=(file)=>new Promise((res,rej)=>{
-    if(!ALLOWED_ENTREGA_TYPES.includes(file.type)){rej(new Error("Tipo de archivo no permitido. Usá PDF, DOC, TXT, imagen o ZIP."));return;}
-    if(file.size>5*1024*1024){rej(new Error("El archivo no puede superar 5MB"));return;}
-    const r=new FileReader();r.onload=e=>res({name:file.name,size:file.size,base64:e.target.result});r.onerror=rej;r.readAsDataURL(file);
-  });
-  const onFileChange=async(e)=>{const f=e.target.files?.[0];if(!f)return;try{const d=await leerArchivo(f);setArchivoEntrega(d);}catch(err){toast(err.message,"error");}};
-
-  const enviarEntregable=async()=>{
-    if(!textoEntrega.trim()&&!archivoEntrega)return;
-    setEnviando(true);
-    try{
-      const payload={quiz_id:item.id,publicacion_id:item.publicacion_id,alumno_email:session.user.email,tipo:"entregable",texto_entrega:textoEntrega.trim()||null};
-      if(archivoEntrega)payload.texto_entrega=(payload.texto_entrega?payload.texto_entrega+"\n\n":"")+`[Archivo: ${archivoEntrega.name}]\n${archivoEntrega.base64}`;
-      const r=await sb.insertEntregaQuiz(payload,session.access_token);
-      setMiEntrega(r?.[0]);
-    }catch(e){toast(e.message,"error");}finally{setEnviando(false);}
-  };
-
-  const guardarNota=async(entregaId)=>{
-    const nota=parseFloat(notaEditing[entregaId]);
-    if(isNaN(nota)||nota<0||nota>10)return;
-    setSavingNota(entregaId);
-    try{
-      await sb.updateEntregaQuiz(entregaId,{nota,corregido:true},session.access_token);
-      setEntregas(prev=>prev.map(e=>e.id===entregaId?{...e,nota,corregido:true}:e));
-    }catch(e){toast(e.message,"error");}finally{setSavingNota(null);}
-  };
-
-  const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 11px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT};
-
-  // ── Vista docente ──────────────────────────────────────────────────────────
-  if(esMio||esAyudante){
-    return(
-      <div style={{marginTop:8}}>
-        {/* Estado del quiz */}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,alignItems:"center"}}>
-          {noEmpezado&&<span style={{fontSize:11,background:"#5CA8E015",color:C.info,border:"1px solid #5CA8E033",borderRadius:20,padding:"2px 9px",fontWeight:600}}>⏳ Abre {new Date(fecha_inicio).toLocaleString("es-AR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
-          {abierto&&<span style={{fontSize:11,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"2px 9px",fontWeight:600}}>● Abierto</span>}
-          {cerrado&&<span style={{fontSize:11,background:"#E05C5C15",color:C.danger,border:"1px solid #E05C5C33",borderRadius:20,padding:"2px 9px",fontWeight:600}}>✕ Cerrado</span>}
-          {cierre&&<span style={{fontSize:11,color:C.muted}}>Cierre: {new Date(fecha_cierre).toLocaleString("es-AR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
-          {cerrado&&esMio&&<button onClick={onReabrir} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,color:C.accent,padding:"3px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700}}>Reabrir</button>}
-          <span style={{fontSize:11,color:C.muted,marginLeft:"auto"}}>{entregas.length} entrega{entregas.length!==1?"s":""}</span>
-        </div>
-        {tipo_quiz==="multiple"&&(
-          <div style={{background:C.card,borderRadius:10,padding:"10px 13px",marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>PREGUNTAS</div>
-            {preguntas.map((q,i)=>(
-              <div key={i} style={{marginBottom:6,fontSize:12,color:C.muted}}>
-                <span style={{color:C.text,fontWeight:600}}>{i+1}. {q.texto}</span>
-                <span style={{color:C.success,marginLeft:8}}>✓ {q.opciones[q.correcta]}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {loadingEntregas?<Spinner small/>:entregas.length===0?(
-          <div style={{textAlign:"center",padding:"16px 0",color:C.muted,fontSize:12}}>Sin entregas aún.</div>
-        ):(
-          <div style={{display:"flex",flexDirection:"column",gap:7}}>
-            {entregas.map(e=>(
-              <div key={e.id} style={{background:C.card,border:`1px solid ${e.corregido||e.resultado_json?C.success:C.border}`,borderRadius:10,padding:"10px 13px"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                  <div style={{fontWeight:600,color:C.text,fontSize:12}}>{safeDisplayName(null,e.alumno_email)}</div>
-                  <div style={{display:"flex",alignItems:"center",gap:7}}>
-                    {e.nota!==null&&e.nota!==undefined&&<span style={{fontWeight:700,color:e.nota>=6?C.success:C.danger,fontSize:13}}>{e.nota}/10</span>}
-                    {e.corregido&&<span style={{fontSize:10,color:C.success,background:"#4ECB7115",borderRadius:20,padding:"1px 7px",border:"1px solid #4ECB7133"}}>✓ Corregido</span>}
-                  </div>
-                </div>
-                {e.tipo==="entregable"&&(
-                  <>
-                    <EntregaTexto texto={e.texto_entrega}/>
-                    {!e.corregido&&(
-                      <div style={{display:"flex",gap:7,alignItems:"center"}}>
-                        <span style={{fontSize:11,color:C.muted}}>Nota (0-10):</span>
-                        <input type="number" min="0" max="10" step="0.5" value={notaEditing[e.id]??""} onChange={ev=>setNotaEditing(p=>({...p,[e.id]:ev.target.value}))} style={{width:60,...iS,padding:"4px 8px",marginBottom:0}}/>
-                        <button onClick={()=>guardarNota(e.id)} disabled={savingNota===e.id||notaEditing[e.id]===""}
-                          style={{background:C.success,border:"none",borderRadius:7,color:"#fff",padding:"5px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,opacity:notaEditing[e.id]===undefined||notaEditing[e.id]===""?0.5:1}}>
-                          {savingNota===e.id?"...":"Corregir ✓"}
-                        </button>
-                      </div>
-                    )}
-                    {e.corregido&&esMio&&(
-                      <button onClick={()=>{setNotaEditing(p=>({...p,[e.id]:e.nota}));sb.updateEntregaQuiz(e.id,{corregido:false},session.access_token).then(()=>setEntregas(prev=>prev.map(x=>x.id===e.id?{...x,corregido:false}:x)));}}
-                        style={{background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,padding:"3px 9px",cursor:"pointer",fontSize:10,fontFamily:FONT}}>Editar nota</button>
-                    )}
-                  </>
-                )}
-                {e.tipo==="multiple"&&e.resultado_json&&(()=>{
-                  try{const res=JSON.parse(e.resultado_json);return<div style={{fontSize:12,color:C.muted}}>{res.correctas}/{res.total} correctas — nota: <span style={{fontWeight:700,color:res.nota>=6?C.success:C.danger}}>{res.nota}/10</span></div>;}catch{return null;}
-                })()}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Vista alumno ───────────────────────────────────────────────────────────
-  if(loadingEntrega)return<Spinner small/>;
-
-  // Ya entregó
-  if(miEntrega){
-    return(
-      <div style={{marginTop:8}}>
-        {tipo_quiz==="multiple"&&resultado?(
-          <div style={{background:resultado.nota>=6?"#4ECB7115":"#E05C5C15",border:`1px solid ${resultado.nota>=6?"#4ECB7133":"#E05C5C33"}`,borderRadius:10,padding:"12px 14px"}}>
-            <div style={{fontWeight:700,color:resultado.nota>=6?C.success:C.danger,fontSize:15,marginBottom:4}}>
-              {resultado.nota>=6?"✓ Aprobado":"✗ Desaprobado"} — {resultado.nota}/10
-            </div>
-            <div style={{color:C.muted,fontSize:12,marginBottom:8}}>{resultado.correctas} de {resultado.total} respuestas correctas</div>
-            {resultado.detalle?.map((d,i)=>(
-              <div key={i} style={{fontSize:11,marginBottom:4,color:d.ok?C.success:C.danger}}>
-                {d.ok?"✓":"✗"} {d.pregunta} — {d.ok?"Correcto":d.correcta}
-              </div>
-            ))}
-          </div>
-        ):(
-          <div style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:10,padding:"12px 14px"}}>
-            <div style={{color:C.success,fontWeight:700,fontSize:13,marginBottom:3}}>✓ Entrega enviada</div>
-            {miEntrega.texto_entrega&&<div style={{background:C.surface,borderRadius:7,padding:"7px 10px",marginTop:6,fontSize:12,color:C.muted}}><EntregaTexto texto={miEntrega.texto_entrega}/></div>}
-            {miEntrega.nota!==null&&miEntrega.nota!==undefined
-              ?<div style={{fontSize:14,fontWeight:700,color:miEntrega.nota>=6?C.success:C.danger,marginTop:4}}>Nota: {miEntrega.nota}/10</div>
-              :<div style={{fontSize:12,color:C.muted,marginTop:3}}>En espera de corrección del docente.</div>
-            }
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Quiz no empezado
-  if(noEmpezado)return(
-    <div style={{marginTop:8,background:C.card,borderRadius:10,padding:"10px 13px",fontSize:12,color:C.muted}}>
-      ⏳ Este quiz abre el {new Date(fecha_inicio).toLocaleString("es-AR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}
-    </div>
-  );
-
-  // Quiz cerrado sin entrega
-  if(cerrado)return(
-    <div style={{marginTop:8,background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:10,padding:"10px 13px",fontSize:12,color:C.danger}}>
-      ✕ Este quiz cerró el {new Date(fecha_cierre).toLocaleString("es-AR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}. No se aceptan más entregas.
-    </div>
-  );
-
-  // Quiz abierto — formulario de entrega
-  return(
-    <div style={{marginTop:8}}>
-      {tipo_quiz==="multiple"?(
-        <div>
-          {preguntas.map((q,qi)=>(
-            <div key={qi} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 13px",marginBottom:8}}>
-              <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:8}}>{qi+1}. {q.texto}</div>
-              {q.opciones.filter(o=>o.trim()).map((op,oi)=>(
-                <button key={oi} onClick={()=>setRespuestas(r=>r.map((v,i)=>i===qi?oi:v))}
-                  style={{display:"block",width:"100%",textAlign:"left",background:respuestas[qi]===oi?C.accentDim:"transparent",border:`1px solid ${respuestas[qi]===oi?C.accent:C.border}`,borderRadius:8,padding:"7px 11px",color:respuestas[qi]===oi?C.accent:C.muted,fontSize:12,cursor:"pointer",fontFamily:FONT,marginBottom:5,transition:"all .1s"}}>
-                  {String.fromCharCode(65+oi)}. {op}
-                </button>
-              ))}
-            </div>
-          ))}
-          <button onClick={enviarMultiple} disabled={enviando||respuestas.some(r=>r===null)}
-            style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%",opacity:respuestas.some(r=>r===null)?0.5:1}}>
-            {enviando?"Enviando...":"Enviar respuestas →"}
-          </button>
-          {respuestas.some(r=>r===null)&&<div style={{textAlign:"center",fontSize:11,color:C.muted,marginTop:4}}>Respondé todas las preguntas para enviar</div>}
-        </div>
-      ):(
-        <div>
-          {consigna&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:9,padding:"9px 13px",marginBottom:10,fontSize:12,color:C.text,lineHeight:1.6}}>{consigna}</div>}
-          <textarea value={textoEntrega} onChange={e=>setTextoEntrega(e.target.value)} placeholder="Escribí tu entrega acá... (opcional si adjuntás archivo)" style={{...iS,minHeight:80,resize:"vertical",marginBottom:8}}/>
-          {/* File upload */}
-          <div style={{marginBottom:8}}>
-            <label style={{display:"flex",alignItems:"center",gap:8,background:C.card,border:`1px solid ${archivoEntrega?C.success:C.border}`,borderRadius:9,padding:"8px 12px",cursor:"pointer",fontSize:12,color:archivoEntrega?C.success:C.muted,fontFamily:FONT}}>
-              <span style={{fontSize:15}}>{archivoEntrega?"📎":"📎"}</span>
-              {archivoEntrega?`${archivoEntrega.name} (${(archivoEntrega.size/1024).toFixed(0)}KB)`:"Adjuntar archivo (opcional, max 5MB)"}
-              <input type="file" onChange={onFileChange} style={{display:"none"}} accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.zip"/>
-            </label>
-            {archivoEntrega&&<button onClick={()=>setArchivoEntrega(null)} style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer",fontFamily:FONT,marginTop:3}}>✕ Quitar archivo</button>}
-          </div>
-          <button onClick={enviarEntregable} disabled={enviando||(!textoEntrega.trim()&&!archivoEntrega)}
-            style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,width:"100%",opacity:(!textoEntrega.trim()&&!archivoEntrega)?0.5:1}}>
-            {enviando?"Enviando...":"Enviar entrega →"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
 // ─── TABLA DE NOTAS ───────────────────────────────────────────────────────────
 function TablaNotas({contenido,inscripciones,session,publicacionId}){
   const [notas,setNotas]=useState({});// {quizId: {alumnoEmail: nota}}
@@ -1542,288 +1256,6 @@ function NotasPad({publicacionId,session}){
 
 
 
-
-// ─── DOCENTES DESTACADOS ──────────────────────────────────────────────────────
-function DocentesDestacados({posts,onOpenPerfil,session}){
-  const [visible,setVisible]=useState(true);
-
-  // Calcular top docentes: score = rating * 2 + inscriptos * 0.5 + reseñas
-  const docenteMap={};
-  posts.filter(p=>p.tipo==="oferta"&&p.activo).forEach(p=>{
-    const email=p.autor_email;
-    if(!docenteMap[email])docenteMap[email]={
-      email,nombre:p.autor_nombre||email.split("@")[0],
-      rating:0,inscriptos:0,reseñas:0,materias:new Set(),pubs:0
-    };
-    const d=docenteMap[email];
-    d.pubs++;
-    d.materias.add(p.materia);
-    if(p.calificacion_promedio)d.rating=Math.max(d.rating,parseFloat(p.calificacion_promedio)||0);
-    d.inscriptos+=(p.cantidad_inscriptos||0);
-  });
-  const top=Object.values(docenteMap)
-    .filter(d=>d.rating>0||d.inscriptos>0)
-    .map(d=>({...d,score:d.rating*2+d.inscriptos*0.3+d.pubs}))
-    .sort((a,b)=>b.score-a.score)
-    .slice(0,4);
-
-  if(top.length<2)return null;
-
-  return(
-    <div style={{marginBottom:18}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,display:"flex",alignItems:"center",gap:5}}><Trophy size={14} color="#F59E0B" strokeWidth={2}/>Docentes destacados</div>
-        <button onClick={()=>setVisible(v=>!v)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT}}>{visible?"▴":"▾"}</button>
-      </div>
-      {visible&&(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,paddingTop:10}}>
-          {top.map((d,i)=>(
-            <div key={d.email} onClick={()=>onOpenPerfil(d.email)}
-              style={{background:C.card,border:`1px solid ${i===0?C.accent:C.border}`,borderRadius:12,
-                padding:"12px 14px",cursor:"pointer",textAlign:"center",position:"relative",
-                transition:"transform .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-              onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-              {i===0&&<div style={{position:"absolute",top:-8,left:"50%",transform:"translateX(-50%)",
-                background:C.accent,color:"#fff",fontSize:9,fontWeight:700,borderRadius:20,
-                padding:"2px 8px",whiteSpace:"nowrap"}}>⭐ Top docente</div>}
-              <Avatar letra={d.nombre[0]} size={36} style={{margin:"0 auto 6px"}} img={_avatarCache[d.email]||localStorage.getItem("cl_avatar_"+d.email)||undefined}/>
-              <div style={{fontWeight:700,color:C.text,fontSize:12,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.nombre}</div>
-              {d.rating>0&&<div style={{color:C.accent,fontSize:11,marginBottom:2}}>{"★".repeat(Math.round(d.rating))} {d.rating.toFixed(1)}</div>}
-              <div style={{color:C.muted,fontSize:10}}>{[...d.materias].slice(0,2).join(", ")}</div>
-              {d.inscriptos>0&&<div style={{color:C.muted,fontSize:10,marginTop:2}}>{d.inscriptos} alumnos</div>}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── AGENDA PERSONAL ──────────────────────────────────────────────────────────
-function AgendaPage({session,onOpenCurso}){
-  const [inscripciones,setInscripciones]=useState([]);
-  const [posts,setPosts]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [mesOffset,setMesOffset]=useState(0);
-  const [diaSelec,setDiaSelec]=useState(null);
-  const [proximasOpen,setProximasOpen]=useState(true);
-  const miEmail=session.user.email;
-
-  useEffect(()=>{
-    Promise.all([
-      sb.getMisInscripciones(miEmail,session.access_token).catch(()=>[]),
-    ]).then(([ins])=>{
-      setInscripciones(ins||[]);
-      // Cargar datos de las publicaciones inscriptas que tienen calendario
-      const ids=[...new Set((ins||[]).map(i=>i.publicacion_id))];
-      if(!ids.length){setLoading(false);return;}
-      sb.getPublicacionesByIds(ids,session.access_token).then(results=>{
-        const allPosts=(results||[]).filter(Boolean);
-        setPosts(allPosts);
-      }).finally(()=>setLoading(false));
-    });
-  },[miEmail]);// eslint-disable-line
-
-  // Calcular clases del mes
-  const now=new Date();
-  const mes=new Date(now.getFullYear(),now.getMonth()+mesOffset,1);
-  const mesLabel=mes.toLocaleString("es-AR",{month:"long",year:"numeric"});
-
-  // Para cada publicación sincrónica, expandir sus clases en el mes
-  const clasesEnDia=(dia)=>{
-    const fecha=new Date(mes.getFullYear(),mes.getMonth(),dia);
-    const diaNombre=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][fecha.getDay()];
-    const resultado=[];
-    posts.forEach(p=>{
-      if(p.sinc!=="sinc"||!p.clases_sinc)return;
-      let clases=[];
-      try{clases=JSON.parse(p.clases_sinc);}catch{return;}
-      clases.forEach(c=>{
-        if(c.dia===diaNombre){
-          const fechaInicio=p.fecha_inicio?new Date(p.fecha_inicio):null;
-          const fechaFin=p.fecha_fin?new Date(p.fecha_fin):null;
-          if((!fechaInicio||fecha>=fechaInicio)&&(!fechaFin||fecha<=fechaFin)){
-            resultado.push({post:p,clase:c,fecha});
-          }
-        }
-      });
-    });
-    return resultado;
-  };
-
-  // Días del mes con clases
-  const diasConClase=new Set();
-  const diasEnMes=new Date(mes.getFullYear(),mes.getMonth()+1,0).getDate();
-  for(let d=1;d<=diasEnMes;d++){if(clasesEnDia(d).length>0)diasConClase.add(d);}
-
-  // Generar grid del mes
-  const primerDia=new Date(mes.getFullYear(),mes.getMonth(),1).getDay();
-  const offset=(primerDia+6)%7;// Lunes primero
-
-  // Próximas clases (hoy en adelante)
-  const hoy=new Date();
-  const proximas=[];
-  for(let d=1;d<=diasEnMes;d++){
-    const fecha=new Date(mes.getFullYear(),mes.getMonth(),d);
-    if(fecha<new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()))continue;
-    const clases=clasesEnDia(d);
-    clases.forEach(c=>proximas.push(c));
-  }
-  proximas.sort((a,b)=>a.fecha-b.fecha);
-
-  const colorPost=(post)=>{
-    const colors=[C.accent,C.info,C.success,C.purple,C.warn];
-    const idx=posts.indexOf(post)%colors.length;
-    return colors[idx<0?0:idx];
-  };
-
-  // Detectar clases perdidas (ayer o antes de ayer, que el alumno no marcó asistencia)
-  const clasesPerdidas=[];
-  for(let d=-2;d<0;d++){
-    const fecha=new Date(now.getFullYear(),now.getMonth(),now.getDate()+d);
-    const clases=clasesEnDia(fecha.getDate());
-    clases.forEach(c=>clasesPerdidas.push({...c,fecha}));
-  }
-
-  return(
-    <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto",fontFamily:FONT}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
-        <div>
-          <div style={{fontWeight:800,color:C.text,fontSize:20,marginBottom:4,letterSpacing:"-.3px"}}>📅 Mi agenda</div>
-          <div style={{color:C.muted,fontSize:13}}>{mesLabel} · {diasConClase.size} día{diasConClase.size!==1?"s":""} con clase{diasConClase.size!==1?"s":""}</div>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          {posts.map((p,i)=>(
-            <div key={p.id} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:colorPost(p)}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:colorPost(p),flexShrink:0}}/>
-              <span style={{maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.muted}}>{p.titulo}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {loading?<Spinner/>:(
-        <>
-          {/* Calendatio */}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px",marginBottom:18}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <button onClick={()=>setMesOffset(m=>m-1)} style={{width:34,height:34,background:C.bg,border:`1px solid ${C.border}`,borderRadius:"50%",color:C.muted,cursor:"pointer",fontFamily:FONT,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>‹</button>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontWeight:800,color:C.text,fontSize:16,textTransform:"capitalize",letterSpacing:"-.2px"}}>{mes.toLocaleString("es-AR",{month:"long"})}</div>
-                <div style={{fontSize:12,color:C.muted}}>{mes.getFullYear()}</div>
-              </div>
-              <button onClick={()=>setMesOffset(m=>m+1)} style={{width:34,height:34,background:C.bg,border:`1px solid ${C.border}`,borderRadius:"50%",color:C.muted,cursor:"pointer",fontFamily:FONT,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>›</button>
-            </div>
-            {/* Días de la semana */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:8}}>
-              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map((d,i)=>(
-                <div key={d} style={{textAlign:"center",fontSize:11,color:i>=5?C.accent:C.muted,fontWeight:700,padding:"4px 0",letterSpacing:.3}}>{d}</div>
-              ))}
-            </div>
-            {/* Grid días */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3}}>
-              {Array.from({length:offset}).map((_,i)=><div key={"e"+i}/>)}
-              {Array.from({length:diasEnMes},(_,i)=>i+1).map(d=>{
-                const tieneClase=diasConClase.has(d);
-                const esHoy=d===hoy.getDate()&&mes.getMonth()===hoy.getMonth()&&mes.getFullYear()===hoy.getFullYear();
-                const selec=diaSelec===d;
-                const nClases=clasesEnDia(d).length;
-                return(
-                  <button key={d} onClick={()=>setDiaSelec(tieneClase?(selec?null:d):null)}
-                    style={{textAlign:"center",padding:"8px 2px",borderRadius:10,fontSize:13,
-                      fontWeight:tieneClase||esHoy?700:400,
-                      background:selec?C.accent:esHoy?LUD.grad:tieneClase?C.accentDim:"transparent",
-                      color:selec?"#fff":esHoy?"#fff":tieneClase?C.accent:C.muted,
-                      border:selec?`2px solid ${C.accent}`:esHoy?"none":tieneClase?`1px solid ${C.accent}44`:"1px solid transparent",
-                      cursor:tieneClase?"pointer":"default",fontFamily:FONT,
-                      position:"relative",minHeight:44,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-                      boxShadow:tieneClase&&!selec?"0 1px 4px rgba(26,110,216,.12)":undefined,
-                      transition:"all .12s"}}>
-                    <span>{d}</span>
-                    {nClases>0&&(
-                      <div style={{display:"flex",gap:2,justifyContent:"center"}}>
-                        {clasesEnDia(d).slice(0,3).map((item,ci)=>(
-                          <div key={ci} style={{width:5,height:5,borderRadius:"50%",background:selec?"rgba(255,255,255,.8)":colorPost(item.post),boxShadow:"0 1px 2px rgba(0,0,0,.15)"}}/>
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Clases del día seleccionado */}
-            {diaSelec&&(
-              <div style={{marginTop:12,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:8}}>
-                  {new Date(mes.getFullYear(),mes.getMonth(),diaSelec).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
-                </div>
-                {clasesEnDia(diaSelec).length===0
-                  ?<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"8px 0"}}>Sin clases este día.</div>
-                  :clasesEnDia(diaSelec).map((item,i)=>(
-                    <div key={i} onClick={()=>onOpenCurso(item.post)}
-                      style={{marginBottom:8,background:C.surface,borderRadius:12,overflow:"hidden",
-                        border:`1px solid ${colorPost(item.post)}33`,cursor:"pointer",
-                        display:"flex",transition:"all .15s",boxShadow:`0 2px 8px ${colorPost(item.post)}15`}}
-                      onMouseEnter={e=>{e.currentTarget.style.transform="translateX(4px)";e.currentTarget.style.boxShadow=`0 4px 16px ${colorPost(item.post)}25`;}}
-                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${colorPost(item.post)}15`;}}>
-                      <div style={{width:5,background:colorPost(item.post),flexShrink:0}}/>
-                      <div style={{padding:"12px 14px",flex:1}}>
-                        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:5}}>{item.post.titulo}</div>
-                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                          <span style={{fontWeight:700,color:colorPost(item.post),fontSize:13,display:"flex",alignItems:"center",gap:4}}>🕐 {item.clase.hora_inicio}</span>
-                          <span style={{color:C.muted,fontSize:12}}>→ {item.clase.hora_fin}</span>
-                          {item.post.materia&&<span style={{fontSize:11,color:"#fff",background:colorPost(item.post),borderRadius:20,padding:"2px 10px",fontWeight:600}}>{item.post.materia}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            )}
-          </div>
-
-          {/* Próximas clases */}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px"}}>
-            <div onClick={()=>setProximasOpen(v=>!v)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:proximasOpen?12:0,cursor:"pointer"}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:14}}>Próximas clases {proximas.length>0&&<span style={{fontSize:11,color:C.muted,fontWeight:400}}>({proximas.slice(0,10).length})</span>}</div>
-              <span style={{color:C.muted,fontSize:13,transform:proximasOpen?"rotate(0deg)":"rotate(-90deg)",display:"inline-block",transition:"transform .2s"}}>▾</span>
-            </div>
-            {proximasOpen&&(
-            <div>{proximas.length===0?(
-              <div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"20px 0"}}>
-                {posts.length===0?"No tenés clases inscriptas aún.":"No hay clases programadas este mes."}
-              </div>
-            ):proximas.slice(0,10).map((item,i)=>{
-              const esMesmo=item.fecha.getDate()===hoy.getDate()&&item.fecha.getMonth()===hoy.getMonth();
-              return(
-                <div key={i} onClick={()=>onOpenCurso(item.post)}
-                  style={{display:"flex",gap:12,alignItems:"center",padding:"9px 0",
-                    borderBottom:i<proximas.slice(0,10).length-1?`1px solid ${C.border}`:"none",cursor:"pointer"}}>
-                  <div style={{textAlign:"center",minWidth:44,background:esMesmo?C.accentDim:C.surface,
-                    borderRadius:9,padding:"5px 6px",border:`1px solid ${esMesmo?C.accent:C.border}`}}>
-                    <div style={{fontSize:16,fontWeight:700,color:esMesmo?C.accent:C.text,lineHeight:1}}>
-                      {item.fecha.getDate()}
-                    </div>
-                    <div style={{fontSize:9,color:C.muted,textTransform:"capitalize"}}>
-                      {item.fecha.toLocaleString("es-AR",{month:"short"})}
-                    </div>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:600,color:C.text,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.post.titulo}</div>
-                    <div style={{color:C.muted,fontSize:11}}>{item.clase.hora_inicio} → {item.clase.hora_fin} · {item.clase.dia}</div>
-                  </div>
-                  {esMesmo&&<span style={{fontSize:10,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 8px",border:`1px solid ${C.accent}33`,flexShrink:0}}>Hoy</span>}
-                </div>
-              );
-            })}
-          </div>)}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 // ─── NOTAS PRIVADAS ──────────────────────────────────────────────────────────
 // ─── PANEL DE PROGRESO DOCENTE ───────────────────────────────────────────────
@@ -2924,7 +2356,6 @@ function NotasAlumno({contenido,session,publicacionId}){
       {notas.map(({quiz,entrega})=>{
         let qd={};try{qd=JSON.parse(quiz.texto||"{}");}catch{}
         const nota=entrega?.nota;
-        const corregido=entrega?.corregido;
         const entrego=!!entrega;
         return(
           <div key={quiz.id} style={{background:C.surface,border:`1px solid ${nota!==null&&nota!==undefined?notaColor(nota)+"33":C.border}`,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"center",gap:12}}>
@@ -2958,15 +2389,6 @@ const SKILL_TIPOS = {
   performance:   {label:"Performance",   desc:"Demostrar en tiempo real",        icon:"🎤"},
 };
 
-const FORMATO_POR_TIPO = {
-  conceptual:    ["multiple_choice","verdadero_falso","desarrollo"],
-  procedimental: ["resolucion_problema","codigo","multiple_choice"],
-  practica:      ["consigna_practica","imagen","video"],
-  creativa:      ["consigna_practica","imagen","rubrica"],
-  interpretativa:["desarrollo","autoevaluacion"],
-  performance:   ["audio","video","rubrica"],
-};
-
 const FORMATO_LABELS = {
   multiple_choice:    {label:"Multiple choice",      icon:"📋"},
   verdadero_falso:    {label:"Verdadero/Falso",      icon:"⚖️"},
@@ -2981,9 +2403,6 @@ const FORMATO_LABELS = {
   autoevaluacion:     {label:"Autoevaluación guiada", icon:"🪞"},
   peer_review:        {label:"Revisión entre pares",  icon:"👥"},
 };
-
-const NIVEL_LABELS = ["No visto","Inicial","Básico","Competente","Sólido","Dominado"];
-const NIVEL_COLORS = () => [C.border,"#E05C5C","#E0955C","#F5C842","#5CA8E0","#4ECB71"];
 
 // ─── SISTEMA DE SKILLS / HABILIDADES ──────────────────────────────────────────
 const SKILL_LEVELS = ["Sin ver","Principiante","Básico","Competente","Sólido","Dominado"];
@@ -3009,7 +2428,6 @@ function SkillManager({post,session,onSkillsChange}){
   // Cargar desde DB, fallback localStorage
   const [skills,setSkills]=useState(()=>getSkills(pubId));
   const [nueva,setNueva]=useState("");
-  const [nuevoTipo,setNuevoTipo]=useState("conceptual");
   const [editIdx,setEditIdx]=useState(null);
   const [loading,setLoading]=useState(true);
   const [clasificandoIA,setClasificandoIA]=useState(false);
@@ -3575,181 +2993,6 @@ function ValidacionWizard({post,session,onValidado}){
   );
 }
 
-// ─── EVALUACIONES FORMALES ────────────────────────────────────────────────────
-function EvaluacionesFormales({post,session,esMio,esAyudante,inscripcion,inscripciones}){
-  const pubId=post.id;
-  const miEmail=session.user.email;
-  const [evaluaciones,setEvaluaciones]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [showCrear,setShowCrear]=useState(false);
-  const [generandoIA,setGenerandoIA]=useState(false);
-
-  // Form crear evaluación
-  const [evalTipo,setEvalTipo]=useState("diagnostico");
-  const [evalFormato,setEvalFormato]=useState("multiple_choice");
-  const [evalTitulo,setEvalTitulo]=useState("");
-  const [evalContenido,setEvalContenido]=useState("");
-  const [evalSkillIds,setEvalSkillIds]=useState([]);
-  const skills=getSkills(pubId);
-
-  useEffect(()=>{
-    sb.getEvaluaciones(pubId,session.access_token)
-      .then(data=>setEvaluaciones(data||[]))
-      .catch(()=>{})
-      .finally(()=>setLoading(false));
-  },[pubId]);// eslint-disable-line
-
-  const generarConIA=async()=>{
-    const selectedSkills=skills.filter(s=>evalSkillIds.includes(s.id));
-    const skillNombres=selectedSkills.map(s=>s.nombre).join(", ")||"las habilidades del curso";
-    const skillTipo=selectedSkills[0]?.tipo||"conceptual";
-    const formatosRec=(FORMATO_POR_TIPO[skillTipo]||["multiple_choice"]);
-    const formatoSugerido=formatosRec[0];
-    setEvalFormato(formatoSugerido);
-    setGenerandoIA(true);
-    try{
-      const system=`Sos un generador de evaluaciones educativas. \nGenerás evaluaciones en formato JSON. \nEl formato ${formatoSugerido} fue elegido porque las skills son de tipo ${skillTipo}.\nRespondé SOLO con JSON válido, sin explicación ni backticks.`;
-      const prompt=`Curso: "${post.titulo}" (${post.materia})\nTipo de evaluación: ${evalTipo}\nSkills a evaluar: ${skillNombres}\nFormato: ${formatoSugerido}\nNivel del curso: general\n\n${formatoSugerido==="multiple_choice"?`Generá 4 preguntas de multiple choice con 4 opciones cada una. 
-JSON: {"preguntas":[{"texto":"...","opciones":["a","b","c","d"],"correcta":0,"skill":"..."}]}`:""}\n${formatoSugerido==="desarrollo"?`Generá 2 preguntas a desarrollar.
-JSON: {"preguntas":[{"texto":"...","criterios":"...","skill":"..."}]}`:""}\n${formatoSugerido==="consigna_practica"||formatoSugerido==="imagen"||formatoSugerido==="audio"||formatoSugerido==="video"?`Generá una consigna práctica clara.
-JSON: {"consigna":"...","criterios_evaluacion":["...","..."],"formato_entrega":"${formatoSugerido}"}`:""}\n${formatoSugerido==="rubrica"?`Generá una rúbrica de evaluación.
-JSON: {"criterios":[{"nombre":"...","niveles":{"1":"...","3":"...","5":"..."}}]}`:""}\n${formatoSugerido==="autoevaluacion"?`Generá preguntas de reflexión.
-JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
-
-      const res=await sb.callIA(system,prompt,800);
-      const clean=res.replace(/```json|```/g,"").trim();
-      const parsed=JSON.parse(clean);
-      setEvalContenido(JSON.stringify(parsed,null,2));
-      if(!evalTitulo)setEvalTitulo(`${evalTipo==="diagnostico"?"Diagnóstico inicial":evalTipo==="checkpoint"?"Checkpoint":"Examen final"} — ${skillNombres}`);
-    }catch(e){setEvalContenido(`{"error":"No se pudo generar: ${e.message}"}`);}
-    finally{setGenerandoIA(false);}
-  };
-
-  const guardarEvaluacion=async()=>{
-    if(!evalTitulo.trim())return;
-    try{
-      const r=await sb.insertEvaluacion({
-        publicacion_id:pubId,titulo:evalTitulo,tipo:evalTipo,
-        formato:evalFormato,skill_ids:evalSkillIds,
-        contenido_json:evalContenido,generado_ia:generandoIA||evalContenido.length>10,activo:true,
-      },session.access_token);
-      setEvaluaciones(prev=>[...prev,...(r||[])]);
-      setShowCrear(false);setEvalTitulo("");setEvalContenido("");setEvalSkillIds([]);
-      // Notificar por email a los inscriptos
-      sb.getInscripciones(pubId,session.access_token).then(ins=>{
-        ins.forEach(insc=>{
-          if(insc.alumno_email&&insc.alumno_email!==session.user.email){
-            sb.sendEmail("nueva_evaluacion",insc.alumno_email,{
-              pub_titulo:evalTitulo,
-              pub_id:post.id,
-              tipo_eval:evalTipo,
-              curso_titulo:evalTitulo,
-            },session.access_token).catch(()=>{});
-            sb.sendPush(insc.alumno_email,`Nueva evaluación — ${post.titulo}`,`Hay una nueva evaluación disponible`,`/?curso=${post.id}`,"nueva_evaluacion").catch(()=>{});
-          }
-        });
-      }).catch(()=>{});
-    }catch(e){toast("Error al guardar: "+e.message,"error");}
-  };
-
-  const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
-  const tipoColor={diagnostico:C.info,checkpoint:C.warn,final:C.success};
-  const tipoIcon={diagnostico:"🔍",checkpoint:"📍",final:"🏁"};
-
-  return(
-    <div>
-      {/* Lista de evaluaciones */}
-      {loading?<Spinner small/>:evaluaciones.length===0&&!showCrear?(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
-          {esMio||esAyudante?"No hay evaluaciones formales. Creá el diagnóstico inicial para medir el progreso real de tus alumnos.":"El docente aún no cargó evaluaciones formales."}
-          {(esMio||esAyudante)&&<div style={{marginTop:12}}><button onClick={()=>setShowCrear(true)} style={{background:C.info,border:"none",borderRadius:8,color:"#fff",padding:"8px 18px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>+ Crear diagnóstico inicial</button></div>}
-        </div>
-      ):(
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
-          {evaluaciones.map(ev=>(
-            <EvaluacionCard key={ev.id} ev={ev} post={post} session={session} esMio={esMio||esAyudante} inscripciones={inscripciones} inscripcion={inscripcion}
-              onDelete={async()=>{await sb.deleteEvaluacion(ev.id,session.access_token).catch(()=>{});setEvaluaciones(p=>p.filter(x=>x.id!==ev.id));}}/>
-          ))}
-        </div>
-      )}
-
-      {/* Botón crear + form */}
-      {(esMio||esAyudante)&&!showCrear&&evaluaciones.length>0&&(
-        <button onClick={()=>setShowCrear(true)} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:9,color:C.accent,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>+ Nueva evaluación</button>
-      )}
-
-      {(esMio||esAyudante)&&showCrear&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
-          <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>Nueva evaluación formal</div>
-
-          {/* Tipo */}
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>TIPO</div>
-            <div style={{display:"flex",gap:6}}>
-              {[["checkpoint","📍 Checkpoint"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setEvalTipo(v)}
-                  style={{flex:1,padding:"8px 4px",borderRadius:9,border:`1.5px solid ${C.warn}`,background:C.warn+"18",color:C.warn,fontSize:11,cursor:"pointer",fontFamily:FONT,fontWeight:700}}>
-                  {l}
-                </button>
-              ))}
-            </div>
-            <div style={{fontSize:10,color:C.muted,marginTop:5}}>Solo se pueden crear checkpoints aquí. El diagnóstico y el examen final se configuran en la validación inicial.</div>
-          </div>
-
-          {/* Skills */}
-          {skills.length>0&&(
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>SKILLS QUE EVALÚA</div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                {skills.map(s=>(
-                  <button key={s.id} onClick={()=>setEvalSkillIds(p=>p.includes(s.id)?p.filter(x=>x!==s.id):[...p,s.id])}
-                    style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:FONT,
-                      background:evalSkillIds.includes(s.id)?C.accent:C.surface,color:evalSkillIds.includes(s.id)?"#fff":C.muted,
-                      border:`1px solid ${evalSkillIds.includes(s.id)?C.accent:C.border}`}}>
-                    {SKILL_TIPOS[s.tipo]?.icon} {s.nombre}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Formato */}
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>FORMATO</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:5}}>
-              {Object.entries(FORMATO_LABELS).map(([v,{label,icon}])=>(
-                <button key={v} onClick={()=>setEvalFormato(v)}
-                  style={{padding:"7px 6px",borderRadius:8,border:`1px solid ${evalFormato===v?C.accent:C.border}`,background:evalFormato===v?C.accentDim:"transparent",color:evalFormato===v?C.accent:C.muted,fontSize:10,cursor:"pointer",fontFamily:FONT,fontWeight:evalFormato===v?700:400,textAlign:"center"}}>
-                  {icon} {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Título */}
-          <input value={evalTitulo} onChange={e=>setEvalTitulo(e.target.value)} placeholder="Título de la evaluación" style={iS}/>
-
-          {/* Generar con IA */}
-          <button onClick={generarConIA} disabled={generandoIA}
-            style={{background:"#C85CE015",border:"1px solid #C85CE033",borderRadius:8,color:C.purple,padding:"7px 14px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-            {generandoIA?"✦ Generando...":"✦ Generar con IA"}
-          </button>
-
-          {/* Contenido JSON */}
-          <textarea value={evalContenido} onChange={e=>setEvalContenido(e.target.value)}
-            placeholder='{"preguntas":[...]} — Generá con IA o escribí el contenido manualmente'
-            style={{...iS,minHeight:100,resize:"vertical",fontSize:11,fontFamily:"monospace"}}/>
-
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button onClick={guardarEvaluacion} disabled={!evalTitulo.trim()} style={{background:C.success,border:"none",borderRadius:8,color:"#fff",padding:"8px 18px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,opacity:!evalTitulo.trim()?0.5:1}}>Guardar evaluación</button>
-            <button onClick={()=>setShowCrear(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"8px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Cancelar</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── EVALUACION CARD — muestra una evaluación con opción de rendir ─────────────
 function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelete}){
   const miEmail=session.user.email;
@@ -3769,7 +3012,6 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
 
   const tipoColor={diagnostico:C.info,checkpoint:C.warn,final:C.success};
   const tipoIcon={diagnostico:"🔍",checkpoint:"📍",final:"🏁"};
-  const skills=getSkills(post.id);
 
   const enviarRespuesta=async()=>{
     setEnviando(true);

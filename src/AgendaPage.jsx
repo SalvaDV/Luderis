@@ -67,7 +67,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
 
 // ─── AGENDA PERSONAL ──────────────────────────────────────────────────────────
 function AgendaPage({session,onOpenCurso,onGoExplore}){
-  const [inscripciones,setInscripciones]=useState([]);
+  const [,setInscripciones]=useState([]);
   const [posts,setPosts]=useState([]);
   const [loading,setLoading]=useState(true);
   const [mesOffset,setMesOffset]=useState(0);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import * as sb from "../supabase";
-import { C } from "../shared";
 import { trackFavoriteAdd } from "../analytics";
 
 export default function FavBtn({post,session,onFavChange,isFav,favId:favIdProp}){

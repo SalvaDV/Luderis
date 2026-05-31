@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Check, Circle, Calendar, AlertTriangle, Clock, Trash2, Bell } from "lucide-react";
-import { C, FONT, Spinner, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
+import { C, FONT, Spinner, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
-import { AcuerdoModal, EspacioClaseModal } from "./MiCuentaPage";
+import { EspacioClaseModal } from "./MiCuentaPage";
 
 // ─── INSCRIPCIONES PAGE — con tiempo hasta inicio / hasta fin ─────────────────
 export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead,onGoExplore}){

@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Trophy, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload } from "lucide-react";
 import * as sb from "./supabase";
 import {
   C, FONT, toast,
-  Avatar, Spinner, Btn, Label, Modal, StatusBadge, Tag,
-  fmt, fmtRel, fmtPrice, calcAvg,
+  Avatar, Spinner, Btn, Label, Modal,
+  fmtRel, fmtPrice, calcAvg,
   safeDisplayName, sanitizeContactInfo, moderarMensaje, avatarColor,
   LUD,
   _avatarCache,
-  MATERIAS,
 } from "./shared";
 import { MyPostCard, OfertasRecibidasModal } from "./App";
 import { StreakBadge } from "./PostFormModal";
@@ -16,33 +15,11 @@ import { StreakBadge } from "./PostFormModal";
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
 
-function MiniLineChart({data,color,height=40,width=200}){
-  if(!data||data.length<2)return<div style={{color:C.muted,fontSize:11,textAlign:"center",padding:"12px 0"}}>Sin datos suficientes</div>;
-  const max=Math.max(...data.map(d=>d.v),1);
-  const min=Math.min(...data.map(d=>d.v),0);
-  const range=max-min||1;
-  const pts=data.map((d,i)=>{
-    const x=(i/(data.length-1))*width;
-    const y=height-((d.v-min)/range)*(height-6)-3;
-    return `${x},${y}`;
-  }).join(" ");
-  const last=data[data.length-1];
-  const lastX=(width);
-  const lastY=height-((last.v-min)/range)*(height-6)-3;
-  return(
-    <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{overflow:"visible"}}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-      <circle cx={lastX} cy={lastY} r="3" fill={color}/>
-    </svg>
-  );
-}
-
 // Gráfico de barras SVG
 function MiniBarChart({data,color,height=50,width=0,showValues=true}){
   if(!data||!data.length)return null;
   const max=Math.max(...data.map(d=>d.v),1);
   const barW=Math.max(4,(width/data.length)-2);
-  const hasAnyValue=data.some(d=>d.v>0);
   return(
     <svg width="100%" viewBox={`0 0 ${width} ${height+18}`} style={{overflow:"visible"}}>
       {data.map((d,i)=>{
@@ -120,13 +97,6 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
   // Precio promedio por clase (solo las que tienen precio)
   const pubsConPrecio=todasOfertas.filter(p=>p.precio>0);
   const precioPromedio=pubsConPrecio.length>0?(pubsConPrecio.reduce((a,p)=>a+(parseFloat(p.precio)||0),0)/pubsConPrecio.length).toFixed(0):null;
-  // Tasa de completitud
-  const totalFinalizados=Object.values(inscritosMap||{}).reduce((acc,_,i)=>{
-    // Aproximación: finalizadas / activas ratio
-    return acc;
-  },0);
-  // Clase más reciente
-  const claseReciente=todasOfertas.length>0?todasOfertas.reduce((a,b)=>new Date(b.created_at||0)>new Date(a.created_at||0)?b:a):null;
 
   // Publicaciones por materia (para gráfico de barras)
   const materiaMap={};
@@ -148,9 +118,6 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
     return{label,v:pubs_mes.length};
   });
 
-  // Top pub por vistas y por inscriptos
-  const topPorInscriptos=ofertas.length>0?ofertas.reduce((a,b)=>(inscritosMap[b.id]||0)>(inscritosMap[a.id]||0)?b:a):null;
-  const topPorVistas=todasOfertas.length>0?todasOfertas.filter(p=>p.vistas>0).reduce((a,b)=>a?(parseInt(b.vistas)||0)>(parseInt(a.vistas)||0)?b:a:b,null):null;
 
   // Impact score: rating/5 × (alumnos>0?1:0.5) × min(pubs/3,1)
   const impactScore=avg&&totalAlumnos>0
@@ -443,7 +410,6 @@ function EspacioClaseModal({oferta,session,onClose}){
   const [contenido,setContenido]=useState([]);
   const [loading,setLoading]=useState(true);
   const [showAdd,setShowAdd]=useState(false);
-  const [editingContenidoId,setEditingContenidoId]=useState(null);
   const [nuevoTipo,setNuevoTipo]=useState("texto");
   const [nuevoTitulo,setNuevoTitulo]=useState("");
   const [nuevoBody,setNuevoBody]=useState("");
@@ -594,69 +560,6 @@ function EspacioChat({pubId,miEmail,miId,otroEmail,otroNombre,session}){
         <button onClick={enviar} disabled={sending||!texto.trim()} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 16px",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:FONT,opacity:!texto.trim()||sending?0.45:1}}>→</button>
       </div>
     </div>
-  );
-}
-
-// ─── BÚSQUEDAS CONFIRM LIST — lista de búsquedas con popup de confirmación ──────
-function BusquedasConfirmList({busquedas,ofertasMap,session,toggle,toggling,onEdit,setOfertasModal,remove}){
-  const [confirmBusq,setConfirmBusq]=useState(null);
-  const handleEliminarBusq=async(p)=>{
-    let ofertanteAcept=null;
-    try{const todas=await sb.getOfertasSobre(p.id,session.access_token);const ac=todas.find(o=>o.estado==="aceptada");if(ac)ofertanteAcept={nombre:ac.ofertante_nombre||ac.ofertante_email,email:ac.ofertante_email};}catch{}
-    setConfirmBusq({p,ofertanteAcept});
-  };
-  const confirmarEliminar=async()=>{
-    const p=confirmBusq.p;
-    if(confirmBusq.ofertanteAcept?.email){
-      sb.insertNotificacion({usuario_id:null,alumno_email:confirmBusq.ofertanteAcept.email,tipo:"busqueda_eliminada",publicacion_id:p.id,pub_titulo:p.titulo,leida:false},session.access_token).catch(()=>{});
-    }
-    setConfirmBusq(null);
-    await remove(p);
-  };
-  return(
-    <>
-    <div style={{display:"grid",gap:12}}>
-      {busquedas.map(p=>{
-        const cnt=ofertasMap[p.id]||0;
-        return(<div key={p.id} style={{background:C.surface,border:`1px solid ${cnt>0?C.accent:C.border}`,borderRadius:14,padding:"14px 16px",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,width:"100%",height:3,background:p.activo!==false?C.accent:C.muted}}/>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
-            <div style={{flex:1,minWidth:0}}>
-              {cnt>0&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:20,padding:"3px 10px",marginBottom:8,fontSize:11,color:C.accent,fontWeight:700}}>{cnt} oferta{cnt!==1?"s":""} nueva{cnt!==1?"s":""}</div>}
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}><Tag tipo={p.tipo} modo={p.modo}/><StatusBadge activo={p.activo!==false} finalizado={!!p.finalizado}/></div>
-              <h3 style={{color:C.text,fontSize:13,fontWeight:700,margin:"0 0 3px"}}>{p.titulo}</h3>
-              <p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.4}}>{p.descripcion?.slice(0,90)}</p>
-              {p.created_at&&<div style={{marginTop:4,fontSize:11,color:C.muted}}>Publicado {fmt(p.created_at)}</div>}
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,minWidth:95}}>
-              <button onClick={()=>setOfertasModal(p)} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:8,color:C.accent,padding:"5px 8px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>Ver ofertas{cnt>0?` (${cnt})`:""}</button>
-              <button onClick={()=>onEdit(p)} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,padding:"5px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT}}>Editar</button>
-              <button onClick={()=>toggle(p)} disabled={toggling===p.id} style={{background:p.activo!==false?"#E0955C15":"#4ECB7115",border:`1px solid ${p.activo!==false?"#E0955C33":"#4ECB7133"}`,borderRadius:8,color:p.activo!==false?C.warn:C.success,padding:"5px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:toggling===p.id?0.5:1}}>{toggling===p.id?"...":(p.activo!==false?"Pausar":"Activar")}</button>
-              <button onClick={()=>handleEliminarBusq(p)} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:8,color:C.danger,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Eliminar</button>
-            </div>
-          </div>
-        </div>);
-      })}
-    </div>
-    {confirmBusq&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:FONT}} onClick={()=>setConfirmBusq(null)}>
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,padding:"28px",width:"min(400px,92vw)",textAlign:"center"}} onClick={e=>e.stopPropagation()}>
-          <div style={{fontSize:42,marginBottom:12,color:C.danger,fontWeight:300}}>×</div>
-          <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>¿Eliminar búsqueda?</h3>
-          {confirmBusq.ofertanteAcept&&(
-            <div style={{background:"#E0955C15",border:"1px solid #E0955C33",borderRadius:10,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left"}}>
-              <AlertTriangle size={12} strokeWidth={2} style={{verticalAlign:"middle",marginRight:4}}/><strong style={{color:C.text}}>{confirmBusq.ofertanteAcept.nombre}</strong> tiene una oferta aceptada. Se le notificará al eliminar.
-            </div>
-          )}
-          <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 22px"}}>Se eliminará <strong style={{color:C.text}}>"{confirmBusq.p.titulo}"</strong> y todas las ofertas recibidas. Esta acción no se puede deshacer.</p>
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfirmBusq(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:11,color:C.muted,padding:"10px",cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:600}}>Cancelar</button>
-            <button onClick={confirmarEliminar} style={{flex:1,background:C.danger,border:"none",borderRadius:11,color:"#fff",padding:"10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>Sí, eliminar</button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   );
 }
 
@@ -1438,159 +1341,6 @@ ${refUrl}`;
   );
 }
 
-// --- ALERTAS BUSQUEDAS TAB ---
-function AlertasBusquedasTab({session}){
-  const [alertas,setAlertas]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [showForm,setShowForm]=useState(false);
-  const [materiaForm,setMateriaForm]=useState("");
-  const [modalidadForm,setModalidadForm]=useState("");
-  const [saving,setSaving]=useState(false);
-
-  const cargar=useCallback(async()=>{
-    try{
-      const data=await sb.getAlertasBusquedas(session.user.email,session.access_token);
-      setAlertas(data||[]);
-    }catch{setAlertas([]);}finally{setLoading(false);}
-  },[session.user.email,session.access_token]);// eslint-disable-line
-
-  useEffect(()=>{cargar();},[cargar]);
-
-  const crear=async()=>{
-    if(!materiaForm){toast("Selecciona una materia","error");return;}
-    setSaving(true);
-    try{
-      const materias=materiaForm?[materiaForm]:[];
-      await sb.insertAlertaBusqueda({
-        email:session.user.email,
-        usuario_id:session.user.id,
-        materias,
-        modalidad:modalidadForm||null,
-        activa:true,
-      },session.access_token);
-      setMateriaForm("");setModalidadForm("");setShowForm(false);
-      toast("Alerta creada. Te avisaremos cuando haya una busqueda en esa materia","success",4000);
-      cargar();
-    }catch(e){toast("Error al crear la alerta: "+e.message,"error");}
-    finally{setSaving(false);}
-  };
-
-  const eliminar=async(id)=>{
-    try{
-      await sb.deleteAlertaBusqueda(id,session.access_token);
-      setAlertas(p=>p.filter(a=>a.id!==id));
-      toast("Alerta eliminada","info");
-    }catch{}
-  };
-
-  const toggleActiva=async(alerta)=>{
-    try{
-      await sb.updateAlertaBusqueda(alerta.id,{activa:!alerta.activa},session.access_token);
-      setAlertas(p=>p.map(a=>a.id===alerta.id?{...a,activa:!a.activa}:a));
-    }catch{}
-  };
-
-  return(
-    <div style={{fontFamily:FONT}}>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px",marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
-          <div>
-            <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4,display:"flex",alignItems:"center",gap:6}}><Bell size={15} strokeWidth={2}/>Alertas de busquedas</div>
-            <div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
-              Te notificamos cuando un alumno busca docente en tu materia.
-            </div>
-          </div>
-          <button onClick={()=>setShowForm(v=>!v)}
-            style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
-            + Agregar materia
-          </button>
-        </div>
-
-        {showForm&&(
-          <div style={{background:C.surface,border:`1px solid ${C.accent}33`,borderRadius:12,padding:"16px",marginTop:16}}>
-            <div style={{marginBottom:10}}>
-              <Label>Materia *</Label>
-              <select value={materiaForm} onChange={e=>setMateriaForm(e.target.value)}
-                style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",color:materiaForm?C.text:C.muted,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}>
-                <option value="">Selecciona una materia...</option>
-                {MATERIAS.map(m=><option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div style={{marginBottom:14}}>
-              <Label>Modalidad (opcional)</Label>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {[["","Todas"],["virtual","Virtual"],["presencial","Presencial"],["mixta","Mixta"]].map(([v,l])=>(
-                  <button key={v} onClick={()=>setModalidadForm(v)}
-                    style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,
-                      background:modalidadForm===v?C.accent:"transparent",color:modalidadForm===v?"#fff":C.muted,
-                      border:`1px solid ${modalidadForm===v?C.accent:C.border}`,fontWeight:modalidadForm===v?700:400,transition:"all .12s"}}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={crear} disabled={saving||!materiaForm}
-                style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"9px 24px",fontWeight:700,fontSize:13,cursor:saving?"wait":"pointer",fontFamily:FONT,opacity:saving||!materiaForm?0.6:1}}>
-                {saving?"Guardando...":"Crear alerta"}
-              </button>
-              <button onClick={()=>{setShowForm(false);setMateriaForm("");setModalidadForm("");}}
-                style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"9px 16px",cursor:"pointer",fontFamily:FONT,fontSize:13}}>
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {loading?<Spinner/>:alertas.length===0?(
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"48px 24px",textAlign:"center"}}>
-          <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Bell size={40} color={C.border} strokeWidth={1.5}/></div>
-          <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin alertas de busquedas</div>
-          <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Agrega materias para recibir notificaciones cuando un alumno busque docente en esa area.</div>
-          <button onClick={()=>setShowForm(true)}
-            style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"10px 24px",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
-            Agregar primera materia
-          </button>
-        </div>
-      ):(
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {alertas.map(a=>{
-            const materiasList=Array.isArray(a.materias)?a.materias:(a.materia?[a.materia]:[]);
-            return(
-              <div key={a.id} style={{background:C.surface,border:`1px solid ${a.activa?C.accent+"44":C.border}`,borderLeft:`3px solid ${a.activa?C.accent:C.muted}`,borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"center",opacity:a.activa?1:0.6,transition:"all .2s"}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                    {materiasList.length>0
-                      ?materiasList.map(m=><span key={m} style={{fontSize:13,fontWeight:700,color:C.text}}>{m}</span>)
-                      :<span style={{fontSize:13,color:C.muted,fontStyle:"italic"}}>Materia no especificada</span>
-                    }
-                    {a.modalidad
-                      ?<span style={{fontSize:11,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 9px",fontWeight:600}}>{a.modalidad==="virtual"?"Virtual":a.modalidad==="presencial"?"Presencial":"Mixta"}</span>
-                      :<span style={{fontSize:11,background:C.bg,color:C.muted,borderRadius:20,padding:"2px 9px",border:`1px solid ${C.border}`}}>Todas las modalidades</span>
-                    }
-                  </div>
-                  <div style={{fontSize:11,color:C.muted,marginTop:4}}>Creada {fmtRel(a.created_at)}</div>
-                </div>
-                <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
-                  <button onClick={()=>toggleActiva(a)}
-                    style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:20,border:`1px solid ${a.activa?C.accent+"40":C.border}`,background:a.activa?C.accentDim:"transparent",color:a.activa?C.accent:C.muted,cursor:"pointer",fontFamily:FONT,whiteSpace:"nowrap"}}>
-                    {a.activa?"Activa":"Pausada"}
-                  </button>
-                  <button onClick={()=>eliminar(a.id)}
-                    style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.danger,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function AlertasTab({session}){
   const [alertas,setAlertas]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -1881,9 +1631,6 @@ function AjustesTab({session}){
 }
 
 function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
-  const [secExpanded,setSecExpanded]=useState({pubs:true,inscripciones:true,stats:false,ofertas:true,busquedas:true});
-  const toggleSec=(k)=>setSecExpanded(p=>({...p,[k]:!p[k]}));
-  const SecHeader=({label,k,badge})=>(<div onClick={()=>toggleSec(k)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",padding:"2px 0",marginBottom:secExpanded[k]?10:0}}><div style={{fontWeight:700,color:C.text,fontSize:14,display:"flex",alignItems:"center",gap:7}}>{label}{badge>0&&<span style={{fontSize:10,background:C.accentDim,color:C.accent,borderRadius:20,padding:"1px 7px",border:`1px solid ${C.accent}33`}}>{badge}</span>}</div><span style={{color:C.muted,fontSize:13,transition:"transform .2s",transform:secExpanded[k]?"rotate(0deg)":"rotate(-90deg)",display:"inline-block"}}>▾</span></div>);
   const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);const [loading,setLoading]=useState(true);
   const [toggling,setToggling]=useState(null);const [ofertasMap,setOfertasMap]=useState({});const [ofertasModal,setOfertasModal]=useState(null);
   const [misOfertasEnv,setMisOfertasEnv]=useState(()=>{
@@ -1913,6 +1660,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const [avatarFile,setAvatarFile]=useState(null);
   const [avatarPreview,setAvatarPreview]=useState(null);
   const avatarInputRef=useRef(null);
+  const [bannerUrl,setBannerUrl]=useState("");
+  const [bannerUploading,setBannerUploading]=useState(false);
+  const bannerInputRef=useRef(null);
   const [savingDisplayName,setSavingDisplayName]=useState(false);
   const [perfilLoaded,setPerfilLoaded]=useState(false);
   // Docente extra fields
@@ -1933,6 +1683,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         if(u.bio)setBio(u.bio);
         if(u.ubicacion)setUbicacionPerfil(u.ubicacion);
         if(u.avatar_url)setAvatarUrl(u.avatar_url);
+        if(u.banner_url)setBannerUrl(u.banner_url);
         if(u.video_presentacion)setVideoPresentacion(u.video_presentacion);
         if(u.titulo_profesional)setTituloProfesional(u.titulo_profesional);
         if(u.anios_experiencia!=null)setAniosExperiencia(String(u.anios_experiencia));
@@ -2001,13 +1752,10 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const saveColor=(c)=>{localStorage.setItem("avatarColor_"+email,c);setAvatarColor2(c);};
   const TIPOS_DOC=[{v:"titulo",l:"Título"},{v:"certificado",l:"Certificado"},{v:"experiencia",l:"Experiencia"},{v:"otro",l:"Otro"}];
   const TIPO_ICON={titulo:GraduationCap,certificado:ScrollText,experiencia:Briefcase,otro:FileText};
-  const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:9,fontFamily:FONT};
   const ofertas=pubs.filter(p=>p.tipo==="oferta");
-  const busquedas=pubs.filter(p=>p.tipo==="busqueda");
   const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return"publicaciones";});
   const [filtroPubsTipo,setFiltroPubsTipo]=useState("all");
   const pendientesVal=pubs.filter(p=>p.tipo==="oferta"&&p.activo===false&&p.estado_validacion==="pendiente");
-  const totalOfertas=Object.values(ofertasMap).reduce((a,b)=>a+b,0);
   // ── Tab list role-aware ────────────────────────────────────────────────────
   const rolLocal=localStorage.getItem("cl_rol_"+email)||"alumno";
   const esDocente=rolLocal==="docente"||ofertas.length>0;
@@ -2030,7 +1778,24 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {/* ── HEADER PERFIL LINKEDIN-STYLE ── */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
         {/* Banner */}
-        <div style={{height:80,background:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`}}/>
+        <div style={{height:80,background:bannerUrl?undefined:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+          {bannerUrl&&<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>}
+          <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={async e=>{
+            const file=e.target.files?.[0];if(!file)return;
+            if(file.size>5*1024*1024){toast("La imagen no debe superar 5 MB","error");return;}
+            setBannerUploading(true);
+            try{
+              const url=await sb.uploadBanner(session.user.id,file,session.access_token);
+              await sb.updateUsuario(session.user.id,{banner_url:url},session.access_token);
+              setBannerUrl(url);toast("Portada actualizada","success");
+            }catch(err){toast("Error al subir la portada: "+err.message,"error");}
+            finally{setBannerUploading(false);if(bannerInputRef.current)bannerInputRef.current.value="";}
+          }}/>
+          <button onClick={()=>bannerInputRef.current?.click()} disabled={bannerUploading}
+            style={{position:"absolute",bottom:6,right:8,background:"rgba(0,0,0,.38)",border:"1px solid rgba(255,255,255,.25)",borderRadius:7,color:"#fff",padding:"4px 9px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,backdropFilter:"blur(4px)"}}>
+            <Camera size={11}/>{bannerUploading?"Subiendo…":"Editar portada"}
+          </button>
+        </div>
         <div style={{padding:"0 24px 20px",position:"relative"}}>
           {/* Avatar flotante sobre el banner */}
           <div style={{position:"relative",display:"inline-block",marginTop:-30,marginBottom:10}}>
@@ -2211,7 +1976,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     const dispHasta=disponibleAhora?new Date(Date.now()+(durMap[disponibleDuracion]||4*3600000)).toISOString():null;
                     await sb.updateUsuario(uid,{
                       display_name:newName,nombre:newName,bio:bio.trim()||null,ubicacion:ubicacionPerfil.trim()||null,
-                      avatar_url:finalAvatarUrl||null,video_presentacion:videoPresentacion.trim()||null,
+                      avatar_url:finalAvatarUrl||null,banner_url:bannerUrl||null,video_presentacion:videoPresentacion.trim()||null,
                       disponible_ahora:disponibleAhora,disponible_hasta:dispHasta,disponible_mensaje:disponibleAhora?disponibleMensaje.trim()||null:null,
                       titulo_profesional:tituloProfesional.trim()||null,
                       anios_experiencia:aniosExperiencia?parseInt(aniosExperiencia):null,
@@ -2385,7 +2150,6 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     {ofertasAceptadasNuevas.map(o=>{
                       const soyDoc=o.busqueda_autor_email===email;
                       const otroN=soyDoc?(o.ofertante_nombre||safeDisplayName(null,o.ofertante_email)):(o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email));
-                      const contraEsDeAlumno=o.contraoferta_de==="alumno";
                       return(<div key={o.id} style={{background:C.surface,borderRadius:9,padding:"12px 14px",marginBottom:8,border:`1px solid ${C.border}`}}>
                         <div style={{fontSize:12,color:C.muted,marginBottom:4}}>Con: <span style={{color:C.text,fontWeight:600}}>{otroN}</span></div>
                         <div style={{fontSize:13,color:C.text,fontWeight:600,marginBottom:6}}>{o.busqueda_titulo}</div>

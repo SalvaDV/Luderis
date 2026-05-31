@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
 import { SUPABASE_URL as SUPA_URL, SUPABASE_KEY as ANON_KEY } from "./supabase";
-import { C, FONT, toast, fmt, fmtRel, fmtPrice, safeDisplayName, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
+import { C, FONT, toast, fmt, fmtRel, fmtPrice, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -10,7 +10,7 @@ import {
   LayoutDashboard, ShieldCheck, GraduationCap, Users, BookOpen,
   AlertTriangle, MessageSquare, BellOff, CreditCard, Package,
   FileText, Megaphone, Settings, TrendingUp, TrendingDown,
-  DollarSign, UserCheck, BookMarked, BarChart2, RefreshCw,
+  DollarSign, UserCheck, BookMarked, BarChart2,
   ChevronRight, LogOut, Activity, Menu, X, BarChart3, Wallet,
   CheckCircle2, Image
 } from "lucide-react";
@@ -1142,7 +1142,6 @@ function UsersTab({ session, onChatUser }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filtro, setFiltro] = useState("todos");
-  const [selected, setSelected] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const {confirm:confirmU,confirmEl:confirmElU}=useConfirm();
 
@@ -2522,7 +2521,6 @@ function AlertasContactoTab({ session }) {
 
   useEffect(() => { cargar(); }, [soloNoRevisadas]); // eslint-disable-line
 
-  const setAccion = (id, tipo) => setAccionando(v => v?.id === id && v?.tipo === tipo ? null : { id, tipo });
   const enAccion = (id, tipo) => accionando?.id === id && accionando?.tipo === tipo;
 
   const marcar = async (id) => {

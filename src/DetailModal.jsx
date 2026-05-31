@@ -20,7 +20,7 @@ import PreguntasSection from "./components/PreguntasSection";
 
 function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpenDetail2}){
   const [reseñas,setReseñas]=useState([]);const [reseñasUsuario,setReseñasUsuario]=useState([]);const [loading,setLoading]=useState(true);
-  const [inscripcion,setInscripcion]=useState(null);const [puedeChat,setPuedeChat]=useState(false);const [miOfertaPendiente,setMiOfertaPendiente]=useState(false);
+  const [inscripcion,setInscripcion]=useState(null);const [puedeChat,setPuedeChat]=useState(false);const [,setMiOfertaPendiente]=useState(false);
   const [skills,setSkills]=useState([]);
   const [contenidoCount,setContenidoCount]=useState(null);
   const [modulosPreview,setModulosPreview]=useState([]);

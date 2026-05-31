@@ -168,7 +168,7 @@ export const safeDisplayName=(nombre,email)=>{
   if(email)return maskEmail(email);
   return"Usuario";
 };
-export const CONTACT_REGEX=/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(\+?[\d\s\-().]{8,15}\d)|(instagram|ig|wa|whatsapp|telegram|tg|signal|facebook|fb|twitter|tiktok|snapchat|discord)\s*[:=@\/]?\s*[\w.]+)/gi;
+export const CONTACT_REGEX=/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(\+?[\d\s\-().]{8,15}\d)|(instagram|ig|wa|whatsapp|telegram|tg|signal|facebook|fb|twitter|tiktok|snapchat|discord)\s*[:=@/]?\s*[\w.]+)/gi;
 export const sanitizeContactInfo=(text)=>{
   if(!text)return text;
   return text.replace(CONTACT_REGEX,(match)=>{
