@@ -200,8 +200,13 @@ function isValidSupabaseJwt(token: string, projectRef: string): boolean {
     if (parts.length !== 3) return false;
     const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
     const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
-    // El iss debe referenciar el proyecto Supabase correcto
-    if (!payload.iss || !payload.iss.includes(projectRef)) return false;
+    // El token debe referenciar el proyecto Supabase correcto. Las anon keys
+    // legacy traen iss:"supabase" y el ref en el claim "ref"; los JWT de usuario
+    // traen el ref dentro del iss (https://<ref>.supabase.co/auth/v1).
+    const matchesProject =
+      payload.ref === projectRef ||
+      (typeof payload.iss === "string" && payload.iss.includes(projectRef));
+    if (!matchesProject) return false;
     // Solo acepta role anon o authenticated (bloquea service_role)
     if (!["anon", "authenticated"].includes(payload.role)) return false;
     // No expirado
