@@ -705,7 +705,7 @@ export default function App(){
     };
     document.addEventListener("visibilitychange",onVisibility);
     return()=>{clearInterval(t);document.removeEventListener("visibilitychange",onVisibility);};
-  },[refreshUnread]);
+  },[refreshUnread]);// eslint-disable-line react-hooks/exhaustive-deps
   // ── Google Analytics: track page navigation ──────────────────────────────
   useEffect(()=>{
     trackPage(page);

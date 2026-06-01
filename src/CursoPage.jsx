@@ -467,7 +467,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
       ws.onerror=()=>{ws.close();const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};};
     }catch{const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};}
     return()=>{try{canal?.close?.();}catch{}};
-  },[cargar]);
+  },[cargar]);// eslint-disable-line react-hooks/exhaustive-deps
 
   // Detectar quién está escribiendo via localStorage
   useEffect(()=>{
@@ -4100,7 +4100,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       setContenido(cont);const miInsc=misIns.find(i=>i.publicacion_id===post.id)||null;setInscripcion(miInsc);if(esMio||esAyudante)setInscripciones(todos);setProgresoModulos(prog||[]);
       if(miInsc?.clase_finalizada&&!miInsc?.valorado)setNeedsValoracion(true);
     }).finally(()=>{setLoading(false);setInscLoading(false);});
-  },[post.id,miEmail,esMio,session]);
+  },[post.id,miEmail,esMio,session]);// eslint-disable-line react-hooks/exhaustive-deps
   const inscribirse=async()=>{
     if(post.sinc==="sinc"&&post.clases_sinc&&typeof post.clases_sinc==="string"){
       try{

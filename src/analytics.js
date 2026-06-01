@@ -1,7 +1,23 @@
 import ReactGA from "react-ga4";
 
 const GA_ID = "G-8736B9HZGL";
+const CLARITY_ID = "wdo0z2c0cs";
 const CONSENT_KEY = "cl_cookie_consent";
+
+// ── Microsoft Clarity (heatmaps + session recording) ────────────────────────
+// Clarity NO respeta el Consent Mode de Google, así que solo lo inyectamos
+// DESPUÉS de que el usuario otorgue consentimiento. Antes de eso no se carga
+// ni graba sesiones (cumplimiento Ley 25.326 / consentimiento previo).
+let _clarityLoaded = false;
+export const initClarity = () => {
+  if (typeof window === "undefined" || _clarityLoaded || window.clarity) return;
+  _clarityLoaded = true;
+  (function (c, l, a, r, i, t, y) {
+    c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+    t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+    y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+  })(window, document, "clarity", "script", CLARITY_ID);
+};
 
 // Debe llamarse ANTES de initGA para que GA4 respete el estado desde el inicio
 export const initConsentMode = () => {
@@ -22,6 +38,7 @@ export const initConsentMode = () => {
 export const grantConsent = () => {
   try { localStorage.setItem(CONSENT_KEY, "granted"); } catch {}
   window.gtag?.("consent", "update", { analytics_storage: "granted" });
+  initClarity(); // recién acá empezamos a grabar sesiones con Clarity
 };
 
 export const denyConsent = () => {

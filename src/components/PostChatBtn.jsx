@@ -28,7 +28,7 @@ export default function PostChatBtn({post,session,onOpenChat,grad,accent}){
       setPermitido(ins.some(i=>i.publicacion_id===post.id));
     }).catch(()=>{if(mounted)setPermitido(false);});
     return()=>{mounted=false;};
-  },[post.id,post.tipo,post.autor_email,miEmail,session.access_token]);
+  },[post.id,post.tipo,post.autor_email,miEmail,session.access_token]);// eslint-disable-line react-hooks/exhaustive-deps
   if(permitido===null)return null;
   if(!permitido){
     if(post.tipo==="busqueda"){

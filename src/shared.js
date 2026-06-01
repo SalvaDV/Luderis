@@ -429,7 +429,7 @@ const PRIVACY_SECTIONS=[
   {title:"Retención de datos",body:"Conservamos tus datos mientras tu cuenta esté activa. Al solicitar la eliminación de tu cuenta, borraremos tus datos personales en un plazo máximo de 30 días, excepto los que debamos conservar por obligaciones legales (ej. registros de pagos por 5 años según normativa fiscal)."},
   {title:"Tus derechos",body:"Conforme a la Ley 25.326 tenés derecho a: acceder a tus datos, rectificarlos, suprimirlos, y oponerte a su tratamiento. Para ejercer estos derechos escribinos a contacto@luderis.com. Podés revocar tu consentimiento en cualquier momento sin que ello afecte la licitud del tratamiento anterior."},
   {title:"Seguridad",body:"Implementamos medidas técnicas y organizativas para proteger tus datos: cifrado en tránsito (HTTPS/TLS), acceso con credenciales únicas, y políticas de acceso mínimo necesario (Row Level Security en base de datos)."},
-  {title:"Cookies",body:"Usamos almacenamiento local (localStorage) para mantener tu sesión y preferencias. No usamos cookies de seguimiento publicitario."},
+  {title:"Cookies",body:"Usamos almacenamiento local (localStorage) para mantener tu sesión y preferencias. Con tu consentimiento también usamos cookies y herramientas de análisis (Google Analytics y Microsoft Clarity) para entender cómo se usa la plataforma y mejorarla. Podés aceptarlas o rechazarlas desde el aviso de cookies. No usamos cookies de publicidad ni de rastreo entre sitios."},
 ];
 const COMPLAINTS_SECTIONS=[
   {title:"Cómo presentar un reclamo",body:"Podés enviarnos tu reclamo a contacto@luderis.com con el asunto 'RECLAMO' o usar el formulario de contacto dentro de la plataforma. Describí el problema con el mayor detalle posible (fecha, usuario involucrado, monto si aplica)."},
@@ -457,11 +457,11 @@ const CONSUMER_SECTIONS=[
   {title:"Organismos de defensa",body:"Podés consultar o radicar reclamos ante:\n• consumidor.gob.ar (Secretaría de Comercio)\n• OMIC de tu municipio\n• Defensa del Consumidor GCBA (para residentes en CABA)"},
 ];
 const COOKIES_SECTIONS=[
-  {title:"¿Qué usamos?",body:"Luderis no usa cookies de seguimiento ni publicidad. Usamos únicamente almacenamiento local del navegador (localStorage y sessionStorage) para mantener tu sesión activa y guardar preferencias como el tema visual (claro/oscuro) y el idioma."},
+  {title:"¿Qué usamos?",body:"Usamos almacenamiento local del navegador (localStorage y sessionStorage) para mantener tu sesión activa y guardar preferencias como el tema visual (claro/oscuro) y el idioma. Además, SOLO si das tu consentimiento, usamos cookies de análisis: Google Analytics (métricas de uso) y Microsoft Clarity (mapas de calor y grabación de sesión anonimizada). No usamos cookies de publicidad ni de rastreo entre sitios. Podés aceptar o rechazar las cookies de análisis desde el aviso de cookies, y cambiar tu elección limpiando el almacenamiento del navegador."},
   {title:"Datos almacenados localmente",body:"• Token de sesión (se elimina al cerrar sesión)\n• Preferencias de tema e idioma\n• Cache de avatar e información de perfil (para acelerar la carga)\n• Estado de onboarding y notificaciones vistas"},
-  {title:"Terceros",body:"Usamos los siguientes servicios externos que pueden establecer sus propias políticas:\n• Supabase (autenticación e infraestructura) — supabase.com/privacy\n• MercadoPago (pagos) — mercadopago.com.ar/privacidad\n• Google OAuth (inicio de sesión con Google) — policies.google.com/privacy"},
+  {title:"Terceros",body:"Usamos los siguientes servicios externos que pueden establecer sus propias políticas:\n• Supabase (autenticación e infraestructura) — supabase.com/privacy\n• MercadoPago (pagos) — mercadopago.com.ar/privacidad\n• Google OAuth (inicio de sesión con Google) — policies.google.com/privacy\n• Google Analytics (métricas de uso, con tu consentimiento) — policies.google.com/privacy\n• Microsoft Clarity (mapas de calor y grabación de sesión, con tu consentimiento) — privacy.microsoft.com\n• Sentry (monitoreo de errores) — sentry.io/privacy"},
   {title:"Control",body:"Podés limpiar el almacenamiento local desde la configuración de tu navegador en cualquier momento. Esto cerrará tu sesión y restablecerá tus preferencias."},
-  {title:"Cambios",body:"Si en el futuro incorporamos cookies de análisis (ej. para métricas de uso), lo informaremos con 30 días de anticipación y solicitaremos tu consentimiento explícito."},
+  {title:"Cambios",body:"Las cookies de análisis (Google Analytics y Microsoft Clarity) solo se activan tras tu consentimiento explícito desde el aviso de cookies. Si en el futuro incorporamos nuevas categorías de cookies, lo informaremos y volveremos a solicitar tu consentimiento."},
 ];
 
 const LEGAL_TABS=[

@@ -970,7 +970,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
       window.history.pushState({},"",url);
     }
     return()=>{window.history.pushState({},"",window.location.pathname);};
-  },[loading,perfilData]);
+  },[loading,perfilData]);// eslint-disable-line react-hooks/exhaustive-deps
 
   const nombre=safeDisplayName(null,autorEmail)||"Usuario";
   const displayNombre=perfilData?.display_name||perfilData?.nombre||nombre;

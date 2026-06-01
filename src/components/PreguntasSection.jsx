@@ -22,7 +22,7 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
 
   useEffect(() => {
     cargarPreguntas();
-  }, [publicacionId]);
+  }, [publicacionId]);// eslint-disable-line react-hooks/exhaustive-deps
 
   const cargarPreguntas = async () => {
     setLoading(true);

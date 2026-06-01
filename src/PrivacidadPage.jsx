@@ -296,7 +296,8 @@ export default function PrivacidadPage() {
               base="Interés legítimo"
               items={[
                 "Dirección IP y tipo de navegador",
-                "Páginas visitadas y tiempo de sesión (via Google Analytics)",
+                "Páginas visitadas y tiempo de sesión (via Google Analytics, con tu consentimiento)",
+                "Mapas de calor y grabación de sesión anonimizada (via Microsoft Clarity, con tu consentimiento)",
                 "Errores y logs (via Sentry, anonimizados)",
                 "Preferencias de tema (claro/oscuro) y configuraciones",
               ]}
@@ -333,6 +334,9 @@ export default function PrivacidadPage() {
               <TerceroCard emoji="📊" nombre="Google Analytics (GA4)"
                 uso="Analítica de uso de la plataforma: páginas visitadas, duración de sesión, tráfico. Los datos se procesan de forma anónima y agregada."
                 url="https://policies.google.com/privacy" />
+              <TerceroCard emoji="🎥" nombre="Microsoft Clarity"
+                uso="Mapas de calor y grabación de sesión anonimizada para entender cómo se usa la plataforma. Solo se activa con tu consentimiento; los campos sensibles se enmascaran."
+                url="https://privacy.microsoft.com/privacystatement" />
               <TerceroCard emoji="🔍" nombre="Sentry"
                 uso="Monitoreo de errores en producción. Los datos se anonimizan antes de enviarlos."
                 url="https://sentry.io/privacy/" />
@@ -398,6 +402,7 @@ export default function PrivacidadPage() {
                   <CookieRow nombre="luderis-rol"    tipo="Esencial"   proposito="Preferencias de rol de usuario" duracion="Persistente" />
                   <CookieRow nombre="_ga"            tipo="Analitica"  proposito="Google Analytics: distingue usuarios únicos" duracion="2 años" />
                   <CookieRow nombre="_ga_*"          tipo="Analitica"  proposito="Google Analytics: almacena estado de sesión" duracion="2 años" />
+                  <CookieRow nombre="_clck / _clsk"  tipo="Analitica"  proposito="Microsoft Clarity: identifica la sesión para mapas de calor y grabación (solo con consentimiento)" duracion="1 año" />
                   <CookieRow nombre="sentry-*"       tipo="Analitica"  proposito="Monitoreo de errores (anonimizado)" duracion="1 año" />
                 </tbody>
               </table>

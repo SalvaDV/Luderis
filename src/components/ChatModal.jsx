@@ -89,7 +89,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
       const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};
     }
     return()=>{try{canal?.close?.();}catch{}};
-  },[cargar]);
+  },[cargar]);// eslint-disable-line react-hooks/exhaustive-deps
 
   // Procesar imagen seleccionada
   const handleImageSelect=(e)=>{

@@ -881,14 +881,11 @@ export const getAlertasMatchingMateria = (materia, token) =>
 export const getMetricasDocente = (email, token) =>
   db(`metricas_docente?autor_email=eq.${encodeURIComponent(email)}`, 'GET', null, token);
 
-export const registrarClickContacto = async (pubId, token) => {
-  try {
-    const p = await db(`publicaciones?id=eq.${pubId}&select=clicks_contacto`, 'GET', null, token);
-    if (p && p[0]) {
-      await db(`publicaciones?id=eq.${pubId}`, 'PATCH', { clicks_contacto: (p[0].clicks_contacto || 0) + 1 }, token);
-    }
-  } catch {}
-};
+// Atómico vía RPC SECURITY DEFINER (incrementar_clicks_contacto): evita la
+// race condition del read-modify-write y permite contar el click aunque quien
+// lo hace no sea el dueño de la publicación (RLS de UPDATE solo deja al dueño).
+export const registrarClickContacto = (pubId, token) =>
+  rpc('incrementar_clicks_contacto', { p_publicacion_id: pubId }, token).catch(() => {});
 
 // ── Alertas de publicaciones ──────────────────────────────────────────────────
 

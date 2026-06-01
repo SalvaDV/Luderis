@@ -3,11 +3,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 
 import * as Sentry from "@sentry/react";
-import { initConsentMode, initGA } from './analytics';
+import { initConsentMode, initGA, initClarity, getConsentStatus } from './analytics';
 import { register as registerSW } from './serviceWorkerRegistration';
 
 initConsentMode(); // debe ir antes de initGA
 initGA();
+// Clarity (session recording) solo si el usuario ya consintió en una visita previa
+if (getConsentStatus() === 'granted') initClarity();
 
 Sentry.init({
   dsn: "https://7048964b77b715c46288eb43fddb4129@o4511175376437248.ingest.us.sentry.io/4511175379517440",

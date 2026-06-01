@@ -39,12 +39,30 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const anthropicKey = Deno.env.get("ANTHROPIC_KEY") ?? "";
     const groqKey      = Deno.env.get("GROQ_KEY") ?? "";
 
-    // max_tokens siempre viene del servidor — ignorar valor del cliente
-    const max_tokens = MAX_TOKENS_CAP;
+    // ── Hardening (A1): el servidor fija el modelo y SOLO acepta system+messages.
+    //    Nunca se reenvía el body crudo del cliente (evita que se elija un modelo
+    //    caro, se inyecten params como `tools`, o se abuse de la API key de Luderis).
+    const FIXED_MODEL = "claude-haiku-4-5-20251001";
+    const max_tokens  = Math.min(Number(body.max_tokens) || MAX_TOKENS_CAP, MAX_TOKENS_CAP);
+
+    const system = typeof body.system === "string" ? body.system.slice(0, 8000) : "";
+    const messages = (Array.isArray(body.messages) ? body.messages : [])
+      .slice(-20)
+      .map((m: any) => ({
+        role: m?.role === "assistant" ? "assistant" : "user",
+        content: typeof m?.content === "string" ? m.content.slice(0, 8000) : "",
+      }))
+      .filter((m: { content: string }) => m.content.length > 0);
+
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({ error: "messages requerido" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Intentar Anthropic primero si hay key
     if (anthropicKey.length > 20) {
@@ -55,7 +73,7 @@ Deno.serve(async (req) => {
           "x-api-key": anthropicKey,
           "anthropic-version": "2023-06-01",
         },
-        body: JSON.stringify({ ...body, max_tokens }),
+        body: JSON.stringify({ model: FIXED_MODEL, max_tokens, system, messages }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -78,8 +96,8 @@ Deno.serve(async (req) => {
         model: "llama-3.3-70b-versatile",
         max_tokens,
         messages: [
-          ...(body.system ? [{ role: "system", content: body.system }] : []),
-          ...(body.messages || []),
+          ...(system ? [{ role: "system", content: system }] : []),
+          ...messages,
         ],
       }),
     });

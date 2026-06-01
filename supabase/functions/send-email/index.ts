@@ -572,14 +572,20 @@ Deno.serve(async (req) => {
     }
 
     // Permite service role key (llamadas internas) O JWT de usuario válido
-    if (token !== SUPA_KEY) {
-      const supaAuth = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
-      const { data: { user }, error: authErr } = await supaAuth.auth.getUser(token);
+    const isServiceRole = token === SUPA_KEY;
+    const supaSvc = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
+    let callerRol: string | null = null;
+
+    if (!isServiceRole) {
+      const { data: { user }, error: authErr } = await supaSvc.auth.getUser(token);
       if (authErr || !user) {
         return new Response(JSON.stringify({ error: "No autorizado" }), {
           status: 401, headers: { ...CORS, "Content-Type": "application/json" },
         });
       }
+      const { data: u } = await supaSvc
+        .from("usuarios").select("rol").eq("id", user.id).maybeSingle();
+      callerRol = u?.rol ?? null;
     }
 
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
@@ -602,6 +608,36 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: `Template desconocido: ${template}. Disponibles: ${Object.keys(TEMPLATES).join(", ")}` }),
         { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
       );
+    }
+
+    // ── Hardening (A2): un usuario no-servicio no puede mandar mails arbitrarios ──
+    //    (evita spam/phishing con la marca Luderis a terceros y plantillas sensibles)
+    if (!isServiceRole) {
+      const recipients = Array.isArray(to) ? (to as string[]) : [to as string];
+
+      // 1) Plantillas sensibles (ban, aprobaciones, pagos, liquidaciones, digests)
+      //    solo las puede disparar un admin o el service role (edge functions/cron).
+      const USER_ALLOWED_TEMPLATES = new Set([
+        "bienvenida", "nueva_inscripcion", "oferta_recibida", "oferta_aceptada",
+        "contraoferta", "nueva_evaluacion", "nuevo_mensaje", "comprobante_inscripcion",
+        "nuevo_ayudante", "clase_iniciada",
+      ]);
+      if (callerRol !== "admin" && !USER_ALLOWED_TEMPLATES.has(template)) {
+        return new Response(JSON.stringify({ error: "No autorizado para esta plantilla" }), {
+          status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+
+      // 2) Los destinatarios deben ser usuarios registrados de Luderis.
+      const { data: known } = await supaSvc
+        .from("usuarios").select("email").in("email", recipients);
+      const knownSet = new Set((known ?? []).map((r: any) => String(r.email || "").toLowerCase()));
+      const unknown = recipients.filter((e) => !knownSet.has(String(e || "").toLowerCase()));
+      if (unknown.length > 0) {
+        return new Response(JSON.stringify({ error: "Destinatario no permitido" }), {
+          status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const safeData = escapeData(data as Record<string, unknown>);
