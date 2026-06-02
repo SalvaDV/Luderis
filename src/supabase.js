@@ -263,7 +263,9 @@ export const getReseñas = (pubId, token) =>
 export const getReseñasBulk = (ids, token) => {
   if (!ids?.length) return Promise.resolve([]);
   const inClause = ids.join(",");
-  return db(`reseñas?publicacion_id=in.(${inClause})&select=publicacion_id,estrellas,autor_email`, "GET", null, token);
+  // Solo se usan publicacion_id y estrellas para el promedio; no pedir autor_email
+  // (PII innecesaria; además el rol anon ya no tiene grant sobre esa columna).
+  return db(`reseñas?publicacion_id=in.(${inClause})&select=publicacion_id,estrellas`, "GET", null, token);
 };
 
 export const getReseñasByAutor = (autorEmail, token) =>
@@ -647,8 +649,10 @@ export const upsertSkillLevel = (data, token) =>
 
 // ── Evaluaciones formales ─────────────────────────────────────────────────────
 
+// Lee evaluaciones via RPC SECURITY DEFINER: el dueño recibe el contenido completo,
+// el alumno recibe el contenido sin respuestas (correcta/correctas/explicacion).
 export const getEvaluaciones = (pubId, token) =>
-  db(`evaluaciones?publicacion_id=eq.${pubId}&order=created_at.asc`, "GET", null, token).catch(() => []);
+  rpc("get_evaluaciones_pub", { p_pub_id: pubId }, token).catch(() => []);
 
 export const insertEvaluacion = (data, token) =>
   db("evaluaciones", "POST", data, token, "return=representation");
@@ -665,8 +669,13 @@ export const getEvaluacionEntregas = (evalId, token) =>
 export const getMiEntregaEval = (evalId, email, token) =>
   db(`evaluacion_entregas?evaluacion_id=eq.${evalId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token).catch(() => []);
 
+// La entrega se hace via RPC SECURITY DEFINER: el server deriva el email del alumno
+// (no spoofeable), corrige el multiple_choice del lado servidor y guarda score_auto.
 export const insertEvaluacionEntrega = (data, token) =>
-  db("evaluacion_entregas", "POST", data, token, "return=representation");
+  rpc("entregar_evaluacion", {
+    p_eval_id: data.evaluacion_id,
+    p_respuesta_json: data.respuesta_json,
+  }, token).then((row) => (row ? [row] : []));
 
 export const updateEvaluacionEntrega = (id, data, token) =>
   db(`evaluacion_entregas?id=eq.${id}`, "PATCH", data, token, "return=representation");

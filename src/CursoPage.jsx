@@ -3025,18 +3025,11 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
     finally{setEnviando(false);}
   };
 
+  // El score de multiple_choice lo calcula el servidor (score_auto). El alumno
+  // ya no recibe las respuestas correctas, así que no se puede corregir en el cliente.
   const calcScore=()=>{
-    if(!entrega?.respuesta_json||ev.formato!=="multiple_choice")return null;
-    try{
-      const resp=JSON.parse(entrega.respuesta_json);
-      const pregs=contenido.preguntas||[];
-      if(!pregs.length)return null;
-      const correctas=pregs.filter((p,i)=>{
-        const corrArr=Array.isArray(p.correctas)?p.correctas:[p.correcta].filter(x=>x!=null);
-        return corrArr.includes(resp[i]);
-      }).length;
-      return Math.round((correctas/pregs.length)*100);
-    }catch{return null;}
+    if(ev.formato!=="multiple_choice")return null;
+    return entrega?.score_auto??entrega?.nota??null;
   };
   const score=calcScore();
 
@@ -3836,20 +3829,10 @@ function ProgresoEvaluaciones({post,session}){
   const [loading,setLoading]=useState(true);
   const miEmail=session.user.email;
 
+  // multiple_choice se corrige en el servidor (score_auto); el resto usa la nota del docente.
   const calcScore=(ev,entrega)=>{
-    if(!entrega?.respuesta_json)return entrega?.nota??null;
-    if(ev.formato==="multiple_choice"){
-      try{
-        const resp=JSON.parse(entrega.respuesta_json);
-        const pregs=(JSON.parse(ev.contenido_json||"{}")).preguntas||[];
-        if(!pregs.length)return entrega.nota??null;
-        const ok=pregs.filter((p,i)=>{
-          const corrArr=Array.isArray(p.correctas)?p.correctas:[p.correcta].filter(x=>x!=null);
-          return corrArr.includes(resp[i]);
-        }).length;
-        return Math.round((ok/pregs.length)*100);
-      }catch{return entrega.nota??null;}
-    }
+    if(!entrega)return null;
+    if(ev.formato==="multiple_choice")return entrega.score_auto??entrega.nota??null;
     return entrega.nota??null;
   };
 
