@@ -599,9 +599,10 @@ export default function App(){
   },[session]);
   // ── Supabase Realtime: notificaciones instantáneas ─────────────────────────
   useEffect(()=>{
-    if(!session?.user?.email||!session?.access_token)return;
+    if(!session?.user?.email)return;
     const email=session.user.email;
-    const token=session.access_token;
+    const getToken=()=>sessionRef.current?.access_token;
+    if(!getToken())return;
     const NOTIF_LABELS={
       nueva_inscripcion:{icon:"🎓",label:"Nueva inscripción",type:"success"},
       nueva_oferta:{icon:"📩",label:"Nueva oferta",type:"info"},
@@ -626,15 +627,29 @@ export default function App(){
       busqueda_eliminada:{icon:"❌",label:"Búsqueda eliminada",type:"error"},
       acuerdo_confirmado:{icon:"🤝",label:"Acuerdo confirmado",type:"success"},
     };
-    let ws,heartbeat,dead=false,retries=0;
-    const MAX_RETRIES=5;
-    const connect=()=>{
-      if(dead||retries>=MAX_RETRIES)return;
+    let ws,heartbeat,reconnectTimer,dead=false,retries=0,joinedToken=null;
+    // Refresca la sesión si hay refresh_token; devuelve el token nuevo (o null)
+    const tryRefresh=async()=>{
+      const c=sessionRef.current;
+      if(!c?.refresh_token)return null;
+      try{const s=await sb.refreshSession(c.refresh_token);sb.saveSession(s);setSession(s);return s?.access_token||null;}catch{return null;}
+    };
+    const scheduleReconnect=()=>{
+      if(dead)return;
       retries++;
+      // backoff con techo de 30s; nunca se rinde permanentemente
+      reconnectTimer=setTimeout(connect,Math.min(3000*retries,30000));
+    };
+    const connect=async()=>{
+      if(dead)return;
+      let token=getToken();
+      if(!token)token=await tryRefresh();// si no hay token, intentar refrescar antes de conectar
+      if(!token||dead)return;
       try{
         ws=new WebSocket(`${sb.SUPABASE_URL.replace("https","wss")}/realtime/v1/websocket?apikey=${sb.SUPABASE_KEY}&vsn=1.0.0`);
         ws.onopen=()=>{
           retries=0;// reset al conectar exitosamente
+          joinedToken=getToken();
           // Supabase Realtime v2: channel arbitrario + access_token del usuario para RLS
           ws.send(JSON.stringify({
             topic:"realtime:luderis-notifs",event:"phx_join",
@@ -642,10 +657,20 @@ export default function App(){
               config:{broadcast:{ack:false,self:false},presence:{key:""},
                 postgres_changes:[{event:"INSERT",schema:"public",table:"notificaciones",filter:`alumno_email=eq.${email}`}]
               },
-              access_token:token
+              access_token:joinedToken
             },ref:"1"
           }));
-          heartbeat=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));},25000);
+          heartbeat=setInterval(()=>{
+            if(ws.readyState!==WebSocket.OPEN)return;
+            const cur=getToken();
+            // Si el token se renovó (refresh proactivo), empujarlo al socket vivo
+            // para que Supabase no cierre la conexión al expirar el JWT viejo.
+            if(cur&&cur!==joinedToken){
+              ws.send(JSON.stringify({topic:"realtime:luderis-notifs",event:"access_token",payload:{access_token:cur},ref:"at"}));
+              joinedToken=cur;
+            }
+            ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
+          },25000);
         };
         ws.onmessage=(e)=>{
           try{
@@ -663,13 +688,19 @@ export default function App(){
             }
           }catch{}
         };
-        ws.onclose=()=>{clearInterval(heartbeat);if(!dead&&retries<MAX_RETRIES)setTimeout(connect,Math.min(5000*retries,30000));};
+        ws.onclose=async()=>{
+          clearInterval(heartbeat);
+          if(dead)return;
+          // Si el socket cerró por JWT expirado, refrescar antes de reintentar.
+          await tryRefresh();
+          scheduleReconnect();
+        };
         ws.onerror=()=>{try{ws.close();}catch{}};
-      }catch{}
+      }catch{scheduleReconnect();}
     };
     connect();
-    return()=>{dead=true;clearInterval(heartbeat);try{ws?.close();}catch{}};
-  },[session?.user?.email,session?.access_token,refreshUnread]);
+    return()=>{dead=true;clearInterval(heartbeat);clearTimeout(reconnectTimer);try{ws?.close();}catch{}};
+  },[session?.user?.email,refreshUnread]);// eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(()=>{
     refreshUnread();
@@ -699,6 +730,16 @@ export default function App(){
     const onVisibility=()=>{
       clearInterval(t);
       if(!document.hidden){
+        // Al volver el foco: si el JWT está por vencer (<10 min), refrescarlo.
+        // Los navegadores throttlean los timers en pestañas en segundo plano,
+        // así que el refresh proactivo por setTimeout puede no haber corrido.
+        const c=sessionRef.current;
+        if(c?.refresh_token){
+          const expMs=(c.expires_at??Math.floor(Date.now()/1000)+3600)*1000;
+          if(expMs-Date.now()<10*60*1000){
+            sb.refreshSession(c.refresh_token).then(s=>{sb.saveSession(s);setSession(s);}).catch(()=>{});
+          }
+        }
         refreshUnread(); // actualizar inmediatamente al volver
         t=setInterval(refreshUnread,30000);
       }
