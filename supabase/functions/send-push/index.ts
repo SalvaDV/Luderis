@@ -4,9 +4,15 @@
  *
  * Deploy: supabase functions deploy send-push --no-verify-jwt
  * Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
+ *
+ * SEGURIDAD: Aunque el JWT de Supabase no se verifica automáticamente en el gateway
+ * (--no-verify-jwt), esta función valida manualmente que el caller esté autenticado
+ * con un JWT de usuario válido. Esto previene que cualquier persona sin sesión
+ * pueda enviar push notifications arbitrarias a cualquier email.
  */
 // @ts-ignore
 import webpush from "npm:web-push@3.6.7";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -47,11 +53,34 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const SB_URL     = Deno.env.get("SUPABASE_URL")!;
+    const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // ── Verificar que el caller tiene un JWT de usuario válido ───────────
+    // Esto evita que cualquier visitante sin sesión pueda spamear push
+    // notifications a cualquier email conocido.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    if (!jwtToken || jwtToken === SB_SERVICE) {
+      // Rechazar si no hay token o si se intenta usar la service role key directamente
+      // desde el browser (la service role key nunca debe llegar al cliente)
+      return new Response(JSON.stringify({ error: "No autorizado: se requiere sesión activa" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    const supaAdmin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
+    const { data: { user }, error: authErr } = await supaAdmin.auth.getUser(jwtToken);
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "No autorizado: token inválido o expirado" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     const VAPID_PUBLIC  = Deno.env.get("VAPID_PUBLIC_KEY")!;
     const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
     const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:contacto@luderis.com";
-    const SB_URL        = Deno.env.get("SUPABASE_URL")!;
-    const SB_SERVICE    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
       return new Response(JSON.stringify({ error: "VAPID keys not set" }), { status: 503, headers: CORS });
@@ -95,7 +124,7 @@ Deno.serve(async (req) => {
     );
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
-    console.log(`[send-push] to=${to} sent=${sent}/${subs.length}`);
+    console.log(`[send-push] to=${to} sent=${sent}/${subs.length} caller=${user.email}`);
 
     return new Response(JSON.stringify({ ok: true, sent }), { headers: CORS });
   } catch (err: any) {

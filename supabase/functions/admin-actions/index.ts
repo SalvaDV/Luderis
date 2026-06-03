@@ -1,10 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "https://luderis.com",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token",
+// Orígenes permitidos — solo el dominio oficial de Luderis y localhost para desarrollo.
+const ALLOWED_ORIGINS = new Set([
+  "https://luderis.com",
+  "https://www.luderis.com",
+  "https://classelink.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]);
+
+const getCORS = (req: Request) => {
+  const origin = req.headers.get("Origin") ?? "";
+  const allowedOrigin = ALLOWED_ORIGINS.has(origin) ? origin : "https://luderis.com";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token",
+    "Vary": "Origin",
+  };
 };
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -36,14 +51,15 @@ const USER_ACTIONS = new Set([
 ]);
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  const cors = getCORS(req);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
     // ── 1. Obtener y verificar el JWT del usuario ─────────────────────────────
     const userToken = req.headers.get("x-user-token") || req.headers.get("authorization")?.replace("Bearer ", "");
     if (!userToken) {
       return new Response(JSON.stringify({ error: "No autorizado: token requerido" }), {
-        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+        status: 401, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -56,7 +72,7 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await adminClient.auth.getUser(userToken);
     if (authErr || !user) {
       return new Response(JSON.stringify({ error: "No autorizado: token inválido" }), {
-        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+        status: 401, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -65,7 +81,7 @@ serve(async (req) => {
 
     if (!action) {
       return new Response(JSON.stringify({ error: "Acción requerida" }), {
-        status: 400, headers: { ...CORS, "Content-Type": "application/json" },
+        status: 400, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -82,12 +98,12 @@ serve(async (req) => {
       const esAdmin = usuarioData?.rol === "admin";
       if (!esAdmin) {
         return new Response(JSON.stringify({ error: "No autorizado: se requiere rol admin" }), {
-          status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+          status: 403, headers: { ...cors, "Content-Type": "application/json" },
         });
       }
     } else if (!USER_ACTIONS.has(action)) {
       return new Response(JSON.stringify({ error: `Acción desconocida: ${action}` }), {
-        status: 400, headers: { ...CORS, "Content-Type": "application/json" },
+        status: 400, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -410,7 +426,7 @@ serve(async (req) => {
 
       if (!participacion) {
         return new Response(JSON.stringify({ error: "No autorizado: no eres participante de este chat" }), {
-          status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+          status: 403, headers: { ...cors, "Content-Type": "application/json" },
         });
       }
 
@@ -429,13 +445,13 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify(result), {
-      status: 200, headers: { ...CORS, "Content-Type": "application/json" },
+      status: 200, headers: { ...cors, "Content-Type": "application/json" },
     });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: msg }), {
-      status: 500, headers: { ...CORS, "Content-Type": "application/json" },
+      status: 500, headers: { ...cors, "Content-Type": "application/json" },
     });
   }
 });

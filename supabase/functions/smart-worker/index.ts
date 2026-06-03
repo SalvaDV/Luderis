@@ -62,8 +62,53 @@ const sendEmail = async (to: string, subject: string, html: string) => {
   });
 };
 
-// ── Unsubscribe token simple (HMAC-like con email) ───────────────────────────
-const makeUnsubToken = (email: string) => btoa(email + ":luderis-unsub-v1").replace(/=/g, "");
+// ── HTML escape para templates de email ──────────────────────────────────────
+// Previene HTML injection en caso de que un docente ponga tags en el título de su clase.
+// (Los clientes de email no ejecutan JS, pero sí renderizan HTML arbitrario)
+const esc = (s: unknown): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+// ── Unsubscribe token con HMAC-SHA256 ────────────────────────────────────────
+// Usa UNSUB_SECRET (Supabase Secret) para generar un token que NO se puede
+// forjar conociendo solo el email — el token anterior era btoa(email) y era trivialmente
+// falsificable por cualquiera que conociera el email de un usuario.
+const getUnsubKey = async (): Promise<CryptoKey> => {
+  const secret = Deno.env.get("UNSUB_SECRET") || "luderis-unsub-fallback-v2-change-me";
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+};
+
+const makeUnsubToken = async (email: string): Promise<string> => {
+  const key = await getUnsubKey();
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(email));
+  const hex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+  // Formato: base64url(email) + "." + primeros 32 chars del HMAC hex
+  return btoa(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "") + "." + hex.slice(0, 32);
+};
+
+const verifyUnsubToken = async (token: string): Promise<string | null> => {
+  try {
+    const [emailB64, providedSig] = token.split(".");
+    if (!emailB64 || !providedSig) return null;
+    const email = atob(emailB64.replace(/-/g, "+").replace(/_/g, "/"));
+    const key = await getUnsubKey();
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(email));
+    const expectedHex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+    // Comparación de tiempo constante (evita timing attacks)
+    if (providedSig !== expectedHex.slice(0, 32)) return null;
+    return email;
+  } catch { return null; }
+};
 
 Deno.serve(async (req) => {
   // Handle unsubscribe GET request
@@ -72,8 +117,10 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("unsub");
     if (token) {
       try {
-        const decoded = atob(token.replace(/-/g, "="));
-        const email = decoded.replace(":luderis-unsub-v1", "");
+        const email = await verifyUnsubToken(token);
+        if (!email) {
+          return new Response("Token inválido o expirado", { status: 400 });
+        }
         // Guardar preferencia en DB
         await supa(`usuarios?email=eq.${encodeURIComponent(email)}`, "PATCH", { recordatorios_activos: false });
         return new Response(
@@ -121,9 +168,10 @@ Deno.serve(async (req) => {
         const fechaFormateada = new Date(pub.fecha_inicio).toLocaleDateString("es-AR", {
           weekday: "long", day: "numeric", month: "long",
         });
-        const hora  = pub.hora_inicio ? ` a las ${pub.hora_inicio.slice(0, 5)}` : "";
+        const hora  = pub.hora_inicio ? ` a las ${esc(pub.hora_inicio.slice(0, 5))}` : "";
+        // Escapar datos de la DB que se inyectan en HTML (previene HTML injection)
         const lugar = pub.modalidad === "presencial" && pub.ubicacion
-          ? `<p style="color:#5A7294">📍 Ubicación: <strong>${pub.ubicacion}</strong></p>`
+          ? `<p style="color:#5A7294">📍 Ubicación: <strong>${esc(pub.ubicacion)}</strong></p>`
           : `<p style="color:#5A7294">💻 Clase online — el docente te enviará el link por chat</p>`;
 
         // Enviar a cada inscripto (respetando preferencia de unsubscribe)
@@ -146,14 +194,14 @@ Deno.serve(async (req) => {
         <p style="color:rgba(255,255,255,.75);margin:6px 0 0;font-size:13px">⏰ Recordatorio de clase</p>
       </div>
       <div style="padding:32px 40px">
-        <h2 style="color:#0D1F3C;font-size:20px;margin:0 0 16px">${pub.titulo}</h2>
+        <h2 style="color:#0D1F3C;font-size:20px;margin:0 0 16px">${esc(pub.titulo)}</h2>
         <div style="background:#F6F9FF;border:1px solid #DDE5F5;border-radius:10px;padding:16px 20px;margin:16px 0">
           <div style="font-size:11px;color:#5A7294;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">Cuándo</div>
-          <div style="font-size:16px;color:#0D1F3C;font-weight:700;text-transform:capitalize">${fechaFormateada}${hora}</div>
+          <div style="font-size:16px;color:#0D1F3C;font-weight:700;text-transform:capitalize">${esc(fechaFormateada)}${hora}</div>
         </div>
         <div style="background:#F6F9FF;border:1px solid #DDE5F5;border-radius:10px;padding:16px 20px;margin:16px 0">
           <div style="font-size:11px;color:#5A7294;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">Docente</div>
-          <div style="font-size:15px;color:#0D1F3C;font-weight:600">${pub.autor_nombre || pub.autor_email.split("@")[0]}</div>
+          <div style="font-size:15px;color:#0D1F3C;font-weight:600">${esc(pub.autor_nombre || pub.autor_email.split("@")[0])}</div>
         </div>
         ${lugar}
         <p style="text-align:center;margin:24px 0">
@@ -163,7 +211,7 @@ Deno.serve(async (req) => {
         </p>
         <p style="font-size:12px;color:#A0AEC0;text-align:center">Si tenés alguna duda, escribile al docente por el chat de Luderis.</p>
         <div style="text-align:center;padding:16px 0 0">
-          <a href="${APP_URL}/functions/v1/smart-worker?unsub=${makeUnsubToken(insc.alumno_email)}" style="font-size:11px;color:#A0AEC0;text-decoration:underline">
+          <a href="${APP_URL}/functions/v1/smart-worker?unsub=${await makeUnsubToken(insc.alumno_email)}" style="font-size:11px;color:#A0AEC0;text-decoration:underline">
             Ya no recordarme sobre mis clases
           </a>
         </div>
@@ -200,10 +248,10 @@ Deno.serve(async (req) => {
         <p style="color:rgba(255,255,255,.75);margin:6px 0 0;font-size:13px">📋 Tus clases de mañana · ${inscripciones.length} alumno${inscripciones.length !== 1 ? "s" : ""} inscripto${inscripciones.length !== 1 ? "s" : ""}</p>
       </div>
       <div style="padding:32px 40px">
-        <h2 style="color:#0D1F3C;font-size:20px;margin:0 0 16px">${pub.titulo}</h2>
+        <h2 style="color:#0D1F3C;font-size:20px;margin:0 0 16px">${esc(pub.titulo)}</h2>
         <div style="background:#F6F9FF;border:1px solid #DDE5F5;border-radius:10px;padding:16px 20px;margin:16px 0">
           <div style="font-size:11px;color:#5A7294;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">Cuándo</div>
-          <div style="font-size:16px;color:#0D1F3C;font-weight:700;text-transform:capitalize">${new Date(pub.fecha_inicio).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}${pub.hora_inicio ? ` a las ${pub.hora_inicio.slice(0, 5)}` : ""}</div>
+          <div style="font-size:16px;color:#0D1F3C;font-weight:700;text-transform:capitalize">${esc(new Date(pub.fecha_inicio).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }))}${pub.hora_inicio ? ` a las ${esc(pub.hora_inicio.slice(0, 5))}` : ""}</div>
         </div>
         ${lugar}
         <p style="text-align:center;margin:24px 0">

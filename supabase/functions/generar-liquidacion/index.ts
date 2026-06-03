@@ -294,9 +294,15 @@ Deno.serve(async (req) => {
   const INTERNAL_SECRET = Deno.env.get("GENERAR_LIQ_SECRET") ?? "";
   const APP_URL         = Deno.env.get("APP_URL") ?? "https://classelink.vercel.app";
 
-  // Validar secret
+  // Validar secret — fail closed: si el secret no está configurado, rechazar SIEMPRE.
+  // (la condición anterior `if (INTERNAL_SECRET && ...)` permitía acceso libre cuando
+  // la variable de entorno no estaba seteada — corregido para evitar acceso no autorizado)
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (INTERNAL_SECRET && authHeader !== `Bearer ${INTERNAL_SECRET}`) {
+  if (!INTERNAL_SECRET) {
+    console.error("generar-liquidacion: GENERAR_LIQ_SECRET no configurado — rechazando por seguridad");
+    return new Response(JSON.stringify({ error: "Servicio no disponible: secret no configurado" }), { status: 503, headers: CORS });
+  }
+  if (authHeader !== `Bearer ${INTERNAL_SECRET}`) {
     return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: CORS });
   }
 
