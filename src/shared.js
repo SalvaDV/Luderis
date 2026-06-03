@@ -114,7 +114,7 @@ let _LANG=_langKey();
 export const setLang=(l)=>{_LANG=l;try{localStorage.setItem("cl_lang",l);}catch{}};
 export const STRINGS={
   es:{
-    explore:"Explorar",agenda:"Mi agenda",chats:"Mis chats",favorites:"Favoritos",
+    explore:"Inicio",agenda:"Mi agenda",chats:"Mis chats",favorites:"Favoritos",
     classes:"Mis inscripciones",account:"Mi cuenta",newPost:"+ Publicar",
     search:"Buscar clases, materias o docentes...",filters:"Filtros",aiSearch:"✦ IA",
     allResults:"resultado",signin:"Iniciar sesión",register:"Registrarse",
@@ -134,7 +134,7 @@ export const STRINGS={
     aboutUs:"Sobre nosotros",contact:"Contacto",functions:"Funciones",howItWorks:"¿Cómo funciona?",
   },
   en:{
-    explore:"Explore",agenda:"My schedule",chats:"My chats",favorites:"Favorites",
+    explore:"Home",agenda:"My schedule",chats:"My chats",favorites:"Favorites",
     classes:"My classes",account:"My account",newPost:"+ Publish",
     search:"Search classes, subjects or teachers...",filters:"Filters",aiSearch:"✦ AI",
     allResults:"result",signin:"Sign in",register:"Sign up",

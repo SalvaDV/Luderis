@@ -122,7 +122,7 @@ function ResetPasswordScreen({ accessToken, onSuccess, onCancel }) {
             Aprendé lo que quieras,<br/>enseñá lo que sabés.
           </h2>
           <p style={{color:"rgba(255,255,255,.7)",fontSize:14,lineHeight:1.75,margin:0}}>
-            Conectamos personas para compartir conocimiento.<br/>Transparente, seguro y sin cargos ocultos.
+            Conectamos personas para compartir conocimiento.<br/>Transparente y seguro.
           </p>
         </div>
         <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:10}}>
@@ -820,7 +820,7 @@ export default function App(){
           <div style={{position:"fixed",top:0,left:0,right:0,height:52,background:C.surface,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",zIndex:50,boxShadow:"0 1px 4px rgba(0,0,0,.06)"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",color:C.text,fontSize:20,cursor:"pointer",padding:"4px 6px",lineHeight:1}}>☰</button>
-              <span style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:"-.3px",whiteSpace:"nowrap"}}>Luderis</span>
+              <button onClick={()=>setPage("explore")} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontSize:16,fontWeight:700,color:C.text,letterSpacing:"-.3px",whiteSpace:"nowrap",fontFamily:FONT}}>Luderis</button>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {/* Campana notificaciones */}

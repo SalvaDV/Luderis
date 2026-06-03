@@ -24,10 +24,10 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
       {/* Logo */}
       <div style={{padding:"16px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={()=>{setPage("explore");if(mobile&&onClose)onClose();}} style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:8}}>
             <img src="/logo.png" alt="Luderis" style={{width:32,height:32,objectFit:"contain"}}/>
-            <span style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:"-.3px",whiteSpace:"nowrap"}}>Luderis</span>
-          </div>
+            <span style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:"-.3px",whiteSpace:"nowrap",fontFamily:FONT}}>Luderis</span>
+          </button>
           {mobile&&<button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer",padding:2}}>×</button>}
         </div>
       </div>
