@@ -2993,6 +2993,16 @@ function ValidacionWizard({post,session,onValidado}){
   );
 }
 
+// Mapeo skill-tipo → formatos de evaluación recomendados
+const FORMATO_POR_TIPO={
+  conceptual:["multiple_choice","desarrollo","autoevaluacion"],
+  procedimental:["consigna_practica","rubrica","video"],
+  actitudinal:["autoevaluacion","rubrica","desarrollo"],
+  practica:["consigna_practica","imagen","audio","video"],
+  teorica:["multiple_choice","desarrollo"],
+  mixta:["multiple_choice","consigna_practica","rubrica"],
+};
+
 // ─── EVALUACIONES FORMALES ────────────────────────────────────────────────────
 function EvaluacionesFormales({post,session,esMio,esAyudante,inscripcion,inscripciones}){
   const pubId=post.id;
