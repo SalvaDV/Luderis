@@ -348,6 +348,7 @@ export default function AyudaPage() {
           <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 18, pointerEvents: "none" }}>🔍</span>
           <input
             value={busqueda}
+            aria-label="Buscar en la ayuda"
             onChange={e => { setBusqueda(e.target.value); setCatActiva(null); }}
             placeholder="Buscá tu pregunta… ej: cómo pagar, cancelar inscripción…"
             style={{

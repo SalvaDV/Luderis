@@ -225,12 +225,14 @@ export default function LibroQuejasPage() {
 
               <Campo label="Nombre completo" required>
                 <input value={form.nombre} onChange={e => set("nombre", e.target.value)}
+                  aria-label="Nombre completo"
                   placeholder="Tu nombre y apellido" style={iS("nombre")} />
                 {errors.nombre && <div style={{ fontSize: 12, color: DANGER, marginTop: 4 }}>{errors.nombre}</div>}
               </Campo>
 
               <Campo label="Email" required hint="Te enviamos la confirmación y el número de seguimiento a este email.">
                 <input type="email" value={form.email} onChange={e => set("email", e.target.value)}
+                  aria-label="Email"
                   placeholder="tu@email.com" style={iS("email")} />
                 {errors.email && <div style={{ fontSize: 12, color: DANGER, marginTop: 4 }}>{errors.email}</div>}
               </Campo>
@@ -257,6 +259,7 @@ export default function LibroQuejasPage() {
                 <textarea
                   value={form.descripcion}
                   onChange={e => set("descripcion", e.target.value)}
+                  aria-label="Descripción del problema"
                   placeholder="Describí lo que ocurrió con el mayor detalle posible: qué pasó, cuándo, con qué publicación o docente, qué intentaste hacer para resolverlo…"
                   rows={6}
                   style={{ ...iS("descripcion"), resize: "vertical", lineHeight: 1.6 }}
@@ -274,6 +277,7 @@ export default function LibroQuejasPage() {
               {CATEGORIAS_PAGO.has(form.categoria) && (
                 <Campo label="Número de transacción o referencia" hint="Opcional. Si tenés el ID de tu pago, pegalo acá.">
                   <input value={form.referencia} onChange={e => set("referencia", e.target.value)}
+                    aria-label="Número de transacción o referencia"
                     placeholder="Ej: MP-123456789" style={iS("referencia")} />
                 </Campo>
               )}

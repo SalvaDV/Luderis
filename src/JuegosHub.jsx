@@ -12,7 +12,10 @@ function todayStr() {
 function GameCard({ icon, gradient, title, tagline, rules, done, streak, timeStr, onClick, color }) {
   return (
     <div
+      role="button" tabIndex={0}
+      aria-label={`Jugar ${title}`}
       onClick={onClick}
+      onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onClick&&onClick();}}}
       style={{
         background: C.card,
         borderRadius: 20,
