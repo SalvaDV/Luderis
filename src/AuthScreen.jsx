@@ -260,7 +260,7 @@ function AuthScreen({onLogin}){
             <motion.div key={mode} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:.18}}>
               {mode==="forgot"?(
                 <>
-                  <input type="email" placeholder="tu@email.com" value={email} onChange={e=>setEmail(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI}/>
+                  <input type="email" aria-label="Email" placeholder="tu@email.com" value={email} onChange={e=>setEmail(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI}/>
                   {err&&<div style={{color:"#E53E3E",fontSize:12,marginBottom:10,display:"flex",gap:5,alignItems:"center"}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0}}/>{err}</div>}
                   {ok&&<div style={{color:"#2E7D52",fontSize:13,marginBottom:10,background:"#E8F5EE",borderRadius:8,padding:"8px 12px"}}>{ok}</div>}
                   <motion.button onClick={handle} disabled={loading} whileHover={{scale:1.01}} whileTap={{scale:.98}}
@@ -274,13 +274,13 @@ function AuthScreen({onLogin}){
                 </>
               ):(
                 <>
-                  <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                  <input type="email" aria-label="Email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={iS} onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                   {/* Contraseña con ojo */}
                   <div style={{position:"relative",marginBottom:12}}>
-                    <input type={showPass?"text":"password"} placeholder="Contraseña" value={pass} onChange={e=>setPass(e.target.value)}
+                    <input type={showPass?"text":"password"} aria-label="Contraseña" placeholder="Contraseña" value={pass} onChange={e=>setPass(e.target.value)}
                       style={{...iS,marginBottom:0,paddingRight:40}}
                       onFocus={focusI} onBlur={blurI} onKeyDown={e=>e.key==="Enter"&&handle()}/>
-                    <button type="button" onClick={()=>setShowPass(v=>!v)}
+                    <button type="button" aria-label={showPass?"Ocultar contraseña":"Mostrar contraseña"} onClick={()=>setShowPass(v=>!v)}
                       style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",padding:0,lineHeight:1,display:"flex"}}>
                       {showPass?<EyeOff size={15}/>:<Eye size={15}/>}
                     </button>
@@ -301,10 +301,10 @@ function AuthScreen({onLogin}){
                   })()}
                   {mode==="register"&&(
                     <div style={{position:"relative",marginBottom:4}}>
-                      <input type={showPass2?"text":"password"} placeholder="Repetir contraseña" value={pass2} onChange={e=>setPass2(e.target.value)}
+                      <input type={showPass2?"text":"password"} aria-label="Repetir contraseña" placeholder="Repetir contraseña" value={pass2} onChange={e=>setPass2(e.target.value)}
                         style={{...iS,marginBottom:0,paddingRight:40}}
                         onFocus={focusI} onBlur={blurI}/>
-                      <button type="button" onClick={()=>setShowPass2(v=>!v)}
+                      <button type="button" aria-label={showPass2?"Ocultar contraseña":"Mostrar contraseña"} onClick={()=>setShowPass2(v=>!v)}
                         style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#A0AEC0",padding:0,lineHeight:1,display:"flex"}}>
                         {showPass2?<EyeOff size={15}/>:<Eye size={15}/>}
                       </button>
@@ -318,7 +318,7 @@ function AuthScreen({onLogin}){
                   )}
                   {mode==="register"&&(
                     <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:16}}>
-                      <button onClick={()=>setAceptoTerminos(v=>!v)}
+                      <button type="button" role="checkbox" aria-checked={aceptoTerminos} aria-label="Acepto los Términos y Condiciones y las Políticas de Devolución" onClick={()=>setAceptoTerminos(v=>!v)}
                         style={{width:20,height:20,flexShrink:0,borderRadius:5,border:`2px solid ${aceptoTerminos?LUD.blue:"#CBD5E0"}`,background:aceptoTerminos?LUD.grad:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",justifyContent:"center",marginTop:1}}>
                         {aceptoTerminos&&<span style={{color:"#fff",fontSize:11,fontWeight:700}}>✓</span>}
                       </button>

@@ -35,10 +35,13 @@ export function ToastContainer(){
   const icons={success:"✓",error:"✕",warn:"⚠",info:"◎"};
   if(!items.length)return null;
   return(
-    <div style={{position:"fixed",bottom:"max(80px,env(safe-area-inset-bottom,0px) + 72px)",right:16,zIndex:9000,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
+    <div aria-live="polite" aria-atomic="false" style={{position:"fixed",bottom:"max(80px,env(safe-area-inset-bottom,0px) + 72px)",right:16,zIndex:9000,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
       {items.map(item=>(
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div key={item.id}
+          role="alert" tabIndex={0}
           onClick={()=>dismiss(item.id)}
+          onKeyDown={e=>{if(e.key==="Enter"||e.key===" "||e.key==="Escape"){e.preventDefault();dismiss(item.id);}}}
           style={{background:C.surface,border:`1px solid ${colors[item.type]||colors.info}40`,borderLeft:`3px solid ${colors[item.type]||colors.info}`,borderRadius:12,padding:"11px 14px",fontSize:13,color:C.text,fontFamily:FONT,boxShadow:"0 8px 28px rgba(0,0,0,.18)",animation:"fadeUp .2s ease",maxWidth:300,fontWeight:500,display:"flex",alignItems:"center",gap:9,pointerEvents:"auto",cursor:"pointer",transition:"opacity .15s"}}
           onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
           onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
@@ -269,6 +272,8 @@ export const Avatar=({letra,size=38,img})=>{
   const [imgOk,setImgOk]=useState(true);
   if(img&&imgOk)return(
     <div style={{width:size,height:size,borderRadius:"50%",overflow:"hidden",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
+      {/* onError solo gestiona el fallback de carga; no es una interacción de usuario */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <img src={img} alt={letra?`Avatar de ${letra}`:"Avatar"} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setImgOk(false)}/>
     </div>
   );
@@ -357,6 +362,7 @@ export function SearchableSelect({value,onChange,options,placeholder="Todas",sty
         <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,zIndex:200,boxShadow:"0 8px 24px rgba(0,0,0,.12)",overflow:"hidden",animation:"fadeUp .12s ease"}}>
           <div style={{padding:"8px 10px",borderBottom:`1px solid ${C.border}`}}>
             <input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)}
+              aria-label="Buscar categoría"
               placeholder="Buscar categoría..."
               style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}
               onKeyDown={e=>e.stopPropagation()}/>
@@ -400,6 +406,9 @@ export const Modal=({children,onClose,width="min(600px,97vw)",ariaLabel})=>{
     return()=>{document.removeEventListener("keydown",onKey);document.body.style.overflow=prev;};
   },[onClose]);
   const handleBackdrop=(e)=>{if(e.target===e.currentTarget&&onClose)onClose();};
+  // El cierre por teclado está cubierto por el listener de Escape (arriba); el click
+  // en el backdrop es una mejora solo-mouse.
+  // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
   return(<div role="dialog" aria-modal="true" aria-label={ariaLabel||"Diálogo"}
     onClick={handleBackdrop}
     style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}}>
@@ -478,15 +487,22 @@ LEGAL_TABS[1].sections=null;
 
 export function LegalModal({tab="tc",onClose}){
   const [activeTab,setActiveTab]=React.useState(tab);
+  React.useEffect(()=>{
+    const onKey=(e)=>{if(e.key==="Escape"&&onClose)onClose();};
+    document.addEventListener("keydown",onKey);
+    return()=>document.removeEventListener("keydown",onKey);
+  },[onClose]);
   const found=LEGAL_TABS.find(t=>t.id===activeTab);
   const sections=activeTab==="tc"?LEGAL_SECTIONS:activeTab==="priv"?PRIVACY_SECTIONS:(found?.sections||[]);
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9990,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={onClose}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(680px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)"}} onClick={e=>e.stopPropagation()}>
+    // El cierre por teclado lo cubre el listener de Escape; el click en el backdrop es solo-mouse.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
+    <div role="dialog" aria-modal="true" aria-label="Información legal de Luderis" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9990,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(680px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)"}}>
         <div style={{padding:"18px 20px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{fontWeight:800,fontSize:16,color:C.text}}>Luderis — Legal</div>
-            <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
+            <button onClick={onClose} aria-label="Cerrar" style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
           </div>
           <div style={{display:"flex",gap:2,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:0}}>
             {LEGAL_TABS.map(({id,label})=>(
@@ -523,9 +539,17 @@ export function useConfirm(){
     setState({msg:opts.msg||"¿Confirmar?",confirmLabel:opts.confirmLabel||"Confirmar",cancelLabel:opts.cancelLabel||"Cancelar",danger:!!opts.danger,resolve});
   }),[]);
   const close=(val)=>{if(state){state.resolve(val);setState(null);}};
+  React.useEffect(()=>{
+    if(!state)return;
+    const onKey=(e)=>{if(e.key==="Escape"){state.resolve(false);setState(null);}};
+    document.addEventListener("keydown",onKey);
+    return()=>document.removeEventListener("keydown",onKey);
+  },[state]);
   const confirmEl=state?(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={()=>close(false)}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"min(360px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+    // El cierre por teclado lo cubre el listener de Escape; el click en el backdrop es solo-mouse.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
+    <div role="dialog" aria-modal="true" aria-label="Confirmación" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)close(false);}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"min(360px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}}>
         <div style={{padding:"20px 20px 16px"}}>
           <div style={{fontSize:14,color:C.text,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{state.msg}</div>
         </div>
@@ -571,7 +595,14 @@ export function CalendarioCurso({post,compact=false}){
         {celdas.map((d,i)=>{
           if(!d)return <div key={i}/>;
           const tc=claseDias.has(d);const esHoy=d===hoy.getDate()&&month===hoy.getMonth()&&year===hoy.getFullYear();const sel=diaSelec===d;
-          return(<div key={i} onClick={()=>tc&&setDiaSelec(sel?null:d)} style={{textAlign:"center",padding:compact?"4px 1px":"5px 1px",borderRadius:7,fontSize:compact?11:12,fontWeight:tc?700:400,background:sel?C.accent:tc?C.accentDim:"transparent",color:sel?"#fff":tc?C.accent:esHoy?C.text:C.muted,border:esHoy?`1px solid ${C.border}`:"1px solid transparent",cursor:tc?"pointer":"default"}}>
+          // role/tabIndex/onKeyDown se aplican solo cuando la celda es interactiva (tc)
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+          return(<div key={i}
+            role={tc?"button":undefined} tabIndex={tc?0:undefined}
+            aria-label={tc?`Día ${d}${sel?" (seleccionado)":""}`:undefined}
+            onClick={tc?(()=>setDiaSelec(sel?null:d)):undefined}
+            onKeyDown={tc?(e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setDiaSelec(sel?null:d);}}):undefined}
+            style={{textAlign:"center",padding:compact?"4px 1px":"5px 1px",borderRadius:7,fontSize:compact?11:12,fontWeight:tc?700:400,background:sel?C.accent:tc?C.accentDim:"transparent",color:sel?"#fff":tc?C.accent:esHoy?C.text:C.muted,border:esHoy?`1px solid ${C.border}`:"1px solid transparent",cursor:tc?"pointer":"default"}}>
             {d}{tc&&!sel&&<div style={{width:3,height:3,background:C.accent,borderRadius:"50%",margin:"1px auto 0"}}/>}
           </div>);
         })}
