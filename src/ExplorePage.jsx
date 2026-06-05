@@ -433,6 +433,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     {/* Drawer de filtros — fuera del div animado para evitar z-index scoping por animation */}
     {panelOpen&&(
         <>
+          {/* Backdrop: el cierre por teclado lo cubre el botón × del panel; click es solo-mouse */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
           <div onClick={()=>setPanelOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:1100,animation:"fadeIn .15s ease"}}/>
           <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(320px,90vw)",background:C.surface,zIndex:1101,boxShadow:"-4px 0 24px rgba(0,0,0,.12)",overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"slideInRight .2s ease",display:"flex",flexDirection:"column",fontFamily:FONT}}>
             <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
@@ -453,7 +455,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               </div>
               <div style={{marginBottom:16}}><FL ch="Ubicación"/>
                 <div style={{position:"relative"}}>
-                  <input value={filtroUbicacion} onChange={e=>setFiltroUbicacion(e.target.value)} placeholder={userCity?`Tu ciudad: ${userCity}`:"Ej: Palermo, CABA"} style={{width:"100%",background:C.bg,border:`1px solid ${filtroUbicacion?C.accent:C.border}`,borderRadius:8,padding:"9px 36px 9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                  <input value={filtroUbicacion} onChange={e=>setFiltroUbicacion(e.target.value)} aria-label="Filtrar por ubicación" placeholder={userCity?`Tu ciudad: ${userCity}`:"Ej: Palermo, CABA"} style={{width:"100%",background:C.bg,border:`1px solid ${filtroUbicacion?C.accent:C.border}`,borderRadius:8,padding:"9px 36px 9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                   <button title="Usar mi ubicación" onClick={()=>{if(userCity){setFiltroUbicacion(userCity);}else{detectarUbicacion((city)=>setFiltroUbicacion(city));}}}
                     style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:15,color:C.accent,padding:0,lineHeight:1}}>
                     {geoLoading?<Spinner small/>:<MapPin size={15}/>}
@@ -470,8 +472,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               {precioMax>0&&(<div style={{marginBottom:16}}><FL ch="Precio por hora"/><PriceSlider min={precioMin} max={precioMax} valMin={sliderMin} valMax={sliderMax} onChangeMin={setSliderMin} onChangeMax={setSliderMax}/></div>)}
               <div style={{marginBottom:16}}><FL ch="Fecha de inicio"/>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  <div><div style={{fontSize:11,color:C.muted,marginBottom:4}}>Desde</div><input type="date" value={filtroFechaDesde} onChange={e=>setFiltroFechaDesde(e.target.value)} style={selS}/></div>
-                  <div><div style={{fontSize:11,color:C.muted,marginBottom:4}}>Hasta</div><input type="date" value={filtroFechaHasta} min={filtroFechaDesde||undefined} onChange={e=>setFiltroFechaHasta(e.target.value)} style={selS}/></div>
+                  <div><div style={{fontSize:11,color:C.muted,marginBottom:4}}>Desde</div><input type="date" aria-label="Fecha de inicio desde" value={filtroFechaDesde} onChange={e=>setFiltroFechaDesde(e.target.value)} style={selS}/></div>
+                  <div><div style={{fontSize:11,color:C.muted,marginBottom:4}}>Hasta</div><input type="date" aria-label="Fecha de inicio hasta" value={filtroFechaHasta} min={filtroFechaDesde||undefined} onChange={e=>setFiltroFechaHasta(e.target.value)} style={selS}/></div>
                   {(filtroFechaDesde||filtroFechaHasta)&&<button onClick={()=>{setFiltroFechaDesde("");setFiltroFechaHasta("");}} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0,textDecoration:"underline"}}>Limpiar fechas</button>}
                 </div>
               </div>
@@ -555,7 +557,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 {todosPedidos.length===0
                   ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"40px",color:C.muted,fontSize:14}}>No hay pedidos activos en este momento.</div>
                   :todosPedidos.map(p=>(
-                    <div key={p.id} onClick={()=>onOpenDetail(p)}
+                    <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)}
+                      onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}}
                       style={{background:TIPO_PUB.pedido.dim,border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:14,padding:"16px",cursor:"pointer",transition:"all .18s"}}
                       onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.accent}22`;e.currentTarget.style.borderColor=TIPO_PUB.pedido.accent+"66";}}
                       onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=TIPO_PUB.pedido.border;}}>
@@ -675,12 +678,14 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <style>{`.cl-hscroll::-webkit-scrollbar{display:none}`}</style>
                 <div style={{display:"flex",gap:14,paddingTop:2}} className="cl-hscroll">
                   {data.map(p=>(
-                    <div key={p.id} onClick={()=>onOpenDetail(p)}
+                    <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)}
+                      onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}}
                       style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s"}}
                       onMouseEnter={e=>{const acc=getPubTipo(p).accent;e.currentTarget.style.boxShadow=`0 8px 24px ${acc}28,0 2px 8px rgba(0,0,0,.06)`;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.borderColor=acc+"66";}}
                       onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";e.currentTarget.style.borderColor=p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;}}>
                       {/* Avatar + nombre */}
                       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
+                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto */}
                         {(()=>{const av=_avatarCache[p.autor_email]||localStorage.getItem("cl_avatar_"+p.autor_email)||null;return av&&av.startsWith("http")?<div style={{width:32,height:32,borderRadius:"50%",overflow:"hidden",flexShrink:0}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={32}/>;})()}
                         <div style={{minWidth:0,flex:1}}>
                           <div style={{fontSize:11,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
@@ -826,6 +831,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input
                   ref={searchInputRef}
+                  aria-label="Buscar clases, cursos o materias"
                   value={busqueda}
                   onChange={e=>{setBusqueda(e.target.value);if(e.target.value&&iaResults!==null){setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}}}
                   onKeyDown={e=>e.key==="Escape"&&setBusqueda("")}
@@ -842,7 +848,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 onMouseLeave={e=>{if(!iaResults){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}}>
                 <span style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>✦</span>
                 {iaResults?"IA activa":"IA"}
-                {iaResults&&<span onClick={e=>{e.stopPropagation();setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}} style={{marginLeft:3,color:C.muted,fontSize:14,lineHeight:1,cursor:"pointer"}}>×</span>}
+                {iaResults&&<span role="button" tabIndex={0} aria-label="Quitar búsqueda con IA" onClick={e=>{e.stopPropagation();setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}}} style={{marginLeft:3,color:C.muted,fontSize:14,lineHeight:1,cursor:"pointer"}}>×</span>}
               </button>
               <button onClick={()=>setPanelOpen(v=>!v)}
                 style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 13px",cursor:"pointer",flexShrink:0}}>
@@ -1012,7 +1018,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={viewMode==="cards"?{display:"grid",gap:11}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
                 {(modoVista==="resultados"?sorted:sorted.slice(0,pagina*PAGE_SIZE)).map(p=>(
                   viewMode==="lista"?(
-                    <div key={p.id} onClick={()=>onOpenDetail(p)} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
+                    <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
                       onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                       onMouseLeave={e=>e.currentTarget.style.background=C.surface}>
                       <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={36}/>

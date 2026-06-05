@@ -233,6 +233,8 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                     post.frecuencia&&{label:"Frecuencia",val:post.frecuencia,Icon:RefreshCw},
                     post.otorga_certificado&&{label:"Certificado",val:"Incluido al completar",Icon:GraduationCap},
                   ].filter(Boolean).map(({label,val,Icon:ChipIcon})=>(
+                    // Chip informativo: el hover solo cambia el color del borde (decorativo, no interactivo)
+                    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
                     <div key={label} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
                       <div style={{marginBottom:8,color:C.muted}}><ChipIcon size={20} strokeWidth={1.8}/></div>
                       <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.5,marginBottom:4,textTransform:"uppercase"}}>{label}</div>

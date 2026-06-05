@@ -95,13 +95,13 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
         <div>
-          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>Tu nombre *</label>
-          <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="¿Cómo te llamás?"
+          <label htmlFor="onb-nombre" style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>Tu nombre *</label>
+          <input id="onb-nombre" aria-label="Tu nombre" value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="¿Cómo te llamás?"
             style={{width:"100%",background:C.bg,border:`1px solid ${nombre.trim()?C.success:C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
         </div>
         <div>
-          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿En qué etapa educativa estás?</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿En qué etapa educativa estás?</div>
+          <div role="group" aria-label="Etapa educativa" style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {[["secundaria","📗 Secundaria"],["universitario","🎓 Universitario"],["posgrado","📜 Posgrado"],["adulto_prof","💼 Adulto/Profesional"],["otro","Otro"]].map(([v,l])=>(
               <button key={v} onClick={()=>setNivelEdu(v)}
                 style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,background:nivelEdu===v?C.accent:C.surface,color:nivelEdu===v?"#fff":C.muted,border:`1px solid ${nivelEdu===v?C.accent:C.border}`,transition:"all .12s"}}>
@@ -111,8 +111,8 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           </div>
         </div>
         <div>
-          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿Cuál es tu objetivo?</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿Cuál es tu objetivo?</div>
+          <div role="group" aria-label="Tu objetivo" style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {(rol==="docente"
               ?[["ensenar_full","🧑‍🏫 Enseñar como actividad principal"],["ensenar_extra","💼 Enseñar como ingreso extra"],["compartir","🤝 Compartir conocimiento"],["crecer","📈 Crecer como docente"]]
               :rol==="ambos"
@@ -127,8 +127,8 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           </div>
         </div>
         <div>
-          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿En qué ciudad estás? (opcional)</label>
-          <input value={ubicacion} onChange={e=>setUbicacion(e.target.value)} placeholder="Ej: Buenos Aires, Córdoba..."
+          <label htmlFor="onb-ubicacion" style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿En qué ciudad estás? (opcional)</label>
+          <input id="onb-ubicacion" aria-label="Ciudad" value={ubicacion} onChange={e=>setUbicacion(e.target.value)} placeholder="Ej: Buenos Aires, Córdoba..."
             style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
         </div>
       </div>
@@ -199,13 +199,13 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           <span>Tus datos se guardan de forma segura y solo son usados para verificar tu identidad como docente.</span>
         </div>
         <div>
-          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>DNI *</label>
-          <input value={dni} onChange={e=>setDni(e.target.value.replace(/\D/g,"").slice(0,8))} placeholder="12345678" maxLength={8}
+          <label htmlFor="onb-dni" style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>DNI *</label>
+          <input id="onb-dni" aria-label="DNI" value={dni} onChange={e=>setDni(e.target.value.replace(/\D/g,"").slice(0,8))} placeholder="12345678" maxLength={8}
             style={{width:"100%",background:C.bg,border:`1px solid ${dni.length>=7?C.success:C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",letterSpacing:2}}/>
         </div>
         <div>
-          <label style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>Fecha de nacimiento *</label>
-          <input type="date" value={fechaNac} onChange={e=>setFechaNac(e.target.value)}
+          <label htmlFor="onb-fechanac" style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>Fecha de nacimiento *</label>
+          <input id="onb-fechanac" aria-label="Fecha de nacimiento" type="date" value={fechaNac} onChange={e=>setFechaNac(e.target.value)}
             max={new Date(Date.now()-18*365*24*3600*1000).toISOString().split("T")[0]}
             style={{width:"100%",background:C.bg,border:`1px solid ${fechaNac?C.success:C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",colorScheme:"dark"}}/>
           {fechaNac&&(()=>{const edad=Math.floor((Date.now()-new Date(fechaNac).getTime())/(365.25*24*3600*1000));return edad<18?(<div style={{fontSize:11,color:C.danger,marginTop:4,fontWeight:600}}>⚠ Debés ser mayor de 18 años para registrarte como docente.</div>):(<div style={{fontSize:11,color:C.success,marginTop:4}}>✓ Edad verificada</div>);})()}
@@ -224,7 +224,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         </div>
         {/* Drop zone / preview */}
         <label style={{display:"block",cursor:"pointer"}}>
-          <input type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}}
+          <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Foto del frente del DNI" style={{display:"none"}}
             onChange={e=>{
               const f=e.target.files?.[0];
               if(!f)return;
@@ -239,6 +239,8 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
               <div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600}}>✓ Foto cargada — tocá para cambiar</div>
             </div>
           ):(
+            // Zona dentro del <label>: el click lo gestiona el input asociado; el hover es decorativo
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions
             <div style={{border:`2px dashed ${C.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",background:C.bg,transition:"border-color .15s"}}
               onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
               onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
@@ -282,10 +284,12 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         </div>
         {/* CUIT */}
         <div style={{marginTop:14}}>
-          <label style={{display:"block",fontSize:12,fontWeight:600,color:C.text,marginBottom:6}}>
+          <label htmlFor="onb-cuit" style={{display:"block",fontSize:12,fontWeight:600,color:C.text,marginBottom:6}}>
             CUIT / CUIL
           </label>
           <input
+            id="onb-cuit"
+            aria-label="CUIT o CUIL"
             type="text"
             inputMode="numeric"
             placeholder="20-12345678-9"
@@ -341,7 +345,9 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         </div>
 
         {/* Términos */}
-        <div onClick={()=>setTerminosAceptados(v=>!v)}
+        <div role="checkbox" aria-checked={terminosAceptados} tabIndex={0} aria-label="Acepto la Declaración Jurada"
+          onClick={()=>setTerminosAceptados(v=>!v)}
+          onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setTerminosAceptados(v=>!v);}}}
           style={{display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",background:terminosAceptados?C.accentDim:C.surface,border:`2px solid ${terminosAceptados?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",transition:"all .15s"}}>
           <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${terminosAceptados?C.accent:C.border}`,background:terminosAceptados?C.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .15s"}}>
             {terminosAceptados&&<span style={{color:"#fff",fontSize:14,fontWeight:700}}>✓</span>}
