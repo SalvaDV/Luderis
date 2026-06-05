@@ -156,6 +156,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <textarea
             ref={textareaRef}
+            aria-label="Escribí tu pregunta"
             value={texto}
             onChange={e => setTexto(e.target.value)}
             placeholder="Hacé tu pregunta sobre esta publicación…"
@@ -224,6 +225,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
               {esDocente && !p.respuesta && (
                 <div style={{ padding: "12px 16px", background: C.bg, borderTop: `1px solid ${C.border}` }}>
                   <textarea
+                    aria-label="Tu respuesta"
                     value={respTextos[p.id] || ""}
                     onChange={e => setRespTextos(v => ({ ...v, [p.id]: e.target.value }))}
                     placeholder="Escribí tu respuesta pública…"
@@ -264,10 +266,10 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
               desc:"Tu mensaje fue bloqueado por contener contenido que no está permitido en Luderis.",
               sub:"Un administrador fue notificado." };
         return(
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
-            onClick={() => setBloqueadoModal(null)}>
-            <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.25)", textAlign: "center" }}
-              onClick={e => e.stopPropagation()}>
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
+          <div role="dialog" aria-modal="true" aria-label={cfg.titulo} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+            onClick={e => { if (e.target === e.currentTarget) setBloqueadoModal(null); }}>
+            <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.25)", textAlign: "center" }}>
               <div style={{ marginBottom: 12 }}><cfg.Icon size={44} color={cfg.color} strokeWidth={1.5}/></div>
               <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: cfg.color, marginBottom: 10 }}>{cfg.titulo}</h3>
               <p style={{ fontFamily: FONT, fontSize: 14, color: "#444", lineHeight: 1.6, marginBottom: 8 }}>{cfg.desc}</p>

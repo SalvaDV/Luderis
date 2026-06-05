@@ -91,7 +91,8 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
   if(!open)return null;
   return(
     <>
-      <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:498}}/>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop solo-mouse; el panel se cierra con su botón */}
+      <div onClick={onClose} aria-hidden="true" style={{position:"fixed",inset:0,zIndex:498}}/>
       <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(380px,100vw)",background:C.surface,borderLeft:`1px solid ${C.border}`,zIndex:499,display:"flex",flexDirection:"column",boxShadow:"-4px 0 24px rgba(0,0,0,.12)",animation:"slideInRight .2s ease",fontFamily:FONT}}>
         <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
 
@@ -135,6 +136,8 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                   const info=TIPO_INFO[n.tipo]||{Icon:Bell,color:C.muted,label:n.tipo};
                   return(
                     <div key={n.id||i}
+                      role="button" tabIndex={0} aria-label={`Notificación: ${info.label}`}
+                      onKeyDown={e=>{if((e.key==="Enter"||e.key===" ")&&n.publicacion_id){e.preventDefault();e.currentTarget.click();}}}
                       onClick={()=>{
                         if(n.publicacion_id){
                           sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});

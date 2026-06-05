@@ -30,8 +30,9 @@ export default function CertificadoPage({certId,onClose}){
   const fecha=cert?new Date(cert.fecha_emision).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"}):null;
 
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}} onClick={onClose}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(520px,96vw)",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}>
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
+    <div role="dialog" aria-modal="true" aria-label="Certificado" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(520px,96vw)",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
         {/* Header */}
         <div style={{background:"linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0)",padding:"24px 28px",position:"relative"}}>
           <button onClick={onClose} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(255,255,255,.7)",fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>

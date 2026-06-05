@@ -106,6 +106,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
       </div>
 
       {/* Footer */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- footer: stopPropagation evita activar la card (no es un control) */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:`1px solid ${C.border}`,paddingTop:10,gap:8}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
           {post.vistas>0&&<span style={{fontSize:12,color:C.muted}}>{post.vistas} vista{post.vistas!==1?"s":""}</span>}

@@ -27,6 +27,8 @@ export default function ShareBtn({post,style={}}){
   const email=(e)=>{e.stopPropagation();window.open(`mailto:?subject=${encodeURIComponent(txt)}&body=${encodeURIComponent(url)}`);setMenu(false);};
   const nativo=async(e)=>{e.stopPropagation();if(navigator.share)try{await navigator.share({title:txt,url});return;}catch{}copiar(e);};
   return(
+    // Wrapper: stopPropagation evita que el click active la card contenedora (no es un control)
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div style={{position:"relative",display:"inline-block"}} onClick={e=>e.stopPropagation()}>
       <button onClick={e=>{e.stopPropagation();if(navigator.share){nativo(e);}else setMenu(v=>!v);}}
         title="Compartir" style={{background:"none",border:`1px solid ${C.border}`,fontSize:13,cursor:"pointer",color:C.muted,padding:"5px 10px",lineHeight:1,borderRadius:8,...style,display:"flex",alignItems:"center",gap:4,transition:"all .15s"}}
@@ -36,7 +38,8 @@ export default function ShareBtn({post,style={}}){
       </button>
       {menu&&(
         <>
-          <div onClick={()=>setMenu(false)} style={{position:"fixed",inset:0,zIndex:299}}/>
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop solo-mouse para cerrar el menú */}
+          <div onClick={()=>setMenu(false)} aria-hidden="true" style={{position:"fixed",inset:0,zIndex:299}}/>
           <div style={{position:"absolute",right:0,top:"calc(100% + 4px)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"6px",zIndex:300,boxShadow:"0 8px 24px rgba(0,0,0,.15)",display:"flex",flexDirection:"column",gap:2,minWidth:190,animation:"fadeUp .12s ease"}}>
             {[
               {Icon:Copy,label:"Copiar enlace",fn:copiar,color:C.text},

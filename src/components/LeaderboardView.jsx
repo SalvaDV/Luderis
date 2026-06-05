@@ -49,7 +49,7 @@ export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpe
         </div>
       </div>
       {visibles.slice(0,20).map((d,i)=>(
-        <div key={d.email} onClick={()=>onOpenPerfil&&onOpenPerfil(d.email)}
+        <div key={d.email} role="button" tabIndex={0} aria-label={`Ver perfil de ${d.nombre||d.email}`} onClick={()=>onOpenPerfil&&onOpenPerfil(d.email)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenPerfil&&onOpenPerfil(d.email);}}}
           style={{background:i<3?"linear-gradient(135deg,"+["#FFF9E6","#F0F4FF","#F4FFF4"][i]+","+C.surface+")":C.surface,border:`1px solid ${i<3?["#F59E0B40","#1A6ED840","#2EC4A040"][i]:C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",display:"flex",gap:14,alignItems:"center",transition:"box-shadow .15s"}}
           onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,.1)"}
           onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>

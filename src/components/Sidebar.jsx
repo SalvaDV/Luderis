@@ -46,7 +46,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
         const pct=Math.round((done/criterios.length)*100);
         const siguiente=criterios.find(x=>!x.ok);
         return pct<100?(
-          <div style={{padding:"8px 16px",borderBottom:`1px solid ${C.border}`,background:C.accentDim,cursor:"pointer"}} onClick={()=>{setPage("cuenta");if(mobile)onClose();}}>
+          <div role="button" tabIndex={0} aria-label={`Completar perfil (${pct}% completo)`} style={{padding:"8px 16px",borderBottom:`1px solid ${C.border}`,background:C.accentDim,cursor:"pointer"}} onClick={()=>{setPage("cuenta");if(mobile)onClose();}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setPage("cuenta");if(mobile)onClose();}}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
               <span style={{fontSize:10,fontWeight:700,color:C.accent,letterSpacing:.3}}>PERFIL {pct}% COMPLETO</span>
               {siguiente&&<span style={{fontSize:10,color:C.muted}}>Falta: {siguiente.label}</span>}
@@ -60,6 +60,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
       {/* User card */}
       <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,background:`linear-gradient(135deg,${C.accentDim},${C.bg})`}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto */}
           {(()=>{const av=_avatarCache[session.user.email]||localStorage.getItem("cl_avatar_"+session.user.email)||null;return av&&av.startsWith("http")?<div style={{width:40,height:40,borderRadius:"50%",overflow:"hidden",flexShrink:0,border:`2px solid ${C.accent}40`}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={nombre[0]} size={40}/>;})()}
           <div style={{overflow:"hidden",flex:1}}>
             <div style={{color:C.text,fontSize:13,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nombre}</div>
@@ -159,6 +160,8 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
       </div>
       </div>
   );
-  if(mobile)return(<>{open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:89}}/>}<div style={{position:"fixed",left:0,top:0,height:"100vh",zIndex:90,transform:open?"translateX(0)":"translateX(-100%)",transition:"transform .25s",boxShadow:"4px 0 20px rgba(0,0,0,.1)"}}>{inner}</div></>);
+  // backdrop solo-mouse; la navegación del sidebar es accesible por teclado
+  if(mobile)return(<>{/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+    {open&&<div onClick={onClose} aria-hidden="true" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:89}}/>}<div style={{position:"fixed",left:0,top:0,height:"100vh",zIndex:90,transform:open?"translateX(0)":"translateX(-100%)",transition:"transform .25s",boxShadow:"4px 0 20px rgba(0,0,0,.1)"}}>{inner}</div></>);
   return <div style={{position:"fixed",left:0,top:0,height:"100vh",zIndex:40}}>{inner}</div>;
 }
