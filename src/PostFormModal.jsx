@@ -38,7 +38,7 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
     <div style={{color:C.accent,fontSize:10,fontWeight:700,marginBottom:5,letterSpacing:1}}>✓ VERIFICACIÓN (IA)</div>
     {estado==="cargando"?<div style={{color:C.muted,fontSize:12,display:"flex",alignItems:"center",gap:6}}><Spinner small/>Generando...</div>:(<>
       <p style={{color:C.text,fontSize:12,marginBottom:7,lineHeight:1.5}}>{pregunta}</p>
-      <textarea value={respuesta} onChange={e=>setRespuesta(e.target.value)} placeholder="Tu respuesta..." style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",resize:"vertical",minHeight:52,boxSizing:"border-box",fontFamily:FONT,marginBottom:7}}/>
+      <textarea value={respuesta} onChange={e=>setRespuesta(e.target.value)} aria-label="Tu respuesta a la verificación" placeholder="Tu respuesta..." style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",resize:"vertical",minHeight:52,boxSizing:"border-box",fontFamily:FONT,marginBottom:7}}/>
       {estado==="error"&&<div style={{color:C.danger,fontSize:12,marginBottom:7,background:"#E05C5C15",borderRadius:7,padding:"7px 10px",lineHeight:1.5}}>{feedback||"Respuesta incorrecta. Intentá de nuevo."}</div>}
       <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
         {estado==="error"
@@ -521,8 +521,10 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             const done=n<paso;
             const active=n===paso;
             return(
-              <div key={n} style={{flex:1,display:"flex",flexDirection:"column",gap:4,cursor:done?"pointer":"default"}}
-                onClick={()=>{if(done)setPaso(n);}}>
+              // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- role/tabIndex/onKeyDown solo cuando el paso es navegable (done)
+              <div key={n} role={done?"button":undefined} tabIndex={done?0:undefined} aria-label={done?`Ir al paso ${n}`:undefined} style={{flex:1,display:"flex",flexDirection:"column",gap:4,cursor:done?"pointer":"default"}}
+                onClick={done?(()=>setPaso(n)):undefined}
+                onKeyDown={done?(e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setPaso(n);}}):undefined}>
                 <div style={{height:3,borderRadius:2,background:done||active?"linear-gradient(90deg,#1A6ED8,#2EC4A0)":C.border,transition:"background .3s"}}/>
                 <div style={{fontSize:9,color:active?C.accent:done?C.success:C.muted,fontWeight:active||done?700:400,textAlign:"center",transition:"color .3s"}}>
                   {done?"✓ ":""}{label}
@@ -611,19 +613,21 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             {materia&&<AsistentePublicacion tipo={tipo} materia={materia} titulo={titulo} descripcion={descripcion} modo={modo} session={session} onApply={(s)=>{if(s.titulo)setTitulo(s.titulo);if(s.descripcion)setDescripcion(s.descripcion.slice(0,300));if(s.precio_sugerido)setPrecio(String(s.precio_sugerido));}}/>}
             <div style={{position:"relative"}}>
               <input value={titulo} onChange={e=>setTitulo(e.target.value.slice(0,80))}
+                aria-label="Título"
                 placeholder={tipo==="busqueda"?"Título de tu búsqueda":"Título del curso o clase"}
                 style={{...iS,marginBottom:0,paddingRight:48}}/>
               <span style={{position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",fontSize:10,color:titulo.length>=70?C.danger:C.muted,fontFamily:FONT,pointerEvents:"none"}}>{titulo.length}/80</span>
             </div>
             <div style={{position:"relative"}}>
               <textarea value={descripcion} onChange={e=>setDescripcion(e.target.value.slice(0,DESC_MAX))}
+                aria-label="Descripción"
                 placeholder="Descripción detallada..." rows={4}
                 style={{...iS,resize:"vertical",marginBottom:0,paddingBottom:22}}/>
               <span style={{position:"absolute",bottom:8,right:11,fontSize:10,color:descripcion.length>=DESC_MAX?C.danger:C.muted,fontFamily:FONT,pointerEvents:"none"}}>{descripcion.length}/{DESC_MAX}</span>
             </div>
             <div>
               <Label>{tipo==="busqueda"?"Requisitos del docente (opcional)":"Requisitos previos (opcional)"}</Label>
-              <input value={requisitos} onChange={e=>setRequisitos(e.target.value.slice(0,150))}
+              <input value={requisitos} onChange={e=>setRequisitos(e.target.value.slice(0,150))} aria-label="Requisitos"
                 placeholder={tipo==="busqueda"?"Ej: Con experiencia en CBC...":"Ej: Conocimientos básicos de álgebra..."}
                 style={{...iS,marginBottom:0}}/>
             </div>
@@ -677,12 +681,12 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 <div style={{display:"flex",gap:7}}>
                   <div style={{flex:1}}>
                     <Label>Inicio</Label>
-                    <input type="date" value={fechaInicio} onChange={e=>{setFechaInicio(e.target.value);if(fechaFin&&fechaFin<=e.target.value)setFechaFin("");}} style={{...iS,margin:0,colorScheme:"light dark"}}/>
+                    <input type="date" aria-label="Fecha de inicio" value={fechaInicio} onChange={e=>{setFechaInicio(e.target.value);if(fechaFin&&fechaFin<=e.target.value)setFechaFin("");}} style={{...iS,margin:0,colorScheme:"light dark"}}/>
                     {fechaInicio&&new Date(fechaInicio)<new Date(new Date().toDateString())&&<div style={{color:"#B45309",fontSize:11,marginTop:2}}>⚠ La fecha ya pasó</div>}
                   </div>
                   <div style={{flex:1}}>
                     <Label>Fin</Label>
-                    <input type="date" value={fechaFin} onChange={e=>setFechaFin(e.target.value)} min={fechaInicio?(()=>{const d=new Date(fechaInicio);d.setDate(d.getDate()+1);return d.toISOString().split("T")[0];})():undefined} disabled={!fechaInicio} style={{...iS,margin:0,colorScheme:"light dark",opacity:fechaInicio?1:0.4}}/>
+                    <input type="date" aria-label="Fecha de fin" value={fechaFin} onChange={e=>setFechaFin(e.target.value)} min={fechaInicio?(()=>{const d=new Date(fechaInicio);d.setDate(d.getDate()+1);return d.toISOString().split("T")[0];})():undefined} disabled={!fechaInicio} style={{...iS,margin:0,colorScheme:"light dark",opacity:fechaInicio?1:0.4}}/>
                   </div>
                 </div>
                 {durCalc&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:8,padding:"7px 12px",fontSize:12,color:C.accent}}>⏱ Duración: <strong>{durCalc}</strong></div>}
@@ -699,9 +703,9 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                       return(
                         <div key={i} style={{display:"flex",gap:5,alignItems:"center",background:C.card,borderRadius:9,padding:"7px 9px",border:`1px solid ${inv?"#E05C5C44":C.border}`,flexWrap:"wrap"}}>
                           <select value={c.dia} onChange={e=>updClase(i,"dia",e.target.value)} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,cursor:"pointer",outline:"none",flex:2}}>{["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(d=><option key={d}>{d}</option>)}</select>
-                          <input type="time" value={c.hora_inicio} onChange={e=>{const v=e.target.value;updClase(i,"hora_inicio",v);if(c.hora_fin&&toMin(c.hora_fin)!==null&&toMin(c.hora_fin)<=toMin(v)){const[h,m]=v.split(":").map(Number);const fin=`${String(h+(m>=30?1:0)).padStart(2,"0")}:${m>=30?"00":String(m+30).padStart(2,"0")}`;updClase(i,"hora_fin",fin);}}} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
+                          <input type="time" aria-label="Hora de inicio" value={c.hora_inicio} onChange={e=>{const v=e.target.value;updClase(i,"hora_inicio",v);if(c.hora_fin&&toMin(c.hora_fin)!==null&&toMin(c.hora_fin)<=toMin(v)){const[h,m]=v.split(":").map(Number);const fin=`${String(h+(m>=30?1:0)).padStart(2,"0")}:${m>=30?"00":String(m+30).padStart(2,"0")}`;updClase(i,"hora_fin",fin);}}} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
                           <span style={{color:C.muted,fontSize:11}}>→</span>
-                          <input type="text" value={c.hora_fin} onChange={e=>updClase(i,"hora_fin",e.target.value)} placeholder="HH:MM" maxLength={5} style={{background:C.surface,border:`1px solid ${inv?C.danger:C.border}`,borderRadius:7,padding:"4px 7px",color:inv?C.danger:C.text,fontSize:11,fontFamily:FONT,outline:"none",flex:2,width:0}}/>
+                          <input type="text" aria-label="Hora de fin" value={c.hora_fin} onChange={e=>updClase(i,"hora_fin",e.target.value)} placeholder="HH:MM" maxLength={5} style={{background:C.surface,border:`1px solid ${inv?C.danger:C.border}`,borderRadius:7,padding:"4px 7px",color:inv?C.danger:C.text,fontSize:11,fontFamily:FONT,outline:"none",flex:2,width:0}}/>
                           {inv&&<span style={{fontSize:10,color:C.danger,width:"100%",paddingLeft:2}}>⚠ Fin debe ser posterior al inicio</span>}
                           <button onClick={()=>remClase(i)} style={{background:"none",border:"none",color:C.danger,fontSize:15,cursor:"pointer",flexShrink:0}}>×</button>
                         </div>
@@ -743,9 +747,9 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                           <select value={c.dia} onChange={e=>updClase(i,"dia",e.target.value)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,cursor:"pointer",outline:"none",flex:2}}>
                             {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(d=><option key={d}>{d}</option>)}
                           </select>
-                          <input type="time" value={c.hora_inicio} onChange={e=>updClase(i,"hora_inicio",e.target.value)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
+                          <input type="time" aria-label="Hora de inicio" value={c.hora_inicio} onChange={e=>updClase(i,"hora_inicio",e.target.value)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
                           <span style={{color:C.muted,fontSize:11}}>→</span>
-                          <input type="time" value={c.hora_fin} onChange={e=>updClase(i,"hora_fin",e.target.value)} style={{background:C.bg,border:`1px solid ${inv?C.danger:C.border}`,borderRadius:7,padding:"4px 7px",color:inv?C.danger:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
+                          <input type="time" aria-label="Hora de fin" value={c.hora_fin} onChange={e=>updClase(i,"hora_fin",e.target.value)} style={{background:C.bg,border:`1px solid ${inv?C.danger:C.border}`,borderRadius:7,padding:"4px 7px",color:inv?C.danger:C.text,fontSize:11,fontFamily:FONT,outline:"none",colorScheme:"light dark",flex:2}}/>
                           {inv&&<span style={{fontSize:10,color:C.danger,width:"100%"}}>⚠ Fin debe ser posterior al inicio</span>}
                           <button type="button" onClick={()=>remClase(i)} style={{background:"none",border:"none",color:C.danger,fontSize:15,cursor:"pointer",flexShrink:0}}>×</button>
                         </div>
@@ -756,7 +760,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               </div>
             )}
 
-            {modo!=="particular"&&<><div onClick={()=>setOtorgaCertificado(v=>!v)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.accentDim,borderRadius:8,cursor:"pointer"}}>
+            {modo!=="particular"&&<><div role="checkbox" aria-checked={otorgaCertificado} tabIndex={0} aria-label="Otorga certificado de aprobación" onClick={()=>setOtorgaCertificado(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setOtorgaCertificado(v=>!v);}}} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.accentDim,borderRadius:8,cursor:"pointer"}}>
               <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${otorgaCertificado?C.accent:C.border}`,background:otorgaCertificado?C.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
                 {otorgaCertificado&&<span style={{color:"#fff",fontSize:13,fontWeight:700}}>✓</span>}
               </div>
@@ -769,10 +773,10 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"12px 14px"}}>
                 <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:8}}>🎯 Porcentaje mínimo para aprobar</div>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <input type="range" min={10} max={100} step={5} value={aprobacionPct} onChange={e=>setAprobacionPct(Number(e.target.value))}
+                  <input type="range" aria-label="Porcentaje mínimo para aprobar" min={10} max={100} step={5} value={aprobacionPct} onChange={e=>setAprobacionPct(Number(e.target.value))}
                     style={{flex:1,accentColor:C.accent}}/>
                   <div style={{display:"flex",alignItems:"center",gap:4}}>
-                    <input type="number" min={1} max={100} value={aprobacionPct} onChange={e=>setAprobacionPct(Math.min(100,Math.max(1,Number(e.target.value)||1)))}
+                    <input type="number" aria-label="Porcentaje mínimo para aprobar" min={1} max={100} value={aprobacionPct} onChange={e=>setAprobacionPct(Math.min(100,Math.max(1,Number(e.target.value)||1)))}
                       style={{...iS,width:60,margin:0,textAlign:"center",padding:"6px 8px"}}/>
                     <span style={{fontSize:13,color:C.muted,flexShrink:0}}>%</span>
                   </div>
@@ -791,11 +795,11 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               <div>
                 <Label>Precio por clase <span style={{color:C.danger,fontSize:11}}>*</span></Label>
                 <div style={{display:"flex",gap:7}}>
-                  <select value={moneda} onChange={e=>setMoneda(e.target.value)} style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
+                  <select value={moneda} onChange={e=>setMoneda(e.target.value)} aria-label="Moneda" style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
                     {[["ARS","$ ARS"],["USD","US$"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
                   </select>
-                  <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:2}}/>
-                  <select value={precioTipo} onChange={e=>setPrecioTipo(e.target.value)} style={{...iS,margin:0,flex:1,cursor:"pointer"}}>
+                  <input value={precio} onChange={e=>setPrecio(e.target.value)} aria-label="Precio por clase" placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:2}}/>
+                  <select value={precioTipo} onChange={e=>setPrecioTipo(e.target.value)} aria-label="Unidad de precio" style={{...iS,margin:0,flex:1,cursor:"pointer"}}>
                     <option value="hora">/ hora</option>
                     <option value="clase">/ clase</option>
                   </select>
@@ -805,10 +809,10 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               <div>
                 <Label>Precio total del curso <span style={{color:C.danger,fontSize:11}}>*</span></Label>
                 <div style={{display:"flex",gap:7}}>
-                  <select value={moneda} onChange={e=>setMoneda(e.target.value)} style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
+                  <select value={moneda} onChange={e=>setMoneda(e.target.value)} aria-label="Moneda" style={{...iS,margin:0,flex:"0 0 80px",cursor:"pointer"}}>
                     {[["ARS","$ ARS"],["USD","US$"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
                   </select>
-                  <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:1}}/>
+                  <input value={precio} onChange={e=>setPrecio(e.target.value)} aria-label="Precio total del curso" placeholder="Precio" type="number" min="0" style={{...iS,margin:0,flex:1}}/>
                 </div>
               </div>
             )}
@@ -816,7 +820,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             {/* Clase de prueba */}
             {modo==="particular"&&precio&&(
               <div style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:12,padding:"12px 14px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setTienePrueba(v=>!v)}>
+                <div role="checkbox" aria-checked={tienePrueba} tabIndex={0} aria-label="Ofrecer clase de prueba" style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setTienePrueba(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setTienePrueba(v=>!v);}}}>
                   <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${tienePrueba?C.accent:"#CBD5E0"}`,background:tienePrueba?"linear-gradient(135deg,#1A6ED8,#2EC4A0)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     {tienePrueba&&<span style={{color:"#fff",fontSize:11,fontWeight:700}}>✓</span>}
                   </div>
@@ -828,7 +832,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 {tienePrueba&&(
                   <div style={{display:"flex",gap:8,alignItems:"center",marginTop:10}}>
                     <span style={{fontSize:12,color:C.muted,flexShrink:0}}>Precio de prueba:</span>
-                    <input value={precioPrueba} onChange={e=>setPrecioPrueba(e.target.value)} placeholder="0 = gratis" type="number" min="0"
+                    <input value={precioPrueba} onChange={e=>setPrecioPrueba(e.target.value)} aria-label="Precio de prueba" placeholder="0 = gratis" type="number" min="0"
                       style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT}}/>
                     <span style={{fontSize:12,color:C.muted}}>{moneda}</span>
                   </div>
@@ -863,6 +867,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                           <div style={{flex:1}}>
                             <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>NOMBRE (opcional)</div>
                             <input value={pq.nombre||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,nombre:e.target.value}:p))}
+                              aria-label="Nombre del paquete (opcional)"
                               placeholder={`Ej: Pack ${pq.clases||5} clases`}
                               style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                           </div>
@@ -872,18 +877,18 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                         <div style={{display:"flex",gap:8}}>
                           <div style={{flex:1}}>
                             <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>CLASES</div>
-                            <input type="number" min="2" max="100" value={pq.clases||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,clases:parseInt(e.target.value)||0}:p))}
+                            <input type="number" aria-label="Cantidad de clases del paquete" min="2" max="100" value={pq.clases||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,clases:parseInt(e.target.value)||0}:p))}
                               style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>% DESCUENTO</div>
-                            <input type="number" min="0" max="80" value={pq.descuento||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,descuento:parseInt(e.target.value)||0,precio_total:0}:p))}
+                            <input type="number" aria-label="Porcentaje de descuento del paquete" min="0" max="80" value={pq.descuento||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,descuento:parseInt(e.target.value)||0,precio_total:0}:p))}
                               placeholder="0"
                               style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:3}}>PRECIO TOTAL</div>
-                            <input type="number" min="0" value={pq.precio_total||Math.round(precioFinal)||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,precio_total:parseFloat(e.target.value)||0,descuento:0}:p))}
+                            <input type="number" aria-label="Precio total del paquete" min="0" value={pq.precio_total||Math.round(precioFinal)||""} onChange={e=>setPaquetes(prev=>prev.map((p,j)=>j===i?{...p,precio_total:parseFloat(e.target.value)||0,descuento:0}:p))}
                               placeholder="Auto"
                               style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                           </div>
@@ -1018,12 +1023,14 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
         <div style={{position:"relative"}}>
           {/* Banner */}
           <div style={{height:110,background:bannerUrl?undefined:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota */}
             {bannerUrl&&<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>}
           </div>
           {/* Avatar — overlaps banner */}
           <div style={{position:"absolute",bottom:-44,left:20,zIndex:2}}>
             <div style={{width:88,height:88,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.bg}`,boxShadow:"0 4px 16px rgba(0,0,0,.18)"}}>
               {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo gestiona el fallback del avatar
                 ?<img src={perfilData.avatar_url} alt={displayNombre} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.currentTarget.style.display="none";e.currentTarget.nextSibling.style.display="flex";}}/>
                 :null
               }
@@ -1137,7 +1144,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin publicaciones activas</div>
               :<div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {pubs.map(p=>{const T=getPubTipo(p);const tipoBadge=p.tipo==="busqueda"?"Pedido":(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase";return(
-                  <div key={p.id} onClick={()=>onOpenDetail&&onOpenDetail(p)}
+                  <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail&&onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail&&onOpenDetail(p);}}}
                     style={{background:C.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .15s",display:"flex",gap:12,alignItems:"center",borderLeft:`3px solid ${T.accent}`}}
                     onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 4px 14px ${T.dim}`;e.currentTarget.style.borderColor=T.accent+"44";}}
                     onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=T.border;}}>
@@ -1240,7 +1247,7 @@ function PriceSlider({min,max,valMin,valMax,onChangeMin,onChangeMax}){
       <div style={{position:"relative",height:4,background:C.border,borderRadius:2,margin:"12px 8px"}}>
         <div style={{position:"absolute",left:`${pct(valMin)}%`,right:`${100-pct(valMax)}%`,height:"100%",background:C.accent,borderRadius:2}}/>
         {[{val:valMin,onChange:onChangeMin},{val:valMax,onChange:onChangeMax}].map(({val,onChange},i)=>(
-          <input key={i} type="range" min={min} max={max} value={val}
+          <input key={i} type="range" aria-label={i===0?"Precio mínimo":"Precio máximo"} min={min} max={max} value={val}
             onChange={e=>onChange(Number(e.target.value))}
             style={{position:"absolute",top:"50%",transform:"translateY(-50%)",width:"100%",left:0,opacity:0,cursor:"pointer",height:20,margin:0,padding:0}}/>
         ))}
