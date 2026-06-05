@@ -65,6 +65,9 @@ const ShikakuPage    = React.lazy(() => import('./ShikakuPage'));
 const JuegosHub      = React.lazy(() => import('./JuegosHub'));
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// Frecuencia del polling de fallback de notificaciones (el WebSocket Realtime
+// cubre el tiempo real; esto solo cubre el caso de que el WS esté caído).
+const POLL_MS = 90000;
 // Named exports for lazy-loaded modules that need these components
 export { FavBtn, OfertarBtn, ShareBtn, DenunciaModal, PostChatBtn,
          MyPostCard, OfertasRecibidasModal, FinalizarClaseModal,
@@ -678,7 +681,10 @@ export default function App(){
 
   useEffect(()=>{
     refreshUnread();
-    let t=setInterval(refreshUnread,30000);// fallback — Realtime cubre el tiempo real
+    // Fallback de baja frecuencia: el WebSocket Realtime cubre el tiempo real;
+    // este polling solo cubre el caso de que el WS esté caído. Se pausa con la
+    // pestaña oculta (ver onVisibility) y se refresca al instante al volver el foco.
+    let t=setInterval(refreshUnread,POLL_MS);
     // Share link handler — si viene ?pub=ID en la URL, abrir el popup
     try{
       const params=new URLSearchParams(window.location.search);
@@ -715,7 +721,7 @@ export default function App(){
           }
         }
         refreshUnread(); // actualizar inmediatamente al volver
-        t=setInterval(refreshUnread,30000);
+        t=setInterval(refreshUnread,POLL_MS);
       }
     };
     document.addEventListener("visibilitychange",onVisibility);
