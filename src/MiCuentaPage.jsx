@@ -476,8 +476,8 @@ function EspacioClaseModal({oferta,session,onClose}){
               <div style={{display:"flex",gap:5,marginBottom:9,flexWrap:"wrap"}}>
                 {Object.entries(TM).map(([v,m])=><button key={v} onClick={()=>setNuevoTipo(v)} style={{padding:"5px 10px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:FONT,background:nuevoTipo===v?C.accent:C.surface,color:nuevoTipo===v?"#fff":C.muted,border:`1px solid ${nuevoTipo===v?"transparent":C.border}`}}>{m.l}</button>)}
               </div>
-              <input value={nuevoTitulo} onChange={e=>setNuevoTitulo(e.target.value)} placeholder="Título" style={iS2}/>
-              <textarea value={nuevoBody} onChange={e=>setNuevoBody(e.target.value)} placeholder={nuevoTipo==="link"||nuevoTipo==="video"?"URL del enlace":"Texto (opcional)"} style={{...iS2,minHeight:65,resize:"vertical"}}/>
+              <input value={nuevoTitulo} onChange={e=>setNuevoTitulo(e.target.value)} aria-label="Título del contenido" placeholder="Título" style={iS2}/>
+              <textarea value={nuevoBody} onChange={e=>setNuevoBody(e.target.value)} aria-label={nuevoTipo==="link"||nuevoTipo==="video"?"URL del enlace":"Texto del contenido"} placeholder={nuevoTipo==="link"||nuevoTipo==="video"?"URL del enlace":"Texto (opcional)"} style={{...iS2,minHeight:65,resize:"vertical"}}/>
               <Btn onClick={addC} disabled={savingC||!nuevoTitulo.trim()} style={{width:"100%",padding:"8px"}}>{savingC?"Guardando...":"Agregar"}</Btn>
             </div>
           )}
@@ -556,7 +556,7 @@ function EspacioChat({pubId,miEmail,miId,otroEmail,otroNombre,session}){
         <div ref={bottomRef}/>
       </div>
       <div style={{padding:"11px 14px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8}}>
-        <input value={texto} onChange={e=>setTexto(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();enviar();}}} placeholder="Escribí un mensaje..." style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT}}/>
+        <input value={texto} onChange={e=>setTexto(e.target.value)} aria-label="Escribí un mensaje" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();enviar();}}} placeholder="Escribí un mensaje..." style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 13px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT}}/>
         <button onClick={enviar} disabled={sending||!texto.trim()} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 16px",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:FONT,opacity:!texto.trim()||sending?0.45:1}}>→</button>
       </div>
     </div>
@@ -596,7 +596,7 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
 
   return(
     <>
-      <span onClick={()=>{setPopup(true);if(onVer)onVer();}} style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px",cursor:"pointer",flexShrink:0,alignSelf:"center",whiteSpace:"nowrap"}}>
+      <span role="button" tabIndex={0} aria-label="Ver oferta recibida" onClick={()=>{setPopup(true);if(onVer)onVer();}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setPopup(true);if(onVer)onVer();}}} style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px",cursor:"pointer",flexShrink:0,alignSelf:"center",whiteSpace:"nowrap"}}>
         Ver oferta recibida
       </span>
 
@@ -717,21 +717,21 @@ function ClasesTab({session,misPubs}){
           <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:12}}>Registrar clase dada</div>
           {misOfertas.length>0&&(
             <div style={{marginBottom:8}}>
-              <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Publicación (opcional)</label>
-              <select value={regPubId} onChange={e=>setRegPubId(e.target.value)} style={{...iS,marginBottom:8}}>
+              <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Publicación (opcional)</div>
+              <select value={regPubId} onChange={e=>setRegPubId(e.target.value)} aria-label="Publicación" style={{...iS,marginBottom:8}}>
                 <option value="">— Sin publicación específica —</option>
                 {misOfertas.map(p=><option key={p.id} value={p.id}>{p.titulo}</option>)}
               </select>
             </div>
           )}
-          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Email del alumno *</label>
-          <input value={regAlumnoEmail} onChange={e=>setRegAlumnoEmail(e.target.value)} placeholder="alumno@email.com" style={iS}/>
-          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Fecha de la clase *</label>
-          <input type="date" value={regFecha} onChange={e=>setRegFecha(e.target.value)} style={iS}/>
-          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Duración (min) — opcional</label>
-          <input type="number" value={regDuracion} onChange={e=>setRegDuracion(e.target.value)} placeholder="60" style={iS}/>
-          <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Notas (opcional)</label>
-          <textarea value={regNotas} onChange={e=>setRegNotas(e.target.value)} placeholder="Temas vistos, observaciones..." rows={2} style={{...iS,resize:"vertical"}}/>
+          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Email del alumno *</div>
+          <input value={regAlumnoEmail} onChange={e=>setRegAlumnoEmail(e.target.value)} aria-label="Email del alumno" placeholder="alumno@email.com" style={iS}/>
+          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Fecha de la clase *</div>
+          <input type="date" value={regFecha} onChange={e=>setRegFecha(e.target.value)} aria-label="Fecha de la clase" style={iS}/>
+          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Duración (min) — opcional</div>
+          <input type="number" value={regDuracion} onChange={e=>setRegDuracion(e.target.value)} aria-label="Duración en minutos" placeholder="60" style={iS}/>
+          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Notas (opcional)</div>
+          <textarea value={regNotas} onChange={e=>setRegNotas(e.target.value)} aria-label="Notas de la clase" placeholder="Temas vistos, observaciones..." rows={2} style={{...iS,resize:"vertical"}}/>
           <div style={{display:"flex",gap:8}}>
             <button onClick={registrar} disabled={saving} style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:saving?0.6:1}}>{saving?"Guardando...":"Registrar"}</button>
             <button onClick={()=>setShowRegistrar(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"8px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
@@ -1127,7 +1127,7 @@ function BilleteraTab({session}){
           ))}
         </div>
         <div style={{display:"flex",gap:8}}>
-          <input value={monto} onChange={e=>setMonto(e.target.value)} type="number" min="100" placeholder="Otro monto (mín. $100)"
+          <input value={monto} onChange={e=>setMonto(e.target.value)} type="number" min="100" aria-label="Monto a cargar" placeholder="Otro monto (mín. $100)"
             style={{flex:1,background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT}}/>
           <button onClick={cargarSaldo} disabled={cargando||!monto}
             style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"9px 18px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,opacity:(!monto||cargando)?.5:1}}>
@@ -1155,18 +1155,18 @@ function BilleteraTab({session}){
               <div style={{display:"flex",gap:8}}>
                 <div style={{flex:1}}>
                   <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:4}}>MONTO A RETIRAR</div>
-                  <input value={retiroMonto} onChange={e=>setRetiroMonto(e.target.value)} type="number" min="500" placeholder={`Máx. $${(saldo||0).toLocaleString("es-AR")}`}
+                  <input value={retiroMonto} onChange={e=>setRetiroMonto(e.target.value)} type="number" min="500" aria-label="Monto a retirar" placeholder={`Máx. $${(saldo||0).toLocaleString("es-AR")}`}
                     style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 </div>
               </div>
               <div>
                 <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:4}}>CBU O ALIAS</div>
-                <input value={retiroCbu} onChange={e=>setRetiroCbu(e.target.value)} placeholder="22-digit CBU o alias de tu cuenta"
+                <input value={retiroCbu} onChange={e=>setRetiroCbu(e.target.value)} aria-label="CBU o alias" placeholder="22-digit CBU o alias de tu cuenta"
                   style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
               </div>
               <div>
                 <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:4}}>TITULAR DE LA CUENTA</div>
-                <input value={retiroTitular} onChange={e=>setRetiroTitular(e.target.value)} placeholder="Nombre completo del titular"
+                <input value={retiroTitular} onChange={e=>setRetiroTitular(e.target.value)} aria-label="Titular de la cuenta" placeholder="Nombre completo del titular"
                   style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
               </div>
               <button onClick={solicitarRetiro} disabled={enviandoRetiro||!retiroMonto||!retiroCbu||!retiroTitular}
@@ -1422,6 +1422,7 @@ function AlertasTab({session}){
         <div style={{background:C.surface,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"18px 20px",marginBottom:20,animation:"fadeUp .15s ease"}}>
           <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:10}}>¿Qué tipo de publicación buscás?</div>
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
+            aria-label="Descripción de lo que buscás"
             placeholder="Ej: Clases de guitarra online para principiantes, profesor con experiencia en rock..."
             rows={3}
             style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box",resize:"vertical",marginBottom:12}}/>
@@ -1609,7 +1610,7 @@ function AjustesTab({session}){
         ):(
           <div style={{background:"#EF444410",border:"1px solid #EF444430",borderRadius:12,padding:"14px 16px"}}>
             <div style={{fontSize:13,color:C.text,marginBottom:10}}>Escribí <strong>ELIMINAR</strong> para confirmar:</div>
-            <input value={deleteText} onChange={e=>setDeleteText(e.target.value)} placeholder="ELIMINAR"
+            <input value={deleteText} onChange={e=>setDeleteText(e.target.value)} aria-label="Escribí ELIMINAR para confirmar" placeholder="ELIMINAR"
               style={{...iS,marginBottom:10,borderColor:deleteText==="ELIMINAR"?C.danger:C.border}}/>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <button onClick={()=>{setConfirmDelete(false);setDeleteText("");}}
@@ -1779,8 +1780,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
         {/* Banner */}
         <div style={{height:80,background:bannerUrl?undefined:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota */}
           {bannerUrl&&<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>}
-          <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={async e=>{
+          <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Subir portada" style={{display:"none"}} onChange={async e=>{
             const file=e.target.files?.[0];if(!file)return;
             if(file.size>5*1024*1024){toast("La imagen no debe superar 5 MB","error");return;}
             setBannerUploading(true);
@@ -1801,6 +1803,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
           <div style={{position:"relative",display:"inline-block",marginTop:-30,marginBottom:10}}>
             <div style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.surface}`,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
               {avatarUrl&&avatarUrl.startsWith("https://")
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto
                 ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
                 :<div style={{width:"100%",height:"100%",background:currentColor,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:26,color:"#fff",fontFamily:FONT}}>{nombre[0].toUpperCase()}</div>
               }
@@ -1834,20 +1837,22 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               <Label>Foto de perfil</Label>
               <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:14}}>
                 <div style={{position:"relative",flexShrink:0}}>
-                  <div onClick={()=>avatarInputRef.current?.click()} style={{width:72,height:72,borderRadius:"50%",overflow:"hidden",border:`2px solid ${(avatarPreview||avatarUrl)?C.accent:C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:(avatarPreview||avatarUrl)?"0 2px 12px rgba(26,110,216,.2)":"none"}}>
+                  <div role="button" tabIndex={0} aria-label="Cambiar foto de perfil" onClick={()=>avatarInputRef.current?.click()} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();avatarInputRef.current?.click();}}} style={{width:72,height:72,borderRadius:"50%",overflow:"hidden",border:`2px solid ${(avatarPreview||avatarUrl)?C.accent:C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:(avatarPreview||avatarUrl)?"0 2px 12px rgba(26,110,216,.2)":"none"}}>
                     {avatarPreview
                       ?<img src={avatarPreview} alt="preview" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                       :avatarUrl&&avatarUrl.startsWith("https://")
+                      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto
                       ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
                       :<Avatar letra={nombre[0]||session.user.email[0]} size={72}/>
                     }
                   </div>
-                  <div onClick={()=>avatarInputRef.current?.click()} style={{position:"absolute",bottom:0,right:0,width:22,height:22,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 1px 6px rgba(26,110,216,.4)"}}>
+                  {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- decorativo; el avatar de al lado ya es el control accesible */}
+                  <div aria-hidden="true" onClick={()=>avatarInputRef.current?.click()} style={{position:"absolute",bottom:0,right:0,width:22,height:22,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 1px 6px rgba(26,110,216,.4)"}}>
                     <Camera size={11} color="#fff" strokeWidth={2.5}/>
                   </div>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{
+                  <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Subir foto de perfil" style={{display:"none"}} onChange={e=>{
                     const f=e.target.files[0];
                     if(!f)return;
                     if(f.size>5*1024*1024){toast("La imagen no puede superar 5MB","error");return;}
@@ -1866,21 +1871,21 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12,marginBottom:12}}>
                 <div>
                   <Label>Nombre visible</Label>
-                  <input value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={nombre} style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                  <input value={displayName} onChange={e=>setDisplayName(e.target.value)} aria-label="Nombre visible" placeholder={nombre} style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 </div>
                 <div>
                   <Label>Ubicación</Label>
-                  <input value={ubicacionPerfil} onChange={e=>setUbicacionPerfil(e.target.value)} placeholder="Ej: Buenos Aires" style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                  <input value={ubicacionPerfil} onChange={e=>setUbicacionPerfil(e.target.value)} aria-label="Ubicación" placeholder="Ej: Buenos Aires" style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 </div>
               </div>
               <Label>Bio</Label>
               <div style={{position:"relative",marginBottom:12}}>
-                <textarea value={bio} onChange={e=>setBio(e.target.value.slice(0,200))} placeholder="Contá algo sobre vos..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px 22px",color:C.text,fontSize:13,outline:"none",resize:"vertical",minHeight:60,boxSizing:"border-box",fontFamily:FONT}}/>
+                <textarea value={bio} onChange={e=>setBio(e.target.value.slice(0,200))} aria-label="Bio" placeholder="Contá algo sobre vos..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px 22px",color:C.text,fontSize:13,outline:"none",resize:"vertical",minHeight:60,boxSizing:"border-box",fontFamily:FONT}}/>
                 <span style={{position:"absolute",bottom:6,right:10,fontSize:10,color:bio.length>=200?C.danger:C.muted}}>{bio.length}/200</span>
               </div>
               <div>
-                <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"flex",alignItems:"center",gap:4,marginBottom:4}}><Video size={12} strokeWidth={2}/>Video de presentación (YouTube)</label>
-                <input value={videoPresentacion} onChange={e=>setVideoPresentacion(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"flex",alignItems:"center",gap:4,marginBottom:4}}><Video size={12} strokeWidth={2}/>Video de presentación (YouTube)</div>
+                <input value={videoPresentacion} onChange={e=>setVideoPresentacion(e.target.value)} aria-label="Video de presentación (YouTube)" placeholder="https://youtube.com/watch?v=..." style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                 <div style={{fontSize:10,color:C.muted,marginTop:3}}>Se muestra en tu perfil público.</div>
               </div>
               {/* ── Campos extra docente ── */}
@@ -1893,19 +1898,19 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                     <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:1,marginBottom:10}}>PERFIL DOCENTE</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:10,marginBottom:10}}>
                       <div>
-                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Título profesional</label>
-                        <input value={tituloProfesional} onChange={e=>setTituloProfesional(e.target.value)} placeholder="Ej: Lic. en Matemática, Ing. Civil..." style={iDoc}/>
+                        <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Título profesional</div>
+                        <input value={tituloProfesional} onChange={e=>setTituloProfesional(e.target.value)} aria-label="Título profesional" placeholder="Ej: Lic. en Matemática, Ing. Civil..." style={iDoc}/>
                       </div>
                       <div>
-                        <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Años de experiencia</label>
-                        <input type="number" min="0" value={aniosExperiencia} onChange={e=>setAniosExperiencia(e.target.value)} placeholder="5" style={iDoc}/>
+                        <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Años de experiencia</div>
+                        <input type="number" min="0" value={aniosExperiencia} onChange={e=>setAniosExperiencia(e.target.value)} aria-label="Años de experiencia" placeholder="5" style={iDoc}/>
                       </div>
                     </div>
-                    <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Metodología de enseñanza</label>
-                    <textarea value={metodologia} onChange={e=>setMetodologia(e.target.value)} placeholder="Describí tu metodología de enseñanza..." rows={2} style={{...iDoc,resize:"vertical",marginBottom:10}}/>
+                    <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Metodología de enseñanza</div>
+                    <textarea value={metodologia} onChange={e=>setMetodologia(e.target.value)} aria-label="Metodología de enseñanza" placeholder="Describí tu metodología de enseñanza..." rows={2} style={{...iDoc,resize:"vertical",marginBottom:10}}/>
                     <div style={{marginBottom:10}}>
-                      <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Franja horaria</label>
-                      <select value={franjaHoraria} onChange={e=>setFranjaHoraria(e.target.value)} style={iDoc}>
+                      <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Franja horaria</div>
+                      <select value={franjaHoraria} onChange={e=>setFranjaHoraria(e.target.value)} aria-label="Franja horaria" style={iDoc}>
                         <option value="">— Seleccionar —</option>
                         <option value="Mañana (8-12hs)">Mañana (8-12hs)</option>
                         <option value="Tarde (12-18hs)">Tarde (12-18hs)</option>
@@ -1913,7 +1918,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                         <option value="Flexible">Flexible</option>
                       </select>
                     </div>
-                    <label style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Idiomas</label>
+                    <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Idiomas</div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
                       {IDIOMAS_LIST.map(id=>(
                         <button key={id} onClick={()=>toggleIdioma(id)}
@@ -1931,14 +1936,15 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               {/* Disponibilidad ahora */}
               <div style={{background:disponibleAhora?"#F0FDF4":C.bg,border:`1px solid ${disponibleAhora?C.success+"40":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:disponibleAhora?10:0}}>
-                  <button onClick={()=>setDisponibleAhora(v=>!v)} style={{width:38,height:22,borderRadius:11,background:disponibleAhora?C.success:C.border,border:"none",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,padding:0}}>
+                  <button onClick={()=>setDisponibleAhora(v=>!v)} role="switch" aria-checked={disponibleAhora} aria-label="Estoy disponible ahora" style={{width:38,height:22,borderRadius:11,background:disponibleAhora?C.success:C.border,border:"none",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,padding:0}}>
                     <span style={{position:"absolute",top:3,left:disponibleAhora?18:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",display:"block",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
                   </button>
-                  <label style={{fontSize:13,color:disponibleAhora?C.success:C.text,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}} onClick={()=>setDisponibleAhora(v=>!v)}>{disponibleAhora&&<span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:C.success,flexShrink:0}}/>}Estoy disponible ahora</label>
+                  {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- texto del switch; el control accesible es el botón de al lado */}
+                  <span style={{fontSize:13,color:disponibleAhora?C.success:C.text,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}} onClick={()=>setDisponibleAhora(v=>!v)}>{disponibleAhora&&<span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:C.success,flexShrink:0}}/>}Estoy disponible ahora</span>
                 </div>
                 {disponibleAhora&&(
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    <input value={disponibleMensaje} onChange={e=>setDisponibleMensaje(e.target.value)} placeholder='Ej: "Puedo dar clases hoy de 14 a 18hs"' style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
+                    <input value={disponibleMensaje} onChange={e=>setDisponibleMensaje(e.target.value)} aria-label="Mensaje de disponibilidad" placeholder='Ej: "Puedo dar clases hoy de 14 a 18hs"' style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                       {[{v:"2h",l:"2 horas"},{v:"4h",l:"4 horas"},{v:"8h",l:"8 horas"},{v:"mañana",l:"Hasta mañana"}].map(opt=>(
                         <button key={opt.v} onClick={()=>setDisponibleDuracion(opt.v)} style={{background:disponibleDuracion===opt.v?C.success:C.surface,border:`1px solid ${disponibleDuracion===opt.v?C.success:C.border}`,borderRadius:20,color:disponibleDuracion===opt.v?"#fff":C.muted,padding:"4px 12px",fontSize:12,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>{opt.l}</button>
@@ -1949,7 +1955,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               </div>
               <Label>Color de avatar</Label>
               <div style={{display:"flex",gap:7,marginBottom:14,flexWrap:"wrap"}}>
-                {AVATAR_COLORS.map(c=>(<button key={c} onClick={()=>saveColor(c)} style={{width:26,height:26,borderRadius:"50%",background:c,border:currentColor===c?`2.5px solid ${C.text}`:"2.5px solid transparent",cursor:"pointer",padding:0}}/>))}
+                {AVATAR_COLORS.map(c=>(<button key={c} onClick={()=>saveColor(c)} aria-label={`Color ${c}`} style={{width:26,height:26,borderRadius:"50%",background:c,border:currentColor===c?`2.5px solid ${C.text}`:"2.5px solid transparent",cursor:"pointer",padding:0}}/>))}
               </div>
               <div style={{display:"flex",gap:8}}>
                 <button onClick={async()=>{
@@ -2108,7 +2114,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {pubsFiltradas.map(p=>(<div key={p.id}>
                 {/* Banner clickeable → abre DetailPage */}
-                <div onClick={()=>onOpenDetail(p)} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"10px 10px 0 0",padding:"9px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,borderBottom:"none",transition:"background .15s"}}
+                <div role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"10px 10px 0 0",padding:"9px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,borderBottom:"none",transition:"background .15s"}}
                   onMouseEnter={e=>e.currentTarget.style.background=C.accentDim}
                   onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
                   <span style={{fontSize:12,color:C.accent,fontWeight:600}}>Ver publicación →</span>
@@ -2226,15 +2232,15 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  <div><Label>Título *</Label><input value={docTitulo} onChange={e=>setDocTitulo(e.target.value)} placeholder="Ej: Licenciado en Matemática" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
-                  <div><Label>Institución</Label><input value={docInst} onChange={e=>setDocInst(e.target.value)} placeholder="Ej: UBA, Berklee..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                  <div><Label>Título *</Label><input value={docTitulo} onChange={e=>setDocTitulo(e.target.value)} aria-label="Título del documento" placeholder="Ej: Licenciado en Matemática" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                  <div><Label>Institución</Label><input value={docInst} onChange={e=>setDocInst(e.target.value)} aria-label="Institución" placeholder="Ej: UBA, Berklee..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  <div><Label>Año de obtención</Label><input value={docAño} onChange={e=>setDocAño(e.target.value)} placeholder="Ej: 2021" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
-                  <div><Label>País</Label><input value={docPais} onChange={e=>setDocPais(e.target.value)} placeholder="Ej: Argentina" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                  <div><Label>Año de obtención</Label><input value={docAño} onChange={e=>setDocAño(e.target.value)} aria-label="Año de obtención" placeholder="Ej: 2021" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                  <div><Label>País</Label><input value={docPais} onChange={e=>setDocPais(e.target.value)} aria-label="País" placeholder="Ej: Argentina" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
                 </div>
-                <div><Label>Descripción (opcional)</Label><textarea value={docDesc} onChange={e=>setDocDesc(e.target.value.slice(0,300))} placeholder="Descripción breve, especialización, etc." rows={2} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",resize:"none"}}/></div>
-                <div><Label>URL de verificación (opcional)</Label><input value={docUrl} onChange={e=>setDocUrl(e.target.value)} placeholder="Link al certificado online, LinkedIn, etc." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
+                <div><Label>Descripción (opcional)</Label><textarea value={docDesc} onChange={e=>setDocDesc(e.target.value.slice(0,300))} aria-label="Descripción del documento" placeholder="Descripción breve, especialización, etc." rows={2} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",resize:"none"}}/></div>
+                <div><Label>URL de verificación (opcional)</Label><input value={docUrl} onChange={e=>setDocUrl(e.target.value)} aria-label="URL de verificación" placeholder="Link al certificado online, LinkedIn, etc." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/></div>
               </div>
               <div style={{display:"flex",gap:8}}>
                 <button onClick={addDoc} disabled={savingDoc||!docTitulo.trim()} style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:!docTitulo.trim()?0.5:1}}>{savingDoc?"Guardando...":"Guardar"}</button>
@@ -2435,11 +2441,11 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:2}}>
               <div>
                 <div style={{color:C.muted,fontSize:11,fontWeight:600,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Precio</div>
-                <input value={precio} onChange={e=>setPrecio(e.target.value)} type="number" min="0" placeholder="Ej: 5000" style={iS}/>
+                <input value={precio} onChange={e=>setPrecio(e.target.value)} type="number" min="0" aria-label="Precio" placeholder="Ej: 5000" style={iS}/>
               </div>
               <div>
                 <div style={{color:C.muted,fontSize:11,fontWeight:600,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Frecuencia</div>
-                <select value={frecuencia} onChange={e=>setFrecuencia(e.target.value)} style={{...iS,cursor:"pointer",colorScheme:localStorage.getItem("cl_theme")||"light"}}>
+                <select value={frecuencia} onChange={e=>setFrecuencia(e.target.value)} aria-label="Frecuencia" style={{...iS,cursor:"pointer",colorScheme:localStorage.getItem("cl_theme")||"light"}}>
                   <option value="">Seleccioná</option>
                   {FRECUENCIAS.map(f=><option key={f.v} value={f.v}>{f.l}</option>)}
                 </select>
@@ -2455,7 +2461,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
               <span style={{marginLeft:"auto",fontSize:10,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"2px 8px",fontWeight:700}}>Único</span>
             </div>
             <div style={{color:C.muted,fontSize:11,fontWeight:600,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Notas adicionales (opcional)</div>
-            <textarea value={notas} onChange={e=>setNotas(e.target.value.slice(0,400))} placeholder="Horarios acordados, condiciones especiales, etc." style={{...iS,minHeight:65,resize:"vertical"}}/>
+            <textarea value={notas} onChange={e=>setNotas(e.target.value.slice(0,400))} aria-label="Notas adicionales" placeholder="Horarios acordados, condiciones especiales, etc." style={{...iS,minHeight:65,resize:"vertical"}}/>
             <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:"10px 13px",marginBottom:14,fontSize:11,color:C.muted,lineHeight:1.6}}>
               Al confirmar, ambas partes quedan registradas en ClasseLink. Esto no tiene valor legal externo pero sirve como constancia dentro de la plataforma.
             </div>
