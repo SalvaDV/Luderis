@@ -15,14 +15,32 @@ export default function usePushSubscription(session) {
   const [permission, setPermission] = useState(() => supported ? Notification.permission : 'unsupported');
   const [showBanner, setShowBanner] = useState(false);
 
-  // Show banner once if permission not yet decided
+  // Mostrar el banner solo si el permiso aún no fue decidido, no se pidió antes,
+  // y el usuario ya completó el onboarding (momento de máximo contexto/engagement).
+  // Para el usuario que JUSTO termina el onboarding, App llama a triggerBanner().
+  const canAsk = useCallback(() => {
+    if (!supported || !session?.access_token) return false;
+    if (permission !== 'default') return false;
+    try { if (localStorage.getItem(ASKED_KEY)) return false; } catch {}
+    return true;
+  }, [supported, session?.access_token, permission]);
+
+  // Usuarios que ya completaron el onboarding en sesiones previas: mostrar el banner
+  // poco después de cargar la app (no a ciegas a los 8s sin contexto).
   useEffect(() => {
-    if (!supported || !session?.access_token) return;
-    if (permission !== 'default') return;
-    try { if (localStorage.getItem(ASKED_KEY)) return; } catch {}
-    const t = setTimeout(() => setShowBanner(true), 8000);
+    if (!canAsk()) return;
+    let done = false;
+    try { done = !!localStorage.getItem('cl_onboarding_done_' + session.user.email); } catch {}
+    if (!done) return; // todavía no completó onboarding → App disparará el banner al terminar
+    const t = setTimeout(() => setShowBanner(true), 1500);
     return () => clearTimeout(t);
-  }, [session?.access_token, permission]); // eslint-disable-line
+  }, [canAsk, session?.user?.email]); // eslint-disable-line
+
+  // Llamado por App.js cuando el usuario termina el onboarding en esta sesión.
+  const triggerBanner = useCallback(() => {
+    if (!canAsk()) return;
+    setTimeout(() => setShowBanner(true), 800);
+  }, [canAsk]);
 
   const subscribe = useCallback(async () => {
     if (!supported || !session?.access_token) return false;
@@ -61,5 +79,5 @@ export default function usePushSubscription(session) {
     setShowBanner(false);
   }, []);
 
-  return { permission, supported, showBanner, subscribe, dismiss };
+  return { permission, supported, showBanner, subscribe, dismiss, triggerBanner };
 }

@@ -195,7 +195,7 @@ export default function App(){
   // Tema: fuerza re-render global al cambiar
   const [,forceThemeRender]=useState(0);
   useEffect(()=>{window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};},[]); // eslint-disable-line
-  const { showBanner: showPushBanner, subscribe: subscribePush, dismiss: dismissPush } = usePushSubscription(session);
+  const { showBanner: showPushBanner, subscribe: subscribePush, dismiss: dismissPush, triggerBanner: triggerPushBanner } = usePushSubscription(session);
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
@@ -389,18 +389,6 @@ export default function App(){
     }).catch(()=>{});
   },[session]);
 
-  // ── Notificaciones push del browser ────────────────────────────────────────
-  const pedirPermisoNotif=useCallback(()=>{
-    if(!("Notification" in window))return;
-    if(Notification.permission==="default"){
-      Notification.requestPermission().then(p=>{
-        if(p==="granted"){
-          try{localStorage.setItem("cl_notif_ok","1");}catch{}
-        }
-      });
-    }
-  },[]);
-
   // SVG como data URL para el ícono de notificaciones (no depende de archivos externos)
   const NOTIF_ICON="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231A6ED8'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' font-family='system-ui'%3E📚%3C/text%3E%3C/svg%3E";
 
@@ -416,22 +404,8 @@ export default function App(){
     }catch{}
   },[]);
 
-  // Pedir permiso la primera vez que el usuario entra (con delay para no ser intrusivo)
-  useEffect(()=>{
-    if(!session)return;
-    if(!("Notification" in window))return;
-    // Si ya está granted no hacer nada, si está denied tampoco
-    if(Notification.permission==="granted"){try{localStorage.setItem("cl_notif_ok","1");}catch{}return;}
-    if(Notification.permission==="denied")return;
-    // Si es la primera vez (default), pedir después de 8 segundos
-    const ya=localStorage.getItem("cl_notif_asked_"+session.user.email);
-    if(!ya){
-      setTimeout(()=>{
-        try{localStorage.setItem("cl_notif_asked_"+session.user.email,"1");}catch{}
-        pedirPermisoNotif();
-      },8000);
-    }
-  },[session,pedirPermisoNotif]);
+  // El permiso de notificaciones se pide vía PushPermissionBanner (usePushSubscription),
+  // y se dispara al completar el onboarding — no a ciegas a los 8s. Ver triggerPushBanner.
 
   // Exponer globalmente para usarla desde cualquier lado
   useEffect(()=>{
@@ -931,7 +905,7 @@ export default function App(){
     }
   }}/>
       </React.Suspense>}
-      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={(rol)=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}sb.updateUsuario(session.user.id,{onboarding_completado:true},session.access_token).catch(()=>{});if(rol)trackOnboardingComplete(rol);setShowOnboarding(false);setOnboardingUpgrade(false);}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
+      {showOnboarding&&session&&<React.Suspense fallback={<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)",zIndex:200}}><div style={{background:C.surface,borderRadius:16,padding:"32px 48px",color:C.text,fontFamily:FONT,fontSize:14}}>Cargando…</div></div>}><OnboardingModal session={session} upgradeMode={onboardingUpgrade} onClose={(rol)=>{try{localStorage.setItem("cl_onboarding_done_"+session.user.email,"1");}catch{}sb.updateUsuario(session.user.id,{onboarding_completado:true},session.access_token).catch(()=>{});if(rol)trackOnboardingComplete(rol);setShowOnboarding(false);setOnboardingUpgrade(false);triggerPushBanner();}} onPublicar={()=>{setPage("cuenta");setEditPost(null);setShowForm(true);}}/></React.Suspense>}
       {showAdmin&&<React.Suspense fallback={null}><AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/></React.Suspense>}
       {legalTab&&<LegalModal tab={legalTab} onClose={()=>{setLegalTab(null);window.history.replaceState({},"",window.location.pathname);}}/>}
       <ScrollToTopBtn/>

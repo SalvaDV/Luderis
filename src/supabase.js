@@ -1,7 +1,23 @@
+import * as Sentry from "@sentry/react";
+
 export const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || "";
 export const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_KEY || "";
 
 const SESSION_KEY = "classelink_session";
+
+// ── Reporte central de errores de red/DB ──────────────────────────────────────
+// Los call-sites usan .catch(()=>[]) para no romper la UI, pero eso ocultaba TODO
+// fallo (red, RLS, 500). Reportamos acá una sola vez para que sea visible en Sentry
+// sin cambiar el comportamiento de fallback. Se omiten los JWT expirados (esperados).
+const reportSupabaseError = (path, method, err) => {
+  if (err?.isExpired) return;
+  try {
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)), {
+      tags: { layer: "supabase", method },
+      extra: { path: String(path).split("?")[0] }, // sin querystring (evita PII en tags)
+    });
+  } catch {}
+};
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
@@ -167,6 +183,7 @@ export const db = async (path, method = "GET", body = null, token, prefer = "") 
       const s = await _onSessionRefresh();
       if (s?.access_token) return await doReq(s.access_token);
     }
+    reportSupabaseError(path, method, e);
     throw e;
   }
 };
@@ -198,6 +215,7 @@ const rpc = async (fn, params, token) => {
       const s = await _onSessionRefresh();
       if (s?.access_token) return await doReq(s.access_token);
     }
+    reportSupabaseError(`rpc/${fn}`, "POST", e);
     throw e;
   }
 };
