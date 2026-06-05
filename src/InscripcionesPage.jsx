@@ -132,9 +132,10 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
     const tieneNotif=pubsNotifPend.has(p.id);
     const borderColor=pendienteConfirmacion?"#FFB84D":(tieneNotif?C.accent:C.border);
     return(
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div key={ins.id} style={{background:C.card,border:`1px solid ${borderColor}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",transition:"border-color .15s"}}
         onMouseEnter={e=>e.currentTarget.style.borderColor=pendienteConfirmacion?"#FF9800":C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=borderColor}>
-        <div onClick={()=>{marcarNotifPubLeida(p.id);onOpenCurso(p);}} style={{display:"flex",gap:12,alignItems:"center",flex:1,minWidth:0,cursor:"pointer"}}>
+        <div role="button" tabIndex={0} aria-label={`Abrir ${p.titulo||"curso"}`} onClick={()=>{marcarNotifPubLeida(p.id);onOpenCurso(p);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();marcarNotifPubLeida(p.id);onOpenCurso(p);}}} style={{display:"flex",gap:12,alignItems:"center",flex:1,minWidth:0,cursor:"pointer"}}>
           <div style={{width:44,height:44,borderRadius:11,background:finalizado?"#4ECB7115":tieneNotif?C.accentDim:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,position:"relative"}}>
             {finalizado?<Check size={18} strokeWidth={2.5} color={C.success}/>:<span style={{fontSize:18,color:C.muted}}>·</span>}
             {tieneNotif&&<span style={{position:"absolute",top:-4,right:-4,background:C.danger,color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>!</span>}
@@ -204,9 +205,10 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
             {ayudantePubs.map(p=>{
               const tieneNotif=!!ayudanteNotifs[p.id];
               return(
-              <div key={p.id} style={{background:C.card,border:`1px solid ${tieneNotif?"#C85CE088":"#C85CE033"}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",cursor:"pointer",transition:"border-color .15s",position:"relative"}}
+              <div key={p.id} role="button" tabIndex={0} aria-label={`Abrir ${p.titulo||"curso"}`} style={{background:C.card,border:`1px solid ${tieneNotif?"#C85CE088":"#C85CE033"}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",cursor:"pointer",transition:"border-color .15s",position:"relative"}}
                 onMouseEnter={e=>e.currentTarget.style.borderColor=C.purple} onMouseLeave={e=>e.currentTarget.style.borderColor=tieneNotif?"#C85CE088":"#C85CE033"}
-                onClick={()=>{marcarAyudanteLeida(p.id);onOpenCurso(p);}}>
+                onClick={()=>{marcarAyudanteLeida(p.id);onOpenCurso(p);}}
+                onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();marcarAyudanteLeida(p.id);onOpenCurso(p);}}}>
                 {tieneNotif&&(
                   <div style={{position:"absolute",top:10,right:12,background:C.purple,color:"#fff",borderRadius:20,fontSize:9,fontWeight:700,padding:"2px 7px",letterSpacing:.5}}>
                     🔔 Nuevo
@@ -241,7 +243,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
               const soyDoc=o._rol==="docente";
               const otroN=soyDoc?(o.busqueda_autor_nombre||safeDisplayName(o.busqueda_autor_nombre,o.busqueda_autor_email)):(o.ofertante_nombre||safeDisplayName(o.ofertante_nombre,o.ofertante_email));
               return(
-                <div key={o.id} onClick={()=>setEspacioActivo(o)} style={{background:C.card,border:"1px solid #4ECB7133",borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.success} onMouseLeave={e=>e.currentTarget.style.borderColor="#4ECB7133"}>
+                <div key={o.id} role="button" tabIndex={0} aria-label={`Abrir espacio con ${otroN||"usuario"}`} onClick={()=>setEspacioActivo(o)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setEspacioActivo(o);}}} style={{background:C.card,border:"1px solid #4ECB7133",borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.success} onMouseLeave={e=>e.currentTarget.style.borderColor="#4ECB7133"}>
                   <div style={{width:44,height:44,borderRadius:11,background:"#4ECB7115",border:"1px solid #4ECB7133",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.success,fontWeight:700,flexShrink:0}}>{soyDoc?"✦":"◈"}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.busqueda_titulo||"Clase particular"}</div>

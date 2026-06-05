@@ -100,7 +100,7 @@ export default function ChatsPage({session,onOpenChat}){
         {(grupos.length+grupoChats.length)>3&&(
           <div style={{display:"flex",alignItems:"center",gap:7,background:C.bg,border:`1px solid ${busquedaChat?C.accent:C.border}`,borderRadius:9,padding:"7px 12px",flex:1,maxWidth:240,transition:"border-color .15s"}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} placeholder="Buscar chat…" style={{background:"none",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,flex:1,minWidth:0}}/>
+            <input value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} aria-label="Buscar chat" placeholder="Buscar chat…" style={{background:"none",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,flex:1,minWidth:0}}/>
             {busquedaChat&&<button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.muted,fontSize:15,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>×</button>}
           </div>
         )}
@@ -125,7 +125,9 @@ export default function ChatsPage({session,onOpenChat}){
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {gruposChatsFiltrados.map((g,i)=>(
                   <div key={i}
+                    role="button" tabIndex={0} aria-label={`Abrir chat grupal de ${g.pubTitulo||"la publicación"}`}
                     onClick={()=>{if(window.__openPub)window.__openPub(g.pubId);}}
+                    onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(window.__openPub)window.__openPub(g.pubId);}}}
                     style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:13,padding:"11px 15px",display:"flex",alignItems:"center",gap:11,cursor:"pointer",transition:"border-color .12s"}}
                     onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
                     onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
@@ -151,10 +153,11 @@ export default function ChatsPage({session,onOpenChat}){
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {Object.values(g.chats).sort((a,b)=>new Date(b.ultimo.created_at)-new Date(a.ultimo.created_at)).map((c,i)=>(
+                  // eslint-disable-next-line jsx-a11y/no-static-element-interactions
                   <div key={i} style={{background:C.card,border:`1px solid ${c.unread>0?C.accent:C.border}`,borderRadius:13,padding:"11px 15px",display:"flex",alignItems:"center",gap:11,position:"relative"}}
                     onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
                     onMouseLeave={e=>e.currentTarget.style.borderColor=c.unread>0?C.accent:C.border}>
-                    <div onClick={()=>onOpenChat({id:g.pubId,autor_email:c.otro,titulo:g.pubTitulo,autor_nombre:getNombre(c.otro)})} style={{display:"flex",alignItems:"center",gap:11,flex:1,minWidth:0,cursor:"pointer"}}>
+                    <div role="button" tabIndex={0} aria-label={`Abrir chat con ${getNombre(c.otro)}`} onClick={()=>onOpenChat({id:g.pubId,autor_email:c.otro,titulo:g.pubTitulo,autor_nombre:getNombre(c.otro)})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenChat({id:g.pubId,autor_email:c.otro,titulo:g.pubTitulo,autor_nombre:getNombre(c.otro)});}}} style={{display:"flex",alignItems:"center",gap:11,flex:1,minWidth:0,cursor:"pointer"}}>
                       <Avatar letra={getNombre(c.otro)[0]} size={34}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:1}}>{getNombre(c.otro)}</div>

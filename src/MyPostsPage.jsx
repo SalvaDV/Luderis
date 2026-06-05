@@ -37,6 +37,8 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
   };
 
   return(
+    // Tarjeta: el hover solo agrega sombra (decorativo, no interactivo)
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div style={{background:C.surface,border:`1px solid ${ofertasPendientes>0?C.accent+"60":C.border}`,borderRadius:10,padding:"16px 18px",fontFamily:FONT,transition:"box-shadow .15s"}}
       onMouseEnter={e=>e.currentTarget.style.boxShadow="0 2px 10px rgba(0,0,0,.06)"}
       onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
@@ -75,8 +77,9 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,to
         </div>
       </div>
       {confirmDelete&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:FONT}} onClick={()=>setConfirmDelete(false)}>
-          <div style={{background:C.surface,borderRadius:12,padding:"28px",width:"min(400px,92vw)",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.15)"}} onClick={e=>e.stopPropagation()}>
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
+        <div role="dialog" aria-modal="true" aria-label="Confirmar eliminación" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)setConfirmDelete(false);}}>
+          <div style={{background:C.surface,borderRadius:12,padding:"28px",width:"min(400px,92vw)",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.15)"}}>
             <div style={{width:44,height:44,borderRadius:"50%",background:C.danger+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.danger}}><X size={20} strokeWidth={2.5}/></div>
             <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>¿Eliminar {post.tipo==="busqueda"?"búsqueda":"publicación"}?</h3>
             {ofertaAceptadaInfo&&<div style={{background:C.warn+"10",border:`1px solid ${C.warn}30`,borderRadius:8,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left",display:"flex",alignItems:"flex-start",gap:6}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0,marginTop:1}}/><span><strong style={{color:C.text}}>{ofertaAceptadaInfo.nombre}</strong> tiene una oferta aceptada. Se le avisará.</span></div>}
@@ -143,15 +146,15 @@ export function ContraofertaModal({oferta,miRol,session,onClose,onEnviada}){
         </div>
         <Label>Tu propuesta de precio</Label>
         <div style={{display:"flex",gap:7,marginBottom:9}}>
-          <input value={precio} onChange={e=>setPrecio(e.target.value)} placeholder="Monto" type="number" min="0" style={{...iS,margin:0,flex:2}}/>
-          <select value={tipo} onChange={e=>setTipo(e.target.value)} style={{...iS,margin:0,flex:1,cursor:"pointer",colorScheme:localStorage.getItem("cl_theme")||"light"}}>
+          <input value={precio} onChange={e=>setPrecio(e.target.value)} aria-label="Monto de tu propuesta" placeholder="Monto" type="number" min="0" style={{...iS,margin:0,flex:2}}/>
+          <select value={tipo} onChange={e=>setTipo(e.target.value)} aria-label="Unidad de precio" style={{...iS,margin:0,flex:1,cursor:"pointer",colorScheme:localStorage.getItem("cl_theme")||"light"}}>
             <option value="hora">/ hora</option>
             <option value="clase">/ clase</option>
             <option value="mes">/ mes</option>
           </select>
         </div>
         <Label>Mensaje (opcional)</Label>
-        <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Explicá tu propuesta..." style={{...iS,minHeight:75,resize:"vertical"}}/>
+        <textarea value={msg} onChange={e=>setMsg(e.target.value)} aria-label="Mensaje de la contraoferta (opcional)" placeholder="Explicá tu propuesta..." style={{...iS,minHeight:75,resize:"vertical"}}/>
         <Btn onClick={enviar} disabled={saving||!precio} style={{width:"100%",padding:"10px"}}>{saving?"Enviando...":"Enviar contraoferta →"}</Btn>
       </div>
     </Modal>

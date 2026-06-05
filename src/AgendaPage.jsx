@@ -43,7 +43,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
       {visible&&(
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,paddingTop:10}}>
           {top.map((d,i)=>(
-            <div key={d.email} onClick={()=>onOpenPerfil(d.email)}
+            <div key={d.email} role="button" tabIndex={0} aria-label={`Ver perfil de ${d.nombre||d.email}`} onClick={()=>onOpenPerfil(d.email)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenPerfil(d.email);}}}
               style={{background:C.card,border:`1px solid ${i===0?C.accent:C.border}`,borderRadius:12,
                 padding:"12px 14px",cursor:"pointer",textAlign:"center",position:"relative",
                 transition:"transform .15s"}}
@@ -250,7 +250,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                 {clasesEnDia(diaSelec).length===0
                   ?<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"8px 0"}}>Sin clases este día.</div>
                   :clasesEnDia(diaSelec).map((item,i)=>(
-                    <div key={i} onClick={()=>onOpenCurso(item.post)}
+                    <div key={i} role="button" tabIndex={0} aria-label={`Abrir ${item.post?.titulo||"clase"}`} onClick={()=>onOpenCurso(item.post)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenCurso(item.post);}}}
                       style={{marginBottom:8,background:C.surface,borderRadius:12,overflow:"hidden",
                         border:`1px solid ${colorPost(item.post)}33`,cursor:"pointer",
                         display:"flex",transition:"all .15s",boxShadow:`0 2px 8px ${colorPost(item.post)}15`}}
@@ -277,7 +277,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
 
           {/* Próximas clases */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px"}}>
-            <div onClick={()=>setProximasOpen(v=>!v)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:proximasOpen?12:0,cursor:"pointer"}}>
+            <div role="button" tabIndex={0} aria-expanded={proximasOpen} aria-label="Mostrar u ocultar próximas clases" onClick={()=>setProximasOpen(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setProximasOpen(v=>!v);}}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:proximasOpen?12:0,cursor:"pointer"}}>
               <div style={{fontWeight:700,color:C.text,fontSize:14}}>Próximas clases {proximas.length>0&&<span style={{fontSize:11,color:C.muted,fontWeight:400}}>({proximas.slice(0,10).length})</span>}</div>
               <span style={{color:C.muted,fontSize:13,transform:proximasOpen?"rotate(0deg)":"rotate(-90deg)",display:"inline-block",transition:"transform .2s"}}>▾</span>
             </div>
@@ -294,7 +294,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
             ):proximas.slice(0,10).map((item,i)=>{
               const esMesmo=item.fecha.getDate()===hoy.getDate()&&item.fecha.getMonth()===hoy.getMonth();
               return(
-                <div key={i} onClick={()=>onOpenCurso(item.post)}
+                <div key={i} role="button" tabIndex={0} aria-label={`Abrir ${item.post?.titulo||"clase"}`} onClick={()=>onOpenCurso(item.post)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenCurso(item.post);}}}
                   style={{display:"flex",gap:12,alignItems:"center",padding:"9px 0",
                     borderBottom:i<proximas.slice(0,10).length-1?`1px solid ${C.border}`:"none",cursor:"pointer"}}>
                   <div style={{textAlign:"center",minWidth:44,background:esMesmo?C.accentDim:C.surface,
@@ -331,7 +331,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
                   {sinHorario.map(p=>(
-                    <div key={p.id} onClick={()=>onOpenCurso(p)}
+                    <div key={p.id} role="button" tabIndex={0} aria-label={`Abrir ${p.titulo||"clase"}`} onClick={()=>onOpenCurso(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenCurso(p);}}}
                       style={{display:"flex",gap:11,alignItems:"center",background:C.surface,border:`1px solid ${C.border}`,borderRadius:11,padding:"10px 14px",cursor:"pointer",transition:"all .15s"}}
                       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateX(3px)";}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="none";}}>
