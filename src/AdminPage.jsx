@@ -96,7 +96,7 @@ const Pill = ({ label, active, onClick }) => (
 );
 
 const SearchInput = ({ value, onChange, placeholder }) => (
-  <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+  <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder || "Buscar"}
     style={{ background: A.bg, border: `1px solid ${A.border}`, borderRadius: 8, padding: "8px 12px", color: A.text, fontSize: 13, outline: "none", fontFamily: FONT, width: "100%", boxSizing: "border-box" }} />
 );
 
@@ -202,7 +202,8 @@ function Sidebar({ tab, setTab, badgeCounts = {}, onClose, open, isMobile }) {
   return (
     <>
       {isMobile && open && (
-        <div onClick={() => onClose("close")} style={{
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop solo-mouse; el sidebar es navegable por teclado
+        <div onClick={() => onClose("close")} aria-hidden="true" style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 99,
         }} />
       )}
@@ -215,6 +216,7 @@ function Sidebar({ tab, setTab, badgeCounts = {}, onClose, open, isMobile }) {
       {/* Logo */}
       <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${A.sidebarBorder}`, flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el logo si no carga */}
           <img src="/logo.png" alt="Luderis" style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 6 }} onError={e => e.target.style.display = "none"} />
           <div>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, fontFamily: FONT, letterSpacing: "-0.3px" }}>Luderis</div>
@@ -551,8 +553,9 @@ function VerificacionesTab({ session, onCountChange }) {
             {/* Razón de rechazo */}
             {mostrarRazon[v.id] && (
               <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: "block", marginBottom: 5 }}>Motivo del rechazo (requerido)</label>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: "block", marginBottom: 5 }}>Motivo del rechazo (requerido)</div>
                 <textarea value={razonRechazo[v.id] || ""} onChange={e => setRazonRechazo(prev => ({ ...prev, [v.id]: e.target.value }))}
+                  aria-label="Motivo del rechazo"
                   placeholder="Ej: La foto del DNI no es legible. Por favor volvé a subir una foto más clara."
                   rows={3}
                   style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, fontFamily: FONT, resize: "vertical", boxSizing: "border-box", outline: "none" }} />
@@ -1089,7 +1092,7 @@ function DocentesTab({ session }) {
         {sorted.length === 0 && <div style={{ color: C.muted, fontSize: 13 }}>Sin docentes aún.</div>}
         {sorted.map(d => (
           <div key={d.email} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-            <div onClick={() => setExpanded(expanded === d.email ? null : d.email)}
+            <div role="button" tabIndex={0} aria-expanded={expanded === d.email} aria-label={`Detalles de ${d.nombre || d.email}`} onClick={() => setExpanded(expanded === d.email ? null : d.email)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(expanded === d.email ? null : d.email); } }}
               style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.accent + "22", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.accent, fontSize: 15, flexShrink: 0 }}>
                 {(d.nombre || d.email)[0].toUpperCase()}
@@ -1232,7 +1235,7 @@ function UsersTab({ session, onChatUser }) {
                     </td>
                     <td style={{ padding: "10px 14px", fontSize: 12, color: C.muted }}>{u.email}</td>
                     <td style={{ padding: "10px 14px" }}>
-                      <select value={u.rol || "alumno"} onChange={e => cambiarRol(u, e.target.value)}
+                      <select value={u.rol || "alumno"} onChange={e => cambiarRol(u, e.target.value)} aria-label="Rol del usuario"
                         style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", color: C.text, fontSize: 12, cursor: "pointer", fontFamily: FONT }}>
                         <option value="alumno">Alumno</option>
                         <option value="docente">Docente</option>
@@ -1243,6 +1246,7 @@ function UsersTab({ session, onChatUser }) {
                       {u.bloqueado ? <Badge color={C.danger}>Bloqueado</Badge> : <Badge color={C.success}>Activo</Badge>}
                     </td>
                     <td style={{ padding: "10px 14px", fontSize: 12, color: C.muted }}>{fmt(u.created_at)}</td>
+                    {/* eslint-disable-next-line jsx-a11y/control-has-associated-label -- celda de acciones; los botones internos ya tienen texto visible */}
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         <button onClick={() => bloquear(u)} disabled={actionLoading}
@@ -1452,6 +1456,7 @@ function ReportsTab({ session }) {
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
                   <textarea
                     value={notas[d.id] || ""}
+                    aria-label="Notas de moderación"
                     onChange={e => setNotas(n => ({ ...n, [d.id]: e.target.value }))}
                     placeholder="Notas internas / motivo (opcional — aparece en la notificación al usuario)…"
                     rows={2}
@@ -1972,6 +1977,7 @@ function EscrowTab({ session }) {
             </div>
             <textarea
               value={resolucionText}
+              aria-label="Resolución de la disputa"
               onChange={e => setResolucionText(e.target.value)}
               placeholder="Notas de resolución (opcional)…"
               rows={3}
@@ -2110,6 +2116,7 @@ function RetiroTab({ session, onCountChange }) {
             {r.estado === "pendiente" && (
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <input value={notas[r.id] || ""} onChange={e => setNotas(n => ({ ...n, [r.id]: e.target.value }))}
+                  aria-label="Nota interna"
                   placeholder="Nota interna (opcional)"
                   style={{ flex: 1, minWidth: 160, background: A.bg, border: `1px solid ${A.border}`, borderRadius: 8,
                     padding: "7px 10px", color: A.text, fontSize: 12, outline: "none", fontFamily: FONT }} />
@@ -2216,12 +2223,12 @@ function LiquidacionesTab({ session }) {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div>
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 4 }}>PERÍODO</div>
-            <input type="month" value={periodoGen} onChange={e => setPeriodoGen(e.target.value)}
+            <input type="month" value={periodoGen} onChange={e => setPeriodoGen(e.target.value)} aria-label="Período"
               style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", fontFamily: FONT }} />
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 4 }}>DOCENTE (opcional — vacío = todos)</div>
-            <input value={docenteGen} onChange={e => setDocenteGen(e.target.value)}
+            <input value={docenteGen} onChange={e => setDocenteGen(e.target.value)} aria-label="Email del docente (opcional)"
               placeholder="email@docente.com"
               style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", fontFamily: FONT, boxSizing: "border-box" }} />
           </div>
@@ -2337,12 +2344,12 @@ function NotifsTab({ session }) {
           </div>
           <div>
             <div style={{ fontSize: 12, color: C.muted, fontWeight: 600, marginBottom: 6 }}>TÍTULO</div>
-            <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Ej: Actualización importante de Luderis"
+            <input value={titulo} onChange={e => setTitulo(e.target.value)} aria-label="Título del anuncio" placeholder="Ej: Actualización importante de Luderis"
               style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none", fontFamily: FONT, boxSizing: "border-box" }} />
           </div>
           <div>
             <div style={{ fontSize: 12, color: C.muted, fontWeight: 600, marginBottom: 6 }}>MENSAJE</div>
-            <textarea value={mensaje} onChange={e => setMensaje(e.target.value)} placeholder="Detalle de la notificación…" rows={3}
+            <textarea value={mensaje} onChange={e => setMensaje(e.target.value)} aria-label="Mensaje del anuncio" placeholder="Detalle de la notificación…" rows={3}
               style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none", fontFamily: FONT, boxSizing: "border-box", resize: "vertical" }} />
           </div>
           <Btn onClick={enviar} disabled={loading} style={{ alignSelf: "flex-start" }}>
@@ -2388,7 +2395,7 @@ function CfgRow({ label, sub, children }) {
 
 function CfgToggle({ value, onChange }) {
   return (
-    <button onClick={() => onChange(!value)}
+    <button onClick={() => onChange(!value)} role="switch" aria-checked={value} aria-label="Alternar opción"
       style={{ width: 44, height: 24, borderRadius: 12, background: value ? C.accent : C.border, border: "none", cursor: "pointer", position: "relative", transition: "background .2s", flexShrink: 0 }}>
       <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: value ? 23 : 3, transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
     </button>
@@ -2448,7 +2455,7 @@ function ConfigTab({ session }) {
         <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 4 }}>💰 Pagos y comisiones</div>
         <CfgRow label="Comisión de Luderis" sub="Porcentaje que retiene Luderis de cada transacción">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="number" min={0} max={50} value={cfg.comision_pct}
+            <input type="number" min={0} max={50} value={cfg.comision_pct} aria-label="Comisión de Luderis (%)"
               onChange={e => set("comision_pct", Number(e.target.value))}
               style={{ width: 70, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 10px", color: C.text, fontSize: 14, outline: "none", fontFamily: FONT, textAlign: "center" }} />
             <span style={{ color: C.muted, fontSize: 14 }}>%</span>
@@ -2466,6 +2473,7 @@ function ConfigTab({ session }) {
         <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 4 }}>🎓 Publicaciones</div>
         <CfgRow label="Máx. publicaciones por docente" sub="Límite de publicaciones activas por usuario">
           <input type="number" min={1} max={100} value={cfg.max_publicaciones_docente}
+            aria-label="Máximo de publicaciones por docente"
             onChange={e => set("max_publicaciones_docente", Number(e.target.value))}
             style={{ width: 70, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 10px", color: C.text, fontSize: 14, outline: "none", fontFamily: FONT, textAlign: "center" }} />
         </CfgRow>
@@ -2593,7 +2601,7 @@ function AlertasContactoTab({ session }) {
           <p style={{ fontFamily: FONT, fontSize: 13, color: C.muted, margin: "4px 0 0" }}>Mensajes bloqueados automáticamente por compartir datos de contacto fuera de Luderis.</p>
         </div>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: FONT, fontSize: 13, color: C.text, cursor: "pointer" }}>
-          <input type="checkbox" checked={soloNoRevisadas} onChange={e => setSoloNoRevisadas(e.target.checked)} />
+          <input type="checkbox" checked={soloNoRevisadas} onChange={e => setSoloNoRevisadas(e.target.checked)} aria-label="Solo no revisadas" />
           Solo no revisadas
         </label>
       </div>
