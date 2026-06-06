@@ -1,8 +1,6 @@
-const CACHE = 'luderis-v2';
+const CACHE = 'luderis-v3';
 
 const PRECACHE = ['/index.html', '/'];
-
-const SKIP_HOSTS = ['supabase.co', 'google-analytics.com', 'googletagmanager.com', 'analytics.google.com'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
@@ -21,20 +19,28 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
-  if (SKIP_HOSTS.some((h) => url.hostname.includes(h))) return;
+
+  // SOLO manejamos peticiones del propio dominio. Las cross-origin (Google
+  // Fonts, avatares de Google, Supabase, analytics, etc.) pasan directo a la
+  // red: si el SW les hiciera fetch(), esa petición se regiría por connect-src
+  // de la CSP (no por style-src/font-src/img-src), y la CSP las bloquearía.
+  if (url.origin !== self.location.origin) return;
 
   // Static assets — cache-first
   if (['script', 'style', 'image', 'font'].includes(request.destination)) {
     e.respondWith(
       caches.match(request).then((hit) => {
         if (hit) return hit;
+        // Si no hay cache y la red falla, dejamos que el rechazo se propague
+        // (error de red normal) en vez de devolver undefined → "Failed to
+        // convert value to 'Response'".
         return fetch(request).then((res) => {
           if (res.ok) {
             const clone = res.clone();
             caches.open(CACHE).then((c) => c.put(request, clone));
           }
           return res;
-        }).catch(() => hit);
+        });
       })
     );
     return;
