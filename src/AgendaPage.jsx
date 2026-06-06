@@ -180,7 +180,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
               {nDocente>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"3px 10px"}}>
                 <GraduationCap size={12} strokeWidth={2}/>{nDocente} como docente
               </span>}
-              {nAlumno>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:"#2EC4A012",color:C.success||"#2EC4A0",border:`1px solid ${C.success||"#2EC4A0"}33`,borderRadius:20,padding:"3px 10px"}}>
+              {nAlumno>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,background:"#2EC4A012",color:C.successText||"#2EC4A0",border:`1px solid ${C.success||"#2EC4A0"}33`,borderRadius:20,padding:"3px 10px"}}>
                 <BookOpen size={12} strokeWidth={2}/>{nAlumno} como alumno
               </span>}
             </>);

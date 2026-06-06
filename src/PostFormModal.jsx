@@ -33,7 +33,7 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
     setFeedback(r.feedback||"");
     if(r.correcta){setEstado("ok");if(onEstadoChange)onEstadoChange("ok");onVerificado();}
     else{setEstado("error");if(onEstadoChange)onEstadoChange("error");}}catch{setEstado("error");setFeedback("No se pudo evaluar.");if(onEstadoChange)onEstadoChange("error");}};
-  if(estado==="ok")return <div style={{color:C.success,fontSize:12,padding:"7px 11px",background:"#4ECB7115",borderRadius:8,border:"1px solid #4ECB7133"}}>✓ ¡Verificado!</div>;
+  if(estado==="ok")return <div style={{color:C.successText,fontSize:12,padding:"7px 11px",background:"#4ECB7115",borderRadius:8,border:"1px solid #4ECB7133"}}>✓ ¡Verificado!</div>;
   return(<div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:12,marginTop:8}}>
     <div style={{color:C.accent,fontSize:10,fontWeight:700,marginBottom:5,letterSpacing:1}}>✓ VERIFICACIÓN (IA)</div>
     {estado==="cargando"?<div style={{color:C.muted,fontSize:12,display:"flex",alignItems:"center",gap:6}}><Spinner small/>Generando...</div>:(<>
@@ -894,7 +894,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                           </div>
                         </div>
                         {(pq.clases>0&&precioNum>0)&&(
-                          <div style={{fontSize:11,color:C.success,fontWeight:600,background:C.success+"10",borderRadius:6,padding:"4px 10px",alignSelf:"flex-start"}}>
+                          <div style={{fontSize:11,color:C.successText,fontWeight:600,background:C.success+"10",borderRadius:6,padding:"4px 10px",alignSelf:"flex-start"}}>
                             ${Math.round(precioFinal).toLocaleString("es-AR")} total · ${Math.round(precioFinal/(pq.clases||1)).toLocaleString("es-AR")}/clase
                             {pq.descuento>0&&<span style={{color:C.muted,marginLeft:6}}>(ahorrás ${(precioNum*(pq.clases||1)-precioFinal).toLocaleString("es-AR")})</span>}
                           </div>
@@ -914,7 +914,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               <div style={{color:C.warn,fontSize:11,padding:"5px 10px",background:"#E0955C15",borderRadius:7,border:"1px solid #E0955C33",display:"flex",alignItems:"center",gap:6}}><Spinner small/>Verificando…</div>
             )}
             {tipo==="oferta"&&verificado&&(
-              <div style={{color:C.success,fontSize:11,padding:"5px 10px",background:"#4ECB7115",borderRadius:7,border:"1px solid #4ECB7133"}}>✓ Verificado</div>
+              <div style={{color:C.successText,fontSize:11,padding:"5px 10px",background:"#4ECB7115",borderRadius:7,border:"1px solid #4ECB7133"}}>✓ Verificado</div>
             )}
           </div>
         )}
@@ -1069,7 +1069,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
             {[
               {n:avg?avg.toFixed(1):"—",label:"Rating",icon:<Star size={14} color="#F59E0B"/>,color:"#F59E0B"},
               {n:reseñas.length,label:"Reseñas",icon:<MessageCircle size={14} color={C.accent}/>,color:C.accent},
-              {n:pubs.length,label:"Clases",icon:<BookOpen size={14} color={C.success}/>,color:C.success},
+              {n:pubs.length,label:"Clases",icon:<BookOpen size={14} color={C.success}/>,color:C.successText},
               {n:totalInscriptos,label:"Alumnos",icon:<Users size={14} color={C.purple||"#7B3FBE"}/>,color:C.purple||"#7B3FBE"},
             ].map(s=>(
               <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px",textAlign:"center"}}>
@@ -1202,7 +1202,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
                         <div style={{display:"flex",gap:2}}>
                           {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
                         </div>
-                        {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+                        {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
                       </div>
                       <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
                     </div>

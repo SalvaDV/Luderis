@@ -168,7 +168,7 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
           <div style={{flex:1}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
-              {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+              {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
             </div>
             <div style={{fontSize:12,color:"#B45309",marginTop:1}}>{"★".repeat(r.estrellas||0)}{"☆".repeat(5-(r.estrellas||0))} <span style={{color:C.muted}}>({r.estrellas?.toFixed?r.estrellas.toFixed(1):r.estrellas}/5)</span></div>
           </div>
@@ -789,7 +789,7 @@ function CerrarInscModal({post,session,onClose,onCerrado}){
         <h3 style={{color:C.warn,margin:0,fontSize:16,fontWeight:700}}>Cerrar inscripciones</h3>
         <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:21,cursor:"pointer"}}>×</button>
       </div>
-      {ok?<div style={{textAlign:"center",padding:"16px 0",color:C.success,fontWeight:700}}>✓ Inscripciones cerradas</div>:(
+      {ok?<div style={{textAlign:"center",padding:"16px 0",color:C.successText,fontWeight:700}}>✓ Inscripciones cerradas</div>:(
         <>
           <p style={{color:C.muted,fontSize:13,marginBottom:16}}>Los usuarios ya inscriptos mantendrán su acceso. No se aceptarán nuevas inscripciones.</p>
           <Btn onClick={cerrar} disabled={saving} variant="warn" style={{width:"100%",padding:"10px"}}>{saving?"Procesando...":"Cerrar inscripciones"}</Btn>
@@ -985,7 +985,7 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
               </button>
             </div>
             {loadingIA&&<div style={{fontSize:11,color:C.muted,marginTop:6,display:"flex",alignItems:"center",gap:5}}><Spinner small/>Creando {cantIA} preguntas…</div>}
-            {!loadingIA&&preguntas[0]?.texto&&<div style={{fontSize:10,color:C.success,marginTop:5}}>✓ {preguntas.length} preguntas generadas — podés editarlas abajo</div>}
+            {!loadingIA&&preguntas[0]?.texto&&<div style={{fontSize:10,color:C.successText,marginTop:5}}>✓ {preguntas.length} preguntas generadas — podés editarlas abajo</div>}
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <span style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.8}}>PREGUNTAS ({preguntas.length})</span>
@@ -2327,12 +2327,12 @@ function CertificadoBtn({post,session,inscripcion,progresoModulos=[],contenido=[
   return(
     <>
       {esCurso&&modulos.length>0&&(
-        <div style={{fontSize:11,color:C.success,marginBottom:6,marginTop:10,textAlign:"center"}}>✓ Completaste el {pctActual}% del curso</div>
+        <div style={{fontSize:11,color:C.successText,marginBottom:6,marginTop:10,textAlign:"center"}}>✓ Completaste el {pctActual}% del curso</div>
       )}
       <button onClick={generar} disabled={generando}
         style={{display:"flex",alignItems:"center",gap:8,background:"linear-gradient(135deg,#1A6ED815,#2EC4A015)",
           border:"1px solid #2EC4A040",borderRadius:12,padding:"12px 18px",cursor:"pointer",fontFamily:FONT,
-          color:C.success,fontSize:14,fontWeight:700,width:"100%",justifyContent:"center",marginTop:10,
+          color:C.successText,fontSize:14,fontWeight:700,width:"100%",justifyContent:"center",marginTop:10,
           transition:"all .15s",boxShadow:"0 2px 8px rgba(46,196,160,.1)"}}
         onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED825,#2EC4A025)"}
         onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg,#1A6ED815,#2EC4A015)"}>
@@ -2955,7 +2955,7 @@ function ValidacionWizard({post,session,onValidado}){
                       {/* Mostrar respuesta correcta si es MC */}
                       {!esPerformance&&item.opciones&&sel&&(
                         <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}22`}}>
-                          <div style={{fontSize:10,color:C.success,fontWeight:600,marginBottom:3}}>Respuesta correcta:</div>
+                          <div style={{fontSize:10,color:C.successText,fontWeight:600,marginBottom:3}}>Respuesta correcta:</div>
                           <div style={{fontSize:11,color:C.text}}>{item.opciones[item.correcta]}</div>
                           {item.explicacion&&<div style={{fontSize:10,color:C.muted,marginTop:2}}>{item.explicacion}</div>}
                         </div>
@@ -2987,7 +2987,7 @@ function ValidacionWizard({post,session,onValidado}){
       {fase==="listo"&&(
         <div style={{textAlign:"center",padding:"20px 0"}}>
           <div style={{fontSize:36,marginBottom:12}}>🎉</div>
-          <div style={{fontWeight:700,color:C.success,fontSize:16,marginBottom:6}}>
+          <div style={{fontWeight:700,color:C.successText,fontSize:16,marginBottom:6}}>
             {esParticular?"Clase publicada":"Curso publicado"}
           </div>
           <div style={{color:C.muted,fontSize:13,marginBottom:16}}>
@@ -3054,7 +3054,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
             </span>
             {ev.formato&&<span style={{fontSize:10,background:C.surface,borderRadius:20,padding:"1px 7px",border:`1px solid ${C.border}`,color:C.muted}}>{FORMATO_LABELS[ev.formato]?.icon} {FORMATO_LABELS[ev.formato]?.label||ev.formato}</span>}
             {ev.generado_ia&&<span style={{fontSize:10,background:"#C85CE015",color:C.purple,borderRadius:20,padding:"1px 7px",border:"1px solid #C85CE033"}}>✦ IA</span>}
-            {entrega&&<span style={{fontSize:10,background:"#4ECB7115",color:C.success,borderRadius:20,padding:"1px 7px",border:"1px solid #4ECB7133"}}>✓ Entregado</span>}
+            {entrega&&<span style={{fontSize:10,background:"#4ECB7115",color:C.successText,borderRadius:20,padding:"1px 7px",border:"1px solid #4ECB7133"}}>✓ Entregado</span>}
             {score!==null&&<span style={{fontSize:10,fontWeight:700,color:score>=60?C.success:C.danger}}>{score}%</span>}
             {esMio&&todasEntregas.length>0&&<span style={{fontSize:10,color:C.muted}}>{todasEntregas.length} entrega{todasEntregas.length!==1?"s":""}</span>}
           </div>
@@ -3165,7 +3165,7 @@ function EntregaEvalRow({entrega,evaluacion,session,onUpdate}){
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           {entrega.nota&&<span style={{fontSize:11,fontWeight:700,color:C.accent}}>{entrega.nota}/100</span>}
-          {entrega.corregido&&<span style={{fontSize:10,color:C.success}}>✓ Corregido</span>}
+          {entrega.corregido&&<span style={{fontSize:10,color:C.successText}}>✓ Corregido</span>}
           <span style={{color:C.muted,fontSize:11}}>{expanded?"▴":"▾"}</span>
         </div>
       </div>
@@ -3311,7 +3311,7 @@ function DiagnosticoModal({post,session,onClose,evaluacion:evalOverride,titulo:t
           {done?(
             <div style={{textAlign:"center",padding:"20px 0"}}>
               <div style={{fontSize:44,marginBottom:12}}>✓</div>
-              <div style={{fontWeight:700,color:C.success,fontSize:17,marginBottom:8}}>Diagnóstico completado</div>
+              <div style={{fontWeight:700,color:C.successText,fontSize:17,marginBottom:8}}>Diagnóstico completado</div>
               <div style={{color:C.muted,fontSize:13,marginBottom:20,lineHeight:1.6}}>
                 Tus niveles iniciales quedaron registrados. Al finalizar el curso rendirás el examen final y veremos cuánto avanzaste.
               </div>
@@ -3676,7 +3676,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           const tipos=[
             tienesDiag&&{id:"diagnostico",icon:"🔍",label:"Diagnóstico inicial",color:C.info,desc:"Se toma al inscribirse. Mide el nivel de partida."},
             {id:"checkpoint",icon:"📍",label:"Checkpoint",color:C.warn,desc:"Evaluación intermedia del curso."},
-            tienesDiag&&{id:"final",icon:"🏁",label:"Examen final",color:C.success,desc:"Se activa al finalizar el curso. Mide el progreso total."},
+            tienesDiag&&{id:"final",icon:"🏁",label:"Examen final",color:C.successText,desc:"Se activa al finalizar el curso. Mide el progreso total."},
           ].filter(Boolean);
           return(
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -3889,9 +3889,9 @@ function ProgresoEvaluaciones({post,session}){
         <div style={{textAlign:"center",color:C.muted,fontSize:20,padding:"0 4px"}}>→</div>
         {/* Examen final */}
         <div style={{background:C.surface,borderRadius:12,padding:"14px",textAlign:"center",border:`1px solid ${C.border}`}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.success,letterSpacing:.8,marginBottom:6}}>🏁 EXAMEN FINAL</div>
+          <div style={{fontSize:10,fontWeight:700,color:C.successText,letterSpacing:.8,marginBottom:6}}>🏁 EXAMEN FINAL</div>
           {finalScore!=null?(
-            <><div style={{fontSize:28,fontWeight:800,color:C.success}}>{finalScore}<span style={{fontSize:14,fontWeight:400}}>%</span></div>
+            <><div style={{fontSize:28,fontWeight:800,color:C.successText}}>{finalScore}<span style={{fontSize:14,fontWeight:400}}>%</span></div>
             <div style={{fontSize:10,color:C.muted,marginTop:2}}>al finalizar</div></>
           ):(
             <div style={{fontSize:12,color:C.muted,fontStyle:"italic"}}>{data.final?'Pendiente':'Aún no disponible'}</div>
@@ -3974,10 +3974,10 @@ function ProgresoGrupal({post,session,inscripciones}){
         )}
         {stats.tieneFinal&&(
           <div style={{background:C.surface,borderRadius:10,padding:"12px",textAlign:"center",border:`1px solid ${C.border}`}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.success,letterSpacing:.8,marginBottom:4}}>🏁 EXAMEN FINAL</div>
-            <div style={{fontSize:22,fontWeight:800,color:C.success}}>{stats.finalCount}<span style={{fontSize:12,color:C.muted,fontWeight:400}}>/{stats.total}</span></div>
+            <div style={{fontSize:10,fontWeight:700,color:C.successText,letterSpacing:.8,marginBottom:4}}>🏁 EXAMEN FINAL</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.successText}}>{stats.finalCount}<span style={{fontSize:12,color:C.muted,fontWeight:400}}>/{stats.total}</span></div>
             <div style={{fontSize:10,color:C.muted,marginBottom:4}}>alumnos completaron</div>
-            {stats.finalAvg!=null&&<div style={{fontSize:13,fontWeight:700,color:C.success}}>Promedio: {stats.finalAvg}%</div>}
+            {stats.finalAvg!=null&&<div style={{fontSize:13,fontWeight:700,color:C.successText}}>Promedio: {stats.finalAvg}%</div>}
           </div>
         )}
       </div>
@@ -4024,7 +4024,7 @@ function CertificadoPctEditor({post,session,onUpdatePost}){
         </div>
       </div>
       {dirty&&<button onClick={guardar} disabled={saving} style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"6px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>{saving?"Guardando…":"Guardar cambio"}</button>}
-      {saved&&<span style={{fontSize:12,color:C.success,marginLeft:8}}>✓ Guardado</span>}
+      {saved&&<span style={{fontSize:12,color:C.successText,marginLeft:8}}>✓ Guardado</span>}
     </div>
   );
 }
@@ -4237,12 +4237,12 @@ function CursoPage({post,session,onClose,onUpdatePost}){
         {/* Row 2: actions — scrollable on mobile */}
         <div className="curso-actions" style={{padding:"0 14px 8px",borderTop:`1px solid ${C.border}`,paddingTop:6}}>
           {esMio&&!localFinalizado&&!localCerrado&&<button onClick={()=>setShowCerrarInsc(true)} style={{background:"#E0955C12",border:"1px solid #E0955C33",borderRadius:7,color:C.warn,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Cerrar inscrip.</button>}
-          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){toast("Error: "+e.message,"error");}}} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.success,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
+          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){toast("Error: "+e.message,"error");}}} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
           {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
             style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
             {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":"▶ Iniciar clase"}
           </button>}
-          {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.success,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
+          {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
           {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:11,color:C.info,fontWeight:600,whiteSpace:"nowrap"}}>✓ Clase finalizada</span>}
           {!esMio&&inscripcion&&<button onClick={()=>setShowDenuncia(true)} style={{background:"#E05C5C12",border:"1px solid #E05C5C33",borderRadius:7,color:C.danger,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,whiteSpace:"nowrap"}}>Denunciar</button>}
           {esMio?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Sos el docente</span>:
@@ -4286,7 +4286,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             <div style={{display:"flex",gap:9,flexWrap:"wrap"}}><Chip label="MODALIDAD" val={post.modo==="particular"?"Clase particular":"Curso"} accent={getPubTipo(post).accent}/>{post.modalidad&&<Chip label="FORMATO" val={post.modalidad==="presencial"?"📍 Presencial":post.modalidad==="virtual"?"🌐 Virtual":post.modalidad==="mixto"?"⟳ Mixto":post.modalidad}/>}{duracion&&<Chip label="DURACIÓN" val={duracion}/>}{post.fecha_inicio&&<Chip label="INICIO" val={fmt(post.fecha_inicio)}/>}{post.fecha_fin&&<Chip label="FIN" val={fmt(post.fecha_fin)}/>}</div>
           </div>
           {!esMio&&inscripcion&&(<div style={{background:"#4ECB7115",border:`1px solid #4ECB7133`,borderRadius:12,padding:"12px 16px",marginBottom:18}}>
-            <div style={{color:C.success,fontWeight:600,fontSize:13}}>✓ Estás inscripto</div>
+            <div style={{color:C.successText,fontWeight:600,fontSize:13}}>✓ Estás inscripto</div>
             <div style={{color:C.muted,fontSize:12,marginTop:2}}>Inscripto el {fmt(inscripcion.created_at)}</div>
           </div>)}
           {esMio&&(<div className="curso-card" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 18px",marginBottom:18}}>
@@ -4303,7 +4303,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                       <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{fontSize:10,color:C.muted}}>{safeDisplayName(null,ins.alumno_email)}</div><button onClick={()=>navigator.clipboard?.writeText(ins.alumno_email)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:0}} title="Copiar email">⎘</button></div>
                       {isAyud&&<div style={{fontSize:10,color:C.info}}>Ayudante</div>}
                     </div>
-                    {ins.clase_finalizada&&<span style={{fontSize:10,background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.success,padding:"1px 7px"}}>✓</span>}
+                    {ins.clase_finalizada&&<span style={{fontSize:10,background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.successText,padding:"1px 7px"}}>✓</span>}
                     <button onClick={async()=>{
                       const ayuds=post.ayudantes||[];
                       // store UUID, not email
@@ -4751,7 +4751,7 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
   if(estado==="done") return(
     <div style={{textAlign:"center",padding:"24px 0"}}>
       <div style={{fontSize:40,marginBottom:8}}>✅</div>
-      <div style={{color:C.success,fontWeight:700,fontSize:15}}>¡Pago exitoso!</div>
+      <div style={{color:C.successText,fontWeight:700,fontSize:15}}>¡Pago exitoso!</div>
       <div style={{color:C.muted,fontSize:13,marginTop:4}}>Ya tenés acceso a la clase</div>
     </div>
   );
@@ -4997,7 +4997,7 @@ function InscripcionModal({post,session,onClose,onDone}){
                       <div>
                         <div style={{fontSize:13,fontWeight:700,color:activo?C.success:C.text}}>
                           {pq.nombre||`${pq.clases} clases`}
-                          {desc>0&&<span style={{marginLeft:7,fontSize:10,background:C.success+"25",color:C.success,borderRadius:20,padding:"2px 7px",fontWeight:700}}>-{desc}%</span>}
+                          {desc>0&&<span style={{marginLeft:7,fontSize:10,background:C.success+"25",color:C.successText,borderRadius:20,padding:"2px 7px",fontWeight:700}}>-{desc}%</span>}
                         </div>
                         <div style={{fontSize:11,color:C.muted}}>${porClase.toLocaleString("es-AR")}/clase</div>
                       </div>
@@ -5112,7 +5112,7 @@ function InscripcionModal({post,session,onClose,onDone}){
 function InscribirseBtn({post,session,onDone}){
   const [showModal,setShowModal]=useState(false);
   const [ok,setOk]=useState(false);
-  if(ok)return<span style={{fontSize:12,color:C.success,fontWeight:700}}>✓ Inscripto</span>;
+  if(ok)return<span style={{fontSize:12,color:C.successText,fontWeight:700}}>✓ Inscripto</span>;
   return(
     <>
       <button onClick={()=>setShowModal(true)}
@@ -5242,7 +5242,7 @@ function RelacionadasSection({post,session,onOpenDetail2}){
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     {p.precio
                       ?<span style={{fontWeight:800,color:C.accent,fontSize:14}}>{fmtPrice(p.precio,p.moneda)}</span>
-                      :<span style={{fontSize:12,color:C.success,fontWeight:600}}>Gratis</span>
+                      :<span style={{fontSize:12,color:C.successText,fontWeight:600}}>Gratis</span>
                     }
                     <Tag tipo={p.tipo} modo={p.modo}/>
                   </div>

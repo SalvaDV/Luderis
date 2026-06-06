@@ -1449,7 +1449,7 @@ function ReportsTab({ session }) {
                   {d.denunciante_email && <div style={{ fontSize: 12, color: C.muted }}>Denunciante: {d.denunciante_email}</div>}
                   {(d.autor_email || d.denunciado_email) && <div style={{ fontSize: 12, color: C.muted }}>Denunciado: {d.autor_email || d.denunciado_email}</div>}
                   {d.publicacion_id && <div style={{ fontSize: 11, color: C.muted, fontFamily: "monospace" }}>Pub ID: {d.publicacion_id}</div>}
-                  {d.accion_tomada && <div style={{ fontSize: 12, color: C.success, marginTop: 4 }}>✓ Acción: {d.accion_tomada.replace(/_/g, " ")}</div>}
+                  {d.accion_tomada && <div style={{ fontSize: 12, color: C.successText, marginTop: 4 }}>✓ Acción: {d.accion_tomada.replace(/_/g, " ")}</div>}
                 </div>
               </div>
               {!d.revisada && (
@@ -2276,7 +2276,7 @@ function LiquidacionesTab({ session }) {
                   <td style={{ padding: "10px 14px", fontSize: 13, color: C.text }}>{l.cantidad_clases}</td>
                   <td style={{ padding: "10px 14px", fontSize: 13, color: C.text }}>${Number(l.monto_bruto || 0).toLocaleString("es-AR")}</td>
                   <td style={{ padding: "10px 14px", fontSize: 13, color: C.muted }}>- ${Number(l.comision_luderis || 0).toLocaleString("es-AR")}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.success }}>${Number(l.monto_neto || 0).toLocaleString("es-AR")}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.successText }}>${Number(l.monto_neto || 0).toLocaleString("es-AR")}</td>
                   <td style={{ padding: "10px 14px" }}>
                     {l.pdf_url ? (
                       <button onClick={() => downloadPdf(l)}

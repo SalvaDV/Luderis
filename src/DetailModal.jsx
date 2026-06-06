@@ -154,7 +154,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                 </button>
                 {loading?<Spinner small/>:<StarRating val={avgUser} count={reseñasUsuario.length}/>}
                 {esMio&&<div style={{fontSize:12,color:C.muted,marginTop:2,fontStyle:"italic"}}>Tu publicación</div>}
-                {!esMio&&avgUser>=4&&<div style={{fontSize:11,color:C.success,marginTop:2,display:"flex",alignItems:"center",gap:4,fontWeight:600}}><span style={{width:6,height:6,borderRadius:"50%",background:C.success,display:"inline-block"}}/>Docente con alta calificación</div>}
+                {!esMio&&avgUser>=4&&<div style={{fontSize:11,color:C.successText,marginTop:2,display:"flex",alignItems:"center",gap:4,fontWeight:600}}><span style={{width:6,height:6,borderRadius:"50%",background:C.success,display:"inline-block"}}/>Docente con alta calificación</div>}
                 {esAyudante&&<span style={{fontSize:12,color:C.purple,fontWeight:700}}>✦ Co-docente</span>}
               </div>
             </div>
@@ -285,7 +285,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                   <span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo||"hora"}</span>
                 </div>
               ):(
-                <div style={{fontSize:16,fontWeight:700,color:C.success,marginBottom:16}}>Gratis</div>
+                <div style={{fontSize:16,fontWeight:700,color:C.successText,marginBottom:16}}>Gratis</div>
               )}
 
               {/* Valoración compacta */}
@@ -346,7 +346,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                       <div style={{fontSize:13,color:C.muted,textAlign:"center",padding:"8px",background:C.bg,borderRadius:8}}>Inscripciones cerradas</div>
                     )}
                     {post.tipo==="oferta"&&(esMio||esAyudante||inscripcion)&&(
-                      <button onClick={()=>{onClose();onOpenCurso(post);}} style={{width:"100%",background:C.success+"15",color:C.success,border:`1px solid ${C.success}44`,borderRadius:20,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>
+                      <button onClick={()=>{onClose();onOpenCurso(post);}} style={{width:"100%",background:C.success+"15",color:C.successText,border:`1px solid ${C.success}44`,borderRadius:20,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>
                         Ver contenido del curso
                       </button>
                     )}
@@ -376,7 +376,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Info extra */}
               <div style={{marginTop:8,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
                 {[
-                  {Icon:Check,txt:"Pago seguro · sin cargos ocultos",color:C.success},
+                  {Icon:Check,txt:"Pago seguro · sin cargos ocultos",color:C.successText},
                   post.tipo==="oferta"&&{Icon:Lock,txt:"Pago acordado directamente",color:C.muted},
                   post.tipo==="busqueda"&&{Icon:Inbox,txt:"Recibís ofertas de docentes",color:C.muted},
                 ].filter(Boolean).map(({Icon:InfoIcon,txt,color})=>(
@@ -407,11 +407,11 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           </div>
         )}
         <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12}}>
-          {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:getPubTipo(post).accent,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.success}}>Gratis</div>}
+          {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:getPubTipo(post).accent,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.successText}}>Gratis</div>}
           <div style={{display:"flex",gap:8}}>
             {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
             {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}
-            {post.tipo==="oferta"&&(esMio||esAyudante||inscripcion)&&<button onClick={()=>{onClose();onOpenCurso(post);}} style={{background:C.success+"15",color:C.success,border:`1px solid ${C.success}44`,borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Ver curso</button>}
+            {post.tipo==="oferta"&&(esMio||esAyudante||inscripcion)&&<button onClick={()=>{onClose();onOpenCurso(post);}} style={{background:C.success+"15",color:C.successText,border:`1px solid ${C.success}44`,borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Ver curso</button>}
             {post.tipo==="busqueda"&&!esMio&&<OfertarBtn post={post} session={session}/>}
           </div>
         </div>

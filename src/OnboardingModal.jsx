@@ -209,7 +209,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           <input id="onb-fechanac" aria-label="Fecha de nacimiento" type="date" value={fechaNac} onChange={e=>setFechaNac(e.target.value)}
             max={new Date(Date.now()-18*365*24*3600*1000).toISOString().split("T")[0]}
             style={{width:"100%",background:C.bg,border:`1px solid ${fechaNac?C.success:C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",colorScheme:"dark"}}/>
-          {fechaNac&&(()=>{const edad=Math.floor((Date.now()-new Date(fechaNac).getTime())/(365.25*24*3600*1000));return edad<18?(<div style={{fontSize:11,color:C.danger,marginTop:4,fontWeight:600}}>⚠ Debés ser mayor de 18 años para registrarte como docente.</div>):(<div style={{fontSize:11,color:C.success,marginTop:4}}>✓ Edad verificada</div>);})()}
+          {fechaNac&&(()=>{const edad=Math.floor((Date.now()-new Date(fechaNac).getTime())/(365.25*24*3600*1000));return edad<18?(<div style={{fontSize:11,color:C.danger,marginTop:4,fontWeight:600}}>⚠ Debés ser mayor de 18 años para registrarte como docente.</div>):(<div style={{fontSize:11,color:C.successText,marginTop:4}}>✓ Edad verificada</div>);})()}
         </div>
       </div>
     )},
@@ -315,7 +315,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             <p style={{fontSize:11,color:C.danger,margin:"4px 0 0",fontWeight:600}}>⚠ El CUIT debe tener 11 dígitos</p>
           )}
           {cuit.replace(/-/g,"").length===11&&(
-            <p style={{fontSize:11,color:C.success,margin:"4px 0 0",fontWeight:600}}>✓ CUIT válido</p>
+            <p style={{fontSize:11,color:C.successText,margin:"4px 0 0",fontWeight:600}}>✓ CUIT válido</p>
           )}
         </div>
       </div>

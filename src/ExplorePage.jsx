@@ -714,7 +714,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                         {p.tipo==="busqueda"
                           ?<div style={{fontSize:12,color:TIPO_PUB.pedido.accent,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</div>
                           :p.precio?<div style={{fontWeight:800,color:getPubTipo(p).accent,fontSize:15}}>{fmtPrice(p.precio,p.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}> /{p.precio_tipo||"hora"}</span></div>
-                          :<div style={{fontWeight:600,color:C.success,fontSize:13}}>Gratis</div>}
+                          :<div style={{fontWeight:600,color:C.successText,fontSize:13}}>Gratis</div>}
                         {p.cantidad_inscriptos>0&&<span style={{fontSize:10,color:C.muted}}>👥{p.cantidad_inscriptos}</span>}
                       </div>
                       {p.tipo==="busqueda"&&p.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(p.expires_at)-new Date())/86400000);if(daysLeft<=3&&daysLeft>0)return(<div style={{fontSize:10,color:"#B45309",fontWeight:600,marginTop:4,display:"flex",alignItems:"center",gap:3}}><Timer size={9} strokeWidth={2}/>Expira en {daysLeft} día{daysLeft!==1?"s":""}</div>);return null;})()}
@@ -1027,7 +1027,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                         <div style={{fontSize:12,color:C.muted}}>{p.materia} · {fmtRel(p.created_at)}</div>
                       </div>
                       <div style={{flexShrink:0,textAlign:"right"}}>
-                        {p.precio?<div style={{fontWeight:700,color:C.accent,fontSize:14}}>{fmtPrice(p.precio)}</div>:<div style={{fontSize:12,color:C.success,fontWeight:600}}>Gratis</div>}
+                        {p.precio?<div style={{fontWeight:700,color:C.accent,fontSize:14}}>{fmtPrice(p.precio)}</div>:<div style={{fontSize:12,color:C.successText,fontWeight:600}}>Gratis</div>}
                       {p.tiene_prueba&&<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>✓ Clase de prueba</div>}
                       {(()=>{try{const pqs=JSON.parse(p.paquetes||"[]");const mejor=pqs.filter(x=>x.clases>0).sort((a,b)=>(b.descuento||0)-(a.descuento||0))[0];return mejor?.descuento>0?<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>📦 Pack -{mejor.descuento}%</div>:null;}catch{return null;}})()}
                         <Tag tipo={p.tipo} modo={p.modo}/>

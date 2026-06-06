@@ -78,11 +78,11 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
     if(ini)ini.setHours(0,0,0,0);
     if(fin)fin.setHours(0,0,0,0);
     // Clase ya finalizada manualmente
-    if(ins.clase_finalizada||p.finalizado)return{Icon:Check,texto:"Clase finalizada",color:C.success};
+    if(ins.clase_finalizada||p.finalizado)return{Icon:Check,texto:"Clase finalizada",color:C.successText};
     // Todavía no empezó
     if(ini&&hoy<ini){
       const dias=Math.ceil((ini-hoy)/86400000);
-      if(dias===0)return{Icon:Circle,texto:"Inicia hoy",color:C.success};
+      if(dias===0)return{Icon:Circle,texto:"Inicia hoy",color:C.successText};
       if(dias===1)return{Icon:Calendar,texto:"Inicia mañana",color:C.info};
       return{Icon:Calendar,texto:`Inicia en ${dias} día${dias!==1?"s":""}`,color:C.info};
     }
@@ -95,7 +95,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
       return{Icon:Clock,texto:`Finaliza en ${dias} día${dias!==1?"s":""}`,color:dias<=7?C.danger:dias<=30?C.warn:C.muted};
     }
     // Empezó pero sin fecha de fin
-    if(ini&&hoy>=ini)return{Icon:Circle,texto:"En curso",color:C.success};
+    if(ini&&hoy>=ini)return{Icon:Circle,texto:"En curso",color:C.successText};
     return null;
   };
 
@@ -188,7 +188,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           {clases.length>0&&<>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:700,color:C.text}}>Clases particulares</span>
-              <span style={{background:"#4ECB7115",color:C.success,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px"}}>{clases.length}</span>
+              <span style={{background:"#4ECB7115",color:C.successText,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px"}}>{clases.length}</span>
             </div>
             <div style={{display:"grid",gap:9}}>{clases.map(renderCard)}</div>
           </>}
@@ -236,7 +236,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
         <div style={{marginTop:inscripciones.length>0||ayudantePubs.length>0?28:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
             <span style={{fontSize:13,fontWeight:700,color:C.text}}>Clases particulares acordadas</span>
-            <span style={{background:"#4ECB7115",color:C.success,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",border:"1px solid #4ECB7133"}}>{clasesAcordadas.length}</span>
+            <span style={{background:"#4ECB7115",color:C.successText,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",border:"1px solid #4ECB7133"}}>{clasesAcordadas.length}</span>
           </div>
           <div style={{display:"grid",gap:9}}>
             {clasesAcordadas.map(o=>{
@@ -244,17 +244,17 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
               const otroN=soyDoc?(o.busqueda_autor_nombre||safeDisplayName(o.busqueda_autor_nombre,o.busqueda_autor_email)):(o.ofertante_nombre||safeDisplayName(o.ofertante_nombre,o.ofertante_email));
               return(
                 <div key={o.id} role="button" tabIndex={0} aria-label={`Abrir espacio con ${otroN||"usuario"}`} onClick={()=>setEspacioActivo(o)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setEspacioActivo(o);}}} style={{background:C.card,border:"1px solid #4ECB7133",borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.success} onMouseLeave={e=>e.currentTarget.style.borderColor="#4ECB7133"}>
-                  <div style={{width:44,height:44,borderRadius:11,background:"#4ECB7115",border:"1px solid #4ECB7133",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.success,fontWeight:700,flexShrink:0}}>{soyDoc?"✦":"◈"}</div>
+                  <div style={{width:44,height:44,borderRadius:11,background:"#4ECB7115",border:"1px solid #4ECB7133",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.successText,fontWeight:700,flexShrink:0}}>{soyDoc?"✦":"◈"}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.busqueda_titulo||"Clase particular"}</div>
                     <div style={{fontSize:12,color:C.muted,marginBottom:4}}>{soyDoc?"Alumno":"Docente"}: <span style={{color:C.text,fontWeight:600}}>{otroN}</span></div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      <span style={{fontSize:11,background:"#4ECB7115",color:C.success,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 8px",fontWeight:700}}>Acordada</span>
+                      <span style={{fontSize:11,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 8px",fontWeight:700}}>Acordada</span>
                       {soyDoc&&<span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"1px 8px",fontWeight:600}}>Sos el docente</span>}
                       {o.precio&&<span style={{fontSize:11,color:C.muted}}>{fmtPrice(o.precio)}/{o.precio_tipo||"hora"}</span>}
                     </div>
                   </div>
-                  <span style={{fontSize:12,color:C.success,fontWeight:700,flexShrink:0}}>Entrar →</span>
+                  <span style={{fontSize:12,color:C.successText,fontWeight:700,flexShrink:0}}>Entrar →</span>
                 </div>
               );
             })}

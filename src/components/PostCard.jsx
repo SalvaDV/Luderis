@@ -88,7 +88,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10,alignItems:"center"}}>
         {post.precio
           ?<span style={{fontSize:14,fontWeight:800,color:T.accent}}>{fmtPrice(post.precio,post.moneda)}{post.precio_tipo&&post.modo!=="curso"&&<span style={{fontSize:12,fontWeight:400,color:C.muted}}> /{post.precio_tipo}</span>}</span>
-          :<span style={{fontSize:13,fontWeight:700,color:C.success}}>Gratis</span>}
+          :<span style={{fontSize:13,fontWeight:700,color:C.successText}}>Gratis</span>}
         <span style={{width:1,height:14,background:C.border,display:"inline-block",flexShrink:0,alignSelf:"center"}}/>
         {(post.modo==="grupal"||post.modo==="curso")&&<Pill icon={GraduationCap} label="Curso" color={TIPO_PUB.curso.accent} bg={TIPO_PUB.curso.dim} border={TIPO_PUB.curso.border}/>}
         {post.modo==="particular"&&<Pill icon={User} label="Particular" color={TIPO_PUB.particular.accent} bg={TIPO_PUB.particular.dim} border={TIPO_PUB.particular.border}/>}
@@ -101,7 +101,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
         {yaOferte&&!esMio&&<span style={{fontSize:12,fontWeight:600,padding:"3px 8px",borderRadius:6,background:"#F59E0B12",border:"1px solid #F59E0B30",color:"#B45309"}}>Oferta enviada</span>}
         {fueRechazado&&<span style={{fontSize:12,fontWeight:600,padding:"3px 8px",borderRadius:6,background:C.danger+"12",color:C.danger,border:`1px solid ${C.danger}30`}}>Oferta rechazada</span>}
         {post.tipo==="oferta"&&post.inscripciones_cerradas&&!post.finalizado&&<span style={{fontSize:12,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#71717A12",color:"#71717A",border:"1px solid #71717A30"}}>Cupos llenos</span>}
-        {post.tipo==="oferta"&&post.finalizado&&<span style={{fontSize:12,fontWeight:700,padding:"3px 8px",borderRadius:6,background:C.success+"12",color:C.success,border:`1px solid ${C.success}30`}}>Finalizado</span>}
+        {post.tipo==="oferta"&&post.finalizado&&<span style={{fontSize:12,fontWeight:700,padding:"3px 8px",borderRadius:6,background:C.success+"12",color:C.successText,border:`1px solid ${C.success}30`}}>Finalizado</span>}
         {post.tipo==="busqueda"&&post.expires_at&&(()=>{const d=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(d<=3&&d>0)return<span style={{fontSize:11,color:"#B45309",fontWeight:600}}>Expira en {d}d</span>;return null;})()}
       </div>
 
