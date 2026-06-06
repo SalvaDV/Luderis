@@ -3012,8 +3012,11 @@ const FORMATO_POR_TIPO={
 };
 
 // ─── EVALUACIONES FORMALES ────────────────────────────────────────────────────
+// WIP: componente aún no montado en el árbol; se conserva para futura integración.
+// eslint-disable-next-line no-unused-vars
 function EvaluacionesFormales({post,session,esMio,esAyudante,inscripcion,inscripciones}){
   const pubId=post.id;
+  // eslint-disable-next-line no-unused-vars
   const miEmail=session.user.email;
   const [evaluaciones,setEvaluaciones]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -3089,7 +3092,9 @@ JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
   };
 
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
+  // eslint-disable-next-line no-unused-vars
   const tipoColor={diagnostico:C.info,checkpoint:C.warn,final:C.success};
+  // eslint-disable-next-line no-unused-vars
   const tipoIcon={diagnostico:"🔍",checkpoint:"📍",final:"🏁"};
 
   return(
