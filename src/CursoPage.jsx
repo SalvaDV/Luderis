@@ -663,7 +663,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
                       </div>
                     )}
                     <div style={{background:bgMsg,color:colorMsg,padding:imgSrc?"6px":undefined,borderRadius:esMiMsg?"13px 4px 13px 13px":"4px 13px 13px 13px",fontSize:13,lineHeight:1.5,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,.08)"}}>
-                      {imgSrc&&<button type="button" onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")} aria-label="Abrir imagen en tamaño completo" style={{padding:0,border:"none",background:"none",cursor:"pointer",display:"block"}}><img src={imgSrc} alt="Imagen del mensaje" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block"}}/></button>}
+                      {imgSrc&&<button type="button" onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")} aria-label="Abrir imagen en tamaño completo" style={{padding:0,border:"none",background:"none",cursor:"pointer",display:"block"}}><img src={imgSrc} alt="Imagen del mensaje" loading="lazy" decoding="async" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block"}}/></button>}
                       {(textoPosterImg||!isImg)&&(
                         <div style={{padding:"8px 12px",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
                           {sanitizeContactInfo(isImg?textoPosterImg:m.texto)}

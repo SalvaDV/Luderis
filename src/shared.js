@@ -276,7 +276,7 @@ export const Avatar=({letra,size=38,img})=>{
     <div style={{width:size,height:size,borderRadius:"50%",overflow:"hidden",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
       {/* onError solo gestiona el fallback de carga; no es una interacción de usuario */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-      <img src={img} alt={letra?`Avatar de ${letra}`:"Avatar"} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setImgOk(false)}/>
+      <img src={img} alt={letra?`Avatar de ${letra}`:"Avatar"} loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setImgOk(false)}/>
     </div>
   );
   return<div title={typeof letra==='string'&&letra.length>1?letra:undefined} style={{width:size,height:size,borderRadius:"50%",background:`linear-gradient(135deg,${from},${to})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:size*0.38,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.15)",letterSpacing:"-.5px"}}>{(letra||"?").toUpperCase()}</div>;

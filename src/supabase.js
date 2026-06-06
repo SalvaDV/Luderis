@@ -778,36 +778,68 @@ export const liberarPagoClase = async (claseId, token) => {
 
 // ── Verificaciones docente (KYC) ──────────────────────────────────────────────
 
+// Redimensiona y comprime una imagen en el cliente antes de subirla (ahorra ancho
+// de banda y storage, mejora LCP). Devuelve {body,type,ext}; ante cualquier fallo
+// usa el archivo original sin romper la subida.
+const resizeImage = (file, maxDim, quality = 0.85) => new Promise((resolve) => {
+  const fallback = () => {
+    const ext = (file.name?.split(".").pop() || "jpg").toLowerCase().replace("jpeg", "jpg");
+    resolve({ body: file, type: file.type || "image/jpeg", ext });
+  };
+  try {
+    if (!file?.type?.startsWith("image/") || file.type === "image/gif") { fallback(); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { fallback(); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((blob) => {
+        if (blob && blob.size < file.size) resolve({ body: blob, type: "image/webp", ext: "webp" });
+        else fallback();
+      }, "image/webp", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); fallback(); };
+    img.src = url;
+  } catch { fallback(); }
+});
+
 // Sube foto de avatar al bucket público "avatars" y devuelve la URL pública
 export const uploadAvatar = async (userId, file, token) => {
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace("jpeg","jpg");
+  const { body, type, ext } = await resizeImage(file, 512);
   const path = `${userId}/avatar_${Date.now()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
-      "Content-Type": file.type || "image/jpeg",
+      "Content-Type": type,
       "apikey": SUPABASE_KEY,
       "x-upsert": "true",
     },
-    body: file,
+    body,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
 };
 
 export const uploadBanner = async (userId, file, token) => {
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace("jpeg","jpg");
+  const { body, type, ext } = await resizeImage(file, 1280);
   const path = `${userId}/banner_${Date.now()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
-      "Content-Type": file.type || "image/jpeg",
+      "Content-Type": type,
       "apikey": SUPABASE_KEY,
       "x-upsert": "true",
     },
-    body: file,
+    body,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;

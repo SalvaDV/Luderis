@@ -154,7 +154,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
               return(
                 <div key={i} style={{display:"flex",flexDirection:"column",alignItems:esPropio?"flex-end":"flex-start",gap:2}}>
                   <div style={{background:esPropio?C.accent:C.accentDim||"#EEF4FF",color:esPropio?"#fff":C.text,padding:imgSrc?"6px 6px":undefined,borderRadius:13,maxWidth:"78%",overflow:"hidden",border:`1px solid ${esPropio?"transparent":C.border}`}}>
-                    {imgSrc&&<button type="button" onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")} aria-label="Abrir imagen en tamaño completo" style={{padding:0,border:"none",background:"none",cursor:"pointer",display:"block"}}><img src={imgSrc} alt="Imagen del mensaje" style={{maxWidth:"100%",maxHeight:220,borderRadius:9,display:"block"}}/></button>}
+                    {imgSrc&&<button type="button" onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")} aria-label="Abrir imagen en tamaño completo" style={{padding:0,border:"none",background:"none",cursor:"pointer",display:"block"}}><img src={imgSrc} alt="Imagen del mensaje" loading="lazy" decoding="async" style={{maxWidth:"100%",maxHeight:220,borderRadius:9,display:"block"}}/></button>}
                     {(textoPosterImg||!isImg)&&<div style={{padding:"8px 12px",fontSize:13,lineHeight:1.5}}>{sanitizeContactInfo(isImg?textoPosterImg:m.texto)}</div>}
                   </div>
                   {m.created_at&&<div style={{fontSize:10,color:C.muted,paddingInline:4}}>{fmtRel(m.created_at)}</div>}

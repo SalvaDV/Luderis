@@ -686,7 +686,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       {/* Avatar + nombre */}
                       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
                         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto */}
-                        {(()=>{const av=_avatarCache[p.autor_email]||localStorage.getItem("cl_avatar_"+p.autor_email)||null;return av&&av.startsWith("http")?<div style={{width:32,height:32,borderRadius:"50%",overflow:"hidden",flexShrink:0}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={32}/>;})()}
+                        {(()=>{const av=_avatarCache[p.autor_email]||localStorage.getItem("cl_avatar_"+p.autor_email)||null;return av&&av.startsWith("http")?<div style={{width:32,height:32,borderRadius:"50%",overflow:"hidden",flexShrink:0}}><img src={av} alt="" loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={32}/>;})()}
                         <div style={{minWidth:0,flex:1}}>
                           <div style={{fontSize:11,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
                           <div style={{fontSize:10,color:C.muted}}>{p.materia}</div>
