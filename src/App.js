@@ -171,13 +171,13 @@ function ResetPasswordScreen({ accessToken, onSuccess, onCancel }) {
           ) : (
             <>
               <div style={{marginBottom:0}}>
-                <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Nueva contraseña</label>
-                <input type="password" value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres"
+                <label htmlFor="reset-pass1" style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Nueva contraseña</label>
+                <input id="reset-pass1" aria-label="Nueva contraseña" type="password" value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres"
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={iS}/>
               </div>
               <div style={{marginBottom:8}}>
-                <label style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Confirmar contraseña</label>
-                <input type="password" value={pass2} onChange={e=>setPass2(e.target.value)} placeholder="Repetí tu contraseña"
+                <label htmlFor="reset-pass2" style={{display:"block",fontWeight:600,fontSize:13,color:"#0D1F3C",marginBottom:6}}>Confirmar contraseña</label>
+                <input id="reset-pass2" aria-label="Confirmar contraseña" type="password" value={pass2} onChange={e=>setPass2(e.target.value)} placeholder="Repetí tu contraseña"
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={iS}/>
               </div>
               {err && <div style={{background:"#FFF0F0",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",color:"#B91C1C",fontSize:13,marginBottom:14}}>⚠ {err}</div>}
