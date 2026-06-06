@@ -27,9 +27,10 @@ import usePushSubscription from "./hooks/usePushSubscription";
 import ChatBotWidget from "./components/ChatBotWidget";
 import FinalizarClaseModal from "./components/FinalizarClaseModal";
 import { MyPostCard, ContraofertaModal, OfertasRecibidasModal } from "./MyPostsPage";
-import ExplorePage from "./ExplorePage";
 
 // ─── LAZY IMPORTS (páginas y modales que no se necesitan en el primer render) ──
+// ExplorePage: prefetch para que esté listo al hacer login, pero fuera del bundle inicial
+const ExplorePage       = React.lazy(() => import(/* webpackPrefetch: true */ './ExplorePage'));
 const LandingPage       = React.lazy(() => import('./LandingPage'));
 const AuthScreen        = React.lazy(() => import('./AuthScreen'));
 const TerminosPage      = React.lazy(() => import('./TerminosPage'));
@@ -851,7 +852,7 @@ export default function App(){
             animate={{opacity:1,y:0}}
             exit={{opacity:0,y:-6}}
             transition={{duration:0.18,ease:"easeOut"}}>
-          {page==="explore"&&<ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/>}
+          {page==="explore"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/></React.Suspense>}
           {page==="agenda"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><AgendaPage session={session} onOpenCurso={setCursoPost} onGoExplore={()=>setPage("explore")}/></React.Suspense>}
           {page==="chats"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><ChatsPage key={chatsKey} session={session} onOpenChat={openChat}/></React.Suspense>}
           {page==="favoritos"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><FavoritosPage session={session} onOpenDetail={openDetail} onOpenChat={openChat} onOpenPerfil={openPerfil} onGoExplore={()=>setPage("explore")}/></React.Suspense>}
