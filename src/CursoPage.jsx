@@ -999,7 +999,7 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
               </div>
               {q.opciones.map((op,oi)=>(
                 <div key={oi} style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
-                  <button onClick={()=>updPregunta(qi,"correcta",oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={q.correcta===oi} style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
+                  <button onClick={()=>updPregunta(qi,"correcta",oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={q.correcta===oi} style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
                   <input value={op} onChange={e=>updOpcion(qi,oi,e.target.value)} aria-label={`Opción ${oi+1}`} placeholder={`Opción ${oi+1}${q.correcta===oi?" (correcta)":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
                 </div>
               ))}
@@ -1094,7 +1094,7 @@ function QuizEditor({item,session,onSaved,onClose}){
               </div>
               {q.opciones.map((op,oi)=>(
                 <div key={oi} style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
-                  <button onClick={()=>updPregunta(qi,"correcta",oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={q.correcta===oi} style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
+                  <button onClick={()=>updPregunta(qi,"correcta",oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={q.correcta===oi} style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
                   <input value={op} onChange={e=>updOpcion(qi,oi,e.target.value)} aria-label={`Opción ${oi+1}`} placeholder={`Opción ${oi+1}${q.correcta===oi?" ✓":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
                 </div>
               ))}
@@ -3742,7 +3742,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
               </div>
               {q.opciones.map((op,oi)=>{const esCorrecta=q.correctas.has(oi);return(
                 <div key={oi} style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
-                  <button onClick={()=>toggleCorrecta(qi,oi)} style={{width:18,height:18,borderRadius:4,border:`2px solid ${esCorrecta?C.success:C.border}`,background:esCorrecta?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <button onClick={()=>toggleCorrecta(qi,oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={esCorrecta} style={{width:24,height:24,borderRadius:4,border:`2px solid ${esCorrecta?C.success:C.border}`,background:esCorrecta?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                     {esCorrecta&&<span style={{color:"#fff",fontSize:10,fontWeight:700,lineHeight:1}}>✓</span>}
                   </button>
                   <input value={op} onChange={e=>setPregsMC(p=>p.map((x,i)=>i===qi?{...x,opciones:x.opciones.map((o,j)=>j===oi?e.target.value:o)}:x))} aria-label={`Opción ${oi+1}`} placeholder={`Opción ${oi+1}${esCorrecta?" ✓":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11,borderColor:esCorrecta?C.success+"66":C.border}}/>
