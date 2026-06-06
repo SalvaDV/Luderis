@@ -212,6 +212,7 @@ function ReseñasSeccion({post,session,inscripcion,esMio}){
 
       {/* Comentario libre */}
       <textarea value={texto} onChange={e=>setTexto(e.target.value.slice(0,500))}
+        aria-label="Comentario adicional"
         placeholder="Comentario adicional (opcional)..."
         style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",resize:"vertical",minHeight:70,boxSizing:"border-box",fontFamily:FONT,marginBottom:10}}/>
 
@@ -315,7 +316,7 @@ function AyudanteBuscador({post,session,ayudantesActuales,onUpdate}){
         </div>
       )}
       <div style={{display:"flex",gap:7}}>
-        <input className="curso-content-input" value={emailInput} onChange={e=>{setEmailInput(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&agregar()} placeholder="Email del co-docente" type="email" style={{flex:1,background:C.surface,border:`1px solid ${err?C.danger:C.border}`,borderRadius:9,padding:"7px 11px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
+        <input className="curso-content-input" value={emailInput} onChange={e=>{setEmailInput(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&agregar()} aria-label="Email del co-docente" placeholder="Email del co-docente" type="email" style={{flex:1,background:C.surface,border:`1px solid ${err?C.danger:C.border}`,borderRadius:9,padding:"7px 11px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
         <button onClick={agregar} disabled={saving||!emailInput.trim()} style={{background:"#C85CE022",border:"1px solid #C85CE044",borderRadius:9,color:C.purple,padding:"7px 14px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>{saving?"…":"+"}</button>
       </div>
       {err&&<div style={{fontSize:11,color:C.danger,marginTop:4}}>{err}</div>}
@@ -662,7 +663,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
                       </div>
                     )}
                     <div style={{background:bgMsg,color:colorMsg,padding:imgSrc?"6px":undefined,borderRadius:esMiMsg?"13px 4px 13px 13px":"4px 13px 13px 13px",fontSize:13,lineHeight:1.5,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,.08)"}}>
-                      {imgSrc&&<img src={imgSrc} alt="img" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")}/>}
+                      {imgSrc&&<button type="button" onClick={()=>window.open(imgSrc,"_blank","noopener,noreferrer")} aria-label="Abrir imagen en tamaño completo" style={{padding:0,border:"none",background:"none",cursor:"pointer",display:"block"}}><img src={imgSrc} alt="Imagen del mensaje" style={{maxWidth:"100%",maxHeight:200,borderRadius:8,display:"block"}}/></button>}
                       {(textoPosterImg||!isImg)&&(
                         <div style={{padding:"8px 12px",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
                           {sanitizeContactInfo(isImg?textoPosterImg:m.texto)}
@@ -690,7 +691,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
         <div ref={bottomRef}/>
         {/* ── Toast de mensaje entrante ── */}
         {chatNotif&&(
-          <div onClick={()=>{scrollBottom();setChatNotif(null);}} style={{
+          <div role="button" tabIndex={0} aria-label="Ir al mensaje nuevo" onClick={()=>{scrollBottom();setChatNotif(null);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();scrollBottom();setChatNotif(null);}}} style={{
             position:"sticky",bottom:8,alignSelf:"flex-end",
             background:C.surface,border:`1px solid ${C.border}`,
             borderLeft:`3px solid ${
@@ -714,7 +715,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
         )}
         {/* ── Pill nuevos mensajes (cuando usuario scrolleó arriba) ── */}
         {newMsgCount>0&&(
-          <div onClick={()=>{scrollBottom();setNewMsgCount(0);}} style={{
+          <div role="button" tabIndex={0} aria-label="Ver mensajes nuevos" onClick={()=>{scrollBottom();setNewMsgCount(0);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();scrollBottom();setNewMsgCount(0);}}} style={{
             position:"sticky",bottom:8,alignSelf:"center",
             background:C.accent,color:"#fff",
             borderRadius:20,padding:"7px 16px",
@@ -750,7 +751,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
 
       {/* Input */}
       <div style={{padding:"10px 13px",borderTop:`1px solid ${C.border}`,display:"flex",gap:7,alignItems:"flex-end",background:C.surface}}>
-        <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImageSelect}/>
+        <input ref={fileInputRef} type="file" accept="image/*" aria-label="Adjuntar imagen" style={{display:"none"}} onChange={handleImageSelect}/>
         <button onClick={()=>fileInputRef.current?.click()}
           style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 10px",cursor:"pointer",color:C.muted,fontSize:15,flexShrink:0,lineHeight:1,transition:"all .15s"}}
           title="Enviar imagen"
@@ -760,6 +761,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
         </button>
         <textarea
           value={input}
+          aria-label="Escribí un mensaje"
           onChange={e=>{setInput(e.target.value);emitirEscribiendo();}}
           onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
           placeholder={esChatParticular?"Escribile al docente…":"Escribí al grupo…"}
@@ -812,12 +814,12 @@ function EditCalModal({post,session,onClose,onSaved}){
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{fontSize:12,color:C.muted}}>Días y horas de clase</span><button onClick={add} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"3px 9px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>+ Agregar</button></div>
     {clases.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:C.muted,fontSize:13}}>Sin horarios. Agregá al menos uno.</div>}
     {clases.map((cl,i)=>(<div key={i} style={{display:"flex",gap:5,alignItems:"center",marginBottom:6,background:C.card,borderRadius:9,padding:"7px 9px",border:`1px solid ${cl.hora_fin<=cl.hora_inicio?"#E05C5C44":C.border}`}}>
-      <select value={cl.dia} onChange={e=>upd(i,"dia",e.target.value)} style={{...iS,flex:2,cursor:"pointer"}}>
+      <select value={cl.dia} onChange={e=>upd(i,"dia",e.target.value)} aria-label="Día" style={{...iS,flex:2,cursor:"pointer"}}>
         {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(d=><option key={d}>{d}</option>)}
       </select>
-      <input type="time" value={cl.hora_inicio} onChange={e=>{const v=e.target.value;upd(i,"hora_inicio",v);if(cl.hora_fin&&cl.hora_fin<=v){const[h,m]=v.split(":").map(Number);const fin=`${String(h+(m>=30?1:0)).padStart(2,"0")}:${m>=30?"00":String(m+30).padStart(2,"0")}`;upd(i,"hora_fin",fin);}}} style={{...iS,flex:2,colorScheme:localStorage.getItem("cl_theme")||"light"}}/>
+      <input type="time" aria-label="Hora de inicio" value={cl.hora_inicio} onChange={e=>{const v=e.target.value;upd(i,"hora_inicio",v);if(cl.hora_fin&&cl.hora_fin<=v){const[h,m]=v.split(":").map(Number);const fin=`${String(h+(m>=30?1:0)).padStart(2,"0")}:${m>=30?"00":String(m+30).padStart(2,"0")}`;upd(i,"hora_fin",fin);}}} style={{...iS,flex:2,colorScheme:localStorage.getItem("cl_theme")||"light"}}/>
       <span style={{color:C.muted,fontSize:11}}>→</span>
-      <input type="time" value={cl.hora_fin} onChange={e=>{const v=e.target.value;if(v<=cl.hora_inicio)return;upd(i,"hora_fin",v);}} style={{...iS,flex:2,colorScheme:localStorage.getItem("cl_theme")||"light",borderColor:cl.hora_fin<=cl.hora_inicio?C.danger:C.border,color:cl.hora_fin<=cl.hora_inicio?C.danger:C.text}}/>
+      <input type="time" aria-label="Hora de fin" value={cl.hora_fin} onChange={e=>{const v=e.target.value;if(v<=cl.hora_inicio)return;upd(i,"hora_fin",v);}} style={{...iS,flex:2,colorScheme:localStorage.getItem("cl_theme")||"light",borderColor:cl.hora_fin<=cl.hora_inicio?C.danger:C.border,color:cl.hora_fin<=cl.hora_inicio?C.danger:C.text}}/>
       <button onClick={()=>rem(i)} style={{background:"none",border:"none",color:C.danger,fontSize:15,cursor:"pointer",flexShrink:0}}>×</button>
     </div>))}
     <Btn onClick={save} disabled={saving} style={{width:"100%",padding:"10px",marginTop:10}}>{saving?"Guardando...":"Guardar horarios"}</Btn>
@@ -940,7 +942,7 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
       </div>
       <div style={{marginBottom:8}}>
         <div style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.8,marginBottom:4}}>TÍTULO DEL QUIZ <span style={{color:C.danger}}>*</span></div>
-        <input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Ej: Parcial 1 — Unidad 2" style={{...iS,marginBottom:0,border:`1px solid ${titulo.trim()?C.border:C.danger+"66"}`}}/>
+        <input value={titulo} onChange={e=>setTitulo(e.target.value)} aria-label="Título del quiz" placeholder="Ej: Parcial 1 — Unidad 2" style={{...iS,marginBottom:0,border:`1px solid ${titulo.trim()?C.border:C.danger+"66"}`}}/>
         {!titulo.trim()&&<div style={{fontSize:10,color:C.danger,marginTop:3}}>Requerido para habilitar Guardar</div>}
       </div>
       {/* Tipo */}
@@ -953,17 +955,17 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,letterSpacing:.8}}>INICIO (opcional)</div>
-          <input type="datetime-local" value={fechaInicio} onChange={e=>setFechaInicio(e.target.value)} min={ahora} style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
+          <input type="datetime-local" value={fechaInicio} onChange={e=>setFechaInicio(e.target.value)} min={ahora} aria-label="Fecha de inicio" style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
         </div>
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,letterSpacing:.8}}>CIERRE (opcional)</div>
-          <input type="datetime-local" value={fechaCierre} onChange={e=>setFechaCierre(e.target.value)} min={fechaInicio||ahora} style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
+          <input type="datetime-local" value={fechaCierre} onChange={e=>setFechaCierre(e.target.value)} min={fechaInicio||ahora} aria-label="Fecha de cierre" style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
         </div>
       </div>
       {tipo==="entregable"?(
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,letterSpacing:.8}}>CONSIGNA</div>
-          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} placeholder="Describí qué tiene que hacer el alumno..." style={{...iS,minHeight:80,resize:"vertical"}}/>
+          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} aria-label="Consigna" placeholder="Describí qué tiene que hacer el alumno..." style={{...iS,minHeight:80,resize:"vertical"}}/>
         </div>
       ):(
         <div>
@@ -971,11 +973,11 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
           <div style={{background:C.card,border:"1px solid #C85CE033",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
             <div style={{fontSize:10,fontWeight:700,color:C.purple,letterSpacing:.8,marginBottom:8}}>✦ GENERAR CON IA</div>
             <div style={{display:"flex",gap:7,marginBottom:7}}>
-              <input value={temaIA} onChange={e=>setTemaIA(e.target.value)} placeholder="Tema del quiz (ej: Sistema solar, Revolución francesa...)" style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
+              <input value={temaIA} onChange={e=>setTemaIA(e.target.value)} aria-label="Tema del quiz" placeholder="Tema del quiz (ej: Sistema solar, Revolución francesa...)" style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
             </div>
             <div style={{display:"flex",gap:7,alignItems:"center"}}>
               <span style={{fontSize:11,color:C.muted,flexShrink:0}}>Cantidad:</span>
-              <input type="number" min="1" max="20" value={cantIA} onChange={e=>setCantIA(Math.max(1,Math.min(20,parseInt(e.target.value)||5)))} style={{width:52,background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 8px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,textAlign:"center"}}/>
+              <input type="number" min="1" max="20" value={cantIA} onChange={e=>setCantIA(Math.max(1,Math.min(20,parseInt(e.target.value)||5)))} aria-label="Cantidad de preguntas" style={{width:52,background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 8px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,textAlign:"center"}}/>
               <span style={{fontSize:11,color:C.muted}}>(máx 20)</span>
               <button onClick={generarConIA} disabled={loadingIA||!temaIA.trim()}
                 style={{marginLeft:"auto",background:"#C85CE022",border:"1px solid #C85CE044",borderRadius:8,color:C.purple,padding:"5px 14px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,opacity:!temaIA.trim()?0.5:1}}>
@@ -992,13 +994,13 @@ function QuizCreator({publicacionId,session,onSaved,onCancel}){
           {preguntas.map((q,qi)=>(
             <div key={qi} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:8}}>
               <div style={{display:"flex",gap:7,marginBottom:8}}>
-                <input value={q.texto} onChange={e=>updPregunta(qi,"texto",e.target.value)} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
+                <input value={q.texto} onChange={e=>updPregunta(qi,"texto",e.target.value)} aria-label={`Pregunta ${qi+1}`} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
                 {preguntas.length>1&&<button onClick={()=>remPregunta(qi)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}
               </div>
               {q.opciones.map((op,oi)=>(
                 <div key={oi} style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
-                  <button onClick={()=>updPregunta(qi,"correcta",oi)} style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
-                  <input value={op} onChange={e=>updOpcion(qi,oi,e.target.value)} placeholder={`Opción ${oi+1}${q.correcta===oi?" (correcta)":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
+                  <button onClick={()=>updPregunta(qi,"correcta",oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={q.correcta===oi} style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
+                  <input value={op} onChange={e=>updOpcion(qi,oi,e.target.value)} aria-label={`Opción ${oi+1}`} placeholder={`Opción ${oi+1}${q.correcta===oi?" (correcta)":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
                 </div>
               ))}
               <div style={{fontSize:10,color:C.muted,marginTop:3}}>● = respuesta correcta</div>
@@ -1057,7 +1059,7 @@ function QuizEditor({item,session,onSaved,onClose}){
         <span style={{fontWeight:700,color:C.accent,fontSize:14}}>✎ Editar quiz</span>
         <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18}}>×</button>
       </div>
-      <input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Título del quiz" style={iS}/>
+      <input value={titulo} onChange={e=>setTitulo(e.target.value)} aria-label="Título del quiz" placeholder="Título del quiz" style={iS}/>
       <div style={{display:"flex",gap:7,marginBottom:12}}>
         {[["multiple","📋 Multiple choice"],["entregable","📤 Entregable"],["autoevaluacion","🪞 Autoevaluación"],["peer","👥 Revisión entre pares"]].map(([v,l])=>(
           <button key={v} onClick={()=>setTipo(v)} style={{flex:1,padding:"7px",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:FONT,background:tipo===v?C.accent:C.card,color:tipo===v?"#fff":C.muted,border:`1px solid ${tipo===v?"transparent":C.border}`}}>{l}</button>
@@ -1066,17 +1068,17 @@ function QuizEditor({item,session,onSaved,onClose}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,letterSpacing:.8}}>INICIO (opcional)</div>
-          <input type="datetime-local" value={fechaInicio} onChange={e=>setFechaInicio(e.target.value)} style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
+          <input type="datetime-local" value={fechaInicio} onChange={e=>setFechaInicio(e.target.value)} aria-label="Fecha de inicio" style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
         </div>
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,letterSpacing:.8}}>CIERRE (opcional)</div>
-          <input type="datetime-local" value={fechaCierre} onChange={e=>setFechaCierre(e.target.value)} min={fechaInicio||ahora} style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
+          <input type="datetime-local" value={fechaCierre} onChange={e=>setFechaCierre(e.target.value)} min={fechaInicio||ahora} aria-label="Fecha de cierre" style={{...iS,marginBottom:0,colorScheme:localStorage.getItem("cl_theme")||"light",fontSize:11}}/>
         </div>
       </div>
       {tipo==="entregable"?(
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4}}>CONSIGNA</div>
-          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} placeholder="Consigna..." style={{...iS,minHeight:80,resize:"vertical"}}/>
+          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} aria-label="Consigna" placeholder="Consigna..." style={{...iS,minHeight:80,resize:"vertical"}}/>
         </div>
       ):(
         <div>
@@ -1087,13 +1089,13 @@ function QuizEditor({item,session,onSaved,onClose}){
           {preguntas.map((q,qi)=>(
             <div key={qi} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:8}}>
               <div style={{display:"flex",gap:7,marginBottom:8}}>
-                <input value={q.texto} onChange={e=>updPregunta(qi,"texto",e.target.value)} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
+                <input value={q.texto} onChange={e=>updPregunta(qi,"texto",e.target.value)} aria-label={`Pregunta ${qi+1}`} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
                 {preguntas.length>1&&<button onClick={()=>remPregunta(qi)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}
               </div>
               {q.opciones.map((op,oi)=>(
                 <div key={oi} style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
-                  <button onClick={()=>updPregunta(qi,"correcta",oi)} style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
-                  <input value={op} onChange={e=>updOpcion(qi,oi,e.target.value)} placeholder={`Opción ${oi+1}${q.correcta===oi?" ✓":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
+                  <button onClick={()=>updPregunta(qi,"correcta",oi)} aria-label={`Marcar opción ${oi+1} como correcta`} aria-pressed={q.correcta===oi} style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${q.correcta===oi?C.success:C.border}`,background:q.correcta===oi?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0}}/>
+                  <input value={op} onChange={e=>updOpcion(qi,oi,e.target.value)} aria-label={`Opción ${oi+1}`} placeholder={`Opción ${oi+1}${q.correcta===oi?" ✓":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
                 </div>
               ))}
             </div>
@@ -1212,6 +1214,7 @@ function TablaNotas({contenido,inscripciones,session,publicacionId}){
                     </td>
                   );
                 })}
+                {/* eslint-disable-next-line jsx-a11y/control-has-associated-label -- celda vacía de relleno */}
                 <td/>
               </tr>
             </tbody>
@@ -1243,7 +1246,7 @@ function NotasPad({publicacionId,session}){
         <span style={{fontSize:12,fontWeight:700,color:C.text}}>📓 Mis apuntes</span>
         <span style={{fontSize:10,color:saved?C.success:C.muted}}>{saved?"✓ Guardado":"Guardando..."}</span>
       </div>
-      <textarea value={texto} onChange={e=>onChange(e.target.value)}
+      <textarea value={texto} onChange={e=>onChange(e.target.value)} aria-label="Mis apuntes"
         placeholder="Escribí tus apuntes de esta clase... Se guardan automáticamente en tu dispositivo."
         style={{width:"100%",minHeight:120,background:C.surface,border:`1px solid ${C.border}`,
           borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",
@@ -1348,7 +1351,7 @@ function ProgresoCurso({post,session}){
         </div>
         {/* Buscar + ordenar */}
         <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar alumno…"
+          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} aria-label="Buscar alumno" placeholder="Buscar alumno…"
             style={{flex:1,minWidth:120,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 11px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none"}}/>
           <select value={ordenar} onChange={e=>setOrdenar(e.target.value)}
             style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none",cursor:"pointer"}}>
@@ -1473,7 +1476,7 @@ function FlashcardsDeck({cards,onDelete,titulo,session,contenidoId}){
         .fc-front{background:var(--fc-surface);border:2px solid var(--fc-border);}
         .fc-back{background:var(--fc-accent-dim);border:2px solid var(--fc-accent);transform:rotateY(180deg);}
       `}</style>
-      <div style={{"--fc-surface":C.surface,"--fc-border":C.border,"--fc-accent-dim":C.accentDim,"--fc-accent":C.accent}} className="fc-scene" onClick={()=>setFlipped(f=>!f)}>
+      <div role="button" tabIndex={0} aria-label="Dar vuelta la tarjeta" style={{"--fc-surface":C.surface,"--fc-border":C.border,"--fc-accent-dim":C.accentDim,"--fc-accent":C.accent}} className="fc-scene" onClick={()=>setFlipped(f=>!f)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setFlipped(f=>!f);}}}>
         <div className={`fc-card${flipped?" flipped":""}`}>
           <div className="fc-face fc-front">
             <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.8,marginBottom:10,textTransform:"uppercase"}}>Pregunta · tap para voltear</div>
@@ -1562,7 +1565,7 @@ function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,p
         {/* Nombre del mazo */}
         <div>
           <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:5}}>NOMBRE DEL MAZO</div>
-          <input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Ej: Derivadas, Revolución Francesa…"
+          <input value={titulo} onChange={e=>setTitulo(e.target.value)} aria-label="Nombre del mazo" placeholder="Ej: Derivadas, Revolución Francesa…"
             style={{...iS,width:"100%"}}/>
         </div>
 
@@ -1570,7 +1573,7 @@ function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,p
         <div style={{background:"#7B3FBE0A",border:"1px solid #7B3FBE25",borderRadius:12,padding:"12px 14px"}}>
           <div style={{fontWeight:700,color:"#7B3FBE",fontSize:12,marginBottom:8}}>✨ Generar con IA (podés editar después)</div>
           <div style={{display:"flex",gap:7}}>
-            <input value={tema} onChange={e=>setTema(e.target.value)} placeholder={`Tema (ej: "fotosíntesis")`}
+            <input value={tema} onChange={e=>setTema(e.target.value)} aria-label="Tema para generar con IA" placeholder={`Tema (ej: "fotosíntesis")`}
               style={{...iS,flex:1}}
               onKeyDown={e=>e.key==="Enter"&&!generando&&generarConIA()}/>
             <button onClick={generarConIA} disabled={generando}
@@ -1588,9 +1591,9 @@ function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,p
               <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",display:"flex",gap:8,alignItems:"flex-start"}}>
                 <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
                   <input value={c.pregunta} onChange={e=>updateCard(i,"pregunta",e.target.value)}
-                    placeholder="Pregunta" style={{...iS,width:"100%",borderColor:c.pregunta.trim()?"":C.danger+"66"}}/>
+                    aria-label="Pregunta de la tarjeta" placeholder="Pregunta" style={{...iS,width:"100%",borderColor:c.pregunta.trim()?"":C.danger+"66"}}/>
                   <input value={c.respuesta} onChange={e=>updateCard(i,"respuesta",e.target.value)}
-                    placeholder="Respuesta" style={{...iS,width:"100%",borderColor:c.respuesta.trim()?"":C.danger+"66"}}/>
+                    aria-label="Respuesta de la tarjeta" placeholder="Respuesta" style={{...iS,width:"100%",borderColor:c.respuesta.trim()?"":C.danger+"66"}}/>
                 </div>
                 <button onClick={()=>removeCard(i)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,flexShrink:0,paddingTop:2}} title="Eliminar">×</button>
               </div>
@@ -1933,6 +1936,7 @@ function NotasPrivadas({storageKey,session,post}){
       </div>
       <textarea
         value={nota}
+        aria-label="Notas privadas del curso"
         onChange={e=>onChange(e.target.value)}
         placeholder={`Tomá notas sobre "${post.titulo}"…\n\nSolo vos podés verlas. Guardado automático.`}
         style={{width:"100%",minHeight:380,background:C.bg,border:"none",padding:"16px 18px",color:C.text,fontSize:13,fontFamily:FONT,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.7}}
@@ -2040,6 +2044,7 @@ function ForoCurso({post,session,esMio,esAyudante}){
           ))}
         </div>
         <textarea value={texto} onChange={e=>setTexto(e.target.value.slice(0,500))}
+          aria-label={tipoNuevo==="qa"?"Tu pregunta":"Tu comentario o aporte"}
           placeholder={tipoNuevo==="qa"?"Escribí tu pregunta al docente o al grupo…":"Escribí tu comentario o aporte…"}
           style={{...iS,minHeight:68,resize:"vertical",marginBottom:8}}/>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2141,6 +2146,7 @@ function ForoCurso({post,session,esMio,esAyudante}){
                   )}
                   <div style={{display:"flex",gap:7,alignItems:"flex-end",width:"100%"}}>
                     <textarea value={respuestaTexto[p.id]||""} onChange={e=>setRespuestaTexto(prev=>({...prev,[p.id]:e.target.value.slice(0,300)}))}
+                      aria-label="Escribí una respuesta"
                       placeholder="Escribí una respuesta…"
                       style={{...iS,minHeight:50,resize:"none",flex:1}}/>
                     <button onClick={()=>enviarRespuesta(p.id)} disabled={!(respuestaTexto[p.id]||"").trim()}
@@ -2496,8 +2502,9 @@ function SkillManager({post,session,onSkillsChange}){
             <div key={s.id||i} style={{display:"flex",alignItems:"center",gap:8,background:C.surface,borderRadius:9,padding:"7px 11px"}}>
               <span style={{fontSize:14,flexShrink:0}} title={tipoInfo.label}>{tipoInfo.icon}</span>
               {editIdx===i
-                ?<input value={s.nombre} onChange={e=>{const u=skills.map((x,xi)=>xi===i?{...x,nombre:e.target.value}:x);setSkills(u);}} onBlur={async()=>{setEditIdx(null);saveSkills(pubId,skills);if(s.id)await sb.updateSkill(s.id,{nombre:skills[i].nombre},session.access_token).catch(()=>{});}} autoFocus style={{flex:1,background:"transparent",border:"none",color:C.text,fontSize:13,outline:"none",fontFamily:FONT}}/>
-                :<span onClick={()=>setEditIdx(i)} style={{flex:1,color:C.text,fontSize:13,cursor:"text"}}>{s.nombre}</span>
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- foco al entrar en modo edición de la habilidad
+                ?<input value={s.nombre} aria-label="Nombre de la habilidad" onChange={e=>{const u=skills.map((x,xi)=>xi===i?{...x,nombre:e.target.value}:x);setSkills(u);}} onBlur={async()=>{setEditIdx(null);saveSkills(pubId,skills);if(s.id)await sb.updateSkill(s.id,{nombre:skills[i].nombre},session.access_token).catch(()=>{});}} autoFocus style={{flex:1,background:"transparent",border:"none",color:C.text,fontSize:13,outline:"none",fontFamily:FONT}}/>
+                :<span role="button" tabIndex={0} aria-label={`Editar habilidad: ${s.nombre}`} onClick={()=>setEditIdx(i)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setEditIdx(i);}}} style={{flex:1,color:C.text,fontSize:13,cursor:"text"}}>{s.nombre}</span>
               }
               <span style={{fontSize:10,color:C.muted,background:C.card,borderRadius:20,padding:"1px 7px",border:`1px solid ${C.border}`,flexShrink:0}}>{tipoInfo.label}</span>
               <button onClick={()=>eliminar(i)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14,padding:0}}>×</button>
@@ -2508,6 +2515,7 @@ function SkillManager({post,session,onSkillsChange}){
       {skills.length<6&&(
         <div style={{display:"flex",gap:7}}>
           <input value={nueva} onChange={e=>setNueva(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregar()}
+            aria-label="Nueva habilidad"
             placeholder="Nueva habilidad (ej: derivadas, acordes...)"
             style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 11px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
           <button onClick={agregar} disabled={!nueva.trim()||clasificandoIA}
@@ -2913,7 +2921,7 @@ function ValidacionWizard({post,session,onValidado}){
                 {bancoActual.map((item,i)=>{
                   const sel=selecActual.has(item.id);
                   return(
-                    <div key={item.id||i} onClick={()=>{
+                    <div key={item.id||i} role="button" tabIndex={0} aria-pressed={sel} aria-label={`Seleccionar pregunta`} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.currentTarget.click();}}} onClick={()=>{
                       setSelecActual(prev=>{
                         const n=new Set(prev);
                         if(n.has(item.id)){n.delete(item.id);}
@@ -3036,7 +3044,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
   return(
     <div style={{background:C.card,border:`1px solid ${tipoColor[ev.tipo]||C.border}22`,borderRadius:12,overflow:"hidden"}}>
       {/* Header */}
-      <div onClick={()=>setExpanded(v=>!v)} style={{padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+      <div role="button" tabIndex={0} aria-expanded={expanded} aria-label="Mostrar u ocultar evaluación" onClick={()=>setExpanded(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setExpanded(v=>!v);}}} style={{padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
         <span style={{fontSize:18}}>{tipoIcon[ev.tipo]}</span>
         <div style={{flex:1}}>
           <div style={{fontWeight:700,color:C.text,fontSize:13}}>{ev.titulo}</div>
@@ -3076,6 +3084,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
                   {contenido.consigna&&<p style={{color:C.text,fontSize:13,marginBottom:12,lineHeight:1.6}}>{contenido.consigna}</p>}
                   {contenido.criterios_evaluacion&&<div style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:6}}>CRITERIOS</div>{contenido.criterios_evaluacion.map((c,i)=><div key={i} style={{fontSize:12,color:C.muted,marginBottom:3}}>· {c}</div>)}</div>}
                   <textarea value={respuesta.texto||""} onChange={e=>setRespuesta(r=>({...r,texto:e.target.value}))}
+                    aria-label="Tu respuesta"
                     placeholder="Tu respuesta..."
                     style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 12px",color:C.text,fontSize:12,minHeight:80,resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8}}/>
                 </div>
@@ -3084,6 +3093,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
                 <div key={pi} style={{marginBottom:12}}>
                   <div style={{fontSize:13,color:C.text,marginBottom:6}}>{p.texto}</div>
                   <textarea value={respuesta[pi]||""} onChange={e=>setRespuesta(r=>({...r,[pi]:e.target.value}))}
+                    aria-label="Tu reflexión"
                     placeholder="Tu reflexión..."
                     style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 11px",color:C.text,fontSize:12,minHeight:60,resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:FONT}}/>
                 </div>
@@ -3148,7 +3158,7 @@ function EntregaEvalRow({entrega,evaluacion,session,onUpdate}){
 
   return(
     <div style={{background:C.surface,borderRadius:9,padding:"10px 12px",marginBottom:8}}>
-      <div onClick={()=>setExpanded(v=>!v)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+      <div role="button" tabIndex={0} aria-expanded={expanded} aria-label="Mostrar u ocultar entrega" onClick={()=>setExpanded(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setExpanded(v=>!v);}}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
         <div>
           <div style={{fontSize:12,fontWeight:600,color:C.text}}>{entrega.alumno_safeDisplayName(null,email)}</div>
           <div style={{fontSize:10,color:C.muted}}>{fmtRel(entrega.created_at)}</div>
@@ -3171,9 +3181,9 @@ function EntregaEvalRow({entrega,evaluacion,session,onUpdate}){
           ))}
           {typeof resp.texto==="string"&&<div style={{background:C.card,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.text,marginBottom:10,lineHeight:1.5}}>{resp.texto}</div>}
           <div style={{display:"flex",gap:7,alignItems:"center",marginTop:8}}>
-            <input type="number" value={nota} onChange={e=>setNota(e.target.value)} placeholder="Nota /100" min="0" max="100"
+            <input type="number" value={nota} onChange={e=>setNota(e.target.value)} aria-label="Nota sobre 100" placeholder="Nota /100" min="0" max="100"
               style={{width:90,background:C.card,border:`1px solid ${C.border}`,borderRadius:7,padding:"5px 9px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
-            <input value={feedback} onChange={e=>setFeedback(e.target.value)} placeholder="Feedback para el alumno..."
+            <input value={feedback} onChange={e=>setFeedback(e.target.value)} aria-label="Feedback para el alumno" placeholder="Feedback para el alumno..."
               style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderRadius:7,padding:"5px 9px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
             <button onClick={guardar} disabled={saving}
               style={{background:C.success,border:"none",borderRadius:7,color:"#fff",padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:FONT}}>
@@ -3209,8 +3219,9 @@ function ExamenFinalModal({post,session,onClose}){
   if(loading)return null;
 
   if(yaCompletado)return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:16}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"32px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
+    <div role="dialog" aria-modal="true" aria-label="Examen final" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:16}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"32px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
         <div style={{fontSize:40,marginBottom:12}}>✅</div>
         <div style={{fontWeight:700,color:C.text,fontSize:17,marginBottom:8}}>Examen final ya completado</div>
         <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Ya rendiste el examen final de este curso. Podés ver tu resultado en la pestaña Aprender.</div>
@@ -3321,6 +3332,7 @@ function DiagnosticoModal({post,session,onClose,evaluacion:evalOverride,titulo:t
                     </div>
                   )}
                   <textarea value={respuestas[step]?.texto||""} onChange={e=>setRespuestas(r=>({...r,[step]:{...r[step],texto:e.target.value}}))}
+                    aria-label="Tu respuesta"
                     placeholder="Describí lo que sabés o podés hacer actualmente..."
                     style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 12px",color:C.text,fontSize:12,minHeight:80,resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:4}}/>
                   <div style={{fontSize:11,color:C.muted,marginBottom:16}}>No hay respuesta correcta — es solo para registrar tu punto de partida.</div>
@@ -3489,10 +3501,10 @@ function InlineContenidoEditor({item,session,onSaved,onCancel}){
   const iS={width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:6};
   return(
     <div style={{marginTop:8,padding:"10px",background:C.surface,borderRadius:9,border:`1px solid ${C.accent}44`,animation:"fadeIn .15s ease"}}>
-      <input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Título" style={iS}/>
+      <input value={titulo} onChange={e=>setTitulo(e.target.value)} aria-label="Título del contenido" placeholder="Título" style={iS}/>
       {esTexto
-        ?<textarea value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Contenido…" style={{...iS,minHeight:55,resize:"vertical"}}/>
-        :<input value={url} onChange={e=>setUrl(e.target.value)} placeholder="URL" style={iS}/>
+        ?<textarea value={texto} onChange={e=>setTexto(e.target.value)} aria-label="Contenido" placeholder="Contenido…" style={{...iS,minHeight:55,resize:"vertical"}}/>
+        :<input value={url} onChange={e=>setUrl(e.target.value)} aria-label="URL" placeholder="URL" style={iS}/>
       }
       <div style={{display:"flex",gap:7}}>
         <button onClick={save} disabled={saving||!titulo.trim()} style={{background:C.accent,border:"none",borderRadius:8,color:"#fff",padding:"5px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,opacity:!titulo.trim()?0.5:1}}>{saving?"…":"Guardar"}</button>
@@ -3669,7 +3681,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           return(
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {tipos.map(tp=>(
-                <div key={tp.id} onClick={()=>setEvalTipo(tp.id)}
+                <div key={tp.id} role="button" tabIndex={0} aria-pressed={evalTipo===tp.id} aria-label={`Tipo: ${tp.label||tp.id}`} onClick={()=>setEvalTipo(tp.id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setEvalTipo(tp.id);}}}
                   style={{background:evalTipo===tp.id?`${tp.color}12`:C.bg,border:`1.5px solid ${evalTipo===tp.id?tp.color:C.border}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",transition:"all .12s"}}>
                   <span style={{fontSize:16}}>{tp.icon}</span>
                   <div style={{flex:1}}>
@@ -3705,14 +3717,14 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           </div>
         </div>
       )}
-      <input value={evalTitulo} onChange={e=>setEvalTitulo(e.target.value)} placeholder="Título de la evaluación" style={iS}/>
+      <input value={evalTitulo} onChange={e=>setEvalTitulo(e.target.value)} aria-label="Título de la evaluación" placeholder="Título de la evaluación" style={iS}/>
       <div style={{background:C.card,border:"1px solid #C85CE033",borderRadius:10,padding:"10px 12px",marginBottom:12}}>
         <div style={{fontSize:10,fontWeight:700,color:C.purple,letterSpacing:.8,marginBottom:6}}>✦ GENERAR CON IA</div>
         <div style={{display:"flex",gap:7,marginBottom:7}}>
-          <input value={temaIA} onChange={e=>setTemaIA(e.target.value)} placeholder="Tema a evaluar..." style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
+          <input value={temaIA} onChange={e=>setTemaIA(e.target.value)} aria-label="Tema a evaluar" placeholder="Tema a evaluar..." style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>
         </div>
         <div style={{display:"flex",gap:7,alignItems:"center"}}>
-          {tienePreguntas&&<><span style={{fontSize:11,color:C.muted,flexShrink:0}}>Cantidad:</span><input type="number" min="1" max="20" value={cantIA} onChange={e=>setCantIA(Math.max(1,Math.min(20,parseInt(e.target.value)||4)))} style={{width:48,background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,textAlign:"center"}}/></>}
+          {tienePreguntas&&<><span style={{fontSize:11,color:C.muted,flexShrink:0}}>Cantidad:</span><input type="number" min="1" max="20" value={cantIA} onChange={e=>setCantIA(Math.max(1,Math.min(20,parseInt(e.target.value)||4)))} aria-label="Cantidad de preguntas" style={{width:48,background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 7px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,textAlign:"center"}}/></>}
           <button onClick={generarConIA} disabled={generandoIA||!temaIA.trim()} style={{marginLeft:"auto",background:"#C85CE022",border:"1px solid #C85CE044",borderRadius:8,color:C.purple,padding:"5px 14px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,opacity:!temaIA.trim()?0.5:1}}>{generandoIA?"Generando…":"✦ Generar"}</button>
         </div>
       </div>
@@ -3725,7 +3737,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           {pregsMC.map((q,qi)=>(
             <div key={qi} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:8}}>
               <div style={{display:"flex",gap:7,marginBottom:8}}>
-                <input value={q.texto} onChange={e=>setPregsMC(p=>p.map((x,i)=>i===qi?{...x,texto:e.target.value}:x))} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
+                <input value={q.texto} onChange={e=>setPregsMC(p=>p.map((x,i)=>i===qi?{...x,texto:e.target.value}:x))} aria-label={`Pregunta ${qi+1}`} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
                 {pregsMC.length>1&&<button onClick={()=>setPregsMC(p=>p.filter((_,i)=>i!==qi))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}
               </div>
               {q.opciones.map((op,oi)=>{const esCorrecta=q.correctas.has(oi);return(
@@ -3733,7 +3745,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
                   <button onClick={()=>toggleCorrecta(qi,oi)} style={{width:18,height:18,borderRadius:4,border:`2px solid ${esCorrecta?C.success:C.border}`,background:esCorrecta?C.success:"transparent",cursor:"pointer",flexShrink:0,padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                     {esCorrecta&&<span style={{color:"#fff",fontSize:10,fontWeight:700,lineHeight:1}}>✓</span>}
                   </button>
-                  <input value={op} onChange={e=>setPregsMC(p=>p.map((x,i)=>i===qi?{...x,opciones:x.opciones.map((o,j)=>j===oi?e.target.value:o)}:x))} placeholder={`Opción ${oi+1}${esCorrecta?" ✓":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11,borderColor:esCorrecta?C.success+"66":C.border}}/>
+                  <input value={op} onChange={e=>setPregsMC(p=>p.map((x,i)=>i===qi?{...x,opciones:x.opciones.map((o,j)=>j===oi?e.target.value:o)}:x))} aria-label={`Opción ${oi+1}`} placeholder={`Opción ${oi+1}${esCorrecta?" ✓":""}`} style={{...iS,marginBottom:0,flex:1,fontSize:11,borderColor:esCorrecta?C.success+"66":C.border}}/>
                 </div>
               );})}
               <div style={{fontSize:10,color:C.muted,marginTop:3}}>■ = correcta (podés marcar varias)</div>
@@ -3750,7 +3762,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           {pregsVF.map((q,qi)=>(
             <div key={qi} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:8}}>
               <div style={{display:"flex",gap:7,marginBottom:10}}>
-                <input value={q.texto} onChange={e=>setPregsVF(p=>p.map((x,i)=>i===qi?{...x,texto:e.target.value}:x))} placeholder={`Afirmación ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
+                <input value={q.texto} onChange={e=>setPregsVF(p=>p.map((x,i)=>i===qi?{...x,texto:e.target.value}:x))} aria-label={`Afirmación ${qi+1}`} placeholder={`Afirmación ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
                 {pregsVF.length>1&&<button onClick={()=>setPregsVF(p=>p.filter((_,i)=>i!==qi))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}
               </div>
               <div style={{display:"flex",gap:8}}>
@@ -3773,10 +3785,10 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           {pregsDesarrollo.map((q,qi)=>(
             <div key={qi} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:8}}>
               <div style={{display:"flex",gap:7,marginBottom:6}}>
-                <input value={q.texto} onChange={e=>setPregsDesarrollo(p=>p.map((x,i)=>i===qi?{...x,texto:e.target.value}:x))} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
+                <input value={q.texto} onChange={e=>setPregsDesarrollo(p=>p.map((x,i)=>i===qi?{...x,texto:e.target.value}:x))} aria-label={`Pregunta ${qi+1}`} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
                 {pregsDesarrollo.length>1&&<button onClick={()=>setPregsDesarrollo(p=>p.filter((_,i)=>i!==qi))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}
               </div>
-              <input value={q.criterios} onChange={e=>setPregsDesarrollo(p=>p.map((x,i)=>i===qi?{...x,criterios:e.target.value}:x))} placeholder="Criterios de corrección (opcional)" style={{...iS,marginBottom:0,fontSize:11}}/>
+              <input value={q.criterios} onChange={e=>setPregsDesarrollo(p=>p.map((x,i)=>i===qi?{...x,criterios:e.target.value}:x))} aria-label="Criterios de corrección" placeholder="Criterios de corrección (opcional)" style={{...iS,marginBottom:0,fontSize:11}}/>
             </div>
           ))}
         </div>
@@ -3789,7 +3801,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
           </div>
           {pregsReflexion.map((q,qi)=>(
             <div key={qi} style={{display:"flex",gap:7,marginBottom:7}}>
-              <input value={q.texto} onChange={e=>setPregsReflexion(p=>p.map((x,i)=>i===qi?{texto:e.target.value}:x))} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
+              <input value={q.texto} onChange={e=>setPregsReflexion(p=>p.map((x,i)=>i===qi?{texto:e.target.value}:x))} aria-label={`Pregunta de reflexión ${qi+1}`} placeholder={`Pregunta ${qi+1}`} style={{...iS,marginBottom:0,flex:1}}/>
               {pregsReflexion.length>1&&<button onClick={()=>setPregsReflexion(p=>p.filter((_,i)=>i!==qi))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}
             </div>
           ))}
@@ -3798,19 +3810,19 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
       {esPractica&&(
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.8,marginBottom:6}}>CONSIGNA</div>
-          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} placeholder="Describí qué tiene que hacer el alumno..." style={{...iS,minHeight:80,resize:"vertical"}}/>
+          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} aria-label="Consigna" placeholder="Describí qué tiene que hacer el alumno..." style={{...iS,minHeight:80,resize:"vertical"}}/>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.8,marginBottom:6,marginTop:4}}>CRITERIOS DE EVALUACIÓN</div>
-          {criterios.map((cr,ci)=>(<div key={ci} style={{display:"flex",gap:7,marginBottom:6}}><input value={cr} onChange={e=>setCriterios(p=>p.map((x,i)=>i===ci?e.target.value:x))} placeholder={`Criterio ${ci+1}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>{criterios.length>1&&<button onClick={()=>setCriterios(p=>p.filter((_,i)=>i!==ci))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}</div>))}
+          {criterios.map((cr,ci)=>(<div key={ci} style={{display:"flex",gap:7,marginBottom:6}}><input value={cr} onChange={e=>setCriterios(p=>p.map((x,i)=>i===ci?e.target.value:x))} aria-label={`Criterio ${ci+1}`} placeholder={`Criterio ${ci+1}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>{criterios.length>1&&<button onClick={()=>setCriterios(p=>p.filter((_,i)=>i!==ci))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}</div>))}
           <button onClick={()=>setCriterios(p=>[...p,""])} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,padding:"3px 9px",cursor:"pointer",fontSize:11,fontFamily:FONT,marginBottom:8}}>+ Criterio</button>
         </div>
       )}
       {esSubida&&(
         <div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.8,marginBottom:6}}>CONSIGNA</div>
-          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} placeholder="Describí qué tiene que subir el alumno..." style={{...iS,minHeight:70,resize:"vertical"}}/>
+          <textarea value={consigna} onChange={e=>setConsigna(e.target.value)} aria-label="Consigna" placeholder="Describí qué tiene que subir el alumno..." style={{...iS,minHeight:70,resize:"vertical"}}/>
           <div style={{background:"#5CA8E015",border:"1px solid #5CA8E033",borderRadius:9,padding:"10px 12px",fontSize:12,color:C.info,marginBottom:8}}>📎 Los alumnos podrán subir un archivo {evalFormato==="imagen"?"de imagen":evalFormato==="audio"?"de audio":"de video"}.</div>
           <div style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.8,marginBottom:6}}>CRITERIOS DE EVALUACIÓN</div>
-          {criterios.map((cr,ci)=>(<div key={ci} style={{display:"flex",gap:7,marginBottom:6}}><input value={cr} onChange={e=>setCriterios(p=>p.map((x,i)=>i===ci?e.target.value:x))} placeholder={`Criterio ${ci+1}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>{criterios.length>1&&<button onClick={()=>setCriterios(p=>p.filter((_,i)=>i!==ci))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}</div>))}
+          {criterios.map((cr,ci)=>(<div key={ci} style={{display:"flex",gap:7,marginBottom:6}}><input value={cr} onChange={e=>setCriterios(p=>p.map((x,i)=>i===ci?e.target.value:x))} aria-label={`Criterio ${ci+1}`} placeholder={`Criterio ${ci+1}`} style={{...iS,marginBottom:0,flex:1,fontSize:11}}/>{criterios.length>1&&<button onClick={()=>setCriterios(p=>p.filter((_,i)=>i!==ci))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,flexShrink:0}}>×</button>}</div>))}
           <button onClick={()=>setCriterios(p=>[...p,""])} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,padding:"3px 9px",cursor:"pointer",fontSize:11,fontFamily:FONT,marginBottom:8}}>+ Criterio</button>
         </div>
       )}
@@ -4004,9 +4016,9 @@ function CertificadoPctEditor({post,session,onUpdatePost}){
       <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:10}}>🎓 Criterio de certificación</div>
       <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Porcentaje mínimo de módulos completados para obtener el certificado</div>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-        <input type="range" min={10} max={100} step={5} value={pct} onChange={e=>setPct(Number(e.target.value))} style={{flex:1,accentColor:C.accent}}/>
+        <input type="range" aria-label="Porcentaje mínimo de módulos" min={10} max={100} step={5} value={pct} onChange={e=>setPct(Number(e.target.value))} style={{flex:1,accentColor:C.accent}}/>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
-          <input type="number" min={1} max={100} value={pct} onChange={e=>setPct(Math.min(100,Math.max(1,Number(e.target.value)||1)))}
+          <input type="number" aria-label="Porcentaje mínimo de módulos" min={1} max={100} value={pct} onChange={e=>setPct(Math.min(100,Math.max(1,Number(e.target.value)||1)))}
             style={{width:56,background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:"5px 7px",color:C.text,fontSize:13,outline:"none",textAlign:"center",fontFamily:"inherit"}}/>
           <span style={{fontSize:13,color:C.muted}}>%</span>
         </div>
@@ -4255,6 +4267,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           </div>
         </div>
       )}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el banner roto */}
       {post.banner_url&&<div style={{width:"100%",height:"min(220px,30vw)",overflow:"hidden",flexShrink:0}}><img src={post.banner_url} alt="banner" onError={e=>e.target.parentElement.style.display='none'} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
       {needsValoracion&&(
         <div style={{background:"linear-gradient(135deg,#F5C84220,#F5C84210)",border:`1px solid ${C.accent}44`,margin:"16px 20px",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
@@ -4367,8 +4380,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                 <div style={{display:"flex",gap:5,marginBottom:9,flexWrap:"wrap"}}>
                   {[["video","🎬","#1A6ED8"],["archivo","📁","#2EC4A0"],["texto","📝","#5A7294"],["aviso","📢","#E8881A"],["tarea","📌","#7B5CF0"],["link","🔗","#0EA5E9"],["quiz","🧩","#E8881A"]].map(([v,ic,clr])=>{const sel=nuevoTipo===v;return(<button key={v} onClick={()=>setNuevoTipo(v)} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:700,cursor:"pointer",background:sel?clr:`${clr}10`,color:sel?"#fff":clr,border:`1.5px solid ${sel?clr:clr+"40"}`,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,transition:"all .15s",transform:sel?"scale(1.03)":"none"}}>{ic}<span style={{textTransform:"capitalize"}}>{v}</span></button>);})}
                 </div>
-                <input value={nuevoTitulo} onChange={e=>setNuevoTitulo(e.target.value)} placeholder="Título" style={iS}/>
-                {nuevoTipo!=="texto"&&nuevoTipo!=="aviso"&&nuevoTipo!=="tarea"?<input value={nuevoUrl} onChange={e=>setNuevoUrl(e.target.value)} placeholder="URL" style={iS}/>:<textarea value={nuevoTexto} onChange={e=>setNuevoTexto(e.target.value)} placeholder="Contenido..." style={{...iS,minHeight:70,resize:"vertical"}}/>}
+                <input value={nuevoTitulo} onChange={e=>setNuevoTitulo(e.target.value)} aria-label="Título" placeholder="Título" style={iS}/>
+                {nuevoTipo!=="texto"&&nuevoTipo!=="aviso"&&nuevoTipo!=="tarea"?<input value={nuevoUrl} onChange={e=>setNuevoUrl(e.target.value)} aria-label="URL" placeholder="URL" style={iS}/>:<textarea value={nuevoTexto} onChange={e=>setNuevoTexto(e.target.value)} aria-label="Contenido" placeholder="Contenido..." style={{...iS,minHeight:70,resize:"vertical"}}/>}
                 <div style={{display:"flex",gap:8}}><Btn onClick={addContenido} disabled={savingC||!nuevoTitulo.trim()} style={{padding:"7px 14px",fontSize:12}}>{savingC?"...":"Guardar"}</Btn><button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Cancelar</button></div>
               </div>
             )}
@@ -4404,6 +4417,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                   if(c.tipo==="quiz"){return null;}
                   const numBadge=contenido.filter(x=>x.tipo!=="quiz").findIndex(x=>x.id===c.id)+1;
                   return(
+                    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- hover decorativo (sombra/transform)
                     <div key={c.id}
                       style={{background:C.surface,borderRadius:12,border:`1px solid ${C.border}`,borderLeft:`3px solid ${t.color}`,padding:"12px 14px",opacity:tieneAcceso?1:.55,transition:"box-shadow .15s,transform .15s",cursor:"default"}}
                       onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 2px 14px ${t.color}18`;e.currentTarget.style.transform="translateX(2px)";}}
@@ -4442,7 +4456,9 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                           )}
                         </div>
                         {/* Teacher actions */}
-                        {(esMio||esAyudante)&&<div style={{display:"flex",gap:4,flexShrink:0,opacity:.5,transition:"opacity .12s"}}
+                        {(esMio||esAyudante)&&
+                          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- hover decorativo (opacidad)
+                          <div style={{display:"flex",gap:4,flexShrink:0,opacity:.5,transition:"opacity .12s"}}
                           onMouseEnter={e=>e.currentTarget.style.opacity="1"}
                           onMouseLeave={e=>e.currentTarget.style.opacity=".5"}>
                           <button onClick={()=>setEditingContenidoId(editingContenidoId===c.id?null:c.id)} title="Editar" style={{background:editingContenidoId===c.id?C.accentDim:"none",border:`1px solid ${editingContenidoId===c.id?C.accent:C.border}`,borderRadius:7,color:editingContenidoId===c.id?C.accent:C.muted,fontSize:11,padding:"3px 9px",cursor:"pointer",fontFamily:FONT}}>✎</button>
@@ -4599,7 +4615,9 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       </div>
       {showDiagnostico&&<DiagnosticoModal post={post} session={session} onClose={()=>{setShowDiagnostico(false);setTab("contenido");}}/> }
       {showExamenFinal&&<ExamenFinalModal post={post} session={session} onClose={()=>setShowExamenFinal(false)}/>}
-      {calExpanded&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setCalExpanded(false)}><div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"28px",width:"min(780px,96vw)",maxHeight:"92vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:18}}><h3 style={{color:C.text,margin:0,fontSize:18}}>Calendario de clases</h3><button onClick={()=>setCalExpanded(false)} style={{background:"none",border:"none",color:C.muted,fontSize:24,cursor:"pointer"}}>×</button></div><CalendarioCurso post={post}/></div></div>)}
+      {calExpanded&&(
+      /* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions */
+      <div role="dialog" aria-modal="true" aria-label="Calendario de clases" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>{if(e.target===e.currentTarget)setCalExpanded(false);}}><div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"28px",width:"min(780px,96vw)",maxHeight:"92vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:18}}><h3 style={{color:C.text,margin:0,fontSize:18}}>Calendario de clases</h3><button onClick={()=>setCalExpanded(false)} style={{background:"none",border:"none",color:C.muted,fontSize:24,cursor:"pointer"}}>×</button></div><CalendarioCurso post={post}/></div></div>)}
       {showFinalizar&&<FinalizarClaseModal post={post} session={session} onClose={()=>setShowFinalizar(false)} onFinalizado={()=>{setLocalFinalizado(true);refreshPost();}}/>}
       {showEditCal&&<EditCalModal post={post} session={session} onClose={()=>setShowEditCal(false)} onSaved={(newClases)=>{post.clases_sinc=JSON.stringify(newClases);post.sinc="sinc";if(onUpdatePost)onUpdatePost({...post,clases_sinc:JSON.stringify(newClases),sinc:"sinc"});setShowEditCal(false);}}/>}
       {showDenuncia&&<DenunciaModal post={post} session={session} onClose={()=>setShowDenuncia(false)}/>}
@@ -4758,8 +4776,9 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
   return(
     <form onSubmit={confirmarPago}>
       <div style={{marginBottom:12}}>
-        <label style={{display:"block",color:C.muted,fontSize:12,fontWeight:600,marginBottom:6}}>NOMBRE EN LA TARJETA</label>
+        <div style={{display:"block",color:C.muted,fontSize:12,fontWeight:600,marginBottom:6}}>NOMBRE EN LA TARJETA</div>
         <input value={nombre} onChange={e=>setNombre(e.target.value)}
+          aria-label="Nombre en la tarjeta"
           placeholder="Como aparece en la tarjeta"
           style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:C.text,fontSize:14,outline:"none",fontFamily:FONT,boxSizing:"border-box"}}/>
       </div>
@@ -5193,7 +5212,7 @@ function RelacionadasSection({post,session,onOpenDetail2}){
             const catData=CATEGORIAS_DATA[p.materia]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)"};
             const autorNombre=p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)||"Docente";
             return(
-              <div key={p.id} onClick={()=>onOpenDetail2(p)}
+              <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail2(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail2(p);}}}
                 style={{flexShrink:0,width:200,background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",cursor:"pointer",transition:"all .2s"}}
                 onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,.1)";e.currentTarget.style.borderColor=C.accent+"60";e.currentTarget.style.transform="translateY(-2px)";}}
                 onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="none";}}>
