@@ -376,7 +376,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Info extra */}
               <div style={{marginTop:8,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
                 {[
-                  {Icon:Check,txt:"Pago seguro · sin cargos ocultos",color:C.successText},
+                  {Icon:Check,txt:"Pago seguro",color:C.successText},
                   post.tipo==="oferta"&&{Icon:Lock,txt:"Pago acordado directamente",color:C.muted},
                   post.tipo==="busqueda"&&{Icon:Inbox,txt:"Recibís ofertas de docentes",color:C.muted},
                 ].filter(Boolean).map(({Icon:InfoIcon,txt,color})=>(

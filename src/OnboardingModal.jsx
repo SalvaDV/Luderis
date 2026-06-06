@@ -23,19 +23,22 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const [fotoDniFrente,setFotoDniFrente]=useState(null);
   const [fotoDniPreview,setFotoDniPreview]=useState(null);
 
+  const [kycAck,setKycAck]=useState(false); // docente entendió que necesita verificar identidad
+
   const [modalidadPref,setModalidadPref]=useState(""); // "virtual" | "presencial" | "ambas"
   const [presupuesto,setPresupuesto]=useState(""); // "gratis" | "bajo" | "medio" | "alto"
   const [matchResults,setMatchResults]=useState(null); // publicaciones recomendadas
   const [matchLoading,setMatchLoading]=useState(false);
 
   const esDocente=rol==="docente"||rol==="ambos";
+  const setRolY=(v)=>{setRol(v);if(v!=="docente"&&v!=="ambos")setKycAck(false);};
   const toggleM=m=>setMaterias(p=>p.includes(m)?p.filter(x=>x!==m):[...p,m]);
 
   // ── Pasos base ──────────────────────────────────────────────────────────────
   const PASOS_BASE=[
     // Paso 0: Bienvenida + rol
     {id:"bienvenida",title:upgradeMode?"Convertirte en docente":"¡Bienvenido/a a Luderis!",sub:upgradeMode?"Elegí cómo querés usar Luderis de ahora en adelante.":"La plataforma educativa argentina. Contanos un poco sobre vos.",
-     canNext:!!rol,
+     canNext:!!rol&&(!esDocente||kycAck),
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
         <p style={{color:C.muted,fontSize:13,lineHeight:1.7,margin:0}}>{upgradeMode?"Completá tu verificación para empezar a enseñar en Luderis.":"Aprendé lo que quieras, enseñá lo que sabés. ¿Cómo vas a usar Luderis?"}</p>
@@ -45,7 +48,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             {v:"docente",icon:"📚",title:"Quiero enseñar",sub:"Voy a publicar clases y cursos"},
             {v:"ambos",icon:"⚡",title:"Ambas cosas",sub:"Aprendo y enseño según lo que necesite"},
           ].map(({v,icon,title,sub:s})=>(
-            <button key={v} onClick={()=>setRol(v)}
+            <button key={v} onClick={()=>setRolY(v)}
               style={{background:rol===v?C.accentDim:C.surface,border:`2px solid ${rol===v?C.accent:C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .15s",display:"flex",gap:14,alignItems:"center"}}
               onMouseEnter={e=>{if(rol!==v){e.currentTarget.style.borderColor=C.accent+"60";}}}
               onMouseLeave={e=>{if(rol!==v){e.currentTarget.style.borderColor=C.border;}}}>
@@ -58,10 +61,22 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             </button>
           ))}
         </div>
-        {esDocente&&<div style={{background:"#F59E0B10",border:"1px solid #F59E0B30",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#B45309",display:"flex",gap:8,alignItems:"flex-start"}}>
-          <span style={{flexShrink:0}}>ℹ️</span>
-          <span>Para publicar clases necesitarás completar una verificación de identidad al finalizar este proceso.</span>
-        </div>}
+        {esDocente&&(
+          <div role="checkbox" aria-checked={kycAck} tabIndex={0} aria-label="Confirmo que la información es correcta" onClick={()=>setKycAck(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setKycAck(v=>!v);}}}
+            style={{cursor:"pointer",background:kycAck?"#2EC4A010":"#F59E0B0D",border:`2px solid ${kycAck?"#2EC4A0":"#F59E0B55"}`,borderRadius:12,padding:"13px 16px",display:"flex",gap:12,alignItems:"flex-start",transition:"all .15s",marginTop:4}}>
+            <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${kycAck?"#2EC4A0":"#F59E0B"}`,background:kycAck?"#2EC4A0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .15s"}}>
+              {kycAck&&<span style={{color:"#fff",fontSize:13,fontWeight:800,lineHeight:1}}>✓</span>}
+            </div>
+            <div>
+              <div style={{fontWeight:700,color:kycAck?"#2EC4A0":"#92400E",fontSize:13,marginBottom:3}}>
+                {kycAck?"✓ Entendido":"⚠ Verificación de identidad requerida"}
+              </div>
+              <div style={{fontSize:12,color:kycAck?"#2EC4A0":"#B45309",lineHeight:1.6}}>
+                Para publicar clases necesitarás completar una verificación de identidad (DNI + foto) al finalizar este proceso. El proceso tarda ~5 minutos y puede hacerse en 24-48 hs.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )},
 

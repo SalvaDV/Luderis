@@ -176,7 +176,7 @@ function AuthScreen({onLogin}){
           </motion.h2>
           <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.35}}
             style={{color:"rgba(255,255,255,.7)",fontSize:14,lineHeight:1.75,margin:0}}>
-            Conectamos personas para compartir conocimiento.<br/>Transparente, seguro y sin cargos ocultos.
+            Conectamos personas para compartir conocimiento.<br/>Transparente y seguro.
           </motion.p>
         </div>
 

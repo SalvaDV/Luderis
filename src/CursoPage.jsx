@@ -782,7 +782,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
 // ─── CERRAR INSCRIPCIONES MODAL ───────────────────────────────────────────────
 function CerrarInscModal({post,session,onClose,onCerrado}){
   const [saving,setSaving]=useState(false);const [ok,setOk]=useState(false);
-  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);if(onCerrado)onCerrado();setTimeout(onClose,1200);}catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}};
+  const cerrar=async()=>{setSaving(true);try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:true},session.access_token);setOk(true);toast("Inscripciones cerradas","success");if(onCerrado)onCerrado();setTimeout(onClose,1200);}catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}};
   return(<Modal onClose={onClose} width="min(400px,95vw)">
     <div style={{padding:"20px 22px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
@@ -3001,6 +3001,192 @@ function ValidacionWizard({post,session,onValidado}){
   );
 }
 
+// Mapeo skill-tipo → formatos de evaluación recomendados
+const FORMATO_POR_TIPO={
+  conceptual:["multiple_choice","desarrollo","autoevaluacion"],
+  procedimental:["consigna_practica","rubrica","video"],
+  actitudinal:["autoevaluacion","rubrica","desarrollo"],
+  practica:["consigna_practica","imagen","audio","video"],
+  teorica:["multiple_choice","desarrollo"],
+  mixta:["multiple_choice","consigna_practica","rubrica"],
+};
+
+// ─── EVALUACIONES FORMALES ────────────────────────────────────────────────────
+function EvaluacionesFormales({post,session,esMio,esAyudante,inscripcion,inscripciones}){
+  const pubId=post.id;
+  const miEmail=session.user.email;
+  const [evaluaciones,setEvaluaciones]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [showCrear,setShowCrear]=useState(false);
+  const [generandoIA,setGenerandoIA]=useState(false);
+
+  // Form crear evaluación
+  const [evalTipo,setEvalTipo]=useState("diagnostico");
+  const [evalFormato,setEvalFormato]=useState("multiple_choice");
+  const [evalTitulo,setEvalTitulo]=useState("");
+  const [evalContenido,setEvalContenido]=useState("");
+  const [evalSkillIds,setEvalSkillIds]=useState([]);
+  const skills=getSkills(pubId);
+
+  useEffect(()=>{
+    sb.getEvaluaciones(pubId,session.access_token)
+      .then(data=>setEvaluaciones(data||[]))
+      .catch(()=>{})
+      .finally(()=>setLoading(false));
+  },[pubId]);// eslint-disable-line
+
+  const generarConIA=async()=>{
+    const selectedSkills=skills.filter(s=>evalSkillIds.includes(s.id));
+    const skillNombres=selectedSkills.map(s=>s.nombre).join(", ")||"las habilidades del curso";
+    const skillTipo=selectedSkills[0]?.tipo||"conceptual";
+    const formatosRec=(FORMATO_POR_TIPO[skillTipo]||["multiple_choice"]);
+    const formatoSugerido=formatosRec[0];
+    setEvalFormato(formatoSugerido);
+    setGenerandoIA(true);
+    try{
+      const system=`Sos un generador de evaluaciones educativas. \nGenerás evaluaciones en formato JSON. \nEl formato ${formatoSugerido} fue elegido porque las skills son de tipo ${skillTipo}.\nRespondé SOLO con JSON válido, sin explicación ni backticks.`;
+      const prompt=`Curso: "${post.titulo}" (${post.materia})\nTipo de evaluación: ${evalTipo}\nSkills a evaluar: ${skillNombres}\nFormato: ${formatoSugerido}\nNivel del curso: general\n\n${formatoSugerido==="multiple_choice"?`Generá 4 preguntas de multiple choice con 4 opciones cada una. 
+JSON: {"preguntas":[{"texto":"...","opciones":["a","b","c","d"],"correcta":0,"skill":"..."}]}`:""}\n${formatoSugerido==="desarrollo"?`Generá 2 preguntas a desarrollar.
+JSON: {"preguntas":[{"texto":"...","criterios":"...","skill":"..."}]}`:""}\n${formatoSugerido==="consigna_practica"||formatoSugerido==="imagen"||formatoSugerido==="audio"||formatoSugerido==="video"?`Generá una consigna práctica clara.
+JSON: {"consigna":"...","criterios_evaluacion":["...","..."],"formato_entrega":"${formatoSugerido}"}`:""}\n${formatoSugerido==="rubrica"?`Generá una rúbrica de evaluación.
+JSON: {"criterios":[{"nombre":"...","niveles":{"1":"...","3":"...","5":"..."}}]}`:""}\n${formatoSugerido==="autoevaluacion"?`Generá preguntas de reflexión.
+JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
+
+      const res=await sb.callIA(system,prompt,800);
+      const clean=res.replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(clean);
+      setEvalContenido(JSON.stringify(parsed,null,2));
+      if(!evalTitulo)setEvalTitulo(`${evalTipo==="diagnostico"?"Diagnóstico inicial":evalTipo==="checkpoint"?"Checkpoint":"Examen final"} — ${skillNombres}`);
+    }catch(e){setEvalContenido(`{"error":"No se pudo generar: ${e.message}"}`);}
+    finally{setGenerandoIA(false);}
+  };
+
+  const guardarEvaluacion=async()=>{
+    if(!evalTitulo.trim())return;
+    try{
+      const r=await sb.insertEvaluacion({
+        publicacion_id:pubId,titulo:evalTitulo,tipo:evalTipo,
+        formato:evalFormato,skill_ids:evalSkillIds,
+        contenido_json:evalContenido,generado_ia:generandoIA||evalContenido.length>10,activo:true,
+      },session.access_token);
+      setEvaluaciones(prev=>[...prev,...(r||[])]);
+      setShowCrear(false);setEvalTitulo("");setEvalContenido("");setEvalSkillIds([]);
+      // Notificar por email a los inscriptos
+      sb.getInscripciones(pubId,session.access_token).then(ins=>{
+        ins.forEach(insc=>{
+          if(insc.alumno_email&&insc.alumno_email!==session.user.email){
+            sb.sendEmail("nueva_evaluacion",insc.alumno_email,{
+              pub_titulo:evalTitulo,
+              pub_id:post.id,
+              tipo_eval:evalTipo,
+              curso_titulo:evalTitulo,
+            },session.access_token).catch(()=>{});
+            sb.sendPush(insc.alumno_email,`Nueva evaluación — ${post.titulo}`,`Hay una nueva evaluación disponible`,`/?curso=${post.id}`,"nueva_evaluacion",session.access_token).catch(()=>{});
+          }
+        });
+      }).catch(()=>{});
+    }catch(e){toast("Error al guardar: "+e.message,"error");}
+  };
+
+  const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
+  const tipoColor={diagnostico:C.info,checkpoint:C.warn,final:C.success};
+  const tipoIcon={diagnostico:"🔍",checkpoint:"📍",final:"🏁"};
+
+  return(
+    <div>
+      {/* Lista de evaluaciones */}
+      {loading?<Spinner small/>:evaluaciones.length===0&&!showCrear?(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"30px",textAlign:"center",color:C.muted,fontSize:13}}>
+          {esMio||esAyudante?"No hay evaluaciones formales. Creá el diagnóstico inicial para medir el progreso real de tus alumnos.":"El docente aún no cargó evaluaciones formales."}
+          {(esMio||esAyudante)&&<div style={{marginTop:12}}><button onClick={()=>setShowCrear(true)} style={{background:C.info,border:"none",borderRadius:8,color:"#fff",padding:"8px 18px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>+ Crear diagnóstico inicial</button></div>}
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+          {evaluaciones.map(ev=>(
+            <EvaluacionCard key={ev.id} ev={ev} post={post} session={session} esMio={esMio||esAyudante} inscripciones={inscripciones} inscripcion={inscripcion}
+              onDelete={async()=>{await sb.deleteEvaluacion(ev.id,session.access_token).catch(()=>{});setEvaluaciones(p=>p.filter(x=>x.id!==ev.id));}}/>
+          ))}
+        </div>
+      )}
+
+      {/* Botón crear + form */}
+      {(esMio||esAyudante)&&!showCrear&&evaluaciones.length>0&&(
+        <button onClick={()=>setShowCrear(true)} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:9,color:C.accent,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT}}>+ Nueva evaluación</button>
+      )}
+
+      {(esMio||esAyudante)&&showCrear&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
+          <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>Nueva evaluación formal</div>
+
+          {/* Tipo */}
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>TIPO</div>
+            <div style={{display:"flex",gap:6}}>
+              {[["checkpoint","📍 Checkpoint"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setEvalTipo(v)}
+                  style={{flex:1,padding:"8px 4px",borderRadius:9,border:`1.5px solid ${C.warn}`,background:C.warn+"18",color:C.warn,fontSize:11,cursor:"pointer",fontFamily:FONT,fontWeight:700}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:10,color:C.muted,marginTop:5}}>Solo se pueden crear checkpoints aquí. El diagnóstico y el examen final se configuran en la validación inicial.</div>
+          </div>
+
+          {/* Skills */}
+          {skills.length>0&&(
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>SKILLS QUE EVALÚA</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {skills.map(s=>(
+                  <button key={s.id} onClick={()=>setEvalSkillIds(p=>p.includes(s.id)?p.filter(x=>x!==s.id):[...p,s.id])}
+                    style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:FONT,
+                      background:evalSkillIds.includes(s.id)?C.accent:C.surface,color:evalSkillIds.includes(s.id)?"#fff":C.muted,
+                      border:`1px solid ${evalSkillIds.includes(s.id)?C.accent:C.border}`}}>
+                    {SKILL_TIPOS[s.tipo]?.icon} {s.nombre}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Formato */}
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:6}}>FORMATO</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:5}}>
+              {Object.entries(FORMATO_LABELS).map(([v,{label,icon}])=>(
+                <button key={v} onClick={()=>setEvalFormato(v)}
+                  style={{padding:"7px 6px",borderRadius:8,border:`1px solid ${evalFormato===v?C.accent:C.border}`,background:evalFormato===v?C.accentDim:"transparent",color:evalFormato===v?C.accent:C.muted,fontSize:10,cursor:"pointer",fontFamily:FONT,fontWeight:evalFormato===v?700:400,textAlign:"center"}}>
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Título */}
+          <input value={evalTitulo} onChange={e=>setEvalTitulo(e.target.value)} aria-label="Título de la evaluación" placeholder="Título de la evaluación" style={iS}/>
+
+          {/* Generar con IA */}
+          <button onClick={generarConIA} disabled={generandoIA}
+            style={{background:"#C85CE015",border:"1px solid #C85CE033",borderRadius:8,color:C.purple,padding:"7px 14px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+            {generandoIA?"✦ Generando...":"✦ Generar con IA"}
+          </button>
+
+          {/* Contenido JSON */}
+          <textarea value={evalContenido} onChange={e=>setEvalContenido(e.target.value)}
+            aria-label="Contenido de la evaluación (JSON)"
+            placeholder='{"preguntas":[...]} — Generá con IA o escribí el contenido manualmente'
+            style={{...iS,minHeight:100,resize:"vertical",fontSize:11,fontFamily:"monospace"}}/>
+
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <button onClick={guardarEvaluacion} disabled={!evalTitulo.trim()} style={{background:C.success,border:"none",borderRadius:8,color:"#fff",padding:"8px 18px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,opacity:!evalTitulo.trim()?0.5:1}}>Guardar evaluación</button>
+            <button onClick={()=>setShowCrear(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"8px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>Cancelar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── EVALUACION CARD — muestra una evaluación con opción de rendir ─────────────
 function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelete}){
   const miEmail=session.user.email;
@@ -3643,7 +3829,7 @@ function EvaluacionCreadorMejorado({post,session,onSaved,onCancel}){
               tipo_eval:evalTipo,
               curso_titulo:evalTitulo,
             },session.access_token).catch(()=>{});
-            sb.sendPush(insc.alumno_email,`Nueva evaluación — ${post.titulo}`,`Hay una nueva evaluación disponible`,`/?curso=${post.id}`,"nueva_evaluacion").catch(()=>{});
+            sb.sendPush(insc.alumno_email,`Nueva evaluación — ${post.titulo}`,`Hay una nueva evaluación disponible`,`/?curso=${post.id}`,"nueva_evaluacion",session.access_token).catch(()=>{});
           }
         });
       }).catch(()=>{});
@@ -4741,7 +4927,7 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
-      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion").catch(()=>{});
+      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion",session.access_token).catch(()=>{});
       toast("¡Pago exitoso! Ya tenés acceso","success",4000);
       setEstado("done");
       setTimeout(()=>{onClose();onDone();},800);
@@ -4832,7 +5018,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
-      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion").catch(()=>{});
+      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion",session.access_token).catch(()=>{});
       // Info del mail según lo que eligió
       const paqueteInfo=paqueteElegido&&!esPruebaLocal?`${paqueteElegido.nombre||paqueteElegido.clases+" clases"}`:null;
       const precioMail=esPruebaLocal?(parseFloat(post.precio_prueba)||0):precioEfectivo;

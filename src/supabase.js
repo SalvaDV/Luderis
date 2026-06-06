@@ -717,14 +717,17 @@ export const sendEmail = async (template, to, data = {}, token = "") => {
 
 // ── Web Push (via Edge Function send-push) ────────────────────────────────────
 
+// token (6º parámetro) = session.access_token del usuario que dispara la notificación.
+// Es obligatorio — sin JWT de usuario la función rechaza la llamada para evitar spam.
 export const sendPush = async (to, title, body, url = "/", tag = "default", token) => {
+  if (!token) return; // sin sesión activa no enviar
   try {
     await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${token || SUPABASE_KEY}`,
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({ to, title, body, url, tag }),
     });

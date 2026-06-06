@@ -14,12 +14,27 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     setLoading(true);
     sb.getTodasNotificaciones(session.user.email,session.access_token).then(data=>{
       setNotifs((data||[]).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)));
-      autoMarkTimer.current=setTimeout(()=>{
-        sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(e=>logError("auto marcar notifs leídas",e));
-        setNotifs(p=>p.map(n=>({...n,leida:true})));
-      },2000);
+      // Solo marcar como leído si el tab del navegador está visible — evita
+      // marcar como leídas notificaciones que el usuario nunca llegó a ver.
+      const scheduleAutoMark=()=>{
+        clearTimeout(autoMarkTimer.current);
+        if(document.visibilityState!=="visible")return;
+        autoMarkTimer.current=setTimeout(()=>{
+          if(document.visibilityState!=="visible")return;
+          sb.marcarTodasNotifsLeidas(session.user.email,session.access_token).catch(e=>logError("auto marcar notifs leídas",e));
+          setNotifs(p=>p.map(n=>({...n,leida:true})));
+        },3500);
+      };
+      scheduleAutoMark();
+      const onVis=()=>scheduleAutoMark();
+      document.addEventListener("visibilitychange",onVis);
+      // Guardar referencia al listener para limpiarlo
+      autoMarkTimer._vis=onVis;
     }).catch(e=>logError("cargar notificaciones",e)).finally(()=>setLoading(false));
-    return()=>clearTimeout(autoMarkTimer.current);
+    return()=>{
+      clearTimeout(autoMarkTimer.current);
+      if(autoMarkTimer._vis){document.removeEventListener("visibilitychange",autoMarkTimer._vis);autoMarkTimer._vis=null;}
+    };
   },[open,session.user.email,session.access_token]);
 
   const marcarTodo=async()=>{

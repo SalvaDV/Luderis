@@ -43,7 +43,7 @@ export default function OfertarBtn({post,session}){
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_oferta",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       // Email al dueño de la búsqueda
       sb.sendEmail("oferta_recibida",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,docente_nombre:sb.getDisplayName(session.user.email)||session.user.email.split("@")[0],mensaje:msg},session.access_token).catch(()=>{});
-      sb.sendPush(post.autor_email,`Nueva oferta — ${post.titulo}`,`${sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]} te envió una oferta`,"/?cuenta","oferta_recibida").catch(()=>{});
+      sb.sendPush(post.autor_email,`Nueva oferta — ${post.titulo}`,`${sb.getDisplayName(session.user.email)||session.user.email.split("@")[0]} te envió una oferta`,"/?cuenta","oferta_recibida",session.access_token).catch(()=>{});
       trackOfertaEnviada(post);
       setOk(true);
       // Actualizar estado local y cerrar el popup

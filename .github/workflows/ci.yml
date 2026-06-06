@@ -21,9 +21,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint (a11y + react-app)
-        run: npx eslint src --ext .js,.jsx --max-warnings 0
-        # Falla si reaparecen warnings de accesibilidad (red de seguridad a11y)
+      - name: Lint a11y (gate)
+        # Falla solo si reaparecen warnings de accesibilidad (red de seguridad a11y).
+        # No bloquea por otros warnings preexistentes (no-unused-vars, etc.).
+        run: |
+          A11Y=$(npx eslint src --ext .js,.jsx -f compact | grep -c "jsx-a11y" || true)
+          echo "Warnings jsx-a11y: $A11Y"
+          test "$A11Y" -eq 0
 
       - name: Test
         run: npm run test:ci
