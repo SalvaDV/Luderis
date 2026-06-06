@@ -12,7 +12,7 @@ import {
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, CATEGORIAS_DATA, CalendarioCurso,
-  LUD, getPubTipo, useAutorAvatar,
+  LUD, getPubTipo, useAutorAvatar, useFocusTrap,
 } from "./shared";
 import { FavBtn, OfertarBtn, ShareBtn } from "./App";
 import { DescExpandible, InscribirseBtn, RelacionadasSection, ReseñasSeccion } from "./CursoPage";
@@ -76,9 +76,10 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   },[post.id,post.autor_email,post.tipo,session]);// eslint-disable-line
 
   const avgPub=calcAvg(reseñas);const avgUser=calcAvg(reseñasUsuario);
+  const trapRef=useFocusTrap(true);
 
   return(
-    <div style={{position:"fixed",inset:0,zIndex:200,background:C.bg,display:"flex",flexDirection:"column",fontFamily:FONT,overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"fadeIn .18s ease"}}>
+    <div ref={trapRef} role="dialog" aria-modal="true" aria-label={post?.titulo||"Detalle de publicación"} tabIndex={-1} style={{position:"fixed",inset:0,zIndex:200,background:C.bg,display:"flex",flexDirection:"column",fontFamily:FONT,overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"fadeIn .18s ease",outline:"none"}}>
       <style>{`
         @media(max-width:600px){
           .dm-topbar{padding:0 14px!important}

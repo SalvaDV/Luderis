@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "../supabase";
-import { C, FONT, safeDisplayName, sanitizeContactInfo, moderarMensaje, Avatar, Spinner, toast, fmtRel } from "../shared";
+import { C, FONT, safeDisplayName, sanitizeContactInfo, moderarMensaje, Avatar, Spinner, toast, fmtRel, useFocusTrap } from "../shared";
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
@@ -128,9 +128,10 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     finally{setEnviando(false);}
   };
   const nombre=post.autor_nombre||safeDisplayName(null,otroEmail)||"Usuario";
+  const trapRef=useFocusTrap(true);
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"8px"}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,calc(100vw - 16px))",height:"min(680px,85vh)",maxHeight:"85dvh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div role="dialog" aria-modal="true" aria-label={`Chat con ${nombre}`} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"8px"}}>
+      <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,calc(100vw - 16px))",height:"min(680px,85vh)",maxHeight:"85dvh",display:"flex",flexDirection:"column",overflow:"hidden",outline:"none"}}>
         {/* Anti-puenteo */}
         <div style={{background:C.warn+"12",borderBottom:`1px solid ${C.warn}25`,padding:"6px 14px",display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
           <span style={{fontSize:12}}>🛡️</span>

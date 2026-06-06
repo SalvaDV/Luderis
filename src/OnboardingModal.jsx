@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import * as sb from "./supabase";
-import { C, FONT, LUD, MATERIAS, CATEGORIAS_DATA } from "./shared";
+import { C, FONT, LUD, MATERIAS, CATEGORIAS_DATA, useFocusTrap } from "./shared";
 
 function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
+  const trapRef=useFocusTrap(true);
   const [step,setStep]=useState(0);
   const [rol,setRol]=useState("");// "alumno" | "docente" | "ambos"
   const [materias,setMaterias]=useState([]);
@@ -554,8 +555,8 @@ Respondé SOLO JSON.`,
   };
 
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"16px",backdropFilter:"blur(4px)"}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:22,width:"min(480px,96vw)",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 64px rgba(0,0,0,.3)",animation:"fadeUp .2s ease"}}>
+    <div role="dialog" aria-modal="true" aria-label="Configuración de tu cuenta" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"16px",backdropFilter:"blur(4px)"}}>
+      <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:22,width:"min(480px,96vw)",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 64px rgba(0,0,0,.3)",animation:"fadeUp .2s ease",outline:"none"}}>
         {/* Barra de progreso */}
         <div style={{height:4,background:C.border,flexShrink:0}}>
           <div style={{height:"100%",background:LUD.grad,width:`${((step+1)/allSteps.length)*100}%`,transition:"width .4s ease",borderRadius:2}}/>

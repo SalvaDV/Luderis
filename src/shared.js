@@ -5,7 +5,7 @@ import * as sb from "./supabase";
 // ─── TEMAS ────────────────────────────────────────────────────────────────────
 export const THEMES={
   dark:{bg:"#080F1C",surface:"#0E1829",card:"#131E2F",border:"#1E2D42",accent:"#2EC4A0",accentDim:"#2EC4A015",text:"#E8EFF8",muted:"#5C7A9A",success:"#2EC4A0",danger:"#E05C5C",sidebar:"#080F1C",info:"#1A6ED8",purple:"#7B5CF0",warn:"#E0955C",sidebarBorder:"#1E2D42"},
-  light:{bg:"#F6F9FF",surface:"#FFFFFF",card:"#FFFFFF",border:"#DDE5F5",accent:"#1A6ED8",accentDim:"#1A6ED810",text:"#0D1F3C",muted:"#5A7294",success:"#2EC4A0",danger:"#E53E3E",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#DD8A1A",sidebarBorder:"#DDE5F5"},
+  light:{bg:"#F6F9FF",surface:"#FFFFFF",card:"#FFFFFF",border:"#DDE5F5",accent:"#1A6ED8",accentDim:"#1A6ED810",text:"#0D1F3C",muted:"#5A7294",success:"#2EC4A0",danger:"#C53030",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#B45309",sidebarBorder:"#DDE5F5"},
 };
 export let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{return "light";}};
 export const C={...THEMES[_themeKey()]};
@@ -397,6 +397,41 @@ export function SearchableSelect({value,onChange,options,placeholder="Todas",sty
 
 export const ErrMsg=({msg})=>msg?<div style={{color:C.danger,fontSize:13,margin:"5px 0",fontFamily:FONT,display:"flex",alignItems:"center",gap:5}}><span>⚠</span>{msg}</div>:null;
 export const Label=({children})=><div style={{color:C.muted,fontSize:13,fontWeight:600,letterSpacing:.3,marginBottom:6}}>{children}</div>;
+
+// ─── Focus trap accesible para modales (WCAG 2.4.3 / 2.1.2) ──────────────────
+// Devuelve un ref para el panel del modal. Mientras está activo:
+//  - enfoca el primer elemento focuseable al abrir
+//  - atrapa el Tab/Shift+Tab dentro del modal (no se escapa al fondo)
+//  - restaura el foco al elemento previo al cerrar
+const FOCUSABLE_SEL='a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+export function useFocusTrap(active=true){
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!active)return;
+    const node=ref.current;
+    if(!node)return;
+    const prevFocused=document.activeElement;
+    const visibles=()=>Array.from(node.querySelectorAll(FOCUSABLE_SEL)).filter(el=>el.offsetParent!==null||el===document.activeElement);
+    // Foco inicial dentro del modal
+    const t=setTimeout(()=>{const els=visibles();(els[0]||node).focus?.();},0);
+    const onKey=(e)=>{
+      if(e.key!=="Tab")return;
+      const els=visibles();
+      if(els.length===0){e.preventDefault();node.focus?.();return;}
+      const first=els[0], last=els[els.length-1];
+      if(e.shiftKey&&(document.activeElement===first||document.activeElement===node)){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    };
+    node.addEventListener("keydown",onKey);
+    return()=>{
+      clearTimeout(t);
+      node.removeEventListener("keydown",onKey);
+      try{if(prevFocused&&prevFocused.focus)prevFocused.focus();}catch{}
+    };
+  },[active]);
+  return ref;
+}
+
 export const Modal=({children,onClose,width="min(600px,97vw)",ariaLabel})=>{
   useEffect(()=>{
     const onKey=(e)=>{if(e.key==="Escape"&&onClose)onClose();};
@@ -405,6 +440,7 @@ export const Modal=({children,onClose,width="min(600px,97vw)",ariaLabel})=>{
     document.body.style.overflow="hidden";
     return()=>{document.removeEventListener("keydown",onKey);document.body.style.overflow=prev;};
   },[onClose]);
+  const trapRef=useFocusTrap(true);
   const handleBackdrop=(e)=>{if(e.target===e.currentTarget&&onClose)onClose();};
   // El cierre por teclado está cubierto por el listener de Escape (arriba); el click
   // en el backdrop es una mejora solo-mouse.
@@ -412,7 +448,7 @@ export const Modal=({children,onClose,width="min(600px,97vw)",ariaLabel})=>{
   return(<div role="dialog" aria-modal="true" aria-label={ariaLabel||"Diálogo"}
     onClick={handleBackdrop}
     style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}}>
-    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch"}}>{children}</div>
+    <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch",outline:"none"}}>{children}</div>
   </div>);
 };
 
@@ -492,13 +528,14 @@ export function LegalModal({tab="tc",onClose}){
     document.addEventListener("keydown",onKey);
     return()=>document.removeEventListener("keydown",onKey);
   },[onClose]);
+  const trapRef=useFocusTrap(true);
   const found=LEGAL_TABS.find(t=>t.id===activeTab);
   const sections=activeTab==="tc"?LEGAL_SECTIONS:activeTab==="priv"?PRIVACY_SECTIONS:(found?.sections||[]);
   return(
     // El cierre por teclado lo cubre el listener de Escape; el click en el backdrop es solo-mouse.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
     <div role="dialog" aria-modal="true" aria-label="Información legal de Luderis" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9990,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(680px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)"}}>
+      <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,width:"min(680px,calc(100vw - 16px))",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.2)",outline:"none"}}>
         <div style={{padding:"18px 20px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{fontWeight:800,fontSize:16,color:C.text}}>Luderis — Legal</div>
@@ -539,6 +576,7 @@ export function useConfirm(){
     setState({msg:opts.msg||"¿Confirmar?",confirmLabel:opts.confirmLabel||"Confirmar",cancelLabel:opts.cancelLabel||"Cancelar",danger:!!opts.danger,resolve});
   }),[]);
   const close=(val)=>{if(state){state.resolve(val);setState(null);}};
+  const trapRef=useFocusTrap(!!state);
   React.useEffect(()=>{
     if(!state)return;
     const onKey=(e)=>{if(e.key==="Escape"){state.resolve(false);setState(null);}};
@@ -549,7 +587,7 @@ export function useConfirm(){
     // El cierre por teclado lo cubre el listener de Escape; el click en el backdrop es solo-mouse.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
     <div role="dialog" aria-modal="true" aria-label="Confirmación" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)close(false);}}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"min(360px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden"}}>
+      <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"min(360px,calc(100vw - 24px))",boxShadow:"0 8px 40px rgba(0,0,0,.2)",overflow:"hidden",outline:"none"}}>
         <div style={{padding:"20px 20px 16px"}}>
           <div style={{fontSize:14,color:C.text,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{state.msg}</div>
         </div>
