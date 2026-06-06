@@ -49,10 +49,13 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- React producción — sin warnings, más rápido -->
-  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- React producción — self-hosted (mismo origen) para cumplir la CSP.
+       Antes se cargaba desde unpkg.com, pero script-src 'self' lo bloqueaba
+       → "React is not defined" → landing en blanco para visitantes sin login.
+       Los archivos se copian desde node_modules/react(-dom)/umd/ (v18.3.1). -->
+  <script src="react.production.min.js"></script>
+  <script src="react-dom.production.min.js"></script>
   <!-- Bundle pre-compilado — sin Babel runtime -->
-  <script src="bundle.js?v=20260526b"></script>
+  <script src="bundle.js?v=20260606"></script>
 </body>
 </html>
