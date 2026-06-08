@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { C, FONT, Spinner, Avatar, useConfirm, toast } from "./shared";
 import * as sb from "./supabase";
+import { useAppActions } from "./AppContext";
 
 // ─── CHATS PAGE — título real de la publicación (sin "Conversación") ───────────
 export default function ChatsPage({session,onOpenChat}){
+  const {openPub}=useAppActions();
   const [grupos,setGrupos]=useState([]);const [loading,setLoading]=useState(true);
   const [nombresMap,setNombresMap]=useState({});
   const [busquedaChat,setBusquedaChat]=useState("");
@@ -126,8 +128,8 @@ export default function ChatsPage({session,onOpenChat}){
                 {gruposChatsFiltrados.map((g,i)=>(
                   <div key={i}
                     role="button" tabIndex={0} aria-label={`Abrir chat grupal de ${g.pubTitulo||"la publicación"}`}
-                    onClick={()=>{if(window.__openPub)window.__openPub(g.pubId);}}
-                    onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(window.__openPub)window.__openPub(g.pubId);}}}
+                    onClick={()=>{if(openPub)openPub(g.pubId);}}
+                    onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(openPub)openPub(g.pubId);}}}
                     style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:13,padding:"11px 15px",display:"flex",alignItems:"center",gap:11,cursor:"pointer",transition:"border-color .12s"}}
                     onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
                     onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>

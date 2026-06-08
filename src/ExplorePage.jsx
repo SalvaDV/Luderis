@@ -18,8 +18,10 @@ import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
 import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer } from "lucide-react";
+import { useAppActions } from "./AppContext";
 
 export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
+  const {openNewPost}=useAppActions();
   const [posts,setPosts]=useState([]);const [loading,setLoading]=useState(true);
   const [busqueda,setBusqueda]=useState(""); const [panelOpen,setPanelOpen]=useState(false);
   const [filtroTipo,setFiltroTipo]=useState("all"); const [filtroModo,setFiltroModo]=useState("all");
@@ -962,7 +964,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Publicá tu primera clase y empezá a recibir alumnos. Solo tarda 2 minutos.</div>
                 </div>
                 <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
-                  <button onClick={()=>{if(typeof window._openNewPost==="function")window._openNewPost();}}
+                  <button onClick={()=>{if(openNewPost)openNewPost();}}
                     style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"8px 18px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 10px rgba(26,110,216,.25)"}}>
                     Publicar ahora →
                   </button>

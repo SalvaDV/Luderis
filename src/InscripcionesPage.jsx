@@ -3,9 +3,11 @@ import { Check, Circle, Calendar, AlertTriangle, Clock, Trash2, Bell } from "luc
 import { C, FONT, Spinner, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { EspacioClaseModal } from "./MiCuentaPage";
+import { useAppActions } from "./AppContext";
 
 // ─── INSCRIPCIONES PAGE — con tiempo hasta inicio / hasta fin ─────────────────
 export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead,onGoExplore}){
+  const {openPub}=useAppActions();
   // Marcar notifs como leídas cuando el usuario cliquea una pub concreta, no al montar
   const [inscripciones,setInscripciones]=useState([]);const [posts,setPosts]=useState({});const [loading,setLoading]=useState(true);const [ayudantePubs,setAyudantePubs]=useState([]);
   const [clasesAcordadas,setClasesAcordadas]=useState([]);
@@ -156,7 +158,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           </button>
         )}
         {(p.modo==="grupal"||p.modo==="curso")?(
-          <button onClick={()=>{if(window.__openPub)window.__openPub(p.id);}}
+          <button onClick={()=>{if(openPub)openPub(p.id);}}
             style={{background:C.accent,color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
             Chat grupal
           </button>
