@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/react";
+import { captureException } from "./sentry";
 
 export const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || "";
 export const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_KEY || "";
@@ -12,7 +12,7 @@ const SESSION_KEY = "classelink_session";
 const reportSupabaseError = (path, method, err) => {
   if (err?.isExpired) return;
   try {
-    Sentry.captureException(err instanceof Error ? err : new Error(String(err)), {
+    captureException(err instanceof Error ? err : new Error(String(err)), {
       tags: { layer: "supabase", method },
       extra: { path: String(path).split("?")[0] }, // sin querystring (evita PII en tags)
     });

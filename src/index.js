@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-import * as Sentry from "@sentry/react";
+import { captureException, scheduleSentry } from './sentry';
 import { initConsentMode, initGA, initClarity, getConsentStatus } from './analytics';
 import { register as registerSW } from './serviceWorkerRegistration';
 
@@ -10,13 +10,6 @@ initConsentMode(); // debe ir antes de initGA
 initGA();
 // Clarity (session recording) solo si el usuario ya consintió en una visita previa
 if (getConsentStatus() === 'granted') initClarity();
-
-Sentry.init({
-  dsn: "https://7048964b77b715c46288eb43fddb4129@o4511175376437248.ingest.us.sentry.io/4511175379517440",
-  environment: process.env.NODE_ENV,
-  enabled: process.env.NODE_ENV === "production",
-  tracesSampleRate: 0.1,
-});
 
 // Auto-reload once when a new deployment invalidates old JS chunks
 window.addEventListener("error", (e) => {
@@ -71,13 +64,44 @@ function ErrorFallback({ error, resetError }) {
   );
 }
 
+// ErrorBoundary propio (sin dependencia de Sentry, para no cargarlo en el path
+// crítico). Reporta a Sentry vía el wrapper diferido cuando captura un error.
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+    this.resetError = this.resetError.bind(this);
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { layer: "react" },
+      extra: { componentStack: info?.componentStack },
+    });
+  }
+  resetError() {
+    this.setState({ error: null });
+  }
+  render() {
+    if (this.state.error) {
+      return this.props.fallback({ error: this.state.error, resetError: this.resetError });
+    }
+    return this.props.children;
+  }
+}
+
 registerSW();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <Sentry.ErrorBoundary fallback={({ error, resetError }) => <ErrorFallback error={error} resetError={resetError} />}>
+    <AppErrorBoundary fallback={({ error, resetError }) => <ErrorFallback error={error} resetError={resetError} />}>
       <App />
-    </Sentry.ErrorBoundary>
+    </AppErrorBoundary>
   </React.StrictMode>
 );
+
+// Cargar Sentry cuando el navegador esté idle (fuera del path crítico).
+scheduleSentry();
