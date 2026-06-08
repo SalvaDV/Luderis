@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload } from "lucide-react";
 import * as sb from "./supabase";
+import { useAppActions } from "./AppContext";
 import {
   C, FONT, toast,
   Avatar, Spinner, Btn, Label, Modal,
@@ -1632,6 +1633,7 @@ function AjustesTab({session}){
 }
 
 function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
+  const {resetCuentaBadge}=useAppActions();
   const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);const [loading,setLoading]=useState(true);
   const [toggling,setToggling]=useState(null);const [ofertasMap,setOfertasMap]=useState({});const [ofertasModal,setOfertasModal]=useState(null);
   const [misOfertasEnv,setMisOfertasEnv]=useState(()=>{
@@ -2047,7 +2049,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         {CUENTA_TABS.map(tab=>{
           const active=tabCuenta===tab.id;
           return(
-            <button key={tab.id} onClick={()=>{setTabCuenta(tab.id);if(tab.id==="ofertas"&&typeof window._resetCuentaBadge==="function")window._resetCuentaBadge();}} className="cl-tab-btn"
+            <button key={tab.id} onClick={()=>{setTabCuenta(tab.id);if(tab.id==="ofertas"&&resetCuentaBadge)resetCuentaBadge();}} className="cl-tab-btn"
               style={{padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:active?600:400,
                 color:active?C.accent:C.muted,borderBottom:`2px solid ${active?C.accent:"transparent"}`,marginBottom:-2,transition:"all .15s",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
               {tab.label}

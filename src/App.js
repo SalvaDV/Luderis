@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as sb from "./supabase";
+import { AppActionsContext } from "./AppContext";
 import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
   C, FONT, _themeKey,
@@ -216,7 +217,6 @@ export default function App(){
   const [recoverySession,setRecoverySession]=useState(null);
   // Tema: fuerza re-render global al cambiar
   const [,forceThemeRender]=useState(0);
-  useEffect(()=>{window.__setAppTheme=(key)=>{applyTheme(key);forceThemeRender(n=>n+1);};},[]); // eslint-disable-line
   const { showBanner: showPushBanner, subscribe: subscribePush, dismiss: dismissPush, triggerBanner: triggerPushBanner } = usePushSubscription(session);
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);
@@ -300,13 +300,10 @@ export default function App(){
   const TIPOS_CUENTA=["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema","retiro_procesado","retiro_rechazado"];
   const TIPOS_INSC=["valorar_curso","nuevo_ayudante","busqueda_acordada","nuevo_contenido","clase_iniciada"];
   // Badge Actividad: MiCuentaPage llama esto al abrir la tab → marca como leídas en DB
-  useEffect(()=>{
-    window._resetCuentaBadge=()=>{
-      setOfertasAceptadasNuevas(0);setOfertasCount(0);
-      const s=sessionRef.current;
-      if(s?.user?.email)sb.marcarNotifsTipoLeidas(s.user.email,TIPOS_CUENTA,s.access_token).catch(()=>{});
-    };
-    return()=>{window._resetCuentaBadge=null;};
+  const resetCuentaBadge=useCallback(()=>{
+    setOfertasAceptadasNuevas(0);setOfertasCount(0);
+    const s=sessionRef.current;
+    if(s?.user?.email)sb.marcarNotifsTipoLeidas(s.user.email,TIPOS_CUENTA,s.access_token).catch(()=>{});
   },[]);// eslint-disable-line
   // Badge Inscripciones: marca como leídas en DB al navegar a esa sección
   useEffect(()=>{
@@ -315,29 +312,30 @@ export default function App(){
     const s=sessionRef.current;
     if(s?.user?.email)sb.marcarNotifsTipoLeidas(s.user.email,TIPOS_INSC,s.access_token).catch(()=>{});
   },[page]);// eslint-disable-line
-  // Exponer apertura del formulario de nueva publicación (usado por banners)
-  useEffect(()=>{window._openNewPost=()=>{setEditPost(null);setShowForm(true);};return()=>{window._openNewPost=null;};},[]);// eslint-disable-line
-  // Exponer navegación a publicación (para notification click)
-  useEffect(()=>{
-    window.__openPub=(pubId)=>{
-      if(!pubId)return;
-      sb.getPublicacionesByIds([pubId],session?.access_token).then(pubs=>{
-        const pub=pubs?.[0];
-        if(!pub)return;
-        if(pub.tipo==="oferta")setCursoPost(pub);
-        else setDetailPost(pub);
-      }).catch(()=>{});
-    };
-    // Siempre abre DetailModal (para notifs de preguntas/respuestas Q&A)
-    window.__openDetail=(pubId)=>{
-      if(!pubId)return;
-      sb.getPublicacionesByIds([pubId],session?.access_token).then(pubs=>{
-        const pub=pubs?.[0];
-        if(pub)setDetailPost(pub);
-      }).catch(()=>{});
-    };
-    return()=>{window.__openPub=null;window.__openDetail=null;};
-  },[session]);//eslint-disable-line
+  // Abrir el formulario de nueva publicación (consumido vía Context por ExplorePage/banners)
+  const openNewPost=useCallback(()=>{setEditPost(null);setShowForm(true);},[]);
+  // Notificación push del navegador: ref interno (reemplaza el global en window).
+  const pushNotifRef=useRef(null);
+  // Navegación a publicación desde notificaciones / paneles (Context)
+  const openPub=useCallback((pubId)=>{
+    if(!pubId)return;
+    sb.getPublicacionesByIds([pubId],sessionRef.current?.access_token).then(pubs=>{
+      const pub=pubs?.[0];
+      if(!pub)return;
+      if(pub.tipo==="oferta")setCursoPost(pub);
+      else setDetailPost(pub);
+    }).catch(()=>{});
+  },[]);// eslint-disable-line
+  // Siempre abre DetailModal (para notifs de preguntas/respuestas Q&A)
+  const openDetailById=useCallback((pubId)=>{
+    if(!pubId)return;
+    sb.getPublicacionesByIds([pubId],sessionRef.current?.access_token).then(pubs=>{
+      const pub=pubs?.[0];
+      if(pub)setDetailPost(pub);
+    }).catch(()=>{});
+  },[]);// eslint-disable-line
+  // Valor del Context de acciones globales (estable: todas las fns son useCallback).
+  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge}),[openPub,openDetailById,openNewPost,resetCuentaBadge]);
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -405,9 +403,9 @@ export default function App(){
         const ultimo=i.ultimo_acceso||i.created_at;
         return ultimo<hace7dias;
       });
-      if(abandonadas.length>0&&window.__pushNotif&&document.hidden){
+      if(abandonadas.length>0&&pushNotifRef.current&&document.hidden){
         const pub=abandonadas[0];
-        window.__pushNotif(
+        pushNotifRef.current(
           "¿Seguís aprendiendo? 📚",
           `Hace más de 7 días que no entraste a "${pub.pub_titulo||"tu clase"}". ¡No pierdas el ritmo!`
         );
@@ -424,19 +422,19 @@ export default function App(){
       const n=new Notification(titulo,{body:cuerpo,icon:NOTIF_ICON,tag,renotify:true,silent:false});
       n.onclick=()=>{
         window.focus();n.close();
-        if(pubId&&window.__openPub)window.__openPub(pubId);
+        if(pubId)openPub(pubId);
       };
       setTimeout(()=>n.close(),8000);
     }catch{}
-  },[]);
+  },[openPub]);
 
   // El permiso de notificaciones se pide vía PushPermissionBanner (usePushSubscription),
   // y se dispara al completar el onboarding — no a ciegas a los 8s. Ver triggerPushBanner.
 
-  // Exponer globalmente para usarla desde cualquier lado
+  // Mantener el ref apuntando a la función de push actual.
   useEffect(()=>{
-    window.__pushNotif=mostrarNotifPush;
-    return()=>{window.__pushNotif=null;};
+    pushNotifRef.current=mostrarNotifPush;
+    return()=>{pushNotifRef.current=null;};
   },[mostrarNotifPush]);
 
   useEffect(()=>{
@@ -584,13 +582,13 @@ export default function App(){
       const openOtro=chatPostRef.current?.autor_email;
       const newUnread=msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__"&&!(m.publicacion_id===openId&&(m.de_nombre===openOtro||m.para_nombre===openOtro))).length;
       // Push notification si hay mensajes nuevos y la tab no está activa
-      if(newUnread>0&&document.hidden&&window.__pushNotif){
+      if(newUnread>0&&document.hidden&&pushNotifRef.current){
         const lastMsg=msgs.filter(m=>m.de_nombre!==session.user.email&&!m.leido&&m.para_nombre!=="__grupo__").slice(-1)[0];
         if(lastMsg){
           const senderName=sb.getDisplayName(lastMsg.de_nombre)||"Alguien";
           const isImg=lastMsg.texto?.startsWith("[img]");
           const preview=isImg?"📷 Imagen":(lastMsg.texto||"").slice(0,100);
-          window.__pushNotif(
+          pushNotifRef.current(
             `💬 Mensaje de ${senderName}`,
             preview,
             {tag:`luderis-chat-${lastMsg.publicacion_id}`,pubId:lastMsg.publicacion_id}
@@ -604,17 +602,17 @@ export default function App(){
       setNotifCount(notifsInsc.length);setNotifs(nfs||[]);
       // Push urgente para clase en vivo
       const claseViva=notifsInsc.filter(n=>n.tipo==="clase_iniciada"&&!n.leida);
-      if(claseViva.length>0&&window.__pushNotif){
+      if(claseViva.length>0&&pushNotifRef.current){
         const n=claseViva[0];
-        window.__pushNotif("📹 ¡Clase en vivo!",`${n.pub_titulo} — Uníte ahora`,{tag:`luderis-clase-${n.publicacion_id}`,pubId:n.publicacion_id});
+        pushNotifRef.current("📹 ¡Clase en vivo!",`${n.pub_titulo} — Uníte ahora`,{tag:`luderis-clase-${n.publicacion_id}`,pubId:n.publicacion_id});
       }
       // Badge Mi Cuenta: notifs de ofertas/contras/inscripciones recibidas
       const notifsCuenta=(nfs||[]).filter(n=>["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion","sistema"].includes(n.tipo));
       // Push para notificaciones nuevas
-      if(notifsCuenta.length>0&&document.hidden&&window.__pushNotif){
+      if(notifsCuenta.length>0&&document.hidden&&pushNotifRef.current){
         const lastNotif=notifsCuenta[0];
         const LABELS={oferta_aceptada:"✅ Oferta aceptada",nueva_inscripcion:"🎓 Nueva inscripción",sistema:"📣 Anuncio de Luderis",nueva_oferta:"📩 Nueva oferta",oferta_rechazada:"❌ Oferta rechazada",contraoferta:"🔄 Contraoferta recibida",retiro_procesado:"💰 Retiro procesado",retiro_rechazado:"❌ Retiro rechazado"};
-        window.__pushNotif(
+        pushNotifRef.current(
           LABELS[lastNotif.tipo]||"🔔 Notificación",
           lastNotif.pub_titulo||"Tenés una notificación nueva en Luderis",
           {tag:`luderis-cuenta-${lastNotif.tipo}`,pubId:lastNotif.publicacion_id}
@@ -840,6 +838,7 @@ export default function App(){
   }
   const SW=isMobile?0:224;
   return(
+    <AppActionsContext.Provider value={appActions}>
     <div style={{minHeight:"100vh",background:`var(--cl-section-tint, ${C.bg})`,fontFamily:FONT,color:C.text,display:"flex",transition:"background .4s ease",overflowX:"hidden",maxWidth:"100vw"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tabPulse{0%,100%{opacity:1}50%{opacity:0.5}}@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}*{box-sizing:border-box}html,body,#root{background:${C.bg};color:${C.text};min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}::-webkit-scrollbar-track{background:transparent}.cl-card-anim{animation:fadeUp .2s ease both}.cl-fade{animation:fadeIn .15s ease both}.cl-page-anim{animation:fadeUp .18s ease both}.sk{background:linear-gradient(90deg,var(--cl-sk-a,#E2E8F0) 25%,var(--cl-sk-b,#F7FAFC) 50%,var(--cl-sk-a,#E2E8F0) 75%);background-size:400px;animation:shimmer 1.4s infinite linear;border-radius:6px}.cl-card-anim:nth-child(1){animation-delay:0ms}.cl-card-anim:nth-child(2){animation-delay:40ms}.cl-card-anim:nth-child(3){animation-delay:80ms}.cl-card-anim:nth-child(4){animation-delay:120ms}.cl-card-anim:nth-child(5){animation-delay:160ms}.cl-card-anim:nth-child(6){animation-delay:200ms}input,textarea,select{color-scheme:${_themeKey()==="light"?"light":"dark"};background-color:${C.surface}!important;color:${C.text}!important;border-color:${C.border}}input::placeholder,textarea::placeholder{color:${C.muted};opacity:1}input:focus,textarea:focus,select:focus{border-color:${C.accent}!important;outline:none}@media(max-width:768px){input,textarea,select{font-size:16px!important}.cl-hide-desk{display:none!important}button{-webkit-tap-highlight-color:transparent}}.cl-tabs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.cl-tabs-scroll::-webkit-scrollbar{display:none}.cl-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.cl-grid-2{grid-template-columns:1fr!important}}.cl-row-wrap{display:flex;flex-wrap:wrap;gap:8px}.curso-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.curso-actions::-webkit-scrollbar{display:none}@media(max-width:600px){.curso-actions{overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;gap:6px!important}.curso-actions button,.curso-actions a{white-space:nowrap;font-size:11px!important;padding:5px 9px!important;min-height:0!important}.curso-actions span{white-space:nowrap;font-size:11px!important}.curso-pad{padding:12px 14px!important}.curso-card{padding:13px 15px!important;border-radius:12px!important}.curso-main-header{padding:8px 12px!important}}`}</style>
       <Sidebar page={page} setPage={setPage} session={session} onLogout={logout} onNewPost={()=>{setEditPost(null);setShowForm(true);}} unreadCount={unread} ofertasCount={ofertasCount} notifCount={notifCount} totalNotifsUnread={notifs.filter(n=>!n.leida).length} ofertasAceptadasNuevas={ofertasAceptadasNuevas} mobile={isMobile} open={sidebarOpen} onClose={()=>setSidebarOpen(false)} theme={currentTheme} onToggleTheme={toggleTheme} onForceRender={()=>forceThemeRender(n=>n+1)} esAdmin={esAdmin} juegosBadge={juegosBadge} onOpenAdmin={openAdmin} onOpenNotifPanel={openNotifPanel}/>
@@ -965,5 +964,6 @@ export default function App(){
       {showPushBanner&&<PushPermissionBanner onAccept={subscribePush} onDismiss={dismissPush}/>}
       <React.Suspense fallback={null}><NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost}/></React.Suspense>
     </div>
+    </AppActionsContext.Provider>
   );
 }

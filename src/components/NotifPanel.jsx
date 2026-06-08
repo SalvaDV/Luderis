@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { GraduationCap, Inbox, CheckCircle, XCircle, RefreshCw, MessageCircle, Video, BookOpen, Users, Star, Bell, CreditCard, Megaphone, VolumeX, HelpCircle } from "lucide-react";
 import { C, FONT, Spinner, fmtRel, logError } from "../shared";
 import * as sb from "../supabase";
+import { useAppActions } from "../AppContext";
 
 export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
+  const {openPub,openDetail}=useAppActions();
   const [notifs,setNotifs]=useState([]);
   const [loading,setLoading]=useState(true);
   const [tab,setTab]=useState("todas");
@@ -159,7 +161,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                           setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
                           onClose();
                           const fn=(n.tipo==="nueva_pregunta"||n.tipo==="pregunta_respondida")
-                            ?window.__openDetail:window.__openPub;
+                            ?openDetail:openPub;
                           if(fn)fn(n.publicacion_id);
                         }
                       }}
