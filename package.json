@@ -13,38 +13,16 @@
     "react-dom": "^18.2.0",
     "react-ga4": "^3.0.1",
     "react-router-dom": "^7.17.0",
-    "react-scripts": "5.0.1",
     "recharts": "^3.8.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "test:ci": "react-scripts test --watchAll=false",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ],
-    "plugins": [
-      "jsx-a11y"
-    ],
-    "rules": {
-      "jsx-a11y/alt-text": "warn",
-      "jsx-a11y/anchor-is-valid": "warn",
-      "jsx-a11y/aria-props": "warn",
-      "jsx-a11y/aria-role": "warn",
-      "jsx-a11y/click-events-have-key-events": "warn",
-      "jsx-a11y/no-static-element-interactions": "warn",
-      "jsx-a11y/no-noninteractive-element-interactions": "warn",
-      "jsx-a11y/interactive-supports-focus": "warn",
-      "jsx-a11y/label-has-associated-control": "warn",
-      "jsx-a11y/control-has-associated-label": "warn",
-      "jsx-a11y/no-autofocus": "warn"
-    }
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ci": "vitest run"
   },
   "browserslist": {
     "production": [
@@ -59,6 +37,9 @@
     ]
   },
   "devDependencies": {
-    "eslint-plugin-jsx-a11y": "^6.10.2"
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   }
 }
