@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import * as sb from "./supabase";
 import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
@@ -68,6 +69,24 @@ const JuegosHub      = React.lazy(() => import('./JuegosHub'));
 // Frecuencia del polling de fallback de notificaciones (el WebSocket Realtime
 // cubre el tiempo real; esto solo cubre el caso de que el WS esté caído).
 const POLL_MS = 90000;
+
+// ─── Router: mapeo sección ↔ ruta ──────────────────────────────────────────────
+// La navegación principal pasó de estado/sessionStorage a URL real (react-router).
+// Estos mapas permiten conservar todos los call-sites setPage("x") y page==="x".
+const SECTION_TO_PATH = {
+  explore: "/",
+  agenda: "/agenda",
+  chats: "/chats",
+  favoritos: "/favoritos",
+  inscripciones: "/inscripciones",
+  cuenta: "/cuenta",
+  juegos: "/juegos",
+  faros: "/faros",
+  shikaku: "/shikaku",
+};
+const PATH_TO_SECTION = Object.fromEntries(
+  Object.entries(SECTION_TO_PATH).map(([k, v]) => [v, k])
+);
 // Named exports for lazy-loaded modules that need these components
 export { FavBtn, OfertarBtn, ShareBtn, DenunciaModal, PostChatBtn,
          MyPostCard, OfertasRecibidasModal, FinalizarClaseModal,
@@ -262,8 +281,12 @@ export default function App(){
       meta.content=((pub.descripcion||"").slice(0,155))||`Clases de ${pub.materia||"educación"} en Luderis`;
     }
   },[cursoPost,detailPost]);const [perfilEmail,setPerfilEmail]=useState(null);const openPerfil=useCallback((email)=>{if(email)trackPerfilView();setPerfilEmail(email);},[]);const [certVerifId,setCertVerifId]=useState(null);const [chatsKey,setChatsKey]=useState(0);
-  const [page,setPageRaw]=useState(()=>{try{return sessionStorage.getItem("cl_page")||"explore";}catch{return "explore";}});
-  const setPage=(p)=>{try{sessionStorage.setItem("cl_page",p);}catch{}setPageRaw(p);};
+  const navigate=useNavigate();
+  const location=useLocation();
+  // La sección activa se deriva de la URL (no de estado/sessionStorage). Se conservan
+  // todos los call-sites setPage("x") y page==="x": solo cambia la fuente de verdad.
+  const page=PATH_TO_SECTION[location.pathname]||"explore";
+  const setPage=(p)=>{navigate(SECTION_TO_PATH[p]||"/");};
   const [showForm,setShowForm]=useState(false);const [editPost,setEditPost]=useState(null);const [myPostsKey,setMyPostsKey]=useState(0);
   const [unread,setUnread]=useState(0);const [ofertasCount,setOfertasCount]=useState(0);const [notifCount,setNotifCount]=useState(0);const [notifs,setNotifs]=useState([]);
   const [farosWonToday,setFarosWonToday]=useState(false);
@@ -523,6 +546,32 @@ export default function App(){
     else{setDetailPost(post);}
   },[]);// eslint-disable-line
 
+  // ── La flecha "atrás" cierra el modal de contenido (curso/detalle/perfil) ────
+  // Estos modales son overlays sin URL propia; sin esto, "atrás" cambiaría de
+  // sección en vez de cerrarlos. Patrón modal+history: al abrir un overlay se
+  // empuja una entrada al historial; "atrás" la consume y cerramos el overlay
+  // (sin navegar de sección). Si se cierra con la X, consumimos esa entrada.
+  const anyOverlayOpen=!!(cursoPost||detailPost||perfilEmail);
+  const overlayPushedRef=useRef(false);
+  const closeOverlays=useCallback(()=>{setCursoPost(null);setDetailPost(null);setPerfilEmail(null);},[]);// eslint-disable-line
+  useEffect(()=>{
+    if(anyOverlayOpen&&!overlayPushedRef.current){
+      overlayPushedRef.current=true;
+      window.history.pushState({...window.history.state,__overlay:true},"");
+    }else if(!anyOverlayOpen&&overlayPushedRef.current){
+      // Cerrado con la X (no por "atrás"): consumir la entrada que empujamos.
+      overlayPushedRef.current=false;
+      window.history.back();
+    }
+  },[anyOverlayOpen]);
+  useEffect(()=>{
+    const onPop=()=>{
+      if(overlayPushedRef.current){overlayPushedRef.current=false;closeOverlays();}
+    };
+    window.addEventListener("popstate",onPop);
+    return()=>window.removeEventListener("popstate",onPop);
+  },[closeOverlays]);
+
   const chatPostRef=useRef(null);
   const refreshUnread=useCallback(()=>{
     if(!session)return;
@@ -754,7 +803,7 @@ export default function App(){
     if(!ogDesc){ogDesc=document.createElement("meta");ogDesc.setAttribute("property","og:description");document.head.appendChild(ogDesc);}
     ogDesc.content=meta.content;
   },[page]);// eslint-disable-line
-  const logout=()=>{sb.clearSession();setSession(null);try{sessionStorage.removeItem("cl_curso_id");sessionStorage.removeItem("cl_page");}catch{};setPage("explore");};
+  const logout=()=>{sb.clearSession();setSession(null);try{sessionStorage.removeItem("cl_curso_id");}catch{};setPage("explore");};
   const openChat=(p)=>{chatPostRef.current=p;setChatPost(p);};
   const closeChat=()=>{chatPostRef.current=null;setChatPost(null);refreshUnread();setChatsKey(k=>k+1);};
   // Tema con estado React para re-render
