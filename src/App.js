@@ -546,6 +546,32 @@ export default function App(){
     else{setDetailPost(post);}
   },[]);// eslint-disable-line
 
+  // ── La flecha "atrás" cierra el modal de contenido (curso/detalle/perfil) ────
+  // Estos modales son overlays sin URL propia; sin esto, "atrás" cambiaría de
+  // sección en vez de cerrarlos. Patrón modal+history: al abrir un overlay se
+  // empuja una entrada al historial; "atrás" la consume y cerramos el overlay
+  // (sin navegar de sección). Si se cierra con la X, consumimos esa entrada.
+  const anyOverlayOpen=!!(cursoPost||detailPost||perfilEmail);
+  const overlayPushedRef=useRef(false);
+  const closeOverlays=useCallback(()=>{setCursoPost(null);setDetailPost(null);setPerfilEmail(null);},[]);// eslint-disable-line
+  useEffect(()=>{
+    if(anyOverlayOpen&&!overlayPushedRef.current){
+      overlayPushedRef.current=true;
+      window.history.pushState({...window.history.state,__overlay:true},"");
+    }else if(!anyOverlayOpen&&overlayPushedRef.current){
+      // Cerrado con la X (no por "atrás"): consumir la entrada que empujamos.
+      overlayPushedRef.current=false;
+      window.history.back();
+    }
+  },[anyOverlayOpen]);
+  useEffect(()=>{
+    const onPop=()=>{
+      if(overlayPushedRef.current){overlayPushedRef.current=false;closeOverlays();}
+    };
+    window.addEventListener("popstate",onPop);
+    return()=>window.removeEventListener("popstate",onPop);
+  },[closeOverlays]);
+
   const chatPostRef=useRef(null);
   const refreshUnread=useCallback(()=>{
     if(!session)return;
