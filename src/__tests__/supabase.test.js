@@ -4,7 +4,7 @@ import * as sb from "../supabase";
 let lastUrl, lastOpts;
 beforeEach(() => {
   lastUrl = null; lastOpts = null;
-  global.fetch = jest.fn((url, opts) => {
+  global.fetch = vi.fn((url, opts) => {
     lastUrl = url; lastOpts = opts;
     return Promise.resolve({
       ok: true,
