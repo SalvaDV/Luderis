@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Timer, Eye, Clock, AlertTriangle, X } from "lucide-react";
-import { C, FONT, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
+import { C, FONT, FONT_DISPLAY, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { AcuerdoModal } from "./MiCuentaPage";
 
@@ -289,7 +289,7 @@ export default function MyPostsPage({session,onEdit,onNew,onOpenCurso,onOpenChat
   return(
     <div style={{fontFamily:FONT}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div><h2 style={{fontSize:20,color:C.text,margin:"0 0 3px",fontWeight:700}}>Mis publicaciones</h2><p style={{color:C.muted,fontSize:12,margin:0}}>{posts.length} publicación{posts.length!==1?"es":""}</p></div>
+        <div><h2 style={{fontFamily:FONT_DISPLAY,fontSize:21,color:C.text,margin:"0 0 3px",fontWeight:800,letterSpacing:"-.02em"}}>Mis publicaciones</h2><p style={{color:C.muted,fontSize:12,margin:0}}>{posts.length} publicación{posts.length!==1?"es":""}</p></div>
         <Btn onClick={onNew} style={{padding:"7px 13px",fontSize:12}}>+ Nueva</Btn>
       </div>
       {loading?<SkeletonList n={4}/>:posts.length===0?(
