@@ -524,9 +524,30 @@ function EspacioChat({pubId,miEmail,miId,otroEmail,otroNombre,session}){
     let mounted=true;
     const safeCargar=async()=>{if(mounted)await cargar();};
     safeCargar();
-    const t=setInterval(safeCargar,6000);
-    return()=>{mounted=false;clearInterval(t);};
-  },[cargar]);
+    // Realtime: mensajes en vivo (postgres_changes en mensajes de esta pub, scopeado
+    // por RLS al par) + fallback de polling si el WebSocket no se puede crear.
+    // Antes era polling cada 6s (no instantáneo).
+    const topic=`realtime:espacio_${pubId}_${[miEmail,otroEmail].map(s=>(s||"").toLowerCase().replace(/[^a-z0-9]/g,"")).sort().join("_")}`;
+    let ws,heartbeat,reconnectTimer,pollFallback,dead=false,retries=0;
+    const token=session.access_token;
+    const scheduleReconnect=()=>{if(dead)return;retries++;reconnectTimer=setTimeout(connect,Math.min(2000*retries,15000));};
+    function connect(){
+      if(dead||!token)return;
+      try{
+        ws=new WebSocket(`${sb.SUPABASE_URL.replace("https","wss")}/realtime/v1/websocket?apikey=${sb.SUPABASE_KEY}&vsn=1.0.0`);
+        ws.onopen=()=>{
+          retries=0;
+          ws.send(JSON.stringify({topic,event:"phx_join",payload:{config:{postgres_changes:[{event:"INSERT",schema:"public",table:"mensajes",filter:`publicacion_id=eq.${pubId}`}]},access_token:token},ref:"1"}));
+          heartbeat=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));},25000);
+        };
+        ws.onmessage=(e)=>{try{const msg=JSON.parse(e.data);if(msg.event==="postgres_changes"){const rec=msg.payload?.data?.record;if(rec&&((rec.de_nombre===miEmail&&rec.para_nombre===otroEmail)||(rec.de_nombre===otroEmail&&rec.para_nombre===miEmail)))safeCargar();}}catch{}};
+        ws.onclose=()=>{clearInterval(heartbeat);if(!dead)scheduleReconnect();};
+        ws.onerror=()=>{try{ws.close();}catch{}};
+      }catch{pollFallback=setInterval(safeCargar,8000);}
+    }
+    connect();
+    return()=>{mounted=false;dead=true;clearInterval(heartbeat);clearTimeout(reconnectTimer);clearInterval(pollFallback);try{ws?.close();}catch{}};
+  },[cargar,pubId,miEmail,otroEmail,session.access_token]);
   useEffect(()=>{if(bottomRef.current)bottomRef.current.scrollIntoView({behavior:"smooth"});},[msgs]);
   const enviar=async()=>{
     if(!texto.trim())return;

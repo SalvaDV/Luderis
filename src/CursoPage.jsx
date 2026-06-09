@@ -405,8 +405,10 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
   const atBottomRef=useRef(true);
   const prevMsgCountRef=useRef(0);
   const chatNotifTimer=useRef(null);
-  const escribiendoTimer=useRef(null);
   const fileInputRef=useRef(null);
+  const wsRef=useRef(null);              // socket Realtime vivo (para emitir "escribiendo")
+  const lastTypingSentRef=useRef(0);     // throttle del broadcast de typing
+  const typersRef=useRef({});            // {email:{name,ts}} quién está escribiendo (via broadcast)
 
   const scrollBottom=(smooth=true)=>setTimeout(()=>{
     const el=msgsContainerRef.current;
@@ -451,58 +453,84 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
     }finally{setLoading(false);}
   },[post.id,session.access_token,onNewMessages,miEmail]);
 
-  // Realtime WebSocket + fallback polling
+  // Realtime: postgres_changes (INSERT en mensajes de grupo de esta pub, scopeado
+  // por RLS) + broadcast "typing". El phx_join debe incluir el binding de
+  // postgres_changes y el access_token del usuario (RLS), si no Supabase no emite
+  // ningún evento. Patrón espejo del WS de notificaciones de App.jsx (heartbeat en
+  // intervalo + reconexión con backoff). Antes mandaba payload vacío → nunca recibía.
   useEffect(()=>{
     cargar();
-    let canal=null;
-    try{
-      const ws=new WebSocket(`${SUPABASE_URL_CHAT.replace("https","wss")}/realtime/v1/websocket?apikey=${ANON_KEY_CHAT}&vsn=1.0.0`);
-      canal=ws;
-      ws.onopen=()=>{
-        ws.send(JSON.stringify({topic:`realtime:mensajes_grupo_${post.id}`,event:"phx_join",payload:{},ref:"1"}));
-        ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
-      };
-      ws.onmessage=(e)=>{
-        try{const msg=JSON.parse(e.data);if(msg.event==="INSERT"||msg.payload?.type==="INSERT")cargar();}catch{}
-      };
-      ws.onerror=()=>{ws.close();const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};};
-    }catch{const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};}
-    return()=>{try{canal?.close?.();}catch{}};
-  },[cargar]);// eslint-disable-line react-hooks/exhaustive-deps
+    const topic=`realtime:chat_grupo_${post.id}`;
+    let ws,heartbeat,reconnectTimer,pollFallback,dead=false,retries=0;
+    const token=session.access_token;
+    const scheduleReconnect=()=>{if(dead)return;retries++;reconnectTimer=setTimeout(connect,Math.min(2000*retries,15000));};
+    function connect(){
+      if(dead||!token)return;
+      try{
+        ws=new WebSocket(`${SUPABASE_URL_CHAT.replace("https","wss")}/realtime/v1/websocket?apikey=${ANON_KEY_CHAT}&vsn=1.0.0`);
+        wsRef.current=ws;
+        ws.onopen=()=>{
+          retries=0;
+          ws.send(JSON.stringify({
+            topic,event:"phx_join",
+            payload:{
+              config:{
+                broadcast:{ack:false,self:false},
+                postgres_changes:[{event:"INSERT",schema:"public",table:"mensajes",filter:`publicacion_id=eq.${post.id}`}]
+              },
+              access_token:token
+            },ref:"1"
+          }));
+          heartbeat=setInterval(()=>{
+            if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
+          },25000);
+        };
+        ws.onmessage=(e)=>{
+          try{
+            const msg=JSON.parse(e.data);
+            if(msg.event==="postgres_changes"){
+              const rec=msg.payload?.data?.record;
+              if(rec&&rec.para_nombre==="__grupo__")cargar();// solo mensajes del grupo
+            }else if(msg.event==="broadcast"&&msg.payload?.event==="typing"){
+              const from=msg.payload?.payload?.from;
+              if(from&&from!==miEmail)typersRef.current[from]={name:msg.payload?.payload?.name||from.split("@")[0],ts:Date.now()};
+            }
+          }catch{}
+        };
+        ws.onclose=()=>{clearInterval(heartbeat);if(!dead)scheduleReconnect();};
+        ws.onerror=()=>{try{ws.close();}catch{}};
+      }catch{pollFallback=setInterval(cargar,5000);}
+    }
+    connect();
+    return()=>{dead=true;clearInterval(heartbeat);clearTimeout(reconnectTimer);clearInterval(pollFallback);wsRef.current=null;try{ws?.close();}catch{}};
+  },[cargar,post.id,miEmail,session.access_token]);// eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detectar quién está escribiendo via localStorage
+  // "Escribiendo…" — lee el mapa poblado por los broadcasts de Realtime (soporta
+  // varios escribiendo a la vez). Antes usaba localStorage → solo cross-pestaña.
   useEffect(()=>{
     const check=()=>{
-      try{
-        const key=`cl_typing_grupo_${post.id}`;
-        const data=JSON.parse(localStorage.getItem(key)||"{}");
-        const ahora=Date.now();
-        const activos=Object.entries(data)
-          .filter(([email,ts])=>email!==miEmail&&ahora-ts<3000)
-          .map(([email])=>sb.getDisplayName(email)||email.split("@")[0]);
-        setEscribiendo(activos);
-      }catch{}
+      const ahora=Date.now();
+      const activos=Object.entries(typersRef.current)
+        .filter(([email,info])=>email!==miEmail&&ahora-info.ts<3000)
+        .map(([,info])=>info.name);
+      setEscribiendo(activos);
     };
     const t=setInterval(check,500);
     return()=>clearInterval(t);
-  },[post.id,miEmail]);
+  },[miEmail]);
 
   const emitirEscribiendo=()=>{
+    const ws=wsRef.current;
+    if(!ws||ws.readyState!==WebSocket.OPEN)return;
+    const now=Date.now();
+    if(now-lastTypingSentRef.current<900)return;// throttle: 1 broadcast c/900ms
+    lastTypingSentRef.current=now;
     try{
-      const key=`cl_typing_grupo_${post.id}`;
-      const data=JSON.parse(localStorage.getItem(key)||"{}");
-      data[miEmail]=Date.now();
-      localStorage.setItem(key,JSON.stringify(data));
+      ws.send(JSON.stringify({
+        topic:`realtime:chat_grupo_${post.id}`,event:"broadcast",
+        payload:{type:"broadcast",event:"typing",payload:{from:miEmail,name:sb.getDisplayName(miEmail)||miEmail.split("@")[0]}},ref:"bt"
+      }));
     }catch{}
-    clearTimeout(escribiendoTimer.current);
-    escribiendoTimer.current=setTimeout(()=>{
-      try{
-        const key=`cl_typing_grupo_${post.id}`;
-        const data=JSON.parse(localStorage.getItem(key)||"{}");
-        delete data[miEmail];
-        localStorage.setItem(key,JSON.stringify(data));
-      }catch{}
-    },2500);
   };
 
   const handleImageSelect=(e)=>{
@@ -528,7 +556,6 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
     }
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
     setInput("");setImagenPrevia(null);setSending(true);
-    try{localStorage.removeItem(`cl_typing_grupo_${post.id}`);}catch{}
     try{
       await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:"__grupo__",texto:mensajeTexto,leido:true,pub_titulo:post.titulo},session.access_token);
       await cargar();
