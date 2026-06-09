@@ -38,7 +38,8 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
           ?`linear-gradient(150deg,${C.accent}07 0%,${C.surface} 50%)`
           :post.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,
         border:`1px solid ${esMio?C.accent+"35":fueRechazado?C.danger+"40":post.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,
-        borderRadius:12,padding:"16px 18px",cursor:"pointer",
+        borderRadius:14,padding:"18px",cursor:"pointer",
+        boxShadow:C.shadow,
         willChange:"transform",fontFamily:FONT,
         borderLeft:fueRechazado?`3px solid ${C.danger}`:post.tipo==="busqueda"?`3px solid ${TIPO_PUB.pedido.accent}`:undefined,
       }}>
@@ -80,7 +81,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
       </div>
 
       {/* Content */}
-      <h3 style={{color:C.text,fontSize:15,fontWeight:700,margin:"0 0 4px",lineHeight:1.35}}>{post.titulo}</h3>
+      <h3 style={{color:C.text,fontSize:15.5,fontWeight:650,letterSpacing:"-.005em",margin:"0 0 4px",lineHeight:1.35}}>{post.titulo}</h3>
       <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 10px"}}>{post.descripcion?.slice(0,130)}{post.descripcion?.length>130?"…":""}</p>
       {avgPub&&<div style={{marginBottom:9}}><MiniStars val={avgPub} count={countPub}/></div>}
 

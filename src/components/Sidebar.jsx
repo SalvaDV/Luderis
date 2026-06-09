@@ -74,10 +74,10 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
         {nav.map(item=>{
           const active=page===item.id;
           return(<button key={item.id} onClick={()=>{setPage(item.id);if(mobile)onClose();}}
-            style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",
+            style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:10,border:"none",
               background:active?C.accentDim:"transparent",
-              color:active?C.accent:C.text,
-              fontWeight:active?600:400,fontSize:13,cursor:"pointer",marginBottom:1,fontFamily:FONT,textAlign:"left",
+              color:active?C.accent:C.textSoft||C.text,
+              fontWeight:active?650:450,fontSize:13.5,cursor:"pointer",marginBottom:2,fontFamily:FONT,textAlign:"left",
               transition:"background .12s,color .12s"}}
             onMouseEnter={e=>{if(!active){e.currentTarget.style.background=C.bg;}}}
             onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";}}}>
