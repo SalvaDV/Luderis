@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import * as sb from "./supabase";
 import { SUPABASE_URL as SUPA_URL, SUPABASE_KEY as ANON_KEY } from "./supabase";
-import { C, FONT, toast, fmt, fmtRel, fmtPrice, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
+import { C, FONT, FONT_DISPLAY, toast, fmt, fmtRel, fmtPrice, Avatar, Spinner, Btn, useConfirm, logError } from "./shared";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -402,7 +402,7 @@ export default function AdminPage({ session, onClose, onChatUser }) {
             </button>
           )}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 800, color: A.text, letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{TAB_LABELS[tab] || tab}</div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: isMobile ? 15 : 17, fontWeight: 800, color: A.text, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{TAB_LABELS[tab] || tab}</div>
             {!isMobile && <div style={{ fontSize: 11, color: A.muted }}>Luderis Admin · {session.user.email}</div>}
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
