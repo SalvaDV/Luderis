@@ -1,7 +1,31 @@
 import { captureException } from "./sentry";
+import type { Database } from "./database.types";
 
-export const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || "";
-export const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_KEY || "";
+// Tipos de las filas/tablas generados desde el esquema de Supabase (database.types.ts).
+// Disponibles para tipar gradualmente los retornos: ej. db<Tables["usuarios"]["Row"][]>(...).
+export type Tables = Database["public"]["Tables"];
+
+// Alias de la capa de datos. `Token` admite undefined/null porque `db`/`rpc`
+// caen al anon key cuando no hay sesión; así los call-sites pueden pasar undefined.
+type Token = string | null | undefined;
+type Id = string | number;
+type Row = Record<string, any>;
+
+interface Filtros {
+  texto?: string;
+  materia?: string;
+  tipo?: string;
+  categoria?: string;
+  modalidad?: string;
+  precioMin?: number;
+  precioMax?: number;
+  limite?: number;
+  offset?: number;
+  autor?: string;
+}
+
+export const SUPABASE_URL: string = process.env.REACT_APP_SUPABASE_URL || "";
+export const SUPABASE_KEY: string = process.env.REACT_APP_SUPABASE_KEY || "";
 
 const SESSION_KEY = "classelink_session";
 
@@ -9,7 +33,7 @@ const SESSION_KEY = "classelink_session";
 // Los call-sites usan .catch(()=>[]) para no romper la UI, pero eso ocultaba TODO
 // fallo (red, RLS, 500). Reportamos acá una sola vez para que sea visible en Sentry
 // sin cambiar el comportamiento de fallback. Se omiten los JWT expirados (esperados).
-const reportSupabaseError = (path, method, err) => {
+const reportSupabaseError = (path: string, method: string, err: any): void => {
   if (err?.isExpired) return;
   try {
     captureException(err instanceof Error ? err : new Error(String(err)), {
@@ -21,24 +45,24 @@ const reportSupabaseError = (path, method, err) => {
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
-export const saveSession = (s) => {
+export const saveSession = (s: any): void => {
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch {}
 };
 
-export const loadSession = () => {
+export const loadSession = (): any => {
   try {
     const s = localStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
   } catch { return null; }
 };
 
-export const clearSession = () => {
+export const clearSession = (): void => {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
 };
 
 // ── Display name (localStorage) ───────────────────────────────────────────────
 
-export const getDisplayName = (email) => {
+export const getDisplayName = (email?: string | null): string => {
   if (!email) return "Usuario";
   try {
     return localStorage.getItem("dn_" + email) || email.split("@")[0];
@@ -47,7 +71,7 @@ export const getDisplayName = (email) => {
   }
 };
 
-export const setDisplayName = (email, name) => {
+export const setDisplayName = (email?: string | null, name?: string | null): void => {
   if (!email) return;
   try {
     localStorage.setItem("dn_" + email, name || email.split("@")[0]);
@@ -57,27 +81,27 @@ export const setDisplayName = (email, name) => {
 // ── Usuarios ──────────────────────────────────────────────────────────────────
 
 // Se llama al registrarse para crear el registro en la tabla pública usuarios
-export const insertUsuario = (data, token) =>
+export const insertUsuario = (data: Row, token: Token) =>
   db("usuarios", "POST", data, token, "return=representation");
 
 // ── Quejas (libro de quejas público) ─────────────────────────────────────────
-export const insertQueja = (data) =>
+export const insertQueja = (data: Row) =>
   db("quejas", "POST", data, null, "return=minimal");
 
 // Actualiza campos del perfil (nombre, bio, etc.) en la tabla usuarios
-export const updateUsuario = (id, data, token) =>
+export const updateUsuario = (id: Id, data: Row, token: Token) =>
   db(`usuarios?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
 // Se llama al hacer login para asegurarse que existe (por si se creó antes del fix)
-export const upsertUsuario = (data, token) =>
+export const upsertUsuario = (data: Row, token: Token) =>
   db("usuarios", "POST", data, token, "return=representation,resolution=merge-duplicates");
 
-let _onSessionRefresh = null;
-export const setSessionRefreshCallback = (fn) => { _onSessionRefresh = fn; };
+let _onSessionRefresh: (() => Promise<any>) | null = null;
+export const setSessionRefreshCallback = (fn: () => Promise<any>): void => { _onSessionRefresh = fn; };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-const authFetch = async (path, opts = {}) => {
+const authFetch = async (path: string, opts: RequestInit = {}): Promise<any> => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
     headers: {
       "apikey": SUPABASE_KEY,
@@ -90,26 +114,26 @@ const authFetch = async (path, opts = {}) => {
   const data = text ? JSON.parse(text) : {};
   if (!res.ok) {
     const msg = data.error_description || data.message || data.error || "Error";
-    const err = new Error(msg);
+    const err: any = new Error(msg);
     err.status = res.status;
     throw err;
   }
   return data;
 };
 
-export const signUp = (e, p) =>
+export const signUp = (e: string, p: string) =>
   authFetch("/auth/v1/signup", { method: "POST", body: JSON.stringify({ email: e, password: p }) });
 
-export const signIn = (e, p) =>
+export const signIn = (e: string, p: string) =>
   authFetch("/auth/v1/token?grant_type=password", { method: "POST", body: JSON.stringify({ email: e, password: p }) });
 
-export const resetPassword = (e) =>
+export const resetPassword = (e: string) =>
   authFetch("/auth/v1/recover", {
     method: "POST",
     body: JSON.stringify({ email: e, redirect_to: window.location.origin }),
   });
 
-export const updatePassword = async (accessToken, newPassword) => {
+export const updatePassword = async (accessToken: string, newPassword: string): Promise<any> => {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     method: "PUT",
     headers: {
@@ -127,13 +151,13 @@ export const updatePassword = async (accessToken, newPassword) => {
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────
 
-export const signInWithGoogle = () => {
+export const signInWithGoogle = (): void => {
   const redirectTo = `${window.location.origin}`;
   window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
 };
 
 // Extraer sesión del hash de la URL (callback de OAuth)
-export const getSessionFromUrl = async () => {
+export const getSessionFromUrl = async (): Promise<any> => {
   const hash = window.location.hash;
   if (!hash) return null;
   const params = new URLSearchParams(hash.replace("#", ""));
@@ -149,14 +173,14 @@ export const getSessionFromUrl = async () => {
   return { access_token, refresh_token, user, expires_at };
 };
 
-export const refreshSession = (rt) =>
+export const refreshSession = (rt: string) =>
   authFetch("/auth/v1/token?grant_type=refresh_token", { method: "POST", body: JSON.stringify({ refresh_token: rt }) });
 
 // ── DB helper ─────────────────────────────────────────────────────────────────
 
-export const db = async (path, method = "GET", body = null, token, prefer = "") => {
-  const doReq = async (t) => {
-    const h = {
+export const db = async <T = any>(path: string, method: string = "GET", body: any = null, token?: Token, prefer: string = ""): Promise<T> => {
+  const doReq = async (t?: Token): Promise<any> => {
+    const h: Record<string, string> = {
       "apikey": SUPABASE_KEY,
       "Authorization": `Bearer ${t || SUPABASE_KEY}`,
       "Content-Type": "application/json",
@@ -169,7 +193,7 @@ export const db = async (path, method = "GET", body = null, token, prefer = "") 
     });
     const text = await res.text();
     if (!res.ok) {
-      const err = text ? JSON.parse(text) : {};
+      const err: any = text ? JSON.parse(text) : {};
       if (res.status === 401 || err.message?.includes("JWT") || err.code === "PGRST303" || err.code === "PGRST301")
         throw Object.assign(new Error(err.message || "JWT expired"), { isExpired: true });
       throw new Error(text);
@@ -178,7 +202,7 @@ export const db = async (path, method = "GET", body = null, token, prefer = "") 
   };
   try {
     return await doReq(token);
-  } catch (e) {
+  } catch (e: any) {
     if (e.isExpired && _onSessionRefresh) {
       const s = await _onSessionRefresh();
       if (s?.access_token) return await doReq(s.access_token);
@@ -189,9 +213,9 @@ export const db = async (path, method = "GET", body = null, token, prefer = "") 
 };
 
 // RPC helper
-const rpc = async (fn, params, token) => {
-  const doReq = async (t) => {
-    const h = {
+const rpc = async <T = any>(fn: string, params: any, token?: Token): Promise<T> => {
+  const doReq = async (t?: Token): Promise<any> => {
+    const h: Record<string, string> = {
       "apikey": SUPABASE_KEY,
       "Authorization": `Bearer ${t || SUPABASE_KEY}`,
       "Content-Type": "application/json",
@@ -203,14 +227,14 @@ const rpc = async (fn, params, token) => {
     });
     const text = await res.text();
     if (!res.ok) {
-      const err = text ? JSON.parse(text) : {};
+      const err: any = text ? JSON.parse(text) : {};
       throw new Error(err.message || text);
     }
     return text ? JSON.parse(text) : [];
   };
   try {
     return await doReq(token);
-  } catch (e) {
+  } catch (e: any) {
     if (e.isExpired && _onSessionRefresh) {
       const s = await _onSessionRefresh();
       if (s?.access_token) return await doReq(s.access_token);
@@ -222,12 +246,12 @@ const rpc = async (fn, params, token) => {
 
 // ── Categorías ────────────────────────────────────────────────────────────────
 
-export const getCategorias = (token) =>
+export const getCategorias = (token: Token) =>
   db("categorias?order=orden.asc", "GET", null, token);
 
 // ── Publicaciones ─────────────────────────────────────────────────────────────
 
-export const getPublicaciones = (filtros = {}, token) => {
+export const getPublicaciones = (filtros: Filtros = {}, token?: Token) => {
   if (filtros.texto || filtros.materia) {
     return rpc("buscar_publicaciones", {
       p_texto:      filtros.texto      || filtros.materia || null,
@@ -248,7 +272,7 @@ export const getPublicaciones = (filtros = {}, token) => {
   return db(q, "GET", null, token);
 };
 
-export const buscarPublicaciones = (filtros = {}, token) =>
+export const buscarPublicaciones = (filtros: Filtros = {}, token?: Token) =>
   rpc("buscar_publicaciones", {
     p_texto:      filtros.texto      || null,
     p_tipo:       filtros.tipo       || null,
@@ -260,25 +284,25 @@ export const buscarPublicaciones = (filtros = {}, token) =>
     p_offset:     filtros.offset     || 0,
   }, token);
 
-export const getMisPublicaciones = (email, token) =>
+export const getMisPublicaciones = (email: string, token: Token) =>
   db(`publicaciones_con_autor?autor_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token);
 
-export const insertPublicacion = (data, token) =>
+export const insertPublicacion = (data: Row, token: Token) =>
   db("publicaciones", "POST", data, token, "return=representation");
 
-export const updatePublicacion = (id, data, token) =>
+export const updatePublicacion = (id: Id, data: Row, token: Token) =>
   db(`publicaciones?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
-export const deletePublicacion = (id, token) =>
+export const deletePublicacion = (id: Id, token: Token) =>
   db(`publicaciones?id=eq.${id}`, "DELETE", null, token);
 
 // ── Reseñas ───────────────────────────────────────────────────────────────────
 
-export const getReseñas = (pubId, token) =>
+export const getReseñas = (pubId: Id, token: Token) =>
   db(`reseñas?publicacion_id=eq.${pubId}&order=created_at.desc`, "GET", null, token);
 
 // S2-A5: bulk query para evitar N+1 al cargar reseñas de muchas publicaciones
-export const getReseñasBulk = (ids, token) => {
+export const getReseñasBulk = (ids: Id[], token: Token) => {
   if (!ids?.length) return Promise.resolve([]);
   const inClause = ids.join(",");
   // Solo se usan publicacion_id y estrellas para el promedio; no pedir autor_email
@@ -286,184 +310,184 @@ export const getReseñasBulk = (ids, token) => {
   return db(`reseñas?publicacion_id=in.(${inClause})&select=publicacion_id,estrellas`, "GET", null, token);
 };
 
-export const getReseñasByAutor = (autorEmail, token) =>
+export const getReseñasByAutor = (autorEmail: string, token: Token) =>
   db(`reseñas?autor_email=eq.${encodeURIComponent(autorEmail)}`, "GET", null, token);
 
-export const insertReseña = (data, token) =>
+export const insertReseña = (data: Row, token: Token) =>
   db("reseñas", "POST", data, token, "return=representation");
 
 // ── Mensajes (1 a 1) ──────────────────────────────────────────────────────────
 
-export const getMensajes = (pubId, miEmail, otroEmail, token) => {
+export const getMensajes = (pubId: Id, miEmail: string, otroEmail: string, token: Token) => {
   const q = `mensajes?publicacion_id=eq.${pubId}&or=(and(de_nombre.eq.${encodeURIComponent(miEmail)},para_nombre.eq.${encodeURIComponent(otroEmail)}),and(de_nombre.eq.${encodeURIComponent(otroEmail)},para_nombre.eq.${encodeURIComponent(miEmail)}))&order=created_at.asc`;
   return db(q, "GET", null, token);
 };
 
-export const getMisChats = (miEmail, token) =>
+export const getMisChats = (miEmail: string, token: Token) =>
   db(`mensajes?or=(de_nombre.eq.${encodeURIComponent(miEmail)},para_nombre.eq.${encodeURIComponent(miEmail)})&order=created_at.desc&limit=400`, "GET", null, token);
 
-export const getMensajesGrupo = (pubId, token) =>
+export const getMensajesGrupo = (pubId: Id, token: Token) =>
   rpc("get_mensajes_grupo", { pub_id: pubId }, token);
 
-export const insertMensaje = (data, token) =>
+export const insertMensaje = (data: Row, token: Token) =>
   db("mensajes", "POST", data, token, "return=representation");
 
-export const updateReseñasNombre = (autorEmail, nuevoNombre, token) =>
+export const updateReseñasNombre = (autorEmail: string, nuevoNombre: string, token: Token) =>
   db(`reseñas?autor_email=eq.${encodeURIComponent(autorEmail)}`, "PATCH", { autor_nombre: nuevoNombre }, token);
 
-export const updatePublicacionesNombre = (autorEmail, nuevoNombre, token) =>
+export const updatePublicacionesNombre = (autorEmail: string, nuevoNombre: string, token: Token) =>
   db(`publicaciones?autor_email=eq.${encodeURIComponent(autorEmail)}`, "PATCH", { autor_nombre: nuevoNombre }, token);
 
-export const updateMensajesNombre = (email, nuevoNombre, token) =>
+export const updateMensajesNombre = (email: string, nuevoNombre: string, token: Token) =>
   Promise.all([
     db(`mensajes?de_nombre=eq.${encodeURIComponent(email)}`, "PATCH", { de_nombre: nuevoNombre }, token).catch(() => {}),
   ]);
 
-export const marcarLeidos = (pubId, miEmail, token) =>
+export const marcarLeidos = (pubId: Id, miEmail: string, token: Token) =>
   db(`mensajes?publicacion_id=eq.${pubId}&para_nombre=eq.${encodeURIComponent(miEmail)}&leido=eq.false`, "PATCH", { leido: true }, token);
 
 // ── Inscripciones ─────────────────────────────────────────────────────────────
 
-export const getInscripciones = (pubId, token) =>
+export const getInscripciones = (pubId: Id, token: Token) =>
   db(`inscripciones?publicacion_id=eq.${pubId}&order=created_at.desc`, "GET", null, token);
 
-export const getMisInscripciones = (email, token) =>
+export const getMisInscripciones = (email: string, token: Token) =>
   db(`inscripciones?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token);
 
-export const insertInscripcion = (data, token) =>
+export const insertInscripcion = (data: Row, token: Token) =>
   db("inscripciones", "POST", data, token, "return=representation");
 
-export const deleteInscripcion = (id, token) =>
+export const deleteInscripcion = (id: Id, token: Token) =>
   db(`inscripciones?id=eq.${id}`, "DELETE", null, token);
 
-export const getInscripcionByPubEmail = (pubId, email, token) =>
+export const getInscripcionByPubEmail = (pubId: Id, email: string, token: Token) =>
   db(`inscripciones?publicacion_id=eq.${pubId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token);
 
-export const updateInscripcion = (id, data, token) =>
+export const updateInscripcion = (id: Id, data: Row, token: Token) =>
   db(`inscripciones?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
 // ── Contenido curso ───────────────────────────────────────────────────────────
 
-export const getContenido = (pubId, token) =>
+export const getContenido = (pubId: Id, token: Token) =>
   db(`contenido_curso?publicacion_id=eq.${pubId}&order=orden.asc`, "GET", null, token);
 
-export const insertContenido = (data, token) =>
+export const insertContenido = (data: Row, token: Token) =>
   db("contenido_curso", "POST", data, token, "return=representation");
 
-export const updateContenido = (id, data, token) =>
+export const updateContenido = (id: Id, data: Row, token: Token) =>
   db(`contenido_curso?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
-export const deleteContenido = (id, token) =>
+export const deleteContenido = (id: Id, token: Token) =>
   db(`contenido_curso?id=eq.${id}`, "DELETE", null, token);
 
 // ── Favoritos ─────────────────────────────────────────────────────────────────
 
-export const getFavoritos = (email, token) =>
+export const getFavoritos = (email: string, token: Token) =>
   db(`favoritos?usuario_email=eq.${encodeURIComponent(email)}`, "GET", null, token);
 
-export const insertFavorito = (data, token) =>
+export const insertFavorito = (data: Row, token: Token) =>
   db("favoritos", "POST", data, token, "return=representation");
 
-export const deleteFavorito = (id, token) =>
+export const deleteFavorito = (id: Id, token: Token) =>
   db(`favoritos?id=eq.${id}`, "DELETE", null, token);
 
 // ── Alertas de exploracion (S2-M1) ───────────────────────────────────────────
 // Nota: 'alertas_busquedas' (plural) es una feature distinta — avisa a docentes
 // cuando alumnos buscan clases. Estas funciones son para la tabla nueva
 // 'alertas_busqueda' (singular) que avisa a alumnos cuando hay clases nuevas.
-export const getAlertasBusqueda = (token) =>
+export const getAlertasBusqueda = (token: Token) =>
   db("alertas_busqueda?order=created_at.desc", "GET", null, token).catch(() => []);
 
-export const insertAlertaExploracion = (data, token) =>
+export const insertAlertaExploracion = (data: Row, token: Token) =>
   db("alertas_busqueda", "POST", data, token, "return=representation");
 
-export const deleteAlertaExploracion = (id, token) =>
+export const deleteAlertaExploracion = (id: Id, token: Token) =>
   db(`alertas_busqueda?id=eq.${id}`, "DELETE", null, token);
 
 // ── Ofertas sobre búsquedas ───────────────────────────────────────────────────
 
-export const getOfertasSobre = (busquedaId, token) =>
+export const getOfertasSobre = (busquedaId: Id, token: Token) =>
   db(`ofertas_busqueda?busqueda_id=eq.${busquedaId}&order=created_at.desc`, "GET", null, token);
 
-export const getOfertasRecibidas = (duenoEmail, token) =>
+export const getOfertasRecibidas = (duenoEmail: string, token: Token) =>
   db(`ofertas_busqueda?busqueda_autor_email=eq.${encodeURIComponent(duenoEmail)}&leida=eq.false&estado=eq.pendiente`, "GET", null, token);
 
-export const getMisOfertas = (email, token) =>
+export const getMisOfertas = (email: string, token: Token) =>
   db(`ofertas_busqueda?ofertante_email=eq.${encodeURIComponent(email)}`, "GET", null, token);
 
-export const insertOfertaBusq = (data, token) =>
+export const insertOfertaBusq = (data: Row, token: Token) =>
   db("ofertas_busqueda", "POST", data, token, "return=representation");
 
-export const updateOfertaBusq = (id, data, token) =>
+export const updateOfertaBusq = (id: Id, data: Row, token: Token) =>
   db(`ofertas_busqueda?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
-export const deleteOfertaBusq = (id, token) =>
+export const deleteOfertaBusq = (id: Id, token: Token) =>
   db(`ofertas_busqueda?id=eq.${id}`, "DELETE", null, token);
 
-export const getOfertaAceptada = (busquedaId, ofertanteEmail, token) =>
+export const getOfertaAceptada = (busquedaId: Id, ofertanteEmail: string, token: Token) =>
   db(`ofertas_busqueda?busqueda_id=eq.${busquedaId}&ofertante_email=eq.${encodeURIComponent(ofertanteEmail)}&estado=eq.aceptada`, "GET", null, token);
 
-export const getOfertasAceptadasRecibidas = (duenoEmail, token) =>
+export const getOfertasAceptadasRecibidas = (duenoEmail: string, token: Token) =>
   db(`ofertas_busqueda?busqueda_autor_email=eq.${encodeURIComponent(duenoEmail)}&estado=eq.aceptada`, "GET", null, token);
 
 // ── Denuncias ─────────────────────────────────────────────────────────────────
 
-export const insertDenuncia = (data, token) =>
+export const insertDenuncia = (data: Row, token: Token) =>
   db("denuncias", "POST", data, token, "return=representation");
 
 // ── Notificaciones ────────────────────────────────────────────────────────────
 
-export const getNotificaciones = (email, token) =>
+export const getNotificaciones = (email: string, token: Token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&leida=eq.false&order=created_at.desc`, "GET", null, token);
 
-export const getTodasNotificaciones = (email, token) =>
+export const getTodasNotificaciones = (email: string, token: Token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=60`, "GET", null, token);
 
-export const insertNotificacion = (data, token) =>
+export const insertNotificacion = (data: Row, token: Token) =>
   db("notificaciones", "POST", data, token, "return=minimal");
 
-export const marcarNotifLeida = (id, token) =>
+export const marcarNotifLeida = (id: Id, token: Token) =>
   db(`notificaciones?id=eq.${id}`, "PATCH", { leida: true }, token);
 
-export const marcarTodasNotifsLeidas = (email, token) =>
+export const marcarTodasNotifsLeidas = (email: string, token: Token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&leida=eq.false`, "PATCH", { leida: true }, token);
 
-export const marcarNotifsTipoLeidas = (email, tipos, token) =>
+export const marcarNotifsTipoLeidas = (email: string, tipos: string[], token: Token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&tipo=in.(${tipos.map(t => encodeURIComponent(t)).join(",")})&leida=eq.false`, "PATCH", { leida: true }, token);
 
 // ── Vistas ────────────────────────────────────────────────────────────────────
 
-export const incrementarVistas = (pubId, token) =>
+export const incrementarVistas = (pubId: Id, token: Token) =>
   rpc("incrementar_vistas", { p_publicacion_id: pubId }, token).catch(() => {});
 
 // ── Documentos / Credenciales ─────────────────────────────────────────────────
 
-export const getDocumentos = (email, token) =>
+export const getDocumentos = (email: string, token: Token) =>
   db(`documentos?usuario_email=eq.${encodeURIComponent(email)}&order=created_at.asc`, "GET", null, token);
 
-export const insertDocumento = (data, token) =>
+export const insertDocumento = (data: Row, token: Token) =>
   db("documentos", "POST", data, token, "return=representation");
 
-export const deleteDocumento = (id, token) =>
+export const deleteDocumento = (id: Id, token: Token) =>
   db(`documentos?id=eq.${id}`, "DELETE", null, token);
 
 // ── Verificación IA ───────────────────────────────────────────────────────────
 
-export const getUsuarioByIdFull = (id, token) =>
+export const getUsuarioByIdFull = (id: Id, token: Token) =>
   db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,banner_url,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
-    .then(r => r?.[0] || null).catch(() => null);
+    .then((r: any) => r?.[0] || null).catch(() => null);
 
-export const getUsuarioById = (id, token) =>
+export const getUsuarioById = (id: Id, token: Token) =>
   db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name`, "GET", null, token)
-    .then(r => r?.[0] || null).catch(() => null);
+    .then((r: any) => r?.[0] || null).catch(() => null);
 
-export const getUsuarioByEmail = (email, token) =>
+export const getUsuarioByEmail = (email: string, token: Token) =>
   db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,banner_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes`, "GET", null, token)
-    .then(r => r?.[0] || null).catch(() => null);
+    .then((r: any) => r?.[0] || null).catch(() => null);
 
 // ── IA helper — llama a la Supabase Edge Function "ai-proxy" ─────────────────
 
-export const callIA = async (system, userMsg, maxTokens = 600, userToken = "") => {
+export const callIA = async (system: string, userMsg: string, maxTokens: number = 600, userToken: string = ""): Promise<string> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-proxy`, {
     method: "POST",
     headers: {
@@ -483,11 +507,11 @@ export const callIA = async (system, userMsg, maxTokens = 600, userToken = "") =
     throw new Error(err.error?.message || `Error ${res.status}`);
   }
   const data = await res.json();
-  return data.content?.map(c => c.text || "").join("") || "";
+  return data.content?.map((c: any) => c.text || "").join("") || "";
 };
 
 // Multi-turn: acepta el historial completo como array [{role:"user"|"assistant", content:"..."}]
-export const callIAChat = async (system, messages, maxTokens = 600, userToken = "") => {
+export const callIAChat = async (system: string, messages: any[], maxTokens: number = 600, userToken: string = ""): Promise<string> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-proxy`, {
     method: "POST",
     headers: {
@@ -507,11 +531,11 @@ export const callIAChat = async (system, messages, maxTokens = 600, userToken = 
     throw new Error(err.error?.message || `Error ${res.status}`);
   }
   const data = await res.json();
-  return data.content?.map(c => c.text || "").join("") || "";
+  return data.content?.map((c: any) => c.text || "").join("") || "";
 };
 
 // Ludy usa su propia edge function — el system prompt vive en el servidor
-export const callLudy = async (messages, maxTokens = 600) => {
+export const callLudy = async (messages: any[], maxTokens: number = 600): Promise<string> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ludy-chat`, {
     method: "POST",
     headers: {
@@ -529,7 +553,7 @@ export const callLudy = async (messages, maxTokens = 600) => {
   return data.text || "";
 };
 
-export const verificarConIA = async (titulo, materia, descripcion, respuesta, userToken = "") => {
+export const verificarConIA = async (titulo: string, materia: string, descripcion?: string, respuesta?: string, userToken: string = ""): Promise<any> => {
   const contexto = `Tema: "${titulo}"${descripcion ? ` — ${descripcion.slice(0, 200)}` : ""}. Materia: "${materia}".`;
   const system = `Sos un evaluador de conocimiento para una plataforma educativa. Evaluás si el docente conoce el tema específico que está publicando. SIEMPRE respondé con JSON válido sin markdown, SOLO el objeto JSON. Formato: {"pregunta":"...","correcta":true,"feedback":"..."} - "pregunta": una pregunta técnica y específica sobre el tema exacto del título/descripción - "correcta": true si demuestra conocimiento básico del tema, false si está vacía o incorrecta - "feedback": máximo 1 oración`;
   const userMsg = respuesta
@@ -543,40 +567,40 @@ export const verificarConIA = async (titulo, materia, descripcion, respuesta, us
 
 // ── Quiz ──────────────────────────────────────────────────────────────────────
 
-export const getQuizEntregas = (quizId, token) =>
+export const getQuizEntregas = (quizId: Id, token: Token) =>
   db(`quiz_entregas?quiz_id=eq.${quizId}&order=created_at.desc`, "GET", null, token).catch(() => []);
 
-export const getMiEntregaQuiz = (quizId, alumnoEmail, token) =>
+export const getMiEntregaQuiz = (quizId: Id, alumnoEmail: string, token: Token) =>
   db(`quiz_entregas?quiz_id=eq.${quizId}&alumno_email=eq.${encodeURIComponent(alumnoEmail)}`, "GET", null, token)
-    .then(r => r?.[0] || null).catch(() => null);
+    .then((r: any) => r?.[0] || null).catch(() => null);
 
-export const insertEntregaQuiz = (data, token) =>
+export const insertEntregaQuiz = (data: Row, token: Token) =>
   db("quiz_entregas", "POST", data, token, "return=representation");
 
-export const updateEntregaQuiz = (id, data, token) =>
+export const updateEntregaQuiz = (id: Id, data: Row, token: Token) =>
   db(`quiz_entregas?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
 // ── Progreso de módulos ───────────────────────────────────────────────────────
 
-export const getProgresoModulos = (pubId, email, token) =>
+export const getProgresoModulos = (pubId: Id, email: string, token: Token) =>
   db(`progreso_modulos?publicacion_id=eq.${pubId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token)
     .catch(() => []);
 
-export const upsertProgresoModulo = (data, token) =>
+export const upsertProgresoModulo = (data: Row, token: Token) =>
   db("progreso_modulos", "POST", data, token, "return=representation,resolution=merge-duplicates");
 
 // ── Flashcard SRS revisiones ──────────────────────────────────────────────────
 
-export const getFlashcardRevisiones = (contenidoId, email, token) =>
+export const getFlashcardRevisiones = (contenidoId: Id, email: string, token: Token) =>
   db(`flashcard_revisiones?contenido_id=eq.${contenidoId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token)
     .catch(() => []);
 
-export const upsertFlashcardRevision = (data, token) =>
+export const upsertFlashcardRevision = (data: Row, token: Token) =>
   db("flashcard_revisiones", "POST", data, token, "return=representation,resolution=merge-duplicates");
 
 // ── Tracking de materias vistas (para recomendaciones) ───────────────────────
 
-export const trackMateria = (materia) => {
+export const trackMateria = (materia: string): void => {
   try {
     const p = JSON.parse(localStorage.getItem("cl_mv") || "{}");
     p[materia] = (p[materia] || 0) + 1;
@@ -584,10 +608,10 @@ export const trackMateria = (materia) => {
   } catch {}
 };
 
-export const getMateriasFrecuentes = () => {
+export const getMateriasFrecuentes = (): string[] => {
   try {
     return Object.entries(JSON.parse(localStorage.getItem("cl_mv") || "{}"))
-      .sort((a, b) => b[1] - a[1])
+      .sort((a: any, b: any) => b[1] - a[1])
       .slice(0, 3)
       .map(([m]) => m);
   } catch { return []; }
@@ -595,44 +619,44 @@ export const getMateriasFrecuentes = () => {
 
 // ── Búsquedas recientes ───────────────────────────────────────────────────────
 
-export const guardarBusqueda = (data, token) =>
+export const guardarBusqueda = (data: Row, token: Token) =>
   db("busquedas_recientes", "POST", data, token, "return=representation").catch(() => null);
 
-export const getBusquedasRecientes = (usuarioId, token) =>
+export const getBusquedasRecientes = (usuarioId: Id, token: Token) =>
   db(`busquedas_recientes?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=8`, "GET", null, token)
     .catch(() => []);
 
 // ── Foro ──────────────────────────────────────────────────────────────────────
 
-export const getForoPosts = (pubId, token) =>
+export const getForoPosts = (pubId: Id, token: Token) =>
   db(`foro_posts?publicacion_id=eq.${pubId}&order=created_at.asc&select=*,respuestas:foro_respuestas(count)`, "GET", null, token)
     .catch(() => []);
 
-export const insertForoPost = (data, token) =>
+export const insertForoPost = (data: Row, token: Token) =>
   db("foro_posts", "POST", data, token, "return=representation");
 
-export const getForoRespuestas = (postId, token) =>
+export const getForoRespuestas = (postId: Id, token: Token) =>
   db(`foro_respuestas?foro_post_id=eq.${postId}&order=created_at.asc`, "GET", null, token)
     .catch(() => []);
 
-export const insertForoRespuesta = (data, token) =>
+export const insertForoRespuesta = (data: Row, token: Token) =>
   db("foro_respuestas", "POST", data, token, "return=representation");
 
-export const deleteForoPost = (id, token) =>
+export const deleteForoPost = (id: Id, token: Token) =>
   db(`foro_posts?id=eq.${id}`, "DELETE", null, token);
 
 // ── Clases realizadas ─────────────────────────────────────────────────────────
 
-export const insertClaseRealizada = (data, token) =>
+export const insertClaseRealizada = (data: Row, token: Token) =>
   db('clases_realizadas', 'POST', data, token, 'return=representation');
-export const getClasesRealizadas = (email, token) =>
+export const getClasesRealizadas = (email: string, token: Token) =>
   db(`clases_realizadas?or=(docente_email.eq.${encodeURIComponent(email)},alumno_email.eq.${encodeURIComponent(email)})&order=fecha_clase.desc`, 'GET', null, token);
-export const confirmarClase = (claseId, userEmail, token) =>
+export const confirmarClase = (claseId: Id, userEmail: string, token: Token) =>
   rpc('confirmar_clase', { p_clase_id: claseId, p_usuario_email: userEmail }, token);
 
 // ── Publicaciones por IDs ─────────────────────────────────────────────────────
 
-export const getPublicacionesByIds = (ids, token) => {
+export const getPublicacionesByIds = (ids: Id[], token: Token) => {
   if (!ids || !ids.length) return Promise.resolve([]);
   const filter = ids.map(id => `id.eq.${id}`).join(",");
   return db(`publicaciones_con_autor?or=(${filter})&select=*`, "GET", null, token).catch(() => []);
@@ -640,67 +664,67 @@ export const getPublicacionesByIds = (ids, token) => {
 
 // ── Skills ────────────────────────────────────────────────────────────────────
 
-export const getSkillsDB = (pubId, token) =>
+export const getSkillsDB = (pubId: Id, token: Token) =>
   db(`skills?publicacion_id=eq.${pubId}&order=orden.asc`, "GET", null, token).catch(() => []);
 
-export const upsertSkill = (data, token) =>
+export const upsertSkill = (data: Row, token: Token) =>
   db("skills", "POST", data, token, "return=representation");
 
-export const updateSkill = (id, data, token) =>
+export const updateSkill = (id: Id, data: Row, token: Token) =>
   db(`skills?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
-export const deleteSkill = (id, token) =>
+export const deleteSkill = (id: Id, token: Token) =>
   db(`skills?id=eq.${id}`, "DELETE", null, token);
 
 // ── User Skill Levels ─────────────────────────────────────────────────────────
 
-export const getMySkillLevels = (email, pubId, token) =>
+export const getMySkillLevels = (email: string, pubId: Id, token: Token) =>
   db(`user_skill_levels?select=*,skills!inner(publicacion_id)&usuario_email=eq.${encodeURIComponent(email)}&skills.publicacion_id=eq.${pubId}`, "GET", null, token)
     .catch(() => []);
 
-export const getSkillLevelsByPub = (pubId, token) =>
+export const getSkillLevelsByPub = (pubId: Id, token: Token) =>
   db(`user_skill_levels?select=*,skills!inner(publicacion_id)&skills.publicacion_id=eq.${pubId}`, "GET", null, token)
     .catch(() => []);
 
-export const upsertSkillLevel = (data, token) =>
+export const upsertSkillLevel = (data: Row, token: Token) =>
   db("user_skill_levels", "POST", data, token, "return=representation,resolution=merge-duplicates");
 
 // ── Evaluaciones formales ─────────────────────────────────────────────────────
 
 // Lee evaluaciones via RPC SECURITY DEFINER: el dueño recibe el contenido completo,
 // el alumno recibe el contenido sin respuestas (correcta/correctas/explicacion).
-export const getEvaluaciones = (pubId, token) =>
+export const getEvaluaciones = (pubId: Id, token: Token) =>
   rpc("get_evaluaciones_pub", { p_pub_id: pubId }, token).catch(() => []);
 
-export const insertEvaluacion = (data, token) =>
+export const insertEvaluacion = (data: Row, token: Token) =>
   db("evaluaciones", "POST", data, token, "return=representation");
 
-export const updateEvaluacion = (id, data, token) =>
+export const updateEvaluacion = (id: Id, data: Row, token: Token) =>
   db(`evaluaciones?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
-export const deleteEvaluacion = (id, token) =>
+export const deleteEvaluacion = (id: Id, token: Token) =>
   db(`evaluaciones?id=eq.${id}`, "DELETE", null, token);
 
-export const getEvaluacionEntregas = (evalId, token) =>
+export const getEvaluacionEntregas = (evalId: Id, token: Token) =>
   db(`evaluacion_entregas?evaluacion_id=eq.${evalId}&order=created_at.desc`, "GET", null, token).catch(() => []);
 
-export const getMiEntregaEval = (evalId, email, token) =>
+export const getMiEntregaEval = (evalId: Id, email: string, token: Token) =>
   db(`evaluacion_entregas?evaluacion_id=eq.${evalId}&alumno_email=eq.${encodeURIComponent(email)}`, "GET", null, token).catch(() => []);
 
 // La entrega se hace via RPC SECURITY DEFINER: el server deriva el email del alumno
 // (no spoofeable), corrige el multiple_choice del lado servidor y guarda score_auto.
-export const insertEvaluacionEntrega = (data, token) =>
+export const insertEvaluacionEntrega = (data: Row, token: Token) =>
   rpc("entregar_evaluacion", {
     p_eval_id: data.evaluacion_id,
     p_respuesta_json: data.respuesta_json,
-  }, token).then((row) => (row ? [row] : []));
+  }, token).then((row: any) => (row ? [row] : []));
 
-export const updateEvaluacionEntrega = (id, data, token) =>
+export const updateEvaluacionEntrega = (id: Id, data: Row, token: Token) =>
   db(`evaluacion_entregas?id=eq.${id}`, "PATCH", data, token, "return=representation");
 
 // ── Emails con Resend (via Edge Function send-email) ──────────────────────────
 
-export const sendEmail = async (template, to, data = {}, token = "") => {
+export const sendEmail = async (template: string, to: string, data: Row = {}, token: string = ""): Promise<any> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
     method: "POST",
     headers: {
@@ -719,7 +743,7 @@ export const sendEmail = async (template, to, data = {}, token = "") => {
 
 // token (6º parámetro) = session.access_token del usuario que dispara la notificación.
 // Es obligatorio — sin JWT de usuario la función rechaza la llamada para evitar spam.
-export const sendPush = async (to, title, body, url = "/", tag = "default", token) => {
+export const sendPush = async (to: string | string[], title: string, body: string, url: string = "/", tag: string = "default", token?: Token): Promise<void> => {
   if (!token) return; // sin sesión activa no enviar
   try {
     await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
@@ -736,7 +760,7 @@ export const sendPush = async (to, title, body, url = "/", tag = "default", toke
 
 // ── Mercado Pago ──────────────────────────────────────────────────────────────
 
-export const createMPCheckout = async (data, token) => {
+export const createMPCheckout = async (data: Row, token: Token): Promise<any> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/mp-checkout`, {
     method: "POST",
     headers: {
@@ -752,17 +776,17 @@ export const createMPCheckout = async (data, token) => {
   return json;
 };
 
-export const getMisPagos = (email, token) =>
+export const getMisPagos = (email: string, token: Token) =>
   db(`pagos?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
 
 // S2-C2: verificar si un docente tiene MP Connect activo (SECURITY DEFINER bypassea RLS)
-export const getDocenteMPConnected = (email, token) =>
+export const getDocenteMPConnected = (email: string, token: Token) =>
   db(`rpc/get_docente_mp_connected`, "POST", { p_email: email }, token)
-    .then(r => r === true || r === "true")
+    .then((r: any) => r === true || r === "true")
     .catch(() => null); // null = desconocido, no bloquear
 
 // Libera el pago retenido de un paquete de clases una vez que ambas partes confirman
-export const liberarPagoClase = async (claseId, token) => {
+export const liberarPagoClase = async (claseId: Id, token: Token): Promise<any> => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/liberar_pago_clase`, {
     method: "POST",
     headers: {
@@ -784,7 +808,7 @@ export const liberarPagoClase = async (claseId, token) => {
 // Redimensiona y comprime una imagen en el cliente antes de subirla (ahorra ancho
 // de banda y storage, mejora LCP). Devuelve {body,type,ext}; ante cualquier fallo
 // usa el archivo original sin romper la subida.
-const resizeImage = (file, maxDim, quality = 0.85) => new Promise((resolve) => {
+const resizeImage = (file: File, maxDim: number, quality: number = 0.85): Promise<{ body: Blob | File; type: string; ext: string }> => new Promise((resolve) => {
   const fallback = () => {
     const ext = (file.name?.split(".").pop() || "jpg").toLowerCase().replace("jpeg", "jpg");
     resolve({ body: file, type: file.type || "image/jpeg", ext });
@@ -814,7 +838,7 @@ const resizeImage = (file, maxDim, quality = 0.85) => new Promise((resolve) => {
 });
 
 // Sube foto de avatar al bucket público "avatars" y devuelve la URL pública
-export const uploadAvatar = async (userId, file, token) => {
+export const uploadAvatar = async (userId: Id, file: File, token: Token): Promise<string> => {
   const { body, type, ext } = await resizeImage(file, 512);
   const path = `${userId}/avatar_${Date.now()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
@@ -831,7 +855,7 @@ export const uploadAvatar = async (userId, file, token) => {
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
 };
 
-export const uploadBanner = async (userId, file, token) => {
+export const uploadBanner = async (userId: Id, file: File, token: Token): Promise<string> => {
   const { body, type, ext } = await resizeImage(file, 1280);
   const path = `${userId}/banner_${Date.now()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
@@ -848,7 +872,7 @@ export const uploadBanner = async (userId, file, token) => {
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
 };
 
-export const uploadDniFoto = async (userId, file, token) => {
+export const uploadDniFoto = async (userId: Id, file: File, token: Token): Promise<string> => {
   const ext = file.name.split(".").pop() || "jpg";
   const path = `${userId}/dni_frente_${Date.now()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/dni-fotos/${path}`, {
@@ -864,7 +888,7 @@ export const uploadDniFoto = async (userId, file, token) => {
   return `${SUPABASE_URL}/storage/v1/object/sign/dni-fotos/${path}`;
 };
 
-export const getSignedDniUrl = async (path, token) => {
+export const getSignedDniUrl = async (path: string, token: Token): Promise<string | null> => {
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/dni-fotos/${path}`, {
     method: "POST",
     headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json", "apikey": SUPABASE_KEY },
@@ -874,29 +898,29 @@ export const getSignedDniUrl = async (path, token) => {
   return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
 };
 
-export const getVerificacionesPendientes = (token) =>
+export const getVerificacionesPendientes = (token: Token) =>
   db("verificaciones_usuario?estado=eq.pendiente&order=created_at.asc&select=*,usuarios!verificaciones_usuario_usuario_id_fkey(nombre,email,avatar_url)", "GET", null, token).catch(() => []);
 
-export const getPagosDocente = (email, token) =>
+export const getPagosDocente = (email: string, token: Token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
 
 // Pagos con info de escrow para el dashboard del docente
-export const getPagosDocenteEscrow = (email, token) =>
+export const getPagosDocenteEscrow = (email: string, token: Token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&estado=eq.approved&select=id,monto,estado_escrow,clase_finalizada_at,liberado_at,alumno_email,publicacion_id,created_at&order=created_at.desc&limit=50`, "GET", null, token).catch(() => []);
 
 // Liquidaciones del docente
-export const getLiquidaciones = (email, token) =>
+export const getLiquidaciones = (email: string, token: Token) =>
   db(`liquidaciones?docente_email=eq.${encodeURIComponent(email)}&order=periodo.desc&limit=24`, "GET", null, token).catch(() => []);
 
 // Lee un valor de la tabla config (ej: "comision_pct")
-export const getConfigValor = (clave, token) =>
+export const getConfigValor = (clave: string, token: Token) =>
   db(`config?clave=eq.${encodeURIComponent(clave)}&select=valor`, "GET", null, token)
-    .then(rows => rows?.[0]?.valor ?? null)
+    .then((rows: any) => rows?.[0]?.valor ?? null)
     .catch(() => null);
 
 // Genera una URL firmada (1hs) para descargar el PDF de una liquidación
 // Path en Storage: "{docente_email}/{periodo}.pdf"
-export const getLiquidacionSignedUrl = async (docenteEmail, periodo, token) => {
+export const getLiquidacionSignedUrl = async (docenteEmail: string, periodo: string, token: Token): Promise<string | null> => {
   const path = `${docenteEmail}/${periodo}.pdf`;
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/liquidaciones/${encodeURIComponent(path)}`, {
@@ -918,35 +942,35 @@ export const getLiquidacionSignedUrl = async (docenteEmail, periodo, token) => {
 
 // ── Streak / Racha ────────────────────────────────────────────────────────────
 // Llama al RPC del servidor para calcular la racha con hora confiable (no manipulable por el cliente)
-export const actualizarStreak = (usuarioId, token) =>
+export const actualizarStreak = (usuarioId: Id, token: Token) =>
   rpc("actualizar_streak", { p_usuario_id: usuarioId }, token);
 
 // ── Alertas de búsquedas por materia ──────────────────────────────────────────
 
-export const getAlertasBusquedas = (email, token) =>
+export const getAlertasBusquedas = (email: string, token: Token) =>
   db(`alertas_busquedas?email=eq.${encodeURIComponent(email)}&order=created_at.desc`, 'GET', null, token);
 
-export const insertAlertaBusqueda = (data, token) =>
+export const insertAlertaBusqueda = (data: Row, token: Token) =>
   db('alertas_busquedas', 'POST', data, token, 'return=representation');
 
-export const updateAlertaBusqueda = (id, data, token) =>
+export const updateAlertaBusqueda = (id: Id, data: Row, token: Token) =>
   db(`alertas_busquedas?id=eq.${id}`, 'PATCH', data, token);
 
-export const deleteAlertaBusqueda = (id, token) =>
+export const deleteAlertaBusqueda = (id: Id, token: Token) =>
   db(`alertas_busquedas?id=eq.${id}`, 'DELETE', null, token);
 
-export const getAlertasMatchingMateria = (materia, token) =>
+export const getAlertasMatchingMateria = (materia: string, token: Token) =>
   db(`alertas_busquedas?activa=eq.true&materias=cs.{${encodeURIComponent(materia)}}`, 'GET', null, token);
 
 // ── Métricas docente ──────────────────────────────────────────────────────────
 
-export const getMetricasDocente = (email, token) =>
+export const getMetricasDocente = (email: string, token: Token) =>
   db(`metricas_docente?autor_email=eq.${encodeURIComponent(email)}`, 'GET', null, token);
 
 // Atómico vía RPC SECURITY DEFINER (incrementar_clicks_contacto): evita la
 // race condition del read-modify-write y permite contar el click aunque quien
 // lo hace no sea el dueño de la publicación (RLS de UPDATE solo deja al dueño).
-export const registrarClickContacto = (pubId, token) =>
+export const registrarClickContacto = (pubId: Id, token: Token) =>
   rpc('incrementar_clicks_contacto', { p_publicacion_id: pubId }, token).catch(() => {});
 
 // ── Alertas de publicaciones ──────────────────────────────────────────────────
@@ -954,19 +978,19 @@ export const registrarClickContacto = (pubId, token) =>
 // ── Faros puzzle helpers ──────────────────────────────────────────────────────
 
 // Returns today's puzzle or null if none exists yet
-export const getTodaysPuzzle = (token) => {
+export const getTodaysPuzzle = (token: Token) => {
   const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
   return db(`puzzles?date=eq.${today}&limit=1`, 'GET', null, token)
-    .then(rows => rows?.[0] ?? null);
+    .then((rows: any) => rows?.[0] ?? null);
 };
 
 // Returns the user's result for today's puzzle, or null if not solved
-export const getTodaysPuzzleResult = (token, puzzleId) =>
+export const getTodaysPuzzleResult = (token: Token, puzzleId: Id) =>
   db(`puzzle_results?puzzle_id=eq.${puzzleId}&limit=1`, 'GET', null, token)
-    .then(rows => rows?.[0] ?? null);
+    .then((rows: any) => rows?.[0] ?? null);
 
 // Saves the user's result. Silently ignores duplicates (409 conflict).
-export const submitPuzzleResult = async (token, puzzleId, timeSeconds) => {
+export const submitPuzzleResult = async (token: Token, puzzleId: Id, timeSeconds: number): Promise<any> => {
   try {
     return await db(
       'puzzle_results',
@@ -975,7 +999,7 @@ export const submitPuzzleResult = async (token, puzzleId, timeSeconds) => {
       token,
       'return=representation'
     );
-  } catch (e) {
+  } catch (e: any) {
     // UNIQUE violation (user solved it already) — not an error for us
     if (e.message?.includes('23505') || e.message?.includes('unique')) return null;
     throw e;
@@ -985,44 +1009,44 @@ export const submitPuzzleResult = async (token, puzzleId, timeSeconds) => {
 // ── Leaderboard & community stats ────────────────────────────────────────────
 
 // {avg_seconds, player_count} for a Faros puzzle (all users, SECURITY DEFINER)
-export const getAvgTimeFaros = (token, puzzleId) =>
+export const getAvgTimeFaros = (token: Token, puzzleId: Id) =>
   rpc('get_avg_time_faros', { p_puzzle_id: puzzleId }, token)
-    .then(rows => rows?.[0] ?? null)
+    .then((rows: any) => rows?.[0] ?? null)
     .catch(() => null);
 
 // {avg_seconds, player_count} for a Shikaku date (all users, SECURITY DEFINER)
-export const getAvgTimeShikaku = (token, dateStr) =>
+export const getAvgTimeShikaku = (token: Token, dateStr: string) =>
   rpc('get_avg_time_shikaku', { p_date: dateStr }, token)
-    .then(rows => rows?.[0] ?? null)
+    .then((rows: any) => rows?.[0] ?? null)
     .catch(() => null);
 
 // [{pos, nombre, total_score, games_played, best_time, is_me}] — top 10 + current user
-export const getLeaderboardFaros = (token, limit = 10) =>
+export const getLeaderboardFaros = (token: Token, limit: number = 10) =>
   rpc('get_leaderboard_faros', { lim: limit }, token)
-    .then(rows => (Array.isArray(rows) ? rows : []))
+    .then((rows: any) => (Array.isArray(rows) ? rows : []))
     .catch(() => []);
 
-export const getLeaderboardShikaku = (token, limit = 10) =>
+export const getLeaderboardShikaku = (token: Token, limit: number = 10) =>
   rpc('get_leaderboard_shikaku', { lim: limit }, token)
-    .then(rows => (Array.isArray(rows) ? rows : []))
+    .then((rows: any) => (Array.isArray(rows) ? rows : []))
     .catch(() => []);
 
 // ── Shikaku puzzle helpers ────────────────────────────────────────────────────
 
 // Returns the user's result for a given date, or null if not solved
-export const getShikakuResult = (token, dateStr) =>
+export const getShikakuResult = (token: Token, dateStr: string) =>
   db(`shikaku_results?puzzle_date=eq.${dateStr}&limit=1`, 'GET', null, token)
-    .then(rows => rows?.[0] ?? null)
+    .then((rows: any) => rows?.[0] ?? null)
     .catch(() => null);
 
 // Returns array of puzzle_date strings (last 30) for streak calculation
-export const getShikakuStreak = (token) =>
+export const getShikakuStreak = (token: Token) =>
   db('shikaku_results?select=puzzle_date&order=completed_at.desc&limit=30', 'GET', null, token)
-    .then(rows => (rows || []).map(r => r.puzzle_date).filter(Boolean))
+    .then((rows: any) => (rows || []).map((r: any) => r.puzzle_date).filter(Boolean))
     .catch(() => []);
 
 // Saves the user's result. Silently ignores duplicates.
-export const submitShikakuResult = async (token, dateStr, timeSeconds) => {
+export const submitShikakuResult = async (token: Token, dateStr: string, timeSeconds: number): Promise<any> => {
   try {
     return await db(
       'shikaku_results',
@@ -1031,13 +1055,13 @@ export const submitShikakuResult = async (token, dateStr, timeSeconds) => {
       token,
       'return=representation'
     );
-  } catch (e) {
+  } catch (e: any) {
     if (e.message?.includes('23505') || e.message?.includes('unique')) return null;
     throw e;
   }
 };
 
-export const dispararAlertas = async (pub, token) => {
+export const dispararAlertas = async (pub: Row, token: Token): Promise<void> => {
   try {
     const alertas = await db(
       `alertas_publicacion?activa=eq.true&usuario_id=neq.${pub.autor_id}&select=*`,
@@ -1050,7 +1074,7 @@ export const dispararAlertas = async (pub, token) => {
 
     for (const alerta of alertas) {
       try {
-        let criterios = {};
+        let criterios: any = {};
         try { criterios = JSON.parse(alerta.criterios_json || "{}"); } catch {}
 
         const tipoAlerta = alerta.tipo_alerta || "ambos";
@@ -1062,7 +1086,7 @@ export const dispararAlertas = async (pub, token) => {
         if (criterios.tipo && criterios.tipo !== "cualquiera" && pub.tipo === criterios.tipo) score += 2;
         if (criterios.modalidad && criterios.modalidad !== "cualquiera" && pub.modalidad === criterios.modalidad) score += 1;
 
-        (criterios.palabras_clave || []).forEach(kw => {
+        (criterios.palabras_clave || []).forEach((kw: string) => {
           const k = kw.toLowerCase().trim();
           if (!k) return;
           if (pubTexto.includes(k)) { score += 2; return; }
@@ -1075,7 +1099,7 @@ export const dispararAlertas = async (pub, token) => {
             const raw = await callIA(
               "Respondé SOLO con 'si' o 'no'. ¿La publicación podría ser relevante para esta búsqueda?",
               `Búsqueda del usuario: "${alerta.descripcion}" Publicación: "${pub.titulo} — ${(pub.descripcion || "").slice(0, 100)}"`,
-              50, token
+              50, token || ""
             );
             if (raw.toLowerCase().includes("si")) score += 3;
           } catch {}
@@ -1102,23 +1126,23 @@ export const dispararAlertas = async (pub, token) => {
 
 // ── Q&A pública en publicaciones ──────────────────────────────────────────────
 
-export const getPreguntasPublicacion = (publicacionId) =>
+export const getPreguntasPublicacion = (publicacionId: Id) =>
   db(`preguntas_publicacion?publicacion_id=eq.${publicacionId}&flag_pregunta=eq.false&order=created_at.asc&select=*`);
 
-export const insertPregunta = (data, token) =>
+export const insertPregunta = (data: Row, token: Token) =>
   db("preguntas_publicacion", "POST", data, token, "return=representation");
 
-export const responderPregunta = (preguntaId, respuesta, token) =>
+export const responderPregunta = (preguntaId: Id, respuesta: string, token: Token) =>
   db(`preguntas_publicacion?id=eq.${preguntaId}`, "PATCH",
     { respuesta, respondido_at: new Date().toISOString() }, token, "return=representation");
 
 // ── Alertas contacto externo ──────────────────────────────────────────────────
 
-export const insertAlertaContacto = (data, token) =>
+export const insertAlertaContacto = (data: Row, token: Token) =>
   db("alertas_contacto_externo", "POST", data, token, "return=representation");
 
-export const getAlertasContacto = (soloNoRevisadas = false, token) =>
+export const getAlertasContacto = (soloNoRevisadas: boolean = false, token?: Token) =>
   db(`alertas_contacto_externo?${soloNoRevisadas ? "revisada=eq.false&" : ""}order=created_at.desc&select=*,publicaciones(titulo)`, "GET", null, token);
 
-export const marcarAlertaRevisada = (alertaId, token) =>
+export const marcarAlertaRevisada = (alertaId: Id, token: Token) =>
   db(`alertas_contacto_externo?id=eq.${alertaId}`, "PATCH", { revisada: true }, token);
