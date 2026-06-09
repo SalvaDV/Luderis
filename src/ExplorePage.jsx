@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import * as sb from "./supabase";
 import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
-  C, FONT, LUD, toast,
+  C, FONT, FONT_DISPLAY, LUD, toast,
   Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect,
   fmtPrice, fmtRel, fmt,
   safeDisplayName, _avatarCache,
@@ -502,7 +502,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             const heroTitle=seccion==="cursos"?"Aprendé a tu ritmo":seccion==="clases"?"Encontrá tu profe ideal":"Pedidos de alumnos";
             const heroSub=seccion==="cursos"?"Cursos estructurados con seguimiento real":seccion==="clases"?"Clases 1 a 1, a tu horario y ritmo":"Alumnos esperando que alguien como vos los contacte";
             return(
-          <div style={{background:T.heroGrad,borderRadius:16,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",transition:"background .5s ease"}}>
+          <div style={{background:T.heroGrad,borderRadius:18,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",boxShadow:C.shadow,transition:"background .5s ease"}}>
             <div style={{position:"absolute",width:280,height:280,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-80,right:-60,pointerEvents:"none"}}/>
             <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,.06)",bottom:-60,left:20,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
@@ -523,7 +523,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   </button>
                 ))}
               </div>
-              <h1 style={{color:"#fff",fontSize:"clamp(18px,4vw,26px)",fontWeight:800,margin:"0 0 4px",letterSpacing:"-.5px"}}>{heroTitle}</h1>
+              <h1 style={{color:"#fff",fontFamily:FONT_DISPLAY,fontSize:"clamp(19px,4vw,27px)",fontWeight:800,margin:"0 0 4px",letterSpacing:"-.02em",lineHeight:1.15}}>{heroTitle}</h1>
               <p style={{color:"rgba(255,255,255,.8)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>📍 {userCity}</span>}
                 {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:

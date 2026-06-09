@@ -8,7 +8,7 @@ import {
 import * as sb from "./supabase";
 import { trackPostView, trackChatStart } from "./analytics";
 import {
-  C, FONT,
+  C, FONT, FONT_DISPLAY,
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, CATEGORIAS_DATA, CalendarioCurso,
@@ -120,7 +120,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
             <span className="dm-banner-emoji" style={{fontSize:64,filter:"drop-shadow(0 4px 12px rgba(0,0,0,.25))",position:"relative",zIndex:1,lineHeight:1}}>{catData.emoji}</span>
             <div style={{position:"relative",zIndex:1,flex:1,minWidth:0}}>
               <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,.7)",letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>{post.materia}</div>
-              <h1 style={{color:"#fff",fontSize:"clamp(18px,3.5vw,26px)",fontWeight:800,margin:0,lineHeight:1.2,letterSpacing:"-.3px",textShadow:"0 2px 8px rgba(0,0,0,.2)",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{post.titulo}</h1>
+              <h1 style={{color:"#fff",fontFamily:FONT_DISPLAY,fontSize:"clamp(19px,3.5vw,27px)",fontWeight:800,margin:0,lineHeight:1.18,letterSpacing:"-.02em",textShadow:"0 2px 8px rgba(0,0,0,.2)",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{post.titulo}</h1>
             </div>
           </div>
         );})()}
@@ -276,7 +276,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
           {/* ─ Caja flotante derecha ─ */}
           <div className="dm-sidebar" style={{flex:"0 0 300px",minWidth:260}}>
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px",boxShadow:"0 4px 24px rgba(0,0,0,.08)"}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,padding:"24px",boxShadow:C.shadowHover}}>
 
               {/* Precio */}
               {post.precio?(
