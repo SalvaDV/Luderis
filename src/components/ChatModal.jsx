@@ -7,6 +7,9 @@ const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
 
 export default function ChatModal({post,session,onClose,onUnreadChange}){
   const miEmail=session.user.email;const otroEmail=post.autor_email;
+  // Canal Realtime por-par (mismo string para ambos lados): scopea el "escribiendo…"
+  // a esta conversación. Los INSERT de mensajes se filtran además por RLS + por par.
+  const chanTopic=`realtime:chat_${post.id}_${[miEmail,otroEmail].map(s=>(s||"").toLowerCase().replace(/[^a-z0-9]/g,"")).sort().join("_")}`;
   const [msgs,setMsgs]=useState([]);const [input,setInput]=useState("");const [loading,setLoading]=useState(true);
   const [enviando,setEnviando]=useState(false);
   const [otroEscribiendo,setOtroEscribiendo]=useState(false);
@@ -14,36 +17,30 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
   const [leyendoImg,setLeyendoImg]=useState(false);
   const bottomRef=useRef(null);const markedRef=useRef(false);
   const cargandoRef=useRef(false);// evitar cargar() simultáneos
-  const escribiendoTimer=useRef(null);
   const fileInputRef=useRef(null);
+  const wsRef=useRef(null);            // socket Realtime vivo (para emitir "escribiendo")
+  const lastTypingSentRef=useRef(0);   // throttle del broadcast de typing
+  const typingClearRef=useRef(null);   // timeout para limpiar "escribiendo…"
 
-  // Broadcast "escribiendo" al otro via localStorage (cross-tab) o Realtime
+  // "Escribiendo…" via Realtime broadcast (cross-usuario; el approach viejo con
+  // localStorage solo sincronizaba entre pestañas del mismo navegador).
   const emitirEscribiendo=useCallback(()=>{
-    try{localStorage.setItem(`cl_typing_${post.id}_${miEmail}`,Date.now());}catch{}
-  },[post.id,miEmail]);
-
-  // Detectar si el otro está escribiendo via polling de localStorage
-  useEffect(()=>{
-    const check=()=>{
-      try{
-        const ts=parseInt(localStorage.getItem(`cl_typing_${post.id}_${otroEmail}`)||"0");
-        setOtroEscribiendo(Date.now()-ts<1800);
-      }catch{}
-    };
-    const t=setInterval(check,500);
-    return()=>{
-      clearInterval(t);
-      try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
-    };
-  },[post.id,otroEmail,miEmail]);
+    const ws=wsRef.current;
+    if(!ws||ws.readyState!==WebSocket.OPEN)return;
+    const now=Date.now();
+    if(now-lastTypingSentRef.current<900)return;// throttle: 1 broadcast c/900ms
+    lastTypingSentRef.current=now;
+    try{
+      ws.send(JSON.stringify({
+        topic:chanTopic,event:"broadcast",
+        payload:{type:"broadcast",event:"typing",payload:{from:miEmail}},ref:"bt"
+      }));
+    }catch{}
+  },[chanTopic,miEmail]);
 
   const handleInputChange=(e)=>{
     setInput(e.target.value);
     emitirEscribiendo();
-    clearTimeout(escribiendoTimer.current);
-    escribiendoTimer.current=setTimeout(()=>{
-      try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
-    },1200);
   };
   const marcar=useCallback(async()=>{
     try{await sb.marcarLeidos(post.id,miEmail,session.access_token);}catch{}
@@ -66,30 +63,77 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
   },[post.id,miEmail,otroEmail,session.access_token,marcar]);
   useEffect(()=>{
     cargar();
-    // Supabase Realtime en vez de polling — escucha INSERT en mensajes de este chat
-    let canal=null;
-    try{
-      const ws=new WebSocket(`${SUPABASE_URL.replace("https","wss")}/realtime/v1/websocket?apikey=${ANON_KEY}&vsn=1.0.0`);
-      canal=ws;
-      ws.onopen=()=>{
-        ws.send(JSON.stringify({topic:`realtime:mensajes_${post.id}`,event:"phx_join",payload:{},ref:"1"}));
-        ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
-      };
-      ws.onmessage=(e)=>{
-        try{
-          const msg=JSON.parse(e.data);
-          if(msg.event==="INSERT"||msg.payload?.type==="INSERT"){cargar();}
-        }catch{}
-      };
-      ws.onerror=()=>{
-        ws.close();
-        const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};
-      };
-    }catch{
-      const t=setInterval(cargar,5000);canal={close:()=>clearInterval(t)};
+    // Supabase Realtime: postgres_changes (INSERT en mensajes de esta pub, scopeado
+    // por RLS) para recibir mensajes en vivo, + broadcast "typing". El payload del
+    // phx_join debe incluir el binding de postgres_changes y el access_token del
+    // usuario (RLS), si no Supabase no emite ningún evento. Patrón espejo del WS de
+    // notificaciones en App.jsx (heartbeat en intervalo + reconexión con backoff).
+    let ws,heartbeat,reconnectTimer,pollFallback,dead=false,retries=0;
+    const token=session.access_token;
+
+    const showTyping=()=>{
+      setOtroEscribiendo(true);
+      clearTimeout(typingClearRef.current);
+      typingClearRef.current=setTimeout(()=>setOtroEscribiendo(false),2500);
+    };
+    const scheduleReconnect=()=>{
+      if(dead)return;
+      retries++;
+      reconnectTimer=setTimeout(connect,Math.min(2000*retries,15000));
+    };
+    function connect(){
+      if(dead||!token)return;
+      try{
+        ws=new WebSocket(`${SUPABASE_URL.replace("https","wss")}/realtime/v1/websocket?apikey=${ANON_KEY}&vsn=1.0.0`);
+        wsRef.current=ws;
+        ws.onopen=()=>{
+          retries=0;
+          ws.send(JSON.stringify({
+            topic:chanTopic,event:"phx_join",
+            payload:{
+              config:{
+                broadcast:{ack:false,self:false},
+                postgres_changes:[{event:"INSERT",schema:"public",table:"mensajes",filter:`publicacion_id=eq.${post.id}`}]
+              },
+              access_token:token
+            },ref:"1"
+          }));
+          heartbeat=setInterval(()=>{
+            if(ws.readyState===WebSocket.OPEN)
+              ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
+          },25000);
+        };
+        ws.onmessage=(e)=>{
+          try{
+            const msg=JSON.parse(e.data);
+            if(msg.event==="postgres_changes"){
+              const rec=msg.payload?.data?.record;
+              // filtrar a esta conversación 1-a-1 (la pub puede tener varios chats)
+              if(rec&&(
+                (rec.de_nombre===miEmail&&rec.para_nombre===otroEmail)||
+                (rec.de_nombre===otroEmail&&rec.para_nombre===miEmail)
+              )) cargar();
+            }else if(msg.event==="broadcast"&&msg.payload?.event==="typing"){
+              if(msg.payload?.payload?.from!==miEmail) showTyping();
+            }
+          }catch{}
+        };
+        ws.onclose=()=>{clearInterval(heartbeat);if(!dead)scheduleReconnect();};
+        ws.onerror=()=>{try{ws.close();}catch{}};
+      }catch{
+        // Sin WebSocket: fallback a polling de baja frecuencia
+        pollFallback=setInterval(cargar,5000);
+      }
     }
-    return()=>{try{canal?.close?.();}catch{}};
-  },[cargar]);// eslint-disable-line react-hooks/exhaustive-deps
+    connect();
+    return()=>{
+      dead=true;
+      clearInterval(heartbeat);clearTimeout(reconnectTimer);clearInterval(pollFallback);
+      clearTimeout(typingClearRef.current);
+      wsRef.current=null;
+      try{ws?.close();}catch{}
+    };
+  },[cargar,post.id,miEmail,otroEmail,chanTopic,session.access_token]);// eslint-disable-line react-hooks/exhaustive-deps
 
   // Procesar imagen seleccionada
   const handleImageSelect=(e)=>{
@@ -117,7 +161,6 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     }
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
     setInput("");setImagenPrevia(null);setEnviando(true);
-    try{localStorage.removeItem(`cl_typing_${post.id}_${miEmail}`);}catch{}
     try{
       await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:mensajeTexto,leido:false,pub_titulo:post.titulo},session.access_token);
       sb.insertNotificacion({usuario_id:null,alumno_email:otroEmail,tipo:"nuevo_mensaje",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
