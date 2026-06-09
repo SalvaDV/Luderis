@@ -3,16 +3,38 @@ import { GraduationCap, Megaphone, User, Clock } from "lucide-react";
 import * as sb from "./supabase";
 
 // ─── TEMAS ────────────────────────────────────────────────────────────────────
+// Tokens alineados al rediseño. Se conservan TODAS las claves previas
+// (card, accent, info, purple, warn, sidebar…) para no romper ninguna pantalla,
+// y se agregan las nuevas del sistema refinado (surfaceAlt, borderStrong, hairline,
+// textSoft, faint, teal, shadow, shadowHover, overlay).
 export const THEMES={
-  dark:{bg:"#080F1C",surface:"#0E1829",card:"#131E2F",border:"#1E2D42",accent:"#2EC4A0",accentDim:"#2EC4A015",text:"#E8EFF8",muted:"#5C7A9A",success:"#2EC4A0",successText:"#2EC4A0",danger:"#E05C5C",sidebar:"#080F1C",info:"#1A6ED8",purple:"#7B5CF0",warn:"#E0955C",sidebarBorder:"#1E2D42"},
+  dark:{bg:"#0A1220",surface:"#111C2E",surfaceAlt:"#0E1727",card:"#15223A",border:"#203049",borderStrong:"#2A3A52",hairline:"#1A2740",accent:"#2EC4A0",primary:"#4C95F0",teal:"#28C2A4",accentDim:"#2EC4A015",text:"#E9EFF8",textSoft:"#B4C2D6",muted:"#8597B0",faint:"#5E708C",success:"#2EC4A0",successText:"#2EC4A0",danger:"#E05C5C",sidebar:"#0A1220",info:"#4C95F0",purple:"#9B82F2",warn:"#E0955C",sidebarBorder:"#203049",shadow:"0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35)",shadowHover:"0 2px 6px rgba(0,0,0,.4), 0 16px 36px rgba(0,0,0,.5)",overlay:"rgba(2,6,14,.6)"},
   // successText: variante de `success` con contraste AA para TEXTO en tema claro.
   // El teal de marca (success #2EC4A0) se conserva para fondos/acentos.
-  light:{bg:"#F6F9FF",surface:"#FFFFFF",card:"#FFFFFF",border:"#DDE5F5",accent:"#1A6ED8",accentDim:"#1A6ED810",text:"#0D1F3C",muted:"#5A7294",success:"#2EC4A0",successText:"#147D63",danger:"#C53030",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#B45309",sidebarBorder:"#DDE5F5"},
+  light:{bg:"#F4F7FB",surface:"#FFFFFF",surfaceAlt:"#FAFBFD",card:"#FFFFFF",border:"#E7ECF3",borderStrong:"#D4DDE9",hairline:"#EEF2F7",accent:"#1A6ED8",primary:"#1A6ED8",teal:"#0F9C82",accentDim:"#1A6ED810",text:"#0F1B2E",textSoft:"#39495F",muted:"#5A6A82",faint:"#8593A7",success:"#2EC4A0",successText:"#147D63",danger:"#C53030",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#B45309",sidebarBorder:"#E7ECF3",shadow:"0 1px 2px rgba(16,27,46,.04), 0 4px 16px rgba(16,27,46,.05)",shadowHover:"0 2px 4px rgba(16,27,46,.05), 0 12px 28px rgba(16,27,46,.10)",overlay:"rgba(10,18,32,.45)"},
 };
 export let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{return "light";}};
 export const C={...THEMES[_themeKey()]};
 export function applyTheme(key){Object.assign(C,THEMES[key]||THEMES.dark);try{localStorage.setItem("cl_theme",key);}catch{}}
-export const FONT="'Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
+export const FONT="'Hanken Grotesk','Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
+// Fuente para títulos/displays (más carácter en headings grandes)
+export const FONT_DISPLAY="'Plus Jakarta Sans','Hanken Grotesk',system-ui,sans-serif";
+
+// ─── ESCALA TIPOGRÁFICA (rediseño) ────────────────────────────────────────────
+// Usar con el helper tx("h1") en el style de cualquier elemento de texto.
+export const TYPE={
+  eyebrow:   {fontSize:12,fontWeight:600,lineHeight:1.2,letterSpacing:".09em",textTransform:"uppercase"},
+  display:   {fontSize:27,fontWeight:700,lineHeight:1.18,letterSpacing:"-.02em"},
+  h1:        {fontSize:21,fontWeight:700,lineHeight:1.25,letterSpacing:"-.015em"},
+  h2:        {fontSize:16,fontWeight:700,lineHeight:1.3,letterSpacing:"-.01em"},
+  cardTitle: {fontSize:15.5,fontWeight:650,lineHeight:1.35,letterSpacing:"-.005em"},
+  body:      {fontSize:14,fontWeight:450,lineHeight:1.55},
+  bodyStrong:{fontSize:14,fontWeight:600,lineHeight:1.45},
+  meta:      {fontSize:13,fontWeight:500,lineHeight:1.4},
+  micro:     {fontSize:12,fontWeight:500,lineHeight:1.35},
+  price:     {fontSize:18,fontWeight:750,lineHeight:1.1,letterSpacing:"-.01em"},
+};
+export const tx=(name,extra)=>Object.assign({},TYPE[name],extra||{});
 
 // ─── LOGGING ─────────────────────────────────────────────────────────────────
 // Centralizado para poder agregar Sentry u otro servicio después sin tocar cada archivo
@@ -295,7 +317,7 @@ export const VerifiedBadge=()=>(<span style={{fontSize:12,fontWeight:700,padding
 
 export const StarRating=({val,count,small})=>{if(!count&&!val)return <span style={{color:C.muted,fontSize:small?12:13,fontStyle:"italic"}}>Sin valoraciones</span>;const v=parseFloat(val)||0;const full=Math.round(v);return<span style={{display:"inline-flex",alignItems:"center",gap:3}}><span style={{color:"#F59E0B",fontSize:small?13:15,letterSpacing:1}}>{"★".repeat(full)}<span style={{color:C.border}}>{"★".repeat(5-full)}</span></span><span style={{color:"#B45309",fontWeight:700,fontSize:small?12:13,marginLeft:2}}>{v.toFixed(1)}</span>{count!==undefined&&<span style={{color:C.muted,fontSize:small?11:12}}>({count})</span>}</span>;};
 
-export const Input=({style={},...props})=>(<input style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"10px 13px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:FONT,transition:"border-color .15s, box-shadow .15s",...style}}
+export const Input=({style={},...props})=>(<input style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 14px",color:C.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:FONT,transition:"border-color .15s, box-shadow .15s",...style}}
   onFocus={e=>{e.target.style.borderColor=C.accent;e.target.style.boxShadow=`0 0 0 3px ${C.accent}22`;}}
   onBlur={e=>{e.target.style.borderColor=C.border;e.target.style.boxShadow="none";}}
   {...props}/>);
@@ -304,9 +326,9 @@ const _reducedMotion=typeof window!=="undefined"&&window.matchMedia?.("(prefers-
 
 export const Btn=({children,variant="primary",style={},disabled=false,onMouseEnter,onMouseLeave,...props})=>{
   const styles={
-    primary:{bg:C.accent,color:"#fff",border:"none"},
-    danger:{bg:C.danger,color:"#fff",border:"none"},
-    success:{bg:C.success,color:"#fff",border:"none"},
+    primary:{bg:`linear-gradient(135deg,${C.accent},${C.teal})`,color:"#fff",border:"none",sh:"0 2px 8px rgba(26,110,216,.22)",shH:"0 6px 18px rgba(26,110,216,.32)"},
+    danger:{bg:C.danger,color:"#fff",border:"none",sh:"0 2px 8px rgba(197,48,48,.20)",shH:"0 6px 16px rgba(197,48,48,.30)"},
+    success:{bg:C.success,color:"#fff",border:"none",sh:"0 2px 8px rgba(46,196,160,.20)",shH:"0 6px 16px rgba(46,196,160,.30)"},
     warn:{bg:C.warn,color:"#fff",border:"none"},
     info:{bg:C.info,color:"#fff",border:"none"},
     ghost:{bg:"transparent",color:C.text,border:`1px solid ${C.border}`},
@@ -318,21 +340,22 @@ export const Btn=({children,variant="primary",style={},disabled=false,onMouseEnt
     aria-disabled={disabled}
     style={{
       background:s.bg,color:s.color,border:s.border,
-      borderRadius:20,padding:"9px 22px",fontWeight:600,fontSize:15,
+      borderRadius:11,padding:"10px 22px",fontWeight:650,fontSize:14.5,
       cursor:disabled?"not-allowed":"pointer",
       opacity:disabled?.55:1,
+      boxShadow:s.sh||"none",
       fontFamily:FONT,
-      transition:_reducedMotion?"none":"transform .15s,opacity .15s,box-shadow .15s",
+      transition:_reducedMotion?"none":"transform .16s,opacity .15s,box-shadow .16s",
       ...style,
     }}
     onMouseEnter={e=>{
       if(disabled)return;
-      if(!_reducedMotion){e.currentTarget.style.opacity=".88";e.currentTarget.style.transform="scale(1.01)";}
+      if(!_reducedMotion){e.currentTarget.style.transform="translateY(-1px)";if(s.shH)e.currentTarget.style.boxShadow=s.shH;else e.currentTarget.style.opacity=".9";}
       onMouseEnter?.(e);
     }}
     onMouseLeave={e=>{
       if(disabled)return;
-      if(!_reducedMotion){e.currentTarget.style.opacity="1";e.currentTarget.style.transform="scale(1)";}
+      if(!_reducedMotion){e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=s.sh||"none";e.currentTarget.style.opacity="1";}
       onMouseLeave?.(e);
     }}
     {...props}>{children}</button>);
