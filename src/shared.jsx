@@ -36,6 +36,29 @@ export const TYPE={
 };
 export const tx=(name,extra)=>Object.assign({},TYPE[name],extra||{});
 
+// ─── ACENTOS POR SECCIÓN (rediseño) ───────────────────────────────────────────
+// Sistema de acentos del prototipo (redesign-prototipo/redesign/theme.jsx → ACCENTS).
+// curso = sección Cursos · clase = sección Clases · pedido = sección Pedidos.
+// Valores EXACTOS del prototipo (no inventar). TIPO_PUB se mantiene para el resto de la app.
+export const ACCENTS={
+  light:{
+    curso: {solid:"#1A6ED8",text:"#1257AE",soft:"#EAF2FC",line:"#1A6ED8",ring:"#1A6ED833",heroGrad:"linear-gradient(135deg, #0A2A5E 0%, #1A6ED8 55%, #2EC4A0 100%)"},
+    clase: {solid:"#B96A12",text:"#9A5510",soft:"#FAF1E5",line:"#C97A1E",ring:"#C97A1E33",heroGrad:"linear-gradient(135deg, #7A3500 0%, #D4700A 55%, #F5C842 100%)"},
+    pedido:{solid:"#6A49DE",text:"#5638C2",soft:"#F0ECFC",line:"#7B5CF0",ring:"#7B5CF033",heroGrad:"linear-gradient(135deg, #1A0A3D 0%, #7B5CF0 55%, #E05C9A 100%)"},
+  },
+  dark:{
+    curso: {solid:"#4C95F0",text:"#7FB3F5",soft:"#13243C",line:"#4C95F0",ring:"#4C95F040",heroGrad:"linear-gradient(135deg, #0A2A5E 0%, #1A6ED8 55%, #2EC4A0 100%)"},
+    clase: {solid:"#E0992E",text:"#EBB463",soft:"#2A2113",line:"#E0992E",ring:"#E0992E40",heroGrad:"linear-gradient(135deg, #7A3500 0%, #D4700A 55%, #F5C842 100%)"},
+    pedido:{solid:"#9B82F2",text:"#B6A4F6",soft:"#1E1A38",line:"#9B82F2",ring:"#9B82F240",heroGrad:"linear-gradient(135deg, #1A0A3D 0%, #7B5CF0 55%, #E05C9A 100%)"},
+  },
+};
+// Devuelve el set de acentos de una sección ("cursos"|"clases"|"pedidos") según el tema activo.
+export const accentFor=(seccion)=>{
+  const tema=_themeKey()==="dark"?"dark":"light";
+  const key=seccion==="clases"||seccion==="clase"?"clase":seccion==="pedidos"||seccion==="pedido"?"pedido":"curso";
+  return ACCENTS[tema][key];
+};
+
 // ─── LOGGING ─────────────────────────────────────────────────────────────────
 // Centralizado para poder agregar Sentry u otro servicio después sin tocar cada archivo
 export const logError = (context, error) => {
