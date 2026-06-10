@@ -5,7 +5,7 @@ import { C, FONT, safeDisplayName, sanitizeContactInfo, moderarMensaje, Avatar, 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
 
-export default function ChatModal({post,session,onClose,onUnreadChange}){
+export default function ChatModal({post,session,onClose,onUnreadChange,embedded=false}){
   const miEmail=session.user.email;const otroEmail=post.autor_email;
   // Canal Realtime por-par (mismo string para ambos lados): scopea el "escribiendo…"
   // a esta conversación. Los INSERT de mensajes se filtran además por RLS + por par.
@@ -171,10 +171,11 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
     finally{setEnviando(false);}
   };
   const nombre=post.autor_nombre||safeDisplayName(null,otroEmail)||"Usuario";
-  const trapRef=useFocusTrap(true);
-  return(
-    <div role="dialog" aria-modal="true" aria-label={`Chat con ${nombre}`} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"8px"}}>
-      <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,calc(100vw - 16px))",height:"min(680px,85vh)",maxHeight:"85dvh",display:"flex",flexDirection:"column",overflow:"hidden",outline:"none"}}>
+  const trapRef=useFocusTrap(!embedded);
+  const panel=(
+      <div ref={trapRef} tabIndex={-1} style={embedded
+        ?{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:"100%",height:"100%",display:"flex",flexDirection:"column",overflow:"hidden",outline:"none",boxShadow:C.shadow}
+        :{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width:"min(500px,calc(100vw - 16px))",height:"min(680px,85vh)",maxHeight:"85dvh",display:"flex",flexDirection:"column",overflow:"hidden",outline:"none"}}>
         {/* Anti-puenteo */}
         <div style={{background:C.warn+"12",borderBottom:`1px solid ${C.warn}25`,padding:"6px 14px",display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
           <span style={{fontSize:12}}>🛡️</span>
@@ -250,6 +251,11 @@ export default function ChatModal({post,session,onClose,onUnreadChange}){
           </button>
         </div>
       </div>
+  );
+  if(embedded)return panel;
+  return(
+    <div role="dialog" aria-modal="true" aria-label={`Chat con ${nombre}`} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:"8px"}}>
+      {panel}
     </div>
   );
 }

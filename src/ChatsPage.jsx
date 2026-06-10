@@ -1,17 +1,31 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { C, FONT, FONT_DISPLAY, Spinner, Avatar, useConfirm, toast } from "./shared";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
+import ChatModal from "./components/ChatModal";
 
-// ─── CHATS PAGE — título real de la publicación (sin "Conversación") ───────────
-export default function ChatsPage({session,onOpenChat}){
+// Hora compacta estilo mensajería: hoy → HH:MM, ayer → "Ayer", resto → dd/mm
+const horaChat=(iso)=>{
+  if(!iso)return "";
+  const d=new Date(iso),now=new Date();
+  if(d.toDateString()===now.toDateString())return d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
+  const ayer=new Date(now);ayer.setDate(now.getDate()-1);
+  if(d.toDateString()===ayer.toDateString())return "Ayer";
+  return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
+};
+const preview=(t)=>(t||"").startsWith("[img]")?"📷 Imagen":(t||"—");
+
+// ─── CHATS PAGE — vista master-detail (lista + conversación) ────────────────────
+export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=false}){
   const {openPub}=useAppActions();
   const [grupos,setGrupos]=useState([]);const [loading,setLoading]=useState(true);
   const [nombresMap,setNombresMap]=useState({});
   const [busquedaChat,setBusquedaChat]=useState("");
   const [grupoChats,setGrupoChats]=useState([]);
+  const [selected,setSelected]=useState(null);// {id,autor_email,titulo,autor_nombre}
   const miEmail=session.user.email;
   const {confirm,confirmEl}=useConfirm();
+  const autoSelDone=useRef(false);
 
   const cargar=useCallback(()=>{
     setLoading(true);
@@ -73,116 +87,138 @@ export default function ChatsPage({session,onOpenChat}){
       });
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"Error al borrar");
+      setSelected(s=>(s&&s.id===pubId&&s.autor_email===otroEmail)?null:s);
       cargar();
     }catch(err){toast("Error al borrar: "+err.message,"error");}
   };
 
   const getNombre=(email)=>nombresMap[email]||email.split("@")[0];
 
-  const normChat=(s)=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-  const q=normChat(busquedaChat.trim());
-  const gruposFiltrados=busquedaChat.trim()
-    ?grupos.filter(g=>{
-        if(normChat(g.pubTitulo||"").includes(q))return true;
-        return Object.values(g.chats).some(c=>normChat(getNombre(c.otro)).includes(q)||normChat(c.otro).includes(q));
-      })
-    :grupos;
-  const gruposChatsFiltrados=busquedaChat.trim()
-    ?grupoChats.filter(g=>normChat(g.pubTitulo||"").includes(q))
-    :grupoChats;
+  // ── Aplanar todas las conversaciones en una sola lista ordenada ──────────────
+  const lista=[];
+  grupoChats.forEach(g=>lista.push({
+    key:`grupo|${g.pubId}`,tipo:"grupo",pubId:g.pubId,pubTitulo:g.pubTitulo,
+    nombre:g.pubTitulo,ultimoTexto:`Chat grupal · ${preview(g.lastTexto)}`,unread:0,lastTime:g.lastTime,
+  }));
+  grupos.forEach(g=>Object.values(g.chats).forEach(c=>{
+    const yo=c.ultimo.de_nombre===miEmail;
+    lista.push({
+      key:`${g.pubId}|${c.otro}`,tipo:"directo",pubId:g.pubId,pubTitulo:g.pubTitulo,otro:c.otro,
+      nombre:getNombre(c.otro),
+      ultimoTexto:`${yo?"Vos: ":""}${preview(c.ultimo.texto)}`,
+      unread:c.unread,lastTime:c.ultimo.created_at,
+    });
+  }));
+  lista.sort((a,b)=>new Date(b.lastTime)-new Date(a.lastTime));
 
-  const hayAlgo=grupos.length>0||grupoChats.length>0;
-  const hayResultados=gruposFiltrados.length>0||gruposChatsFiltrados.length>0;
+  const norm=(s)=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const q=norm(busquedaChat.trim());
+  const filtrados=q?lista.filter(c=>norm(c.nombre).includes(q)||norm(c.pubTitulo).includes(q)||(c.otro&&norm(c.otro).includes(q))):lista;
+
+  const totalUnread=lista.reduce((a,c)=>a+c.unread,0);
+  const selKey=selected?`${selected.id}|${selected.autor_email}`:null;
+
+  const abrir=(c)=>{
+    if(c.tipo==="grupo"){if(openPub)openPub(c.pubId);return;}
+    const post={id:c.pubId,autor_email:c.otro,titulo:c.pubTitulo,autor_nombre:c.nombre};
+    if(isMobile){if(onOpenChat)onOpenChat(post);}
+    else setSelected(post);
+  };
+
+  // Auto-seleccionar el primer chat directo en desktop (una sola vez tras cargar)
+  useEffect(()=>{
+    if(isMobile||autoSelDone.current||loading)return;
+    const primero=filtrados.find(c=>c.tipo==="directo");
+    if(primero){
+      autoSelDone.current=true;
+      setSelected({id:primero.pubId,autor_email:primero.otro,titulo:primero.pubTitulo,autor_nombre:primero.nombre});
+    }
+  },[loading,isMobile,filtrados]);// eslint-disable-line
+
+  const onConvUnread=useCallback(()=>{cargar();if(onUnreadChange)onUnreadChange();},[cargar,onUnreadChange]);
+
+  // ── Render de una fila de la lista ──────────────────────────────────────────
+  const Fila=({c})=>{
+    const [h,setH]=useState(false);
+    const active=c.key===selKey;
+    const grupo=c.tipo==="grupo";
+    return(
+      <div role="button" tabIndex={0} aria-label={`Abrir chat de ${c.nombre}`}
+        onClick={()=>abrir(c)}
+        onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abrir(c);}}}
+        onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+        style={{display:"flex",gap:12,padding:"12px 14px",borderBottom:`1px solid ${C.hairline}`,cursor:"pointer",background:active?C.accentDim:h?C.surfaceAlt:"transparent",transition:"background .14s",position:"relative"}}>
+        <div style={{flexShrink:0}}>
+          {grupo
+            ?<div style={{width:44,height:44,borderRadius:"50%",background:C.accentDim,color:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,border:`1px solid ${C.accent}30`}}>👥</div>
+            :<Avatar letra={(c.nombre||"?")[0]} size={44}/>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
+            <span style={{fontSize:13.5,fontWeight:c.unread?700:600,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.nombre}</span>
+            <span style={{fontSize:11.5,color:c.unread?C.accent:C.faint,fontWeight:c.unread?700:500,flexShrink:0}}>{horaChat(c.lastTime)}</span>
+          </div>
+          <div style={{fontSize:12,color:C.faint,margin:"1px 0 4px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.pubTitulo||"—"}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{flex:1,fontSize:12.5,color:c.unread?C.textSoft:C.muted,fontWeight:c.unread?600:400,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.ultimoTexto}</span>
+            {c.unread>0&&<span style={{flexShrink:0,minWidth:19,height:19,padding:"0 6px",borderRadius:10,background:C.accent,color:"#fff",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{c.unread}</span>}
+            {!grupo&&h&&(
+              <button onClick={(e)=>borrarChat(c.pubId,c.otro,e)} aria-label="Borrar conversación"
+                style={{flexShrink:0,background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,fontSize:12,padding:"2px 6px",cursor:"pointer",fontFamily:FONT,lineHeight:1.2}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>🗑</button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Panel lista (búsqueda + filas) ──────────────────────────────────────────
+  const listPanel=(
+    <div style={{display:"flex",flexDirection:"column",background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",boxShadow:C.shadow,height:"100%",minHeight:0}}>
+      <div style={{padding:14,borderBottom:`1px solid ${C.hairline}`,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:9,background:C.surfaceAlt,border:`1px solid ${busquedaChat?C.accent:C.border}`,borderRadius:10,padding:"8px 12px",transition:"border-color .15s"}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.faint} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} aria-label="Buscar conversación" placeholder="Buscar conversación…" style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:FONT,fontSize:13.5,color:C.text,minWidth:0}}/>
+          {busquedaChat&&<button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.muted,fontSize:16,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>×</button>}
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",minHeight:0}}>
+        {filtrados.length===0
+          ?<div style={{padding:"40px 20px",textAlign:"center",color:C.muted,fontSize:13}}>{busquedaChat?`Sin resultados para "${busquedaChat}"`:"No iniciaste ninguna conversación."}</div>
+          :filtrados.map(c=><Fila key={c.key} c={c}/>)}
+      </div>
+    </div>
+  );
+
+  // ── Panel conversación (derecha, desktop) ───────────────────────────────────
+  const emptyPanel=(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,boxShadow:C.shadow,textAlign:"center",padding:24}}>
+      <div style={{fontSize:34,marginBottom:10,opacity:.5}}>💬</div>
+      <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>Elegí una conversación</div>
+      <div style={{fontSize:13,color:C.muted}}>Seleccioná un chat de la lista para ver los mensajes.</div>
+    </div>
+  );
 
   return(
-    <div style={{fontFamily:FONT}}>
+    <div style={{fontFamily:FONT,display:"flex",flexDirection:"column",height:isMobile?"auto":"calc(100vh - 96px)"}}>
       {confirmEl}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:12}}>
+      <div style={{marginBottom:16,flexShrink:0}}>
         <h2 style={{fontFamily:FONT_DISPLAY,fontSize:21,color:C.text,margin:0,fontWeight:800,letterSpacing:"-.02em"}}>Mis chats</h2>
-        {(grupos.length+grupoChats.length)>3&&(
-          <div style={{display:"flex",alignItems:"center",gap:7,background:C.bg,border:`1px solid ${busquedaChat?C.accent:C.border}`,borderRadius:9,padding:"7px 12px",flex:1,maxWidth:240,transition:"border-color .15s"}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} aria-label="Buscar chat" placeholder="Buscar chat…" style={{background:"none",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,flex:1,minWidth:0}}/>
-            {busquedaChat&&<button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.muted,fontSize:15,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>×</button>}
-          </div>
-        )}
+        <p style={{color:C.muted,fontSize:13,margin:"4px 0 0"}}>
+          {totalUnread>0?`Tenés ${totalUnread} mensaje${totalUnread!==1?"s":""} sin leer.`:"Coordiná tus clases con docentes y alumnos."}
+        </p>
       </div>
-      {loading?<Spinner/>:!hayAlgo?(
-        <div style={{textAlign:"center",padding:"60px 0"}}><div style={{fontSize:40,marginBottom:12,color:C.border}}>◻</div><p style={{color:C.muted,fontSize:13,marginBottom:8}}>No iniciaste ninguna conversación.</p><p style={{color:C.muted,fontSize:12}}>Inscribite en una clase o que acepten tu oferta para poder chatear.</p></div>
-      ):!hayResultados?(
-        <div style={{textAlign:"center",padding:"40px 0"}}><div style={{fontSize:32,marginBottom:10,color:C.border}}>🔍</div><p style={{color:C.muted,fontSize:13}}>Sin resultados para "{busquedaChat}"</p><button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,textDecoration:"underline"}}>Limpiar búsqueda</button></div>
+
+      {loading?<Spinner/>:isMobile?(
+        listPanel
       ):(
-        <div style={{display:"flex",flexDirection:"column",gap:16}}>
-
-          {/* ── Chats grupales ─────────────────────────────────────────────── */}
-          {gruposChatsFiltrados.length>0&&(
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <div style={{height:1,flex:1,background:C.border}}/>
-                <span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.5,display:"flex",alignItems:"center",gap:4}}>
-                  <span>👥</span> CHATS GRUPALES
-                </span>
-                <div style={{height:1,flex:1,background:C.border}}/>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {gruposChatsFiltrados.map((g,i)=>(
-                  <div key={i}
-                    role="button" tabIndex={0} aria-label={`Abrir chat grupal de ${g.pubTitulo||"la publicación"}`}
-                    onClick={()=>{if(openPub)openPub(g.pubId);}}
-                    onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(openPub)openPub(g.pubId);}}}
-                    style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:13,padding:"11px 15px",display:"flex",alignItems:"center",gap:11,cursor:"pointer",transition:"border-color .12s"}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-                    <div style={{width:34,height:34,borderRadius:"50%",background:C.accent+"18",border:`1px solid ${C.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16}}>👥</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{g.pubTitulo}</div>
-                      <div style={{color:C.muted,fontSize:12}}>Chat grupal · {g.lastTexto?.startsWith("[img]")?"📷 Imagen":g.lastTexto||"—"}</div>
-                    </div>
-                    <span style={{fontSize:12,color:C.accent,fontWeight:600,flexShrink:0}}>Ver →</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Chats directos ─────────────────────────────────────────────── */}
-          {gruposFiltrados.map((g,gi)=>(
-            <div key={gi}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <div style={{height:1,flex:1,background:C.border}}/>
-                <span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.5,whiteSpace:"nowrap",maxWidth:"70%",overflow:"hidden",textOverflow:"ellipsis"}}>{g.pubTitulo||"Sin título"}</span>
-                <div style={{height:1,flex:1,background:C.border}}/>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {Object.values(g.chats).sort((a,b)=>new Date(b.ultimo.created_at)-new Date(a.ultimo.created_at)).map((c,i)=>(
-                  // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-                  <div key={i} style={{background:C.card,border:`1px solid ${c.unread>0?C.accent:C.border}`,borderRadius:13,padding:"11px 15px",display:"flex",alignItems:"center",gap:11,position:"relative"}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor=c.unread>0?C.accent:C.border}>
-                    <div role="button" tabIndex={0} aria-label={`Abrir chat con ${getNombre(c.otro)}`} onClick={()=>onOpenChat({id:g.pubId,autor_email:c.otro,titulo:g.pubTitulo,autor_nombre:getNombre(c.otro)})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenChat({id:g.pubId,autor_email:c.otro,titulo:g.pubTitulo,autor_nombre:getNombre(c.otro)});}}} style={{display:"flex",alignItems:"center",gap:11,flex:1,minWidth:0,cursor:"pointer"}}>
-                      <Avatar letra={getNombre(c.otro)[0]} size={34}/>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:1}}>{getNombre(c.otro)}</div>
-                        <div style={{color:C.muted,fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                          <span style={{color:c.ultimo.de_nombre===miEmail?C.accent:C.text,fontWeight:600,fontSize:11}}>{c.ultimo.de_nombre===miEmail?"Vos":getNombre(c.otro)}: </span>
-                          {c.ultimo.texto?.startsWith("[img]")?"📷 Imagen":c.ultimo.texto}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                      {c.unread>0&&<span style={{background:C.accent,color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 7px"}}>{c.unread} nuevo{c.unread!==1?"s":""}</span>}
-                      <button onClick={(e)=>borrarChat(g.pubId,c.otro,e)}
-                        style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,fontSize:12,padding:"3px 8px",cursor:"pointer",fontFamily:FONT,flexShrink:0,transition:"all .12s"}}
-                        onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                        🗑
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div style={{display:"grid",gridTemplateColumns:"340px 1fr",gap:16,flex:1,minHeight:460}}>
+          {listPanel}
+          {selected
+            ?<ChatModal key={selKey} post={selected} session={session} embedded onClose={()=>setSelected(null)} onUnreadChange={onConvUnread}/>
+            :emptyPanel}
         </div>
       )}
     </div>
