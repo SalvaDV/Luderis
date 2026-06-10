@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
-  C, FONT, toast,
+  C, FONT, FONT_DISPLAY, toast,
   Avatar, Spinner, Btn, Modal, ErrMsg, Chip,
   VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcDuracion,
@@ -4448,8 +4448,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
         <div style={{padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
           <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,padding:"5px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,whiteSpace:"nowrap"}}>← Volver</button>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
-            <div style={{fontSize:10,color:C.muted,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.materia} · {post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)}</div>
+            <div style={{fontFamily:FONT_DISPLAY,fontWeight:800,color:C.text,fontSize:15.5,letterSpacing:"-.01em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.materia} · {post.autor_nombre||safeDisplayName(post.autor_nombre,post.autor_email)}</div>
           </div>
         </div>
         {/* Row 2: actions — scrollable on mobile */}
