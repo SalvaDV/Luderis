@@ -226,7 +226,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange,embedded=
         )}
         <div style={{padding:"10px 13px",borderTop:`1px solid ${C.border}`,display:"flex",gap:7,flexShrink:0,alignItems:"flex-end"}}>
           {/* Botón imagen */}
-          <input ref={fileInputRef} type="file" accept="image/*" aria-label="Adjuntar imagen" style={{display:"none"}} onChange={handleImageSelect}/>
+          <input ref={fileInputRef} id="chat-adjuntar" name="chat-adjuntar" type="file" accept="image/*" aria-label="Adjuntar imagen" style={{display:"none"}} onChange={handleImageSelect}/>
           <button onClick={()=>!leyendoImg&&fileInputRef.current?.click()}
             disabled={leyendoImg}
             style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 10px",cursor:leyendoImg?"default":"pointer",color:C.muted,fontSize:16,flexShrink:0,lineHeight:1,transition:"all .15s",opacity:leyendoImg?.5:1}}
@@ -235,7 +235,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange,embedded=
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
             {leyendoImg?"⏳":"📎"}
           </button>
-          <textarea value={input} onChange={handleInputChange}
+          <textarea id="chat-mensaje" name="chat-mensaje" value={input} onChange={handleInputChange}
             aria-label="Escribí un mensaje"
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
             placeholder="Escribí un mensaje..."

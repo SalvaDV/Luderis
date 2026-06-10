@@ -185,7 +185,7 @@ export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=fa
       <div style={{padding:14,borderBottom:`1px solid ${C.hairline}`,flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:9,background:C.surfaceAlt,border:`1px solid ${busquedaChat?C.accent:C.border}`,borderRadius:10,padding:"8px 12px",transition:"border-color .15s"}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.faint} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} aria-label="Buscar conversación" placeholder="Buscar conversación…" style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:FONT,fontSize:13.5,color:C.text,minWidth:0}}/>
+          <input id="chats-buscar" name="chats-buscar" type="search" value={busquedaChat} onChange={e=>setBusquedaChat(e.target.value)} aria-label="Buscar conversación" placeholder="Buscar conversación…" style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:FONT,fontSize:13.5,color:C.text,minWidth:0}}/>
           {busquedaChat&&<button onClick={()=>setBusquedaChat("")} style={{background:"none",border:"none",color:C.muted,fontSize:16,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>×</button>}
         </div>
       </div>
