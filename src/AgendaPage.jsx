@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Trophy, Calendar, GraduationCap, BookOpen, Star, Clock, Play } from "lucide-react";
 import * as sb from "./supabase";
-import { C, FONT, Avatar, Spinner, LUD } from "./shared";
+import { C, FONT, FONT_DISPLAY, Avatar, Spinner, LUD } from "./shared";
 
 // Badge compacto que indica si el usuario es docente o alumno en esa publicación
 const RolBadge=({rol})=>rol==="docente"
@@ -170,7 +170,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   return(
     <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto",fontFamily:FONT}}>
       <div style={{marginBottom:20}}>
-        <div style={{fontWeight:800,color:C.text,fontSize:20,marginBottom:6,letterSpacing:"-.3px",display:"flex",alignItems:"center",gap:8}}><Calendar size={20} strokeWidth={2} color={C.accent}/>Mi agenda</div>
+        <div style={{fontFamily:FONT_DISPLAY,fontWeight:800,color:C.text,fontSize:21,marginBottom:6,letterSpacing:"-.02em",display:"flex",alignItems:"center",gap:8}}><Calendar size={20} strokeWidth={2} color={C.accent}/>Mi agenda</div>
         <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
           <span style={{color:C.muted,fontSize:13}}>{mesLabel} · {diasConClase.size} día{diasConClase.size!==1?"s":""} con clase{diasConClase.size!==1?"s":""}</span>
           {(()=>{

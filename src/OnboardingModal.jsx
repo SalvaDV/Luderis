@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import * as sb from "./supabase";
-import { C, FONT, LUD, MATERIAS, CATEGORIAS_DATA, useFocusTrap } from "./shared";
+import { C, FONT, FONT_DISPLAY, LUD, MATERIAS, CATEGORIAS_DATA, useFocusTrap } from "./shared";
 
 function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const trapRef=useFocusTrap(true);
@@ -581,7 +581,7 @@ Respondé SOLO JSON.`,
         <div style={{padding:"20px 24px 0",flexShrink:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
             <div>
-              <h2 style={{color:C.text,fontSize:19,fontWeight:800,margin:"0 0 4px",letterSpacing:"-.3px"}}>{cur.title}</h2>
+              <h2 style={{color:C.text,fontFamily:FONT_DISPLAY,fontSize:20,fontWeight:800,margin:"0 0 4px",letterSpacing:"-.02em"}}>{cur.title}</h2>
               <p style={{color:C.muted,fontSize:12,margin:0}}>{cur.sub}</p>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginTop:2}}>

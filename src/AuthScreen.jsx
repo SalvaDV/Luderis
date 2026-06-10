@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as sb from "./supabase";
-import { FONT, LUD, t, logError } from "./shared";
+import { FONT, FONT_DISPLAY, LUD, t, logError } from "./shared";
 import { trackRegister, trackLogin } from "./analytics";
 import { User, GraduationCap, Sparkles, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
@@ -97,14 +97,14 @@ function AuthScreen({onLogin}){
     catch(e){setErr(e.message||"Error con Google");setLoading(false);}
   };
 
-  const iS={width:"100%",background:"#F4F7FF",border:"1.5px solid #DDE5F5",borderRadius:10,padding:"12px 14px",color:"#0D1F3C",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:12,transition:"border-color .15s,background .15s"};
+  const iS={width:"100%",background:"#F4F7FB",border:"1.5px solid #E7ECF3",borderRadius:10,padding:"12px 14px",color:"#0F1B2E",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:12,transition:"border-color .15s,background .15s"};
   const focusI=e=>{e.target.style.borderColor=LUD.blue;e.target.style.background="#fff";};
   const blurI=e=>{e.target.style.borderColor="#DDE5F5";e.target.style.background="#F4F7FF";};
 
   if(showTerminos)return(
     <div style={{minHeight:"100vh",background:"#F6F9FF",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:FONT}}>
       <motion.div initial={{scale:.95,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:"spring",stiffness:200,damping:24}}
-        style={{background:"#fff",borderRadius:16,padding:"32px 28px",width:"min(640px,95vw)",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(26,110,216,.12)"}}>
+        style={{background:"#fff",borderRadius:18,padding:"32px 28px",width:"min(640px,95vw)",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(26,110,216,.12)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
           <h2 style={{color:"#0D1F3C",fontSize:20,fontWeight:700,margin:0}}>Términos y Condiciones</h2>
           <button onClick={()=>setShowTerminos(false)} style={{background:"none",border:"1px solid #DDE5F5",borderRadius:8,color:"#666",padding:"6px 14px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>← Volver</button>
@@ -135,7 +135,7 @@ function AuthScreen({onLogin}){
   );
 
   return(
-    <div style={{minHeight:"100vh",display:"flex",fontFamily:FONT,background:"#F6F9FF"}}>
+    <div style={{minHeight:"100vh",display:"flex",fontFamily:FONT,background:"#F4F7FB"}}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         .auth-left{display:flex!important}
@@ -171,7 +171,7 @@ function AuthScreen({onLogin}){
           </motion.div>
 
           <motion.h2 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.2,type:"spring",stiffness:100,damping:16}}
-            style={{color:"#fff",fontSize:31,fontWeight:800,lineHeight:1.2,margin:"0 0 14px",letterSpacing:"-.5px"}}>
+            style={{color:"#fff",fontFamily:FONT_DISPLAY,fontSize:32,fontWeight:800,lineHeight:1.16,margin:"0 0 14px",letterSpacing:"-.02em"}}>
             Aprendé lo que quieras,<br/>enseñá lo que sabés.
           </motion.h2>
           <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.35}}

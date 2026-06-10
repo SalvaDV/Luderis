@@ -473,7 +473,7 @@ export const Modal=({children,onClose,width="min(600px,97vw)",ariaLabel})=>{
   return(<div role="dialog" aria-modal="true" aria-label={ariaLabel||"Diálogo"}
     onClick={handleBackdrop}
     style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 6px",fontFamily:FONT}}>
-    <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(0,0,0,.15)",WebkitOverflowScrolling:"touch",outline:"none"}}>{children}</div>
+    <div ref={trapRef} tabIndex={-1} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,width,maxHeight:"96vh",overflowY:"auto",boxShadow:"0 12px 48px rgba(16,27,46,.18)",WebkitOverflowScrolling:"touch",outline:"none"}}>{children}</div>
   </div>);
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lightbulb, Grid3x3, Flame, CheckCircle, Trophy } from 'lucide-react';
-import { C, FONT, Spinner } from './shared';
+import { C, FONT, FONT_DISPLAY, Spinner } from './shared';
 import * as sb from './supabase';
 import Leaderboard from './components/Leaderboard';
 
@@ -45,7 +45,7 @@ function GameCard({ icon, gradient, title, tagline, rules, done, streak, timeStr
           }}>
             {icon}
           </div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{title}</div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 21, fontWeight: 800, letterSpacing: '-.02em', color: '#fff' }}>{title}</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 2 }}>{tagline}</div>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { C, FONT, Spinner, Avatar, useConfirm, toast } from "./shared";
+import { C, FONT, FONT_DISPLAY, Spinner, Avatar, useConfirm, toast } from "./shared";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 
@@ -98,7 +98,7 @@ export default function ChatsPage({session,onOpenChat}){
     <div style={{fontFamily:FONT}}>
       {confirmEl}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:12}}>
-        <h2 style={{fontSize:20,color:C.text,margin:0,fontWeight:700}}>Mis chats</h2>
+        <h2 style={{fontFamily:FONT_DISPLAY,fontSize:21,color:C.text,margin:0,fontWeight:800,letterSpacing:"-.02em"}}>Mis chats</h2>
         {(grupos.length+grupoChats.length)>3&&(
           <div style={{display:"flex",alignItems:"center",gap:7,background:C.bg,border:`1px solid ${busquedaChat?C.accent:C.border}`,borderRadius:9,padding:"7px 12px",flex:1,maxWidth:240,transition:"border-color .15s"}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>

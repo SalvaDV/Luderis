@@ -3,7 +3,7 @@ import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles,
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
-  C, FONT, toast,
+  C, FONT, FONT_DISPLAY, toast,
   Avatar, Spinner, Btn, Label, Modal,
   fmtRel, fmtPrice, calcAvg,
   safeDisplayName, sanitizeContactInfo, moderarMensaje, avatarColor,
@@ -57,7 +57,7 @@ function MiActividadCard({session}){
         ].map(s=>(
           <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",flex:1,minWidth:90,textAlign:"center"}}>
             <div style={{display:"flex",justifyContent:"center",marginBottom:2}}><s.Icon size={20} color={s.color} strokeWidth={1.8}/></div>
-            <div style={{fontSize:22,fontWeight:800,color:s.color,marginTop:4}}>{s.value}</div>
+            <div style={{fontFamily:FONT_DISPLAY,fontSize:23,fontWeight:800,letterSpacing:"-.02em",color:s.color,marginTop:4}}>{s.value}</div>
             <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.label}</div>
           </div>
         ))}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Check, Circle, Calendar, AlertTriangle, Clock, Trash2, Bell } from "lucide-react";
-import { C, FONT, Spinner, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
+import { C, FONT, FONT_DISPLAY, Spinner, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
 import { EspacioClaseModal } from "./MiCuentaPage";
 import { useAppActions } from "./AppContext";
@@ -177,7 +177,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
 
   return(
     <div style={{fontFamily:FONT}}>
-      <h2 style={{fontSize:20,color:C.text,margin:"0 0 18px",fontWeight:700}}>Mis inscripciones</h2>
+      <h2 style={{fontFamily:FONT_DISPLAY,fontSize:21,color:C.text,margin:"0 0 18px",fontWeight:800,letterSpacing:"-.02em"}}>Mis inscripciones</h2>
       {loading?<Spinner/>:inscripciones.length===0?null:(
         <>
           {cursos.length>0&&<>

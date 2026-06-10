@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { C, FONT, SkeletonList } from "./shared";
+import { C, FONT, FONT_DISPLAY, SkeletonList } from "./shared";
 import * as sb from "./supabase";
 import PostCard from "./components/PostCard";
 
@@ -16,7 +16,7 @@ export default function FavoritosPage({session,onOpenDetail,onOpenChat,onOpenPer
   const filtered=posts.filter(p=>filtroTipo==="all"||p.tipo===filtroTipo);
   return(
     <div style={{fontFamily:FONT}}>
-      <h2 style={{fontSize:20,color:C.text,margin:"0 0 16px",fontWeight:700}}>Favoritos</h2>
+      <h2 style={{fontFamily:FONT_DISPLAY,fontSize:21,color:C.text,margin:"0 0 16px",fontWeight:800,letterSpacing:"-.02em"}}>Favoritos</h2>
       <div style={{display:"flex",gap:6,marginBottom:16}}>
         {["all","busqueda","oferta"].map(t=>(<button key={t} onClick={()=>setFiltroTipo(t)} style={{background:filtroTipo===t?C.accent:C.surface,color:filtroTipo===t?"#fff":C.muted,border:`1px solid ${filtroTipo===t?C.accent:C.border}`,borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:FONT}}>{t==="all"?"Todo":t==="busqueda"?"Pedidos":"Clases"}</button>))}
       </div>
