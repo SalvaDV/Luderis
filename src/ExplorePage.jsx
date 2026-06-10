@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import * as sb from "./supabase";
 import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY, LUD, toast,
+  C, FONT, FONT_DISPLAY, LUD, toast, accentFor,
   Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect,
   fmtPrice, fmtRel, fmt,
   safeDisplayName, _avatarCache,
@@ -518,25 +518,26 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           {/* Hero con búsqueda grande */}
           {(()=>{
             const T=seccion==="cursos"?TIPO_PUB.curso:seccion==="clases"?TIPO_PUB.particular:TIPO_PUB.pedido;
+            const acc=accentFor(seccion);// acento del rediseño (theme-aware): heroGrad/text/ring
             const heroEyebrow=seccion==="cursos"?"Cursos":seccion==="clases"?"Clases particulares":"Pedidos de alumnos";
             const heroTitle=seccion==="cursos"?"Aprendé a tu ritmo, con seguimiento real":seccion==="clases"?"Encontrá tu docente ideal":"Alumnos esperando un docente como vos";
             const heroSub=seccion==="cursos"?"Cursos estructurados con seguimiento real":seccion==="clases"?"Clases 1 a 1, a tu horario y ritmo":"Alumnos esperando que alguien como vos los contacte";
             return(
-          <div style={{background:T.heroGrad,borderRadius:18,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",boxShadow:C.shadow,transition:"background .5s ease"}}>
+          <div style={{background:acc.heroGrad,borderRadius:18,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",boxShadow:C.shadow,transition:"background .5s ease"}}>
             <div style={{position:"absolute",width:280,height:280,borderRadius:"50%",background:"rgba(255,255,255,.04)",top:-80,right:-60,pointerEvents:"none"}}/>
             <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,.06)",bottom:-60,left:20,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
               {/* Tabs Cursos / Clases / Pedidos */}
               <div style={{display:"flex",gap:4,background:"rgba(255,255,255,.12)",borderRadius:12,padding:4,marginBottom:20,backdropFilter:"blur(8px)",width:"fit-content"}}>
                 {[
-                  {id:"cursos",Icon:GraduationCap,label:"Cursos",color:LUD.blue},
-                  {id:"clases",Icon:User,label:"Clases",color:"#C8660A"},
-                  ...(esDocente?[{id:"pedidos",Icon:Megaphone,label:"Pedidos",color:"#7B5CF0"}]:[]),
+                  {id:"cursos",Icon:GraduationCap,label:"Cursos",acc:"cursos"},
+                  {id:"clases",Icon:User,label:"Clases",acc:"clases"},
+                  ...(esDocente?[{id:"pedidos",Icon:Megaphone,label:"Pedidos",acc:"pedidos"}]:[]),
                 ].map(tab=>(
                   <button key={tab.id} id={"tour-tab-"+tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");if(tab.id!=="cursos")setFiltroSinc("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
-                    style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:700,transition:"all .2s",
+                    style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,transition:"all .2s",
                       background:seccion===tab.id?"#fff":"transparent",
-                      color:seccion===tab.id?tab.color:"rgba(255,255,255,.8)",
+                      color:seccion===tab.id?accentFor(tab.acc).text:"rgba(255,255,255,.88)",
                       boxShadow:seccion===tab.id?"0 2px 8px rgba(0,0,0,.15)":"none"}}>
                     <tab.Icon size={14} strokeWidth={2.2}/>
                     {tab.label}
