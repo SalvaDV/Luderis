@@ -23,12 +23,15 @@ export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=fa
   const [busquedaChat,setBusquedaChat]=useState("");
   const [grupoChats,setGrupoChats]=useState([]);
   const [selected,setSelected]=useState(null);// {id,autor_email,titulo,autor_nombre}
+  const [hoverKey,setHoverKey]=useState(null);
   const miEmail=session.user.email;
   const {confirm,confirmEl}=useConfirm();
   const autoSelDone=useRef(false);
 
   const cargar=useCallback(()=>{
-    setLoading(true);
+    // No reseteamos `loading` en refrescos: el spinner solo aplica a la primera
+    // carga. Si no, cada refresh (al marcar leídos) desmontaría el panel derecho
+    // y reiniciaría el WebSocket del chat en loop.
     sb.getMisChats(miEmail,session.access_token).then(async msgs=>{
       // ── Extraer chats grupales antes de filtrar ──────────────────────────────
       const gMap={};
@@ -138,15 +141,17 @@ export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=fa
   const onConvUnread=useCallback(()=>{cargar();if(onUnreadChange)onUnreadChange();},[cargar,onUnreadChange]);
 
   // ── Render de una fila de la lista ──────────────────────────────────────────
-  const Fila=({c})=>{
-    const [h,setH]=useState(false);
+  // Función plana (no componente) + hover en el padre: evita crear un tipo de
+  // componente nuevo en cada render, que remontaría todas las filas en cada refresh.
+  const renderFila=(c)=>{
     const active=c.key===selKey;
+    const h=c.key===hoverKey;
     const grupo=c.tipo==="grupo";
     return(
-      <div role="button" tabIndex={0} aria-label={`Abrir chat de ${c.nombre}`}
+      <div key={c.key} role="button" tabIndex={0} aria-label={`Abrir chat de ${c.nombre}`}
         onClick={()=>abrir(c)}
         onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abrir(c);}}}
-        onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+        onMouseEnter={()=>setHoverKey(c.key)} onMouseLeave={()=>setHoverKey(k=>k===c.key?null:k)}
         style={{display:"flex",gap:12,padding:"12px 14px",borderBottom:`1px solid ${C.hairline}`,cursor:"pointer",background:active?C.accentDim:h?C.surfaceAlt:"transparent",transition:"background .14s",position:"relative"}}>
         <div style={{flexShrink:0}}>
           {grupo
@@ -187,7 +192,7 @@ export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=fa
       <div style={{flex:1,overflowY:"auto",minHeight:0}}>
         {filtrados.length===0
           ?<div style={{padding:"40px 20px",textAlign:"center",color:C.muted,fontSize:13}}>{busquedaChat?`Sin resultados para "${busquedaChat}"`:"No iniciaste ninguna conversación."}</div>
-          :filtrados.map(c=><Fila key={c.key} c={c}/>)}
+          :filtrados.map(renderFila)}
       </div>
     </div>
   );
