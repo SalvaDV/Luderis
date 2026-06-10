@@ -499,7 +499,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           {/* Hero con búsqueda grande */}
           {(()=>{
             const T=seccion==="cursos"?TIPO_PUB.curso:seccion==="clases"?TIPO_PUB.particular:TIPO_PUB.pedido;
-            const heroTitle=seccion==="cursos"?"Aprendé a tu ritmo":seccion==="clases"?"Encontrá tu profe ideal":"Pedidos de alumnos";
+            const heroEyebrow=seccion==="cursos"?"Cursos":seccion==="clases"?"Clases particulares":"Pedidos de alumnos";
+            const heroTitle=seccion==="cursos"?"Aprendé a tu ritmo, con seguimiento real":seccion==="clases"?"Encontrá tu docente ideal":"Alumnos esperando un docente como vos";
             const heroSub=seccion==="cursos"?"Cursos estructurados con seguimiento real":seccion==="clases"?"Clases 1 a 1, a tu horario y ritmo":"Alumnos esperando que alguien como vos los contacte";
             return(
           <div style={{background:T.heroGrad,borderRadius:18,padding:"28px 28px 24px",marginBottom:24,position:"relative",overflow:"hidden",boxShadow:C.shadow,transition:"background .5s ease"}}>
@@ -523,7 +524,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   </button>
                 ))}
               </div>
-              <h1 style={{color:"#fff",fontFamily:FONT_DISPLAY,fontSize:"clamp(19px,4vw,27px)",fontWeight:800,margin:"0 0 4px",letterSpacing:"-.02em",lineHeight:1.15}}>{heroTitle}</h1>
+              <div style={{fontSize:12,fontWeight:600,letterSpacing:".09em",textTransform:"uppercase",color:"rgba(255,255,255,.85)",marginBottom:8}}>{heroEyebrow}</div>
+              <h1 style={{color:"#fff",fontFamily:FONT_DISPLAY,fontSize:"clamp(20px,4vw,27px)",fontWeight:800,margin:"0 0 6px",letterSpacing:"-.02em",lineHeight:1.18,maxWidth:620,textShadow:"0 1px 12px rgba(0,0,0,.12)"}}>{heroTitle}</h1>
               <p style={{color:"rgba(255,255,255,.8)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>📍 {userCity}</span>}
                 {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:
@@ -753,18 +755,18 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
 
           {/* ── Footer estilo ML ── */}
           <div style={{marginTop:32,paddingTop:24,borderTop:`1px solid ${C.border}`}}>
-            {/* 3 pilares */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:0,marginBottom:24}}>
+            {/* 3 pilares — banda de confianza (estilo rediseño: tarjeta con borde + sombra, ícono con color por pilar) */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:4,background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"8px 4px",boxShadow:C.shadow,marginBottom:24}}>
               {[
-                {Icon:GraduationCap,title:"Conectate directamente",desc:"Elegí tu docente y coordiná en la plataforma.",link:"Ver cómo funciona",href:"/ayuda"},
-                {Icon:Shield,title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos",href:"/privacidad"},
-                {Icon:BadgeCheck,title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación",href:"/terminos"},
-              ].map((item,i,arr)=>(
-                <div key={item.title} style={{textAlign:"center",padding:"20px 24px",borderRight:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
-                  <div style={{width:48,height:48,borderRadius:14,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.accent}}><item.Icon size={22} strokeWidth={1.8}/></div>
-                  <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:8}}>{item.title}</div>
-                  <div style={{color:C.muted,fontSize:13,lineHeight:1.6,marginBottom:10}}>{item.desc}</div>
-                  <a href={item.href} target="_blank" rel="noopener noreferrer" style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600,padding:0,textDecoration:"none"}}>
+                {Icon:GraduationCap,title:"Conectate directamente",desc:"Elegí tu docente y coordiná en la plataforma. Comisión transparente, informada antes de confirmar.",link:"Ver cómo funciona",href:"/ayuda",ac:TIPO_PUB.curso},
+                {Icon:BadgeCheck,title:"Tu privacidad, protegida",desc:"Tu email nunca se comparte. Todos los contactos pasan por la plataforma.",link:"Cómo protegemos tus datos",href:"/privacidad",ac:TIPO_PUB.pedido},
+                {Icon:Shield,title:"Docentes verificados",desc:"El sistema valida el conocimiento de cada docente antes de publicar.",link:"Conocer el sistema de verificación",href:"/terminos",ac:TIPO_PUB.particular},
+              ].map((item,i)=>(
+                <div key={item.title} style={{padding:"24px 26px",borderLeft:i===0?"none":`1px solid ${C.hairline||C.border}`,display:"flex",flexDirection:"column",alignItems:"flex-start"}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:item.ac.dim,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:14,color:item.ac.accent}}><item.Icon size={22} strokeWidth={1.9}/></div>
+                  <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:7,letterSpacing:"-.01em"}}>{item.title}</div>
+                  <div style={{color:C.muted,fontSize:13,lineHeight:1.5,marginBottom:12,flex:1}}>{item.desc}</div>
+                  <a href={item.href} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:4,background:"none",border:"none",color:item.ac.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:650,padding:0,textDecoration:"none"}}>
                     {item.link} →
                   </a>
                 </div>
