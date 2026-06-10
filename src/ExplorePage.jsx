@@ -17,7 +17,26 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench } from "lucide-react";
+
+// Mapa categoría → icono de línea (lucide) + acento, según el rediseño (sin emojis)
+const CAT_ICONS={
+  "Idiomas":Languages,"Programación y Tecnología":Code,"Ciencia y Matemática":FlaskConical,
+  "Música":Music,"Arte y Creatividad":Palette,"Diseño y Multimedia":PenTool,
+  "Negocios y Finanzas":Briefcase,"Marketing y Comunicación":Megaphone,
+  "Cocina y Gastronomía":Utensils,"Deportes y Actividad Física":Dumbbell,
+  "Desarrollo Personal y Bienestar":Heart,"Humanidades y Ciencias Sociales":BookOpen,
+  "Oficios y Manualidades":Wrench,"Educación y Tutorías":GraduationCap,
+  "Conducción y Manejo":Car,"Animales y Cuidado":PawPrint,
+  "Hobbies y Tiempo Libre":Gamepad2,"Viajes y Cultura":Plane,"Otros":LayoutGrid,
+};
+const CAT_ACCENTS={
+  "Idiomas":"curso","Programación y Tecnología":"curso","Ciencia y Matemática":"curso",
+  "Negocios y Finanzas":"curso","Humanidades y Ciencias Sociales":"curso","Educación y Tutorías":"curso","Marketing y Comunicación":"curso",
+  "Música":"pedido","Arte y Creatividad":"pedido","Diseño y Multimedia":"pedido","Desarrollo Personal y Bienestar":"pedido","Hobbies y Tiempo Libre":"pedido",
+  "Cocina y Gastronomía":"clase","Deportes y Actividad Física":"clase","Oficios y Manualidades":"clase","Conducción y Manejo":"clase","Animales y Cuidado":"clase","Viajes y Cultura":"clase","Otros":"clase",
+};
+const catAcc=(label)=>{const k=CAT_ACCENTS[label]||"curso";return k==="clase"?TIPO_PUB.particular:k==="pedido"?TIPO_PUB.pedido:TIPO_PUB.curso;};
 import { useAppActions } from "./AppContext";
 
 export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfil,onOpenCurso}){
@@ -595,25 +614,23 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <style>{`.cl-cats-row::-webkit-scrollbar{display:none}`}</style>
               <div style={{display:"flex",gap:12,paddingBottom:18,paddingTop:18,paddingLeft:4,paddingRight:4,flexWrap:"nowrap"}} className="cl-cats-row">
                 {catsActivas.map((cat,i)=>{
-                  const data=CATEGORIAS_DATA[cat.label]||{emoji:"📚",grad:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",bg:"#1A6ED8"};
+                  const Ico=CAT_ICONS[cat.label]||LayoutGrid;
+                  const acc=catAcc(cat.label);
                   return(
                     <motion.button key={cat.label}
                       onClick={()=>{setFiltroMateria(cat.label);setModoVista("resultados");trackFilterApplied("materia",cat.label);}}
                       initial={{opacity:0,y:16}}
                       animate={{opacity:1,y:0,transition:{type:"spring",stiffness:260,damping:22,delay:i*0.055}}}
-                      whileHover={{y:-6,scale:1.04,boxShadow:`0 12px 32px ${data.bg}44`}}
-                      whileTap={{scale:0.96,y:-2}}
+                      whileHover={{y:-3,boxShadow:C.shadowHover}}
+                      whileTap={{scale:0.97,y:-1}}
                       transition={{type:"spring",stiffness:320,damping:22}}
-                      style={{flexShrink:0,width:"min(120px,42vw)",borderRadius:14,overflow:"visible",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,background:"transparent",textAlign:"left",display:"flex",flexDirection:"column",transformOrigin:"bottom center"}}>
-                      {/* Área visual */}
-                      <div style={{height:90,background:data.grad,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:"14px 14px 0 0",overflow:"hidden",flexShrink:0}}>
-                        <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.1)",top:-20,right:-20,pointerEvents:"none"}}/>
-                        <span style={{fontSize:42,filter:"drop-shadow(0 2px 8px rgba(0,0,0,.2))",lineHeight:1,position:"relative",zIndex:1}}>{data.emoji}</span>
-                        {cat.count>0&&<span style={{position:"absolute",bottom:6,right:7,background:"rgba(0,0,0,.4)",color:"#fff",borderRadius:20,fontSize:10,fontWeight:700,padding:"1px 6px",backdropFilter:"blur(4px)"}}>{cat.count}</span>}
-                      </div>
-                      {/* Label */}
-                      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 14px 14px",padding:"8px 9px",flex:1,height:48,display:"flex",alignItems:"center"}}>
-                        <div style={{fontWeight:600,color:C.text,fontSize:11,lineHeight:1.35,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",width:"100%"}}>{cat.label}</div>
+                      style={{flexShrink:0,width:138,display:"flex",flexDirection:"column",gap:11,padding:"15px 14px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,cursor:"pointer",fontFamily:FONT,textAlign:"left",boxShadow:C.shadow}}>
+                      <span style={{width:40,height:40,borderRadius:11,background:acc.dim,color:acc.accent,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <Ico size={21} strokeWidth={1.9}/>
+                      </span>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:13.5,fontWeight:650,color:C.text,lineHeight:1.25,letterSpacing:"-.005em"}}>{cat.label}</div>
+                        <div style={{fontSize:12,color:C.faint||C.muted,marginTop:3,fontWeight:500}}>{cat.count} {cat.count===1?"opción":"opciones"}</div>
                       </div>
                     </motion.button>
                   );
