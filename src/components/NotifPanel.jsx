@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { GraduationCap, Inbox, CheckCircle, XCircle, RefreshCw, MessageCircle, Video, BookOpen, Users, Star, Bell, CreditCard, Megaphone, VolumeX, HelpCircle } from "lucide-react";
-import { C, FONT, Spinner, fmtRel, logError } from "../shared";
+import { C, FONT, FONT_DISPLAY, Spinner, fmtRel, logError } from "../shared";
 import * as sb from "../supabase";
 import { useAppActions } from "../AppContext";
 
@@ -116,7 +116,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
         {/* Header */}
         <div style={{padding:"18px 20px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
           <div>
-            <div style={{fontWeight:700,color:C.text,fontSize:17,display:"flex",alignItems:"center",gap:7}}><Bell size={16} strokeWidth={2}/>Notificaciones</div>
+            <div style={{fontFamily:FONT_DISPLAY,fontWeight:800,color:C.text,fontSize:19,letterSpacing:"-.02em",display:"flex",alignItems:"center",gap:8}}><Bell size={18} strokeWidth={2}/>Notificaciones</div>
             {sinLeer>0&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{sinLeer} sin leer</div>}
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -146,8 +146,8 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
             grupos.map(grupo=>(
               <div key={grupo.label}>
                 {/* Separador de grupo */}
-                <div style={{padding:"8px 20px 4px",background:C.bg,borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:1}}>
-                  <span style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:"uppercase"}}>{grupo.label}</span>
+                <div style={{padding:"9px 20px 5px",background:C.surfaceAlt||C.bg,borderBottom:`1px solid ${C.hairline||C.border}`,position:"sticky",top:0,zIndex:1}}>
+                  <span style={{fontSize:12,fontWeight:600,color:C.faint||C.muted,letterSpacing:".09em",textTransform:"uppercase"}}>{grupo.label}</span>
                 </div>
                 {grupo.items.map((n,i)=>{
                   const info=TIPO_INFO[n.tipo]||{Icon:Bell,color:C.muted,label:n.tipo};
