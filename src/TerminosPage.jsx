@@ -206,7 +206,7 @@ export default function TerminosPage() {
 
           {/* Intro */}
           <div style={{ marginBottom: 48 }}>
-            <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, marginBottom: 10, lineHeight: 1.2 }}>
+            <h1 style={{ fontFamily: "'Plus Jakarta Sans','Hanken Grotesk',sans-serif", fontSize: 31, fontWeight: 800, color: TEXT, marginBottom: 10, lineHeight: 1.18, letterSpacing: "-.02em" }}>
               Términos y Condiciones de Uso
             </h1>
             <p style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
 import {
-  C, FONT, useDebounce, toast,
+  C, FONT, FONT_DISPLAY, useDebounce, toast,
   Spinner, Btn, Label, ErrMsg, Modal,
   SearchableSelect,
   fmtRel, calcAvg, calcDuracion,
@@ -506,7 +506,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
         {/* Header con progreso */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div>
-            <h3 style={{color:C.text,margin:0,fontSize:16,fontWeight:700}}>
+            <h3 style={{color:C.text,margin:0,fontFamily:FONT_DISPLAY,fontSize:17,fontWeight:800,letterSpacing:"-.02em"}}>
               {editing?"Editar publicación":paso===1?"Nueva publicación":paso===2?"Contanos más":paso===3?`Detalles ${modo==="curso"?"del curso":"de la clase"}`:"Precio y condiciones"}
             </h3>
             <div style={{fontSize:11,color:C.muted,marginTop:2}}>Paso {paso} de {totalPasos}</div>
@@ -1043,7 +1043,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
         {/* Name / badges / location below banner */}
         <div style={{paddingTop:56,paddingLeft:20,paddingRight:20,paddingBottom:4}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <h1 style={{color:C.text,fontSize:20,fontWeight:800,margin:0}}>{displayNombre}</h1>
+            <h1 style={{color:C.text,fontFamily:FONT_DISPLAY,fontSize:21,fontWeight:800,letterSpacing:"-.02em",margin:0}}>{displayNombre}</h1>
             {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
               <span style={{fontSize:11,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"3px 10px",display:"flex",alignItems:"center",gap:4}}>
                 <span style={{width:7,height:7,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>Disponible hoy

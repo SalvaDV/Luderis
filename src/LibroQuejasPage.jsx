@@ -203,7 +203,7 @@ export default function LibroQuejasPage() {
 
         {/* Título */}
         <div style={{ marginBottom: 36 }}>
-          <h1 style={{ fontSize: isMobile ? 24 : 30, fontWeight: 800, color: TEXT, marginBottom: 8 }}>
+          <h1 style={{ fontFamily: "'Plus Jakarta Sans','Hanken Grotesk',sans-serif", fontSize: isMobile ? 25 : 31, fontWeight: 800, color: TEXT, marginBottom: 8, letterSpacing: "-.02em" }}>
             📋 Libro de Quejas
           </h1>
           <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.7, maxWidth: 600 }}>

@@ -336,7 +336,7 @@ export default function AyudaPage() {
         padding: isMobile ? "40px 20px 48px" : "56px 24px 64px",
         textAlign: "center",
       }}>
-        <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 800, color: "#fff", marginBottom: 10, lineHeight: 1.2 }}>
+        <h1 style={{ fontFamily: "'Plus Jakarta Sans','Hanken Grotesk',sans-serif", fontSize: isMobile ? 27 : 37, fontWeight: 800, color: "#fff", marginBottom: 10, lineHeight: 1.15, letterSpacing: "-.02em" }}>
           ¿En qué podemos ayudarte?
         </h1>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,.8)", marginBottom: 28 }}>
