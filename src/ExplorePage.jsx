@@ -857,11 +857,12 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 {value:"vistas",label:"Populares"},
                 {value:"cercania",label:"Cercanos"},
               ]}/>
-              <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}>{sorted.length} resultado{sorted.length!==1?"s":""}</span>
-              <div style={{display:"flex",gap:2,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",flexShrink:0}}>
-                {[["cards",<LayoutGrid size={14} strokeWidth={2}/>],["lista",<List size={14} strokeWidth={2}/>],["ranking",<Trophy size={14} strokeWidth={2}/>]].map(([m,icon])=>(
-                  <button key={m} onClick={()=>setViewMode(m)} style={{background:viewMode===m?sT.accent:"none",border:"none",color:viewMode===m?"#fff":C.muted,width:32,height:30,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s"}}>{icon}</button>
-                ))}
+              <span style={{...tx("meta"),color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}><span style={{color:C.text,fontWeight:700}}>{sorted.length}</span> resultado{sorted.length!==1?"s":""}</span>
+              <div style={{display:"flex",gap:2,background:C.surfaceAlt||C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:3,flexShrink:0}}>
+                {[["cards",<LayoutGrid size={15} strokeWidth={1.9}/>],["lista",<List size={15} strokeWidth={1.9}/>],["ranking",<Trophy size={15} strokeWidth={1.9}/>]].map(([m,icon])=>{
+                  const act=viewMode===m;
+                  return(<button key={m} onClick={()=>setViewMode(m)} aria-label={m} style={{width:32,height:30,borderRadius:8,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",background:act?C.surface:"transparent",color:act?accentFor(seccion).solid:C.faint||C.muted,boxShadow:act?C.shadow:"none",transition:"all .14s"}}>{icon}</button>);
+                })}
               </div>
             </div>
             {activeFilters.length>0&&(()=>{
