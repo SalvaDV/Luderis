@@ -4,11 +4,11 @@ import * as sb from "./supabase";
 import { AppActionsContext } from "./AppContext";
 import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
-  C, FONT, _themeKey,
+  C, FONT, FONT_DISPLAY, _themeKey,
   applyTheme, toast, ToastContainer,
   t,
   _avatarCache,
-  Btn,
+  Btn, Avatar,
   useMPRetorno,
   LegalModal,
 } from "./shared";
@@ -836,7 +836,7 @@ export default function App(){
     if(!showAuth)return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}`}</style><React.Suspense fallback={null}><LandingPage onEnter={goAuth}/></React.Suspense></>);
     return(<><style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;margin:0;padding:0}html,body,#root{background:#F6F9FF;min-height:100vh;font-family:${FONT};overflow-x:hidden;max-width:100vw}input,textarea,select{color-scheme:light;background-color:#F4F7FF!important;color:#0D1F3C!important}input::placeholder,textarea::placeholder{color:#A0AEC0;opacity:1}`}</style><React.Suspense fallback={null}><AuthScreen onLogin={s=>{sessionStorage.removeItem("ld_auth");window.location.hash="";sb.saveSession(s);setSession(s);}}/></React.Suspense></>);
   }
-  const SW=isMobile?0:224;
+  const SW=isMobile?0:236;
   return(
     <AppActionsContext.Provider value={appActions}>
     <div style={{minHeight:"100vh",background:`var(--cl-section-tint, ${C.bg})`,fontFamily:FONT,color:C.text,display:"flex",transition:"background .4s ease",overflowX:"hidden",maxWidth:"100vw"}}>
@@ -891,7 +891,22 @@ export default function App(){
           </div>
         </>
       )}
-      <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"24px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
+      <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"20px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
+        {/* Barra de saludo (desktop) — diseño */}
+        {!isMobile&&(()=>{const totalNoLeidas=notifs.filter(n=>!n.leida).length;const primerNombre=(sb.getDisplayName(session.user.email)||"").split(" ")[0];const av=_avatarCache[session.user.email]||localStorage.getItem("cl_avatar_"+session.user.email)||null;return(
+          <div style={{maxWidth:1100,margin:"0 auto 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+            <div style={{fontSize:14,color:C.muted,fontWeight:500}}>Buen día, <span style={{color:C.text,fontWeight:800,fontFamily:FONT_DISPLAY,letterSpacing:"-.01em"}}>{primerNombre}</span> 👋</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <button onClick={()=>setNotifPanelOpen(v=>!v)} aria-label="Notificaciones" style={{position:"relative",width:40,height:40,borderRadius:11,border:`1px solid ${C.border}`,background:C.surface,cursor:"pointer",color:totalNoLeidas>0?C.accent:C.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                {totalNoLeidas>0&&<span style={{position:"absolute",top:-4,right:-4,minWidth:16,height:16,padding:"0 4px",borderRadius:8,background:"#E5484D",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{totalNoLeidas>9?"9+":totalNoLeidas}</span>}
+              </button>
+              <button onClick={()=>setPage("cuenta")} aria-label="Mi cuenta" style={{border:"none",background:"transparent",padding:0,cursor:"pointer",borderRadius:"50%",display:"flex"}}>
+                {av&&av.startsWith("http")?<div style={{width:40,height:40,borderRadius:"50%",overflow:"hidden"}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(primerNombre||"U")[0]} size={40}/>}
+              </button>
+            </div>
+          </div>
+        );})()}
         <div style={{maxWidth:1100,margin:"0 auto"}}>
           <div key={page} className="cl-page-anim">
           {page==="explore"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}></div>}><ExplorePage session={session} onOpenChat={openChat} onOpenDetail={openDetail} onOpenPerfil={openPerfil} onOpenCurso={setCursoPost}/></React.Suspense>}
