@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import * as sb from "./supabase";
 import { trackSearchIA, trackSearchManual, trackSeccionExplore, trackFilterApplied } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY, LUD, toast, accentFor,
+  C, FONT, FONT_DISPLAY, LUD, toast, accentFor, tx,
   Spinner, SkeletonList, Avatar, Tag, MiniStars, SearchableSelect,
   fmtPrice, fmtRel, fmt,
   safeDisplayName, _avatarCache,
@@ -17,7 +17,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench, Plus } from "lucide-react";
 
 // Mapa categoría → icono de línea (lucide) + acento, según el rediseño (sin emojis)
 const CAT_ICONS={
@@ -684,68 +684,28 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           </div>
 
           {/* Publicaciones destacadas — scroll horizontal */}
-          {seccion!=="pedidos"&&(loading?<SkeletonList n={4}/>:(seccion==="cursos"?[
-            {label:"Cursos recientes",Icon:Sparkles,data:cursos.slice(0,8)},
-            {label:"Mejor valorados",Icon:Star,data:[...cursos].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
-          ]:[
-            {label:"Docentes disponibles",Icon:Sparkles,data:particulares.slice(0,8)},
-            {label:"Mejor valorados",Icon:Star,data:[...particulares].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6)},
-          ]).map(({label,Icon:LabelIcon,data})=>data.length>0&&(
-            <div key={label} style={{marginBottom:24}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:700,color:C.text,fontSize:15}}><LabelIcon size={15} color={C.accent} strokeWidth={2}/>{label}</div>
-                <button onClick={()=>setModoVista("resultados")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",fontFamily:FONT,fontWeight:600}}>Ver todos →</button>
-              </div>
-              <div style={{display:"flex",gap:14,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:8,paddingTop:6}}>
-                <style>{`.cl-hscroll::-webkit-scrollbar{display:none}`}</style>
-                <div style={{display:"flex",gap:14,paddingTop:2}} className="cl-hscroll">
-                  {data.map(p=>(
-                    <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)}
-                      onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}}
-                      style={{background:p.tipo==="busqueda"?TIPO_PUB.pedido.dim:C.surface,border:`1px solid ${p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border}`,borderRadius:12,padding:"16px",cursor:"pointer",flexShrink:0,width:"min(220px,72vw)",transition:"all .18s"}}
-                      onMouseEnter={e=>{const acc=getPubTipo(p).accent;e.currentTarget.style.boxShadow=`0 8px 24px ${acc}28,0 2px 8px rgba(0,0,0,.06)`;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.borderColor=acc+"66";}}
-                      onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";e.currentTarget.style.borderColor=p.tipo==="busqueda"?TIPO_PUB.pedido.border:C.border;}}>
-                      {/* Avatar + nombre */}
-                      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
-                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto */}
-                        {(()=>{const av=_avatarCache[p.autor_email]||localStorage.getItem("cl_avatar_"+p.autor_email)||null;return av&&av.startsWith("http")?<div style={{width:32,height:32,borderRadius:"50%",overflow:"hidden",flexShrink:0}}><img src={av} alt="" loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={32}/>;})()}
-                        <div style={{minWidth:0,flex:1}}>
-                          <div style={{fontSize:11,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-                          <div style={{fontSize:10,color:C.muted}}>{p.materia}</div>
-                        </div>
-                        <FavBtn post={p} session={session} onFavChange={()=>cargar()} isFav={p.id in favsMap} favId={favsMap[p.id]||null}/>
-                      </div>
-                      {/* Título */}
-                      <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.titulo}</div>
-                      {/* Tags */}
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
-                        <Tag tipo={p.tipo} modo={p.modo}/>
-                        {(p.modo==="curso"||p.modo==="grupal")&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:6,padding:"2px 8px",fontWeight:600}}><GraduationCap size={9} strokeWidth={2.5}/>Curso</span>}
-                        {p.modo==="particular"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:getPubTipo(p).accent,background:getPubTipo(p).dim,borderRadius:6,padding:"2px 8px",fontWeight:600}}><User size={9} strokeWidth={2.5}/>Clase</span>}
-                        {p.modalidad==="virtual"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:C.muted,background:C.bg,borderRadius:6,padding:"2px 8px",border:`1px solid ${C.border}`}}><Monitor size={9} strokeWidth={2.5}/>Virtual</span>}
-                        {p.modalidad==="presencial"&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:C.muted,background:C.bg,borderRadius:6,padding:"2px 8px",border:`1px solid ${C.border}`}}><MapPin size={9} strokeWidth={2.5}/>Presencial</span>}
-                      </div>
-                      {/* Rating + verificado */}
-                      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
-                        {reseñasMap[p.id]?.avg&&<MiniStars val={reseñasMap[p.id].avg} count={reseñasMap[p.id].count}/>}
-                        {p.verificado&&<span style={{fontSize:9,fontWeight:700,color:C.info,background:C.info+"12",borderRadius:20,padding:"2px 7px",border:`1px solid ${C.info}30`,letterSpacing:.3}}>✓ VERIF.</span>}
-                        {p.tipo==="oferta"&&p.autor_disponible_ahora&&p.autor_disponible_hasta&&new Date(p.autor_disponible_hasta)>new Date()&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"2px 7px",letterSpacing:.3}}>🟢 Disponible</span>}
-                      </div>
-                      {/* Precio + inscriptos */}
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        {p.tipo==="busqueda"
-                          ?<div style={{fontSize:12,color:TIPO_PUB.pedido.accent,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>📣 {p.modo==="curso"||p.modo==="grupal"?"Pedido de curso":"Pedido de clase"}</div>
-                          :p.precio?<div style={{fontWeight:800,color:getPubTipo(p).accent,fontSize:15}}>{fmtPrice(p.precio,p.moneda)}<span style={{fontSize:11,fontWeight:400,color:C.muted}}> /{p.precio_tipo||"hora"}</span></div>
-                          :<div style={{fontWeight:600,color:C.successText,fontSize:13}}>Gratis</div>}
-                        {p.cantidad_inscriptos>0&&<span style={{fontSize:10,color:C.muted}}>👥{p.cantidad_inscriptos}</span>}
-                      </div>
-                      {p.tipo==="busqueda"&&p.expires_at&&(()=>{const daysLeft=Math.ceil((new Date(p.expires_at)-new Date())/86400000);if(daysLeft<=3&&daysLeft>0)return(<div style={{fontSize:10,color:"#B45309",fontWeight:600,marginTop:4,display:"flex",alignItems:"center",gap:3}}><Timer size={9} strokeWidth={2}/>Expira en {daysLeft} día{daysLeft!==1?"s":""}</div>);return null;})()}
-                    </div>
-                  ))}
+          {/* Destacados para vos — grilla de PostCards (estilo prototipo) */}
+          {seccion!=="pedidos"&&(loading?<SkeletonList n={4}/>:(()=>{
+            const base=seccion==="cursos"?cursos:particulares;
+            const destacados=[...base].sort((a,b)=>(reseñasMap[b.id]?.avg||0)-(reseñasMap[a.id]?.avg||0)).slice(0,6);
+            if(destacados.length===0)return null;
+            return(
+            <div style={{marginBottom:28}}>
+              <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:14,gap:12}}>
+                <div style={{minWidth:0}}>
+                  <h2 style={{...tx("h2"),color:C.text,margin:0}}>Destacados para vos</h2>
+                  <p style={{...tx("meta"),color:C.muted,margin:"4px 0 0"}}>Seleccionados por valoración y disponibilidad</p>
                 </div>
+                <button onClick={()=>setModoVista("resultados")} style={{display:"inline-flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:accentFor(seccion).text,fontFamily:FONT,...tx("meta"),fontWeight:650,cursor:"pointer",whiteSpace:"nowrap"}}>Ver todos →</button>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}}>
+                {destacados.map(p=>(
+                  <PostCard key={p.id} post={p} session={session} onOpenChat={onOpenChat} onOpenDetail={onOpenDetail} onOpenPerfil={onOpenPerfil} avgPub={reseñasMap[p.id]?.avg} countPub={reseñasMap[p.id]?.count} avgUser={reseñasUserMap[p.autor_email]} yaOferte={pendientesIds.has(p.id)} fueRechazado={rechazadasIds.has(p.id)} isFav={p.id in favsMap} favId={favsMap[p.id]||null} onFavChange={()=>{cargar();}}/>
+                ))}
               </div>
             </div>
-          )))}
+            );
+          })())}
 
           {/* Banner CTA: IA search — hidden in pedidos view */}
           {seccion!=="pedidos"&&(()=>{
@@ -791,28 +751,16 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               ))}
             </div>
 
-            {/* Banners informativos */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12,marginBottom:20}}>
-              <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:36,height:36,borderRadius:10,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",color:C.accent,flexShrink:0}}><Users size={18} strokeWidth={2}/></div>
-                <div>
-                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Querés enseñar?</div>
-                  <button style={{background:"none",border:"none",color:C.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:0,fontWeight:600}}
-                    onClick={()=>setModoVista("resultados")}>
-                    Publicá tu primera clase gratis →
-                  </button>
-                </div>
+            {/* EnsenarCTA — ¿Querés enseñar? (estilo prototipo) */}
+            <div style={{display:"flex",alignItems:"center",gap:16,background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 22px",boxShadow:C.shadow,flexWrap:"wrap",marginBottom:20}}>
+              <div style={{width:44,height:44,borderRadius:12,background:accentFor("clases").soft,color:accentFor("clases").solid,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Users size={22} strokeWidth={1.9}/></div>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{...tx("cardTitle"),color:C.text}}>¿Querés enseñar?</div>
+                <div style={{...tx("meta"),color:C.muted,marginTop:2}}>Publicá tu primera clase gratis y empezá a recibir alumnos.</div>
               </div>
-              {esDocente&&<div style={{border:`1px solid ${TIPO_PUB.pedido.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:36,height:36,borderRadius:10,background:TIPO_PUB.pedido.dim,display:"flex",alignItems:"center",justifyContent:"center",color:TIPO_PUB.pedido.accent,flexShrink:0}}><Megaphone size={18} strokeWidth={2}/></div>
-                <div>
-                  <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:2}}>¿Querés ver pedidos de alumnos?</div>
-                  <button style={{background:"none",border:"none",color:TIPO_PUB.pedido.accent,fontSize:12,cursor:"pointer",fontFamily:FONT,padding:0,fontWeight:600}}
-                    onClick={()=>{setSeccion("pedidos");try{sessionStorage.setItem("cl_seccion_explore","pedidos");}catch{}}}>
-                    Ver pedidos activos →
-                  </button>
-                </div>
-              </div>}
+              <button onClick={()=>setModoVista("resultados")} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"11px 18px",borderRadius:10,border:"none",cursor:"pointer",fontFamily:FONT,...tx("bodyStrong"),fontWeight:650,color:"#fff",background:LUD.grad,whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(26,110,216,.22)"}}>
+                <Plus size={16} strokeWidth={2.2}/>Publicar una clase
+              </button>
             </div>
 
             {/* Pie */}
