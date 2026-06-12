@@ -8,7 +8,7 @@ import {
 import * as sb from "./supabase";
 import { trackPostView, trackChatStart } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY,
+  C, FONT, FONT_DISPLAY, tx,
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, CATEGORIAS_DATA, CalendarioCurso,
@@ -161,14 +161,14 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
             {/* Descripción */}
             <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
-              <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 10px"}}>Descripción</h2>
+              <h2 style={{...tx("h2"),color:C.text,margin:"0 0 10px"}}>Descripción</h2>
               <DescExpandible texto={post.descripcion||""} max={400}/>
             </div>
 
             {/* Lo que vas a aprender */}
             {skills.length>0&&(
               <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
-                <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Lo que vas a aprender</h2>
+                <h2 style={{...tx("h2"),color:C.text,margin:"0 0 14px"}}>Lo que vas a aprender</h2>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
                   {skills.map(s=>{
                     const ICONS={conceptual:BookOpen,procedimental:Settings,practica:Wrench,creativa:Palette,interpretativa:Search,performance:Zap};
@@ -187,7 +187,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
             {/* Preview de contenido */}
             {post.modo==="curso"&&modulosPreview.length>0&&!esMio&&!esAyudante&&!inscripcion&&(
               <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
-                <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Vista previa del contenido</h2>
+                <h2 style={{...tx("h2"),color:C.text,margin:"0 0 14px"}}>Vista previa del contenido</h2>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {modulosPreview.map((c,i)=>{
                     const TIPO_IC={video:Video,archivo:Folder,texto:FileText,aviso:Bell,tarea:Bookmark,link:Link2};
@@ -217,7 +217,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
             {/* Chips de detalles */}
             {post.tipo==="oferta"&&(
               <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
-                <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Detalles</h2>
+                <h2 style={{...tx("h2"),color:C.text,margin:"0 0 14px"}}>Detalles</h2>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12}}>
                   {[
                     post.modo==="curso"&&{label:"Tipo",val:"Curso grupal",Icon:BookOpen},
@@ -249,7 +249,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
             {/* Calendario si lo tiene */}
             {post.tipo==="oferta"&&post.modo==="curso"&&post.sinc==="sinc"&&(
               <div style={{marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
-                <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 14px"}}>Horarios</h2>
+                <h2 style={{...tx("h2"),color:C.text,margin:"0 0 14px"}}>Horarios</h2>
                 <CalendarioCurso post={post}/>
               </div>
             )}
@@ -281,7 +281,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Precio */}
               {post.precio?(
                 <div style={{marginBottom:16}}>
-                  <span style={{fontSize:26,fontWeight:800,color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>
+                  <span style={{...tx("price"),fontSize:24,color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>
                   <span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo||"hora"}</span>
                 </div>
               ):(
@@ -407,7 +407,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           </div>
         )}
         <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12}}>
-          {post.precio?<div style={{flex:1}}><span style={{fontWeight:800,color:getPubTipo(post).accent,fontSize:18}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{fontSize:12,color:C.muted}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,fontWeight:700,color:C.successText}}>Gratis</div>}
+          {post.precio?<div style={{flex:1}}><span style={{...tx("price"),color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{...tx("micro"),color:C.faint||C.muted,fontWeight:500}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,...tx("bodyStrong"),color:C.successText}}>Gratis</div>}
           <div style={{display:"flex",gap:8}}>
             {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
             {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}
