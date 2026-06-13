@@ -338,12 +338,12 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10}}>
                       <div style={{background:C.success+"12",border:`1px solid ${C.success}30`,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
                         <div style={{fontSize:11,color:C.muted,marginBottom:4}}>INGRESOS BRUTOS</div>
-                        <div style={{fontSize:24,fontWeight:800,color:C.successText}}>${totalBruto.toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
+                        <div style={{fontFamily:FONT_DISPLAY,fontSize:24,fontWeight:800,letterSpacing:"-.02em",color:C.successText}}>${totalBruto.toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
                         <div style={{fontSize:10,color:C.muted,marginTop:2}}>{aprobados.length} pago{aprobados.length!==1?"s":""} aprobado{aprobados.length!==1?"s":""}</div>
                       </div>
-                      <div style={{background:"#7B3FBE12",border:"1px solid #7B3FBE30",borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+                      <div style={{background:C.purple+"12",border:`1px solid ${C.purple}30`,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
                         <div style={{fontSize:11,color:C.muted,marginBottom:4}}>TU PARTE NETA</div>
-                        <div style={{fontSize:24,fontWeight:800,color:"#7B3FBE"}}>${totalNeto.toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
+                        <div style={{fontFamily:FONT_DISPLAY,fontSize:24,fontWeight:800,letterSpacing:"-.02em",color:C.purple}}>${totalNeto.toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
                         <div style={{fontSize:10,color:C.muted,marginTop:2}}>Luderis retiene {comisionPct}%</div>
                       </div>
                     </div>
