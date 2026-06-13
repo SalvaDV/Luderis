@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY, toast,
+  C, FONT, FONT_DISPLAY, toast, accentFor,
   Avatar, Spinner, Btn, Modal, ErrMsg, Chip,
   VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcDuracion,
@@ -4557,24 +4557,28 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           </div>}
           {/* ── TABS ── */}
           <style>{`.curso-tabs::-webkit-scrollbar{display:none}`}</style>
-          <div className="curso-tabs" style={{display:"flex",gap:2,marginBottom:14,background:C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`}}>
+          <div className="curso-tabs" style={{display:"flex",gap:3,marginBottom:14,background:C.surfaceAlt||C.card,borderRadius:12,padding:4,border:`1px solid ${C.border}`}}>
             {[
               {id:"contenido",label:"Contenido"},
               {id:"aprender",label:"Aprender",pendiente:esPendienteValidacion},
               ...(hasCal||esMio?[{id:"agenda",label:"Agenda"}]:[]),
               {id:"comunidad",label:mensajesNuevos>0?(esParticular?`Chat (${mensajesNuevos})`:`Comunidad (${mensajesNuevos})`):(esParticular?"Chat":"Comunidad")},
-            ].map(tab=>(
+            ].map(tab=>{
+              const act=tabActivo===tab.id;
+              return(
               <button key={tab.id} onClick={()=>setTab(tab.id)}
-                style={{flex:1,padding:"6px 4px",borderRadius:8,border:tab.pendiente?`1.5px solid ${C.accent}`:"none",
-                  fontWeight:tabActivo===tab.id?700:500,fontSize:11,cursor:"pointer",fontFamily:FONT,
+                style={{flex:1,padding:"8px 6px",borderRadius:9,border:tab.pendiente&&!act?`1.5px solid ${C.accent}`:"none",
+                  fontWeight:act?650:500,fontSize:12.5,cursor:"pointer",fontFamily:FONT,
                   textAlign:"center",whiteSpace:"nowrap",
-                  background:tabActivo===tab.id?C.accent:tab.pendiente?"#F5C84212":"transparent",
-                  color:tabActivo===tab.id?"#fff":tab.pendiente?C.accent:C.muted,
+                  background:act?C.surface:tab.pendiente?"#F5C84212":"transparent",
+                  color:act?accentFor("cursos").text:tab.pendiente?C.accent:C.muted,
+                  boxShadow:act?C.shadow:"none",
                   transition:"all .15s",
-                  animation:tab.pendiente&&tabActivo!==tab.id?"tabPulse 1.8s ease-in-out infinite":undefined}}>
-                {tab.label}{tab.pendiente&&tabActivo!==tab.id?" ●":""}
+                  animation:tab.pendiente&&!act?"tabPulse 1.8s ease-in-out infinite":undefined}}>
+                {tab.label}{tab.pendiente&&!act?" ●":""}
               </button>
-            ))}
+              );
+            })}
           </div>
 
           {/* ── TAB: Contenido ── */}
