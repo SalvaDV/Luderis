@@ -16,7 +16,7 @@ import {
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal } from "./App";
-import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle } from "lucide-react";
+import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain } from "lucide-react";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
@@ -1599,14 +1599,14 @@ function DeckEditor({titulo:tituloProp,cards:cardsProp,onSave,onCancel,session,p
 
         {/* Generar con IA */}
         <div style={{background:"#7B3FBE0A",border:"1px solid #7B3FBE25",borderRadius:12,padding:"12px 14px"}}>
-          <div style={{fontWeight:700,color:"#7B3FBE",fontSize:12,marginBottom:8}}>✨ Generar con IA (podés editar después)</div>
+          <div style={{...tx("micro"),fontWeight:700,color:C.purple,marginBottom:8,display:"inline-flex",alignItems:"center",gap:5}}><Sparkles size={13} strokeWidth={2}/>Generar con IA (podés editar después)</div>
           <div style={{display:"flex",gap:7}}>
             <input value={tema} onChange={e=>setTema(e.target.value)} aria-label="Tema para generar con IA" placeholder={`Tema (ej: "fotosíntesis")`}
               style={{...iS,flex:1}}
               onKeyDown={e=>e.key==="Enter"&&!generando&&generarConIA()}/>
             <button onClick={generarConIA} disabled={generando}
-              style={{background:"#7B3FBE",border:"none",borderRadius:8,color:"#fff",padding:"7px 14px",cursor:"pointer",fontWeight:700,fontSize:11,fontFamily:FONT,opacity:generando?.6:1,flexShrink:0}}>
-              {generando?"…":"✨ Generar"}
+              style={{background:C.purple,border:"none",borderRadius:9,color:"#fff",padding:"7px 14px",cursor:"pointer",fontWeight:650,fontSize:11.5,fontFamily:FONT,opacity:generando?.6:1,flexShrink:0,display:"inline-flex",alignItems:"center",gap:5}}>
+              <Sparkles size={13} strokeWidth={2}/>{generando?"…":"Generar"}
             </button>
           </div>
         </div>
@@ -1693,10 +1693,10 @@ Respondé solo con JSON: {"pregunta":"...","respuesta":"..."}`;
   return(
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.muted}}>🧠 PRÁCTICAS</div>
+        <div style={{...tx("eyebrow"),color:C.muted,display:"inline-flex",alignItems:"center",gap:5}}><Brain size={13} strokeWidth={2}/>PRÁCTICAS</div>
         <button onClick={generarPregunta} disabled={cargando}
-          style={{background:cargando?C.surface:C.accent,border:"none",borderRadius:8,color:cargando?C.muted:"#fff",padding:"5px 13px",cursor:cargando?"not-allowed":"pointer",fontSize:11,fontWeight:700,fontFamily:FONT,transition:"all .15s"}}>
-          {cargando?"Generando...":"✨ Generar con IA"}
+          style={{background:cargando?C.surface:C.accent,border:"none",borderRadius:9,color:cargando?C.muted:"#fff",padding:"6px 13px",cursor:cargando?"not-allowed":"pointer",fontSize:11.5,fontWeight:650,fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:5,transition:"all .15s"}}>
+          <Sparkles size={13} strokeWidth={2}/>{cargando?"Generando...":"Generar con IA"}
         </button>
       </div>
 
@@ -1773,8 +1773,8 @@ Respondé solo con JSON: {"pregunta":"...","respuesta":"..."}`;
                   ← Pregunta
                 </button>
                 <button onClick={generarPregunta} disabled={cargando}
-                  style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT}}>
-                  ✨ Nueva pregunta
+                  style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:650,fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:6}}>
+                  <Sparkles size={14} strokeWidth={2}/>Nueva pregunta
                 </button>
               </div>
             </div>
