@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY, toast, accentFor,
+  C, FONT, FONT_DISPLAY, toast, accentFor, tx,
   Avatar, Spinner, Btn, Modal, ErrMsg, Chip,
   VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcDuracion,
@@ -16,6 +16,7 @@ import {
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal } from "./App";
+import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle } from "lucide-react";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
@@ -4587,7 +4588,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           <div id="contenido" className="curso-card" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{fontWeight:700,color:C.text,fontSize:15}}>Material del curso</div>
+                <div style={{...tx("cardTitle"),color:C.text}}>Material del curso</div>
                 {contenido.filter(c=>c.tipo!=="quiz").length>0&&<span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,fontSize:11,fontWeight:700,color:C.muted,padding:"1px 8px"}}>{contenido.filter(c=>c.tipo!=="quiz").length}</span>}
               </div>
               {(esMio||esAyudante)&&<button onClick={()=>setShowAdd(v=>!v)} style={{background:showAdd?C.accent:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:9,color:"#fff",padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:5,transition:"opacity .15s",opacity:showAdd?.8:1}}>
@@ -4600,7 +4601,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             {(esMio||esAyudante)&&showAdd&&(
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px",marginBottom:14}}>
                 <div style={{display:"flex",gap:5,marginBottom:9,flexWrap:"wrap"}}>
-                  {[["video","🎬","#1A6ED8"],["archivo","📁","#2EC4A0"],["texto","📝","#5A7294"],["aviso","📢","#E8881A"],["tarea","📌","#7B5CF0"],["link","🔗","#0EA5E9"],["quiz","🧩","#E8881A"]].map(([v,ic,clr])=>{const sel=nuevoTipo===v;return(<button key={v} onClick={()=>setNuevoTipo(v)} style={{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:700,cursor:"pointer",background:sel?clr:`${clr}10`,color:sel?"#fff":clr,border:`1.5px solid ${sel?clr:clr+"40"}`,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,transition:"all .15s",transform:sel?"scale(1.03)":"none"}}>{ic}<span style={{textTransform:"capitalize"}}>{v}</span></button>);})}
+                  {[["video",Video,"#1A6ED8"],["archivo",Folder,"#2EC4A0"],["texto",FileText,"#5A7294"],["aviso",Megaphone,"#E8881A"],["tarea",Pin,"#7B5CF0"],["link",LinkIcon,"#0EA5E9"],["quiz",Puzzle,"#E8881A"]].map(([v,Ico,clr])=>{const sel=nuevoTipo===v;return(<button key={v} onClick={()=>setNuevoTipo(v)} style={{padding:"7px 11px",borderRadius:9,fontSize:11.5,fontWeight:650,cursor:"pointer",background:sel?clr:`${clr}10`,color:sel?"#fff":clr,border:`1.5px solid ${sel?clr:clr+"40"}`,fontFamily:FONT,display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}><Ico size={13} strokeWidth={2.2}/><span style={{textTransform:"capitalize"}}>{v}</span></button>);})}
                 </div>
                 <input value={nuevoTitulo} onChange={e=>setNuevoTitulo(e.target.value)} aria-label="Título" placeholder="Título" style={iS}/>
                 {nuevoTipo!=="texto"&&nuevoTipo!=="aviso"&&nuevoTipo!=="tarea"?<input value={nuevoUrl} onChange={e=>setNuevoUrl(e.target.value)} aria-label="URL" placeholder="URL" style={iS}/>:<textarea value={nuevoTexto} onChange={e=>setNuevoTexto(e.target.value)} aria-label="Contenido" placeholder="Contenido..." style={{...iS,minHeight:70,resize:"vertical"}}/>}
@@ -4628,14 +4629,14 @@ function CursoPage({post,session,onClose,onUpdatePost}){
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {contenido.map((c,i)=>{
                   const TIPO_C={
-                    video:{icon:"🎬",color:"#1A6ED8",bg:"#1A6ED812",label:"Video",cta:"▶ Ver video"},
-                    archivo:{icon:"📁",color:"#2EC4A0",bg:"#2EC4A012",label:"Archivo",cta:"↓ Descargar"},
-                    texto:{icon:"📝",color:"#5A7294",bg:"#5A729412",label:"Texto",cta:null},
-                    aviso:{icon:"📢",color:"#E8881A",bg:"#E8881A12",label:"Aviso",cta:null},
-                    tarea:{icon:"📌",color:"#7B5CF0",bg:"#7B5CF012",label:"Tarea",cta:null},
-                    link:{icon:"🔗",color:"#0EA5E9",bg:"#0EA5E912",label:"Link",cta:"→ Abrir link"},
+                    video:{Icon:Video,color:"#1A6ED8",bg:"#1A6ED812",label:"Video",cta:"Ver video"},
+                    archivo:{Icon:Folder,color:"#2EC4A0",bg:"#2EC4A012",label:"Archivo",cta:"Descargar"},
+                    texto:{Icon:FileText,color:"#5A7294",bg:"#5A729412",label:"Texto",cta:null},
+                    aviso:{Icon:Megaphone,color:"#E8881A",bg:"#E8881A12",label:"Aviso",cta:null},
+                    tarea:{Icon:Pin,color:"#7B5CF0",bg:"#7B5CF012",label:"Tarea",cta:null},
+                    link:{Icon:LinkIcon,color:"#0EA5E9",bg:"#0EA5E912",label:"Link",cta:"Abrir link"},
                   };
-                  const t=TIPO_C[c.tipo]||{icon:"📄",color:C.muted,bg:C.surface,label:c.tipo,cta:null};
+                  const t=TIPO_C[c.tipo]||{Icon:FileText,color:C.muted,bg:C.surface,label:c.tipo,cta:null};
                   if(c.tipo==="quiz"){return null;}
                   const numBadge=contenido.filter(x=>x.tipo!=="quiz").findIndex(x=>x.id===c.id)+1;
                   return(
@@ -4646,8 +4647,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                       onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
                       <div style={{display:"flex",alignItems:"flex-start",gap:11}}>
                         {/* Icon bubble */}
-                        <div style={{width:36,height:36,borderRadius:10,background:t.bg,border:`1px solid ${t.color}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0,position:"relative"}}>
-                          {t.icon}
+                        <div style={{width:36,height:36,borderRadius:10,background:t.bg,border:`1px solid ${t.color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative",color:t.color}}>
+                          <t.Icon size={18} strokeWidth={1.9}/>
                           <span style={{position:"absolute",bottom:-5,right:-5,width:16,height:16,borderRadius:"50%",background:t.color,color:"#fff",fontSize:8,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.surface}`}}>{numBadge}</span>
                         </div>
                         {/* Content */}
