@@ -444,7 +444,7 @@ export function SearchableSelect({value,onChange,options,placeholder="Todas",sty
 }
 
 export const ErrMsg=({msg})=>msg?<div style={{color:C.danger,fontSize:13,margin:"5px 0",fontFamily:FONT,display:"flex",alignItems:"center",gap:5}}><span>⚠</span>{msg}</div>:null;
-export const Label=({children})=><div style={{color:C.muted,fontSize:13,fontWeight:600,letterSpacing:.3,marginBottom:6}}>{children}</div>;
+export const Label=({children})=><div style={{...tx("meta"),color:C.textSoft||C.muted,fontWeight:650,marginBottom:6}}>{children}</div>;
 
 // ─── Focus trap accesible para modales (WCAG 2.4.3 / 2.1.2) ──────────────────
 // Devuelve un ref para el panel del modal. Mientras está activo:
