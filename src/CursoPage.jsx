@@ -16,7 +16,7 @@ import {
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal } from "./App";
-import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain, CheckCircle, Circle, Search as SearchIcon, Flag as FlagIcon, MapPin as MapPinIcon, Trophy, GraduationCap as GradCapIcon, Upload, Inbox, Lock } from "lucide-react";
+import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain, CheckCircle, Circle, Search as SearchIcon, Flag as FlagIcon, MapPin as MapPinIcon, Trophy, GraduationCap as GradCapIcon, Upload, Inbox, Lock, Play, MessageCircle, HelpCircle } from "lucide-react";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
@@ -338,9 +338,9 @@ function JitsiModal({roomName,displayName,onClose}){
         <div style={{background:"linear-gradient(135deg,#0F3F7A,#1A6ED8)",padding:"24px 28px",position:"relative"}}>
           <button onClick={onClose} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(255,255,255,.6)",fontSize:22,cursor:"pointer",lineHeight:1}}>×</button>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <span style={{fontSize:36}}>📹</span>
+            <span style={{display:"inline-flex",color:"#fff"}}><Video size={34} strokeWidth={1.8}/></span>
             <div>
-              <div style={{color:"#fff",fontWeight:800,fontSize:18}}>Videollamada grupal</div>
+              <div style={{color:"#fff",fontFamily:FONT_DISPLAY,fontWeight:800,fontSize:18,letterSpacing:"-.01em"}}>Videollamada grupal</div>
               <div style={{color:"rgba(255,255,255,.6)",fontSize:12}}>Sala privada de Luderis</div>
             </div>
           </div>
@@ -357,7 +357,7 @@ function JitsiModal({roomName,displayName,onClose}){
           <a href={url} target="_blank" rel="noopener noreferrer"
             style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:12,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,textDecoration:"none",textAlign:"center",boxShadow:"0 4px 16px rgba(26,110,216,.4)",cursor:"pointer"}}
             >
-            📹 Abrir videollamada →
+            <Video size={17} strokeWidth={2}/> Abrir videollamada →
           </a>
           <button onClick={copiar}
             style={{background:"none",border:"1px solid rgba(255,255,255,.15)",borderRadius:10,color:copied?"#2EC4A0":"rgba(255,255,255,.5)",padding:"10px",fontSize:13,cursor:"pointer",fontFamily:FONT,transition:"all .15s"}}>
@@ -603,7 +603,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       {/* Header */}
       <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,background:C.surface}}>
-        <span style={{fontSize:18}}>💬</span>
+        <span style={{display:"inline-flex",color:C.accent}}><MessageCircle size={18} strokeWidth={2}/></span>
         <div style={{flex:1}}>
           <div style={{fontWeight:700,color:C.text,fontSize:14}}>{esChatParticular?"Chat con el docente":"Chat grupal"}</div>
           <div style={{fontSize:11,color:C.muted}}>{msgs.length} mensaje{msgs.length!==1?"s":""}</div>
@@ -617,8 +617,8 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
             setResumen(r);
           }catch(e){setResumen("No se pudo generar el resumen: "+e.message);}
           finally{setLoadingResumen(false);}
-        }} style={{background:"#7B3FBE18",border:"1px solid #7B3FBE33",borderRadius:9,padding:"6px 11px",cursor:"pointer",color:"#7B3FBE",fontSize:11,fontWeight:700,fontFamily:FONT,flexShrink:0}}>
-          {loadingResumen?"…":"✨ Resumir"}
+        }} style={{background:C.purple+"18",border:`1px solid ${C.purple}33`,borderRadius:9,padding:"6px 11px",cursor:"pointer",color:C.purple,fontSize:11,fontWeight:650,fontFamily:FONT,flexShrink:0,display:"inline-flex",alignItems:"center",gap:5}}>
+          <Sparkles size={12} strokeWidth={2}/>{loadingResumen?"…":"Resumir"}
         </button>}
         {/* Botón videollamada — solo docente/ayudante */}
         {(esMio||soyAyudante)&&<button onClick={()=>setShowJitsi(true)}
@@ -626,7 +626,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
           style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:9,padding:"6px 12px",cursor:"pointer",color:"#fff",fontSize:12,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:5,flexShrink:0,transition:"opacity .15s"}}
           onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
           onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-          📹 <span>Videollamada</span>
+          <Video size={14} strokeWidth={2}/><span>Videollamada</span>
         </button>}
         {/* Leyenda de roles */}
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -2061,13 +2061,13 @@ function ForoCurso({post,session,esMio,esAyudante}){
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
         {/* Tipo selector */}
         <div style={{display:"flex",gap:6,marginBottom:10}}>
-          {[{id:"disc",label:"💬 Discusión"},{id:"qa",label:"❓ Pregunta"}].map(t=>(
+          {[{id:"disc",Ico:MessageCircle,label:"Discusión"},{id:"qa",Ico:HelpCircle,label:"Pregunta"}].map(t=>(
             <button key={t.id} onClick={()=>setTipoNuevo(t.id)}
-              style={{padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:FONT,
+              style={{padding:"6px 12px",borderRadius:8,fontSize:11.5,fontWeight:650,cursor:"pointer",fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:5,
                 background:tipoNuevo===t.id?C.accent:C.surface,
                 color:tipoNuevo===t.id?"#fff":C.muted,
                 border:`1px solid ${tipoNuevo===t.id?"transparent":C.border}`}}>
-              {t.label}
+              <t.Ico size={13} strokeWidth={2}/>{t.label}
             </button>
           ))}
         </div>
@@ -2087,13 +2087,13 @@ function ForoCurso({post,session,esMio,esAyudante}){
       {/* Filtros */}
       {posts.length>0&&(
         <div style={{display:"flex",gap:4}}>
-          {[{id:"todos",label:`Todo (${posts.length})`},{id:"qa",label:`❓ Preguntas (${totalQA})`},{id:"disc",label:`💬 Debates (${totalDisc})`}].map(f=>(
+          {[{id:"todos",label:`Todo (${posts.length})`},{id:"qa",Ico:HelpCircle,label:`Preguntas (${totalQA})`},{id:"disc",Ico:MessageCircle,label:`Debates (${totalDisc})`}].map(f=>(
             <button key={f.id} onClick={()=>setFiltro(f.id)}
-              style={{padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:filtro===f.id?700:400,cursor:"pointer",fontFamily:FONT,
+              style={{padding:"5px 10px",borderRadius:20,fontSize:10.5,fontWeight:filtro===f.id?650:400,cursor:"pointer",fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:4,
                 background:filtro===f.id?C.accentDim:"transparent",
                 color:filtro===f.id?C.accent:C.muted,
                 border:`1px solid ${filtro===f.id?C.accent+"55":C.border}`}}>
-              {f.label}
+              {f.Ico&&<f.Ico size={11} strokeWidth={2}/>}{f.label}
             </button>
           ))}
         </div>
@@ -2131,8 +2131,8 @@ function ForoCurso({post,session,esMio,esAyudante}){
               </div>
               <div style={{display:"flex",gap:10,marginTop:8,paddingLeft:37}}>
                 <button onClick={()=>togglePost(p.id)}
-                  style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:0}}>
-                  💬 {p.respuestas?.[0]?.count||resps.length||0} respuesta{(p.respuestas?.[0]?.count||resps.length)!==1?"s":""}  {isExpanded?"▴":"▾"}
+                  style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT,padding:0,display:"inline-flex",alignItems:"center",gap:4}}>
+                  <MessageCircle size={12} strokeWidth={2}/>{p.respuestas?.[0]?.count||resps.length||0} respuesta{(p.respuestas?.[0]?.count||resps.length)!==1?"s":""} {isExpanded?"▴":"▾"}
                 </button>
                 {(esMiPost||esMio||esAyudante)&&!p.id?.startsWith("local_")&&(
                   <button onClick={async()=>{await sb.deleteForoPost(p.id,session.access_token).catch(()=>{});setPosts(prev=>prev.filter(x=>x.id!==p.id));}}
@@ -4440,7 +4440,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             <span style={{fontWeight:700,color:"#C80000",fontSize:13}}>Clase en vivo ahora</span>
             <span style={{color:"#C80000",fontSize:12,opacity:.8}}>{docenteDisplayName||post.autor_nombre} está esperándote</span>
           </div>
-          <button onClick={()=>setShowJitsiCurso(true)} style={{background:"#C80000",border:"none",borderRadius:9,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:6}}>📹 Unirme ahora</button>
+          <button onClick={()=>setShowJitsiCurso(true)} style={{background:"#C80000",border:"none",borderRadius:9,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:6}}><Video size={15} strokeWidth={2}/>Unirme ahora</button>
         </div>
       )}
       {/* ── STICKY HEADER: 2 rows ── */}
@@ -4459,7 +4459,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){toast("Error: "+e.message,"error");}}} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
           {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
             style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
-            {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":"▶ Iniciar clase"}
+            {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
           </button>}
           {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:"#4ECB7112",border:"1px solid #4ECB7133",borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
           {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:11,color:C.info,fontWeight:600,whiteSpace:"nowrap"}}>✓ Clase finalizada</span>}
@@ -4813,7 +4813,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
               <>
                 {!esParticular&&<ForoCurso post={post} session={session} esMio={esMio} esAyudante={esAyudante}/>}
                 <div style={{marginTop:esParticular?0:14}}>
-                  {esParticular&&<div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>💬 CHAT CON EL DOCENTE</div>}
+                  {esParticular&&<div style={{...tx("eyebrow"),color:C.muted,marginBottom:10,display:"inline-flex",alignItems:"center",gap:5}}><MessageCircle size={13} strokeWidth={2}/>CHAT CON EL DOCENTE</div>}
                   <ChatCurso post={post} session={session} ayudantes={post.ayudantes||[]} ayudanteEmails={ayudanteEmails} esMio={esMio} esAyudante={esAyudante} esParticular={esParticular} onNewMessages={(n)=>{if(tabActivo!=="comunidad")setMensajesNuevos(prev=>prev+n);}}/>
                 </div>
               </>
