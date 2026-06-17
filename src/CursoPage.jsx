@@ -16,7 +16,7 @@ import {
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal } from "./App";
-import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain } from "lucide-react";
+import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain, CheckCircle, Search as SearchIcon, Flag as FlagIcon, MapPin as MapPinIcon } from "lucide-react";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
@@ -3123,7 +3123,7 @@ JSON: {"preguntas":[{"texto":"...","tipo":"reflexion"}]}`:""}`;
   // eslint-disable-next-line no-unused-vars
   const tipoColor={diagnostico:C.info,checkpoint:C.warn,final:C.success};
   // eslint-disable-next-line no-unused-vars
-  const tipoIcon={diagnostico:"🔍",checkpoint:"📍",final:"🏁"};
+  const tipoIcon={diagnostico:SearchIcon,checkpoint:MapPinIcon,final:FlagIcon};
 
   return(
     <div>
@@ -3238,7 +3238,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
   try{contenido=JSON.parse(ev.contenido_json||"{}");}catch{}
 
   const tipoColor={diagnostico:C.info,checkpoint:C.warn,final:C.success};
-  const tipoIcon={diagnostico:"🔍",checkpoint:"📍",final:"🏁"};
+  const tipoIcon={diagnostico:SearchIcon,checkpoint:MapPinIcon,final:FlagIcon};
 
   const enviarRespuesta=async()=>{
     setEnviando(true);
@@ -3264,7 +3264,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
     <div style={{background:C.card,border:`1px solid ${tipoColor[ev.tipo]||C.border}22`,borderRadius:12,overflow:"hidden"}}>
       {/* Header */}
       <div role="button" tabIndex={0} aria-expanded={expanded} aria-label="Mostrar u ocultar evaluación" onClick={()=>setExpanded(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setExpanded(v=>!v);}}} style={{padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:18}}>{tipoIcon[ev.tipo]}</span>
+        <span style={{display:"inline-flex",alignItems:"center",color:C.muted}}>{(()=>{const TI=tipoIcon[ev.tipo]||SearchIcon;return <TI size={16} strokeWidth={2}/>;})()}</span>
         <div style={{flex:1}}>
           <div style={{fontWeight:700,color:C.text,fontSize:13}}>{ev.titulo}</div>
           <div style={{display:"flex",gap:6,marginTop:3,flexWrap:"wrap"}}>
@@ -3329,7 +3329,7 @@ function EvaluacionCard({ev,post,session,esMio,inscripciones,inscripcion,onDelet
             <div>
               {score!==null&&(
                 <div style={{background:score>=60?"#4ECB7115":"#E05C5C15",border:`1px solid ${score>=60?"#4ECB7133":"#E05C5C33"}`,borderRadius:10,padding:"12px 16px",marginBottom:12,textAlign:"center"}}>
-                  <div style={{fontSize:28,fontWeight:700,color:score>=60?C.success:C.danger}}>{score}%</div>
+                  <div style={{fontFamily:FONT_DISPLAY,fontSize:28,fontWeight:800,letterSpacing:"-.02em",color:score>=60?C.success:C.danger}}>{score}%</div>
                   <div style={{fontSize:12,color:C.muted}}>{score>=60?"¡Buen resultado!":"Podés mejorar"}</div>
                 </div>
               )}
@@ -3441,8 +3441,8 @@ function ExamenFinalModal({post,session,onClose}){
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
     <div role="dialog" aria-modal="true" aria-label="Examen final" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FONT,padding:16}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"32px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:12}}>✅</div>
-        <div style={{fontWeight:700,color:C.text,fontSize:17,marginBottom:8}}>Examen final ya completado</div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12,color:C.success}}><CheckCircle size={42} strokeWidth={1.8}/></div>
+        <div style={{...tx("h2"),color:C.text,marginBottom:8}}>Examen final ya completado</div>
         <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Ya rendiste el examen final de este curso. Podés ver tu resultado en la pestaña Aprender.</div>
         <button onClick={onClose} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"10px 28px",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:FONT}}>Cerrar</button>
       </div>
