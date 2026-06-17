@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Calendar, GraduationCap, BookOpen, Star, Clock, Play } from "lucide-react";
+import { Trophy, Calendar, GraduationCap, BookOpen, Star, Clock, Play, Users, Check } from "lucide-react";
 import * as sb from "./supabase";
-import { C, FONT, FONT_DISPLAY, Avatar, Spinner, LUD } from "./shared";
+import { C, FONT, FONT_DISPLAY, Avatar, Spinner, LUD, tx, accentFor } from "./shared";
 
 // Badge compacto que indica si el usuario es docente o alumno en esa publicación
 const RolBadge=({rol})=>rol==="docente"
@@ -17,12 +17,13 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
     const email=p.autor_email;
     if(!docenteMap[email])docenteMap[email]={
       email,nombre:p.autor_nombre||email.split("@")[0],
-      rating:0,inscriptos:0,reseñas:0,materias:new Set(),pubs:0
+      rating:0,inscriptos:0,reseñas:0,materias:new Set(),pubs:0,verificado:false
     };
     const d=docenteMap[email];
     d.pubs++;
     d.materias.add(p.materia);
-    if(p.calificacion_promedio){d.ratingSum=(d.ratingSum||0)+parseFloat(p.calificacion_promedio)||0;d.ratingCount=(d.ratingCount||0)+1;}
+    if(p.verificado)d.verificado=true;
+    if(p.calificacion_promedio){d.ratingSum=(d.ratingSum||0)+parseFloat(p.calificacion_promedio)||0;d.ratingCount=(d.ratingCount||0)+1;d.reseñas+=(p.cantidad_reseñas||p.cantidad_reseñas||0);}
     d.inscriptos+=(p.cantidad_inscriptos||0);
   });
   const top=Object.values(docenteMap)
@@ -36,29 +37,48 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
 
   return(
     <div style={{marginBottom:18}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,display:"flex",alignItems:"center",gap:5}}><Trophy size={14} color="#F59E0B" strokeWidth={2}/>Docentes destacados</div>
-        <button onClick={()=>setVisible(v=>!v)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT}}>{visible?"▴":"▾"}</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:14}}>
+        <div>
+          <h2 style={{...tx("h2"),color:C.text,margin:0}}>Docentes destacados</h2>
+          <p style={{...tx("meta"),color:C.muted,margin:"4px 0 0"}}>Los mejor valorados de la plataforma</p>
+        </div>
+        <button onClick={()=>setVisible(v=>!v)} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONT}}>{visible?"▴":"▾"}</button>
       </div>
       {visible&&(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,paddingTop:10}}>
-          {top.map((d,i)=>(
-            <div key={d.email} role="button" tabIndex={0} aria-label={`Ver perfil de ${d.nombre||d.email}`} onClick={()=>onOpenPerfil(d.email)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenPerfil(d.email);}}}
-              style={{background:C.card,border:`1px solid ${i===0?C.accent:C.border}`,borderRadius:12,
-                padding:"12px 14px",cursor:"pointer",textAlign:"center",position:"relative",
-                transition:"transform .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-              onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-              {i===0&&<div style={{position:"absolute",top:-8,left:"50%",transform:"translateX(-50%)",
-                background:C.accent,color:"#fff",fontSize:9,fontWeight:700,borderRadius:20,
-                padding:"2px 8px",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3}}><Star size={8} strokeWidth={2.5} fill="#fff"/>Top docente</div>}
-              <Avatar letra={d.nombre[0]} size={36} style={{margin:"0 auto 6px"}}/>
-              <div style={{fontWeight:700,color:C.text,fontSize:12,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.nombre}</div>
-              {d.rating>0&&<div style={{color:C.accent,fontSize:11,marginBottom:2}}>{"★".repeat(Math.round(d.rating))} {d.rating.toFixed(1)}</div>}
-              <div style={{color:C.muted,fontSize:10}}>{[...d.materias].slice(0,2).join(", ")}</div>
-              {d.inscriptos>0&&<div style={{color:C.muted,fontSize:10,marginTop:2}}>{d.inscriptos} alumnos</div>}
-            </div>
-          ))}
+        <div className="cl-hscroll" style={{display:"flex",gap:12,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:6}}>
+          <style>{`.cl-hscroll::-webkit-scrollbar{display:none}`}</style>
+          {top.map((d)=>{
+            const ac=accentFor("clases");
+            const materias=[...d.materias].filter(Boolean);
+            return(
+            <button key={d.email} onClick={()=>onOpenPerfil(d.email)}
+              style={{flexShrink:0,width:200,display:"flex",flexDirection:"column",alignItems:"flex-start",padding:"18px 16px 16px",background:C.surface,textAlign:"left",border:`1px solid ${C.border}`,borderRadius:16,cursor:"pointer",fontFamily:FONT,boxShadow:C.shadow,transition:"all .18s"}}
+              onMouseEnter={e=>{e.currentTarget.style.boxShadow=C.shadowHover;e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.borderColor=C.borderStrong||C.border;}}
+              onMouseLeave={e=>{e.currentTarget.style.boxShadow=C.shadow;e.currentTarget.style.transform="none";e.currentTarget.style.borderColor=C.border;}}>
+              {/* Avatar cuadrado-redondeado + badge verificado */}
+              <div style={{position:"relative",marginBottom:12}}>
+                <Avatar letra={d.nombre[0]} size={56} radius={16}/>
+                {d.verificado&&<span title="Verificado" style={{position:"absolute",bottom:-4,right:-4,width:20,height:20,borderRadius:"50%",background:ac.solid,border:`2px solid ${C.surface}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Check size={10} strokeWidth={3} color="#fff"/></span>}
+                {d.inscriptos>0&&<span title="Activo" style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:"50%",background:C.teal,border:`2px solid ${C.surface}`}}/>}
+              </div>
+              <div style={{...tx("bodyStrong"),fontWeight:700,color:C.text,marginBottom:3,lineHeight:1.2,maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.nombre}</div>
+              {materias.length>0&&<div style={{...tx("micro"),color:ac.text,fontWeight:600,marginBottom:10,maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{materias.slice(0,2).join(" · ")}</div>}
+              {/* Rating */}
+              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:10}}>
+                {d.rating>0?<>
+                  <span style={{...tx("meta"),fontWeight:700,color:C.text}}>{d.rating.toFixed(1)}</span>
+                  <Star size={13} fill="#F59E0B" color="#F59E0B"/>
+                  {d.reseñas>0&&<span style={{...tx("micro"),color:C.faint||C.muted}}>({d.reseñas})</span>}
+                </>:<span style={{...tx("micro"),color:C.faint||C.muted}}>Sin reseñas</span>}
+              </div>
+              {/* Stats footer */}
+              <div style={{marginTop:"auto",paddingTop:10,borderTop:`1px solid ${C.hairline||C.border}`,width:"100%",display:"flex",gap:12}}>
+                <span style={{display:"flex",alignItems:"center",gap:4}}><BookOpen size={13} color={ac.solid}/><span style={{...tx("micro"),fontWeight:650,color:C.textSoft||C.text}}>{d.pubs}</span><span style={{...tx("micro"),color:C.faint||C.muted}}>public.</span></span>
+                <span style={{display:"flex",alignItems:"center",gap:4}}><Users size={13} color={ac.solid}/><span style={{...tx("micro"),fontWeight:650,color:C.textSoft||C.text}}>{d.inscriptos}</span><span style={{...tx("micro"),color:C.faint||C.muted}}>alumnos</span></span>
+              </div>
+            </button>
+            );
+          })}
         </div>
       )}
     </div>

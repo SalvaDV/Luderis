@@ -310,7 +310,8 @@ export const SkeletonCard=()=>(<div style={{background:C.surface,border:`1px sol
 
 export const SkeletonList=({n=3})=>(<div style={{display:"grid",gap:11}}>{Array.from({length:n}).map((_,i)=><SkeletonCard key={i}/>)}</div>);
 
-export const Avatar=({letra,size=38,img})=>{
+export const Avatar=({letra,size=38,img,radius})=>{
+  const br=radius!=null?radius:"50%";
   const colors=[
     ["#1A6ED8","#2EC4A0"],["#7B5CF0","#E05C9A"],["#E05C9A","#F5A623"],
     ["#2EC4A0","#1A6ED8"],["#F5A623","#E05C5C"],["#0F3F7A","#1A6ED8"],
@@ -318,13 +319,13 @@ export const Avatar=({letra,size=38,img})=>{
   const [from,to]=colors[(letra||"?").toUpperCase().charCodeAt(0)%colors.length];
   const [imgOk,setImgOk]=useState(true);
   if(img&&imgOk)return(
-    <div style={{width:size,height:size,borderRadius:"50%",overflow:"hidden",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
+    <div style={{width:size,height:size,borderRadius:br,overflow:"hidden",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
       {/* onError solo gestiona el fallback de carga; no es una interacción de usuario */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <img src={img} alt={letra?`Avatar de ${letra}`:"Avatar"} loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setImgOk(false)}/>
     </div>
   );
-  return<div title={typeof letra==='string'&&letra.length>1?letra:undefined} style={{width:size,height:size,borderRadius:"50%",background:`linear-gradient(135deg,${from},${to})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:size*0.38,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.15)",letterSpacing:"-.5px"}}>{(letra||"?").toUpperCase()}</div>;
+  return<div title={typeof letra==='string'&&letra.length>1?letra:undefined} style={{width:size,height:size,borderRadius:br,background:`linear-gradient(135deg,${from},${to})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:size*0.38,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.15)",letterSpacing:"-.5px"}}>{(letra||"?").toUpperCase()}</div>;
 };
 
 export const Tag=({tipo,modo})=>{const T=tipo==="busqueda"?TIPO_PUB.pedido:modo==="particular"?TIPO_PUB.particular:TIPO_PUB.curso;const Icon=tipo==="busqueda"?Megaphone:modo==="particular"?User:GraduationCap;return(<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:T.dim,color:T.accent,border:`1px solid ${T.border}`,fontFamily:FONT,letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}><Icon size={10} strokeWidth={2.5}/> {T.label}</span>);};
