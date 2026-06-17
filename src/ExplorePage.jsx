@@ -780,6 +780,17 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <span>Plataforma segura</span>
               </div>
             </div>
+            {/* Links legales (estilo ExploreFooter del prototipo) */}
+            <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:8,flexWrap:"wrap",paddingBottom:8}}>
+              {[["Términos","/terminos"],["Privacidad","/privacidad"],["Quejas","/quejas"],["Accesibilidad","/accesibilidad"],["Ayuda","/ayuda"]].map(([label,href],i,arr)=>(
+                <React.Fragment key={label}>
+                  <a href={href} style={{...tx("meta"),color:C.muted,textDecoration:"none",padding:"2px 4px"}}
+                    onMouseEnter={e=>{e.currentTarget.style.color=C.textSoft||C.text;e.currentTarget.style.textDecoration="underline";}}
+                    onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.textDecoration="none";}}>{label}</a>
+                  {i<arr.length-1&&<span style={{color:C.border,fontSize:12}}>·</span>}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
       )}
