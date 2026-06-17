@@ -215,7 +215,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
               <button onClick={()=>setMesOffset(m=>m-1)} style={{width:34,height:34,background:C.bg,border:`1px solid ${C.border}`,borderRadius:"50%",color:C.muted,cursor:"pointer",fontFamily:FONT,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>‹</button>
               <div style={{textAlign:"center"}}>
-                <div style={{fontWeight:800,color:C.text,fontSize:16,textTransform:"capitalize",letterSpacing:"-.2px"}}>{mes.toLocaleString("es-AR",{month:"long"})}</div>
+                <div style={{...tx("h2"),color:C.text,textTransform:"capitalize"}}>{mes.toLocaleString("es-AR",{month:"long"})}</div>
                 <div style={{fontSize:12,color:C.muted}}>{mes.getFullYear()}</div>
               </div>
               <button onClick={()=>setMesOffset(m=>m+1)} style={{width:34,height:34,background:C.bg,border:`1px solid ${C.border}`,borderRadius:"50%",color:C.muted,cursor:"pointer",fontFamily:FONT,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>›</button>
@@ -236,14 +236,13 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                 const nClases=clasesEnDia(d).length;
                 return(
                   <button key={d} onClick={()=>setDiaSelec(tieneClase?(selec?null:d):null)}
-                    style={{textAlign:"center",padding:"8px 2px",borderRadius:10,fontSize:13,
-                      fontWeight:tieneClase||esHoy?700:400,
-                      background:selec?C.accent:esHoy?LUD.grad:tieneClase?C.accentDim:"transparent",
-                      color:selec?"#fff":esHoy?"#fff":tieneClase?C.accent:C.muted,
-                      border:selec?`2px solid ${C.accent}`:esHoy?"none":tieneClase?`1px solid ${C.accent}44`:"1px solid transparent",
+                    style={{textAlign:"center",padding:"8px 2px",borderRadius:9,fontSize:13.5,
+                      fontWeight:selec||tieneClase||esHoy?650:450,
+                      background:selec?accentFor("cursos").solid:tieneClase?accentFor("cursos").soft:"transparent",
+                      color:selec?"#fff":esHoy||tieneClase?accentFor("cursos").text:C.muted,
+                      border:esHoy&&!selec?`1.5px solid ${accentFor("cursos").solid}`:"1.5px solid transparent",
                       cursor:tieneClase?"pointer":"default",fontFamily:FONT,
                       position:"relative",minHeight:44,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-                      boxShadow:tieneClase&&!selec?"0 1px 4px rgba(26,110,216,.12)":undefined,
                       transition:"all .12s"}}>
                     <span>{d}</span>
                     {nClases>0&&(
@@ -264,7 +263,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
             {/* Clases del día seleccionado */}
             {diaSelec&&(
               <div style={{marginTop:12,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,marginBottom:8}}>
+                <div style={{...tx("eyebrow"),color:C.muted,marginBottom:8}}>
                   {new Date(mes.getFullYear(),mes.getMonth(),diaSelec).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
                 </div>
                 {clasesEnDia(diaSelec).length===0
@@ -298,7 +297,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
           {/* Próximas clases */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px"}}>
             <div role="button" tabIndex={0} aria-expanded={proximasOpen} aria-label="Mostrar u ocultar próximas clases" onClick={()=>setProximasOpen(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setProximasOpen(v=>!v);}}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:proximasOpen?12:0,cursor:"pointer"}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:14}}>Próximas clases {proximas.length>0&&<span style={{fontSize:11,color:C.muted,fontWeight:400}}>({proximas.slice(0,10).length})</span>}</div>
+              <div style={{...tx("h2"),color:C.text}}>Próximas clases {proximas.length>0&&<span style={{...tx("meta"),color:C.muted,fontWeight:400}}>({proximas.slice(0,10).length})</span>}</div>
               <span style={{color:C.muted,fontSize:13,transform:proximasOpen?"rotate(0deg)":"rotate(-90deg)",display:"inline-block",transition:"transform .2s"}}>▾</span>
             </div>
             {proximasOpen&&(
