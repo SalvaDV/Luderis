@@ -16,7 +16,7 @@ import {
 } from "./shared";
 import { dispararAlertasIA } from "./PostFormModal";
 import { DenunciaModal, FinalizarClaseModal } from "./App";
-import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain, CheckCircle, Search as SearchIcon, Flag as FlagIcon, MapPin as MapPinIcon } from "lucide-react";
+import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain, CheckCircle, Circle, Search as SearchIcon, Flag as FlagIcon, MapPin as MapPinIcon, Trophy, GraduationCap as GradCapIcon, Upload, Inbox, Lock } from "lucide-react";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
@@ -1480,7 +1480,7 @@ function FlashcardsDeck({cards,onDelete,titulo,session,contenidoId}){
 
   if(remaining.length===0)return(
     <div style={{textAlign:"center",padding:"32px 0"}}>
-      <div style={{fontSize:40,marginBottom:10}}>🎉</div>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:10,color:C.success}}><Trophy size={40} strokeWidth={1.7}/></div>
       <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:6}}>¡Completaste la sesión de hoy!</div>
       {usaSRS&&<div style={{fontSize:12,color:C.muted,marginBottom:12}}>Las tarjetas volverán según el espaciado de repetición</div>}
       <button onClick={()=>{setDone([]);setIdx(0);setFlipped(false);}} style={{background:C.accent,border:"none",borderRadius:10,color:"#fff",padding:"9px 22px",cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:FONT}}>Volver a empezar</button>
@@ -3014,7 +3014,7 @@ function ValidacionWizard({post,session,onValidado}){
       {/* ── Fase: Listo ── */}
       {fase==="listo"&&(
         <div style={{textAlign:"center",padding:"20px 0"}}>
-          <div style={{fontSize:36,marginBottom:12}}>🎉</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:12,color:C.success}}><Trophy size={36} strokeWidth={1.7}/></div>
           <div style={{fontWeight:700,color:C.successText,fontSize:16,marginBottom:6}}>
             {esParticular?"Clase publicada":"Curso publicado"}
           </div>
@@ -4419,7 +4419,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       <p style={{color:C.muted,fontSize:14,textAlign:"center",maxWidth:360,margin:0}}>{cerrado?"El docente ya cerró las inscripciones para este curso.":"Inscribite gratis para acceder a todo el contenido."}</p>
       {post.otorga_certificado&&post.modo==="grupal"&&(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 16px",maxWidth:340,textAlign:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>🎓 Otorga certificado</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2,display:"inline-flex",alignItems:"center",gap:5}}><GradCapIcon size={14} strokeWidth={2}/>Otorga certificado</div>
           {post.aprobacion_pct&&<div style={{fontSize:12,color:C.muted}}>Necesitás completar el <strong>{post.aprobacion_pct}%</strong> de los módulos para obtenerlo</div>}
         </div>
       )}
@@ -4621,7 +4621,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             );})()}
             {loading?<SkeletonList n={4}/>:contenido.length===0?(
               <div style={{textAlign:"center",padding:"36px 20px",color:C.muted}}>
-                <div style={{fontSize:36,marginBottom:10,opacity:.4}}>{esMio?"📤":"📭"}</div>
+                <div style={{display:"flex",justifyContent:"center",marginBottom:10,opacity:.4,color:C.muted}}>{esMio?<Upload size={36} strokeWidth={1.6}/>:<Inbox size={36} strokeWidth={1.6}/>}</div>
                 <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:4}}>{esMio?"Todavía no hay contenido":"El docente aún no cargó material"}</div>
                 <div style={{fontSize:12}}>{esMio?"Hacé clic en \"+ Agregar\" para subir el primer recurso.":"Volvé más tarde, el docente todavía está preparando el curso."}</div>
               </div>
@@ -4668,10 +4668,10 @@ function CursoPage({post,session,onClose,onUpdatePost}){
                               {t.cta}
                             </a>
                           )}
-                          {!tieneAcceso&&<div style={{color:C.muted,fontSize:11,marginTop:3}}>🔒 Inscribite para acceder</div>}
+                          {!tieneAcceso&&<div style={{color:C.muted,fontSize:11,marginTop:3,display:"inline-flex",alignItems:"center",gap:4}}><Lock size={11} strokeWidth={2}/>Inscribite para acceder</div>}
                           {!esMio&&!esAyudante&&inscripcion&&c.tipo!=="quiz"&&(()=>{const completado=progresoModulos.some(p=>p.contenido_id===c.id&&p.completado);return(
                             <button onClick={()=>toggleProgresoModulo(c.id)} style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,background:completado?"#2EC4A015":"transparent",border:`1px solid ${completado?"#2EC4A040":C.border}`,borderRadius:7,padding:"4px 10px",cursor:"pointer",fontSize:11,color:completado?C.success:C.muted,fontFamily:FONT,transition:"all .15s"}}>
-                              <span style={{fontSize:13}}>{completado?"✓":"○"}</span>{completado?"Completado":"Marcar como completado"}
+                              {completado?<CheckCircle size={13} strokeWidth={2.2}/>:<Circle size={13} strokeWidth={2}/>}{completado?"Completado":"Marcar como completado"}
                             </button>
                           );})()}
                           {(esMio||esAyudante)&&editingContenidoId===c.id&&(
@@ -4973,7 +4973,7 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
 
   if(estado==="done") return(
     <div style={{textAlign:"center",padding:"24px 0"}}>
-      <div style={{fontSize:40,marginBottom:8}}>✅</div>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:8,color:C.success}}><CheckCircle size={40} strokeWidth={1.7}/></div>
       <div style={{color:C.successText,fontWeight:700,fontSize:15}}>¡Pago exitoso!</div>
       <div style={{color:C.muted,fontSize:13,marginTop:4}}>Ya tenés acceso a la clase</div>
     </div>
