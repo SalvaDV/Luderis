@@ -8,7 +8,7 @@ import {
   safeDisplayName, avatarColor, MATERIAS,
   getPubTipo,
 } from "./shared";
-import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, Share2, GraduationCap, ScrollText, Briefcase, FileText } from "lucide-react";
+import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, Share2, GraduationCap, ScrollText, Briefcase, FileText, Search, Target } from "lucide-react";
 
 function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,token}){
   const [pregunta,setPregunta]=useState("");const [respuesta,setRespuesta]=useState("");const [estado,setEstado]=useState("cargando");const [feedback,setFeedback]=useState("");
@@ -562,10 +562,10 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
               <div>
                 <Label>¿Sos docente o alumno?</Label>
                 <div style={{display:"flex",gap:8}}>
-                  {[{v:"oferta",icon:"🎓",label:"Soy docente",sub:"Quiero publicar"},{v:"busqueda",icon:"🔍",label:"Soy alumno",sub:"Busco docente o curso"}].map(({v,icon,label,sub})=>(
+                  {[{v:"oferta",Icon:GraduationCap,label:"Soy docente",sub:"Quiero publicar"},{v:"busqueda",Icon:Search,label:"Soy alumno",sub:"Busco docente o curso"}].map(({v,Icon,label,sub})=>(
                     <button key={v} onClick={()=>setTipo(v)}
                       style={{flex:1,padding:"14px 10px",borderRadius:14,border:`2px solid ${tipo===v?C.accent:C.border}`,background:tipo===v?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"center",transition:"all .15s"}}>
-                      <div style={{fontSize:28,marginBottom:6}}>{icon}</div>
+                      <div style={{display:"flex",justifyContent:"center",marginBottom:8,color:tipo===v?C.accent:C.muted}}><Icon size={26} strokeWidth={1.9}/></div>
                       <div style={{fontSize:13,fontWeight:700,color:tipo===v?C.accent:C.text}}>{label}</div>
                       <div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>
                     </button>
@@ -577,9 +577,9 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             {tipo==="busqueda"&&modo!=="particular"&&(()=>{setModo("particular");return null;})()}
             {tipo==="busqueda"&&(
               <div style={{background:"#7B5CF015",border:"2px solid #7B5CF0",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:32}}>🎯</span>
+                <span style={{display:"inline-flex",color:C.purple}}><Target size={30} strokeWidth={1.8}/></span>
                 <div>
-                  <div style={{fontSize:14,fontWeight:700,color:"#7B5CF0"}}>Pedido de clase particular</div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.purple}}>Pedido de clase particular</div>
                   <div style={{fontSize:12,color:C.muted,marginTop:2}}>Los docentes podrán ver tu pedido y contactarte</div>
                 </div>
               </div>
@@ -589,13 +589,13 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                 <Label>¿Qué querés publicar?</Label>
                 <div style={{display:"flex",gap:10}}>
                   {[
-                    {v:"curso",icon:"📚",label:"Curso",sub:"Contenido estructurado, múltiples alumnos, precio fijo",color:"#1A6ED8"},
-                    {v:"particular",icon:"🎯",label:"Clase particular",sub:"1 a 1 o grupo pequeño, horario flexible",color:"#E8881A"},
-                  ].map(({v,icon,label,sub,color})=>(
+                    {v:"curso",Icon:BookOpen,label:"Curso",sub:"Contenido estructurado, múltiples alumnos, precio fijo",color:"#1A6ED8"},
+                    {v:"particular",Icon:Target,label:"Clase particular",sub:"1 a 1 o grupo pequeño, horario flexible",color:"#E8881A"},
+                  ].map(({v,Icon,label,sub,color})=>(
                     <button key={v} onClick={()=>setModo(v)}
                       style={{flex:1,padding:"16px 12px",borderRadius:16,border:`2px solid ${modo===v?color:C.border}`,background:modo===v?color+"15":C.bg,cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .18s",position:"relative"}}>
                       {modo===v&&<div style={{position:"absolute",top:10,right:10,width:18,height:18,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900}}>✓</div>}
-                      <div style={{fontSize:32,marginBottom:8}}>{icon}</div>
+                      <div style={{marginBottom:8,color:modo===v?color:C.muted}}><Icon size={28} strokeWidth={1.9}/></div>
                       <div style={{fontSize:14,fontWeight:700,color:modo===v?color:C.text,marginBottom:4}}>{label}</div>
                       <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{sub}</div>
                     </button>
