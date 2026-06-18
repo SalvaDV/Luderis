@@ -116,22 +116,26 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
         {post.tipo==="busqueda"&&post.expires_at&&(()=>{const d=Math.ceil((new Date(post.expires_at)-new Date())/86400000);if(d<=3&&d>0)return<span style={{...tx("micro"),color:"#B45309",fontWeight:600}}>Expira en {d}d</span>;return null;})()}
       </div>
 
-      {/* Footer: izq = estrellas + inscriptos · der = precio + acciones */}
+      {/* Footer: fila 1 = estrellas + precio · fila 2 = acciones (evita solapamiento en cards angostas) */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation evita activar la card */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:`1px solid ${C.hairline||C.border}`,paddingTop:13,gap:10}} onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",gap:9,alignItems:"center",minWidth:0}}>
-          {avgPub?<MiniStars val={avgPub} count={countPub}/>:<span style={{...tx("meta"),color:C.faint}}>Sin reseñas</span>}
-          {post.cantidad_inscriptos>0&&<>
-            <span style={{color:C.border}}>·</span>
-            <span style={{...tx("meta"),color:C.muted,display:"inline-flex",alignItems:"center",gap:4}}><Users size={13}/>{post.cantidad_inscriptos}</span>
-          </>}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-          <div style={{textAlign:"right"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:11,borderTop:`1px solid ${C.hairline||C.border}`,paddingTop:13}} onClick={e=>e.stopPropagation()}>
+        {/* Fila 1: reseñas/inscriptos + precio */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <div style={{display:"flex",gap:9,alignItems:"center",minWidth:0,flexWrap:"wrap"}}>
+            {avgPub?<MiniStars val={avgPub} count={countPub}/>:<span style={{...tx("meta"),color:C.faint,whiteSpace:"nowrap"}}>Sin reseñas</span>}
+            {post.cantidad_inscriptos>0&&<>
+              <span style={{color:C.border}}>·</span>
+              <span style={{...tx("meta"),color:C.muted,display:"inline-flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}><Users size={13}/>{post.cantidad_inscriptos}</span>
+            </>}
+          </div>
+          <div style={{textAlign:"right",flexShrink:0,whiteSpace:"nowrap"}}>
             {post.precio
               ?<><span style={{...tx("price"),color:C.text}}>{fmtPrice(post.precio,post.moneda)}</span>{post.precio_tipo&&post.modo!=="curso"&&<span style={{...tx("micro"),color:C.faint,fontWeight:500}}> /{post.precio_tipo}</span>}</>
               :<span style={{...tx("bodyStrong"),color:C.successText}}>Gratis</span>}
           </div>
+        </div>
+        {/* Fila 2: acciones */}
+        <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
           <ShareBtn post={post}/>
           {!esMio&&<PostChatBtn post={post} session={session} onOpenChat={onOpenChat} grad={T.grad} accent={T.accent}/>}
         </div>
