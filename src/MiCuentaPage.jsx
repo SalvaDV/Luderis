@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp } from "lucide-react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
@@ -36,6 +36,21 @@ function MiniBarChart({data,color,height=50,width=0,showValues=true}){
   );
 }
 
+// ─── StatCard / SubHead (estilo prototipo) ───────────────────────────────────
+function StatCard({icon:Icon,label,value,suffix,accentKey="cursos"}){
+  const ac=accentFor(accentKey);
+  return(
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px",boxShadow:C.shadow,minWidth:150}}>
+      <div style={{width:40,height:40,borderRadius:11,background:ac.soft,color:ac.solid,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:14}}><Icon size={20} strokeWidth={2}/></div>
+      <div style={{...tx("display"),fontSize:26,color:C.text,letterSpacing:"-.02em",lineHeight:1.1}}>{value}{suffix&&<span style={{fontSize:16,color:C.muted,fontWeight:600}}>{suffix}</span>}</div>
+      <div style={{...tx("meta"),color:C.muted,marginTop:3}}>{label}</div>
+    </div>
+  );
+}
+function SubHead({icon:Icon,title}){
+  return <h3 style={{...tx("h2"),color:C.text,margin:"0 0 14px",display:"flex",alignItems:"center",gap:8}}><Icon size={17} color={C.muted} strokeWidth={2}/>{title}</h3>;
+}
+
 function MiActividadCard({session}){
   const [insc,setInsc]=useState(null);
   useEffect(()=>{
@@ -47,20 +62,12 @@ function MiActividadCard({session}){
   const activos=insc.filter(i=>!i.clase_finalizada).length;
   const completados=insc.filter(i=>i.clase_finalizada).length;
   return(
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px",marginBottom:16}}>
-      <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><BarChart2 size={15} strokeWidth={1.8}/>Mi actividad</div>
-      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-        {[
-          {Icon:GraduationCap,label:"Cursos inscripto",value:insc.length,color:C.accent},
-          {Icon:BookOpen,label:"En curso",value:activos,color:C.info},
-          {Icon:CheckCircle2,label:"Completados",value:completados,color:C.successText},
-        ].map(s=>(
-          <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",flex:1,minWidth:90,textAlign:"center"}}>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:2}}><s.Icon size={20} color={s.color} strokeWidth={1.8}/></div>
-            <div style={{fontFamily:FONT_DISPLAY,fontSize:23,fontWeight:800,letterSpacing:"-.02em",color:s.color,marginTop:4}}>{s.value}</div>
-            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.label}</div>
-          </div>
-        ))}
+    <div style={{marginBottom:26}}>
+      <SubHead icon={BookOpen} title="Mi actividad como alumno"/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12}}>
+        <StatCard icon={GraduationCap} label="Cursos inscripto" value={insc.length} accentKey="cursos"/>
+        <StatCard icon={PlayCircle} label="En curso" value={activos} accentKey="clases"/>
+        <StatCard icon={CheckCircle2} label="Completados" value={completados} accentKey="pedidos"/>
       </div>
     </div>
   );
@@ -149,18 +156,34 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
   const secciones=[{id:"resumen",label:"Resumen"},{id:"ingresos",label:"Ingresos"},{id:"publicaciones",label:"Publicaciones"}];
   const statStyle={background:C.surface,borderRadius:12,padding:"12px 14px"};
 
+  const KPIS=[
+    {label:"Clases activas",val:ofertas.length,Icon:Megaphone,acc:"clases"},
+    {label:"Total alumnos",val:totalAlumnos,Icon:Users,acc:"cursos"},
+    {label:"Vistas totales",val:totalVistas||0,Icon:Eye,acc:"pedidos"},
+    {label:"Rating",val:avg?avg.toFixed(1):"—",suffix:avg?"★":"",Icon:Star,acc:"clases"},
+    {label:"Finalizadas",val:finalizadas.length,Icon:CheckCircle2,acc:"cursos"},
+    {label:"Reseñas",val:reseñas.length,Icon:MessageCircle,acc:"pedidos"},
+    ...(impactScore!==null?[{label:"Impact score",val:impactScore,suffix:"/100",Icon:Sparkles,acc:"pedidos"}]:[]),
+    ...(precioPromedio?[{label:"Precio prom.",val:`$${parseInt(precioPromedio).toLocaleString("es-AR")}`,Icon:Banknote,acc:"clases"}]:[]),
+  ];
   return(
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px",marginBottom:20}}>
-      <div style={{fontWeight:700,color:C.text,fontSize:15,marginBottom:14}}>Estadísticas</div>
+    <div style={{marginBottom:20}}>
+      <SubHead icon={TrendingUp} title="Mi actividad como docente"/>
 
-      {/* Sub-tabs */}
-      <div style={{display:"flex",gap:2,marginBottom:16,background:C.surface,borderRadius:10,padding:3}}>
+      {/* KPIs como StatCards (estilo prototipo) */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:18}}>
+        {KPIS.map(k=>(<StatCard key={k.label} icon={k.Icon} label={k.label} value={k.val} suffix={k.suffix} accentKey={k.acc}/>))}
+      </div>
+
+      {/* Sub-tabs de detalle */}
+      <div style={{display:"flex",gap:2,marginBottom:16,background:C.surfaceAlt||C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:3,maxWidth:360}}>
         {secciones.map(s=>(
           <button key={s.id} onClick={()=>setSeccion(s.id)}
-            style={{flex:1,padding:"6px",borderRadius:8,border:"none",fontWeight:seccion===s.id?700:400,
-              fontSize:11,cursor:"pointer",fontFamily:FONT,
-              background:seccion===s.id?C.accent:"transparent",
-              color:seccion===s.id?"#fff":C.muted}}>
+            style={{flex:1,padding:"8px",borderRadius:8,border:"none",fontWeight:seccion===s.id?700:500,
+              fontSize:12.5,cursor:"pointer",fontFamily:FONT,transition:"all .14s",
+              background:seccion===s.id?C.surface:"transparent",
+              color:seccion===s.id?accentFor("cursos").text:C.muted,
+              boxShadow:seccion===s.id?C.shadow:"none"}}>
             {s.label}
           </button>
         ))}
@@ -169,24 +192,6 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
       {/* ── RESUMEN ── */}
       {seccion==="resumen"&&(
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {/* KPIs */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
-            {[
-              {label:"Clases activas",val:ofertas.length,color:C.successText},
-              {label:"Total alumnos",val:totalAlumnos,color:C.info},
-              {label:"Vistas totales",val:totalVistas||0,color:C.muted},
-              {label:"Rating",val:avg?`${avg.toFixed(1)}★`:"—",color:C.accent},
-              {label:"Finalizadas",val:finalizadas.length,color:C.purple},
-              {label:"Reseñas",val:reseñas.length,color:C.warn},
-              ...(impactScore!==null?[{label:"Impact score",val:impactScore+"/100",color:C.purple}]:[]),
-              ...(precioPromedio?[{label:"Precio prom.",val:`$${parseInt(precioPromedio).toLocaleString("es-AR")}`,color:C.successText}]:[]),
-            ].map(s=>(
-              <div key={s.label} style={{...statStyle,textAlign:"center"}}>
-                <div style={{fontSize:20,fontWeight:700,color:s.color,marginBottom:2}}>{s.val}</div>
-                <div style={{fontSize:10,color:C.muted}}>{s.label}</div>
-              </div>
-            ))}
-          </div>
 
           {/* Ingresos estimados + conversión */}
           <div style={{...statStyle,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
