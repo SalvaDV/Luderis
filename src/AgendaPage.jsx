@@ -210,8 +210,10 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
 
       {loading?<Spinner/>:(
         <>
-          {/* Calendatio */}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px",marginBottom:18}}>
+          <style>{`@media(max-width:820px){.ld-agenda-grid{grid-template-columns:1fr!important}}`}</style>
+          <div className="ld-agenda-grid" style={{display:"grid",gridTemplateColumns:"minmax(0,1.6fr) minmax(0,1fr)",gap:18,marginBottom:18,alignItems:"start"}}>
+          {/* Calendario */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
               <button onClick={()=>setMesOffset(m=>m-1)} style={{width:34,height:34,background:C.bg,border:`1px solid ${C.border}`,borderRadius:"50%",color:C.muted,cursor:"pointer",fontFamily:FONT,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>‹</button>
               <div style={{textAlign:"center"}}>
@@ -260,15 +262,22 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                 );
               })}
             </div>
-            {/* Clases del día seleccionado */}
-            {diaSelec&&(
-              <div style={{marginTop:12,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-                <div style={{...tx("eyebrow"),color:C.muted,marginBottom:8}}>
-                  {new Date(mes.getFullYear(),mes.getMonth(),diaSelec).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}
-                </div>
-                {clasesEnDia(diaSelec).length===0
-                  ?<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"8px 0"}}>Sin clases este día.</div>
-                  :clasesEnDia(diaSelec).map((item,i)=>(
+          </div>
+          {/* Panel derecho: Hoy / día seleccionado */}
+          {(()=>{
+            const esMesActual=mes.getMonth()===hoy.getMonth()&&mes.getFullYear()===hoy.getFullYear();
+            const diaPanel=diaSelec||(esMesActual?hoy.getDate():null);
+            const clasesP=diaPanel?clasesEnDia(diaPanel):[];
+            const esHoyPanel=diaPanel===hoy.getDate()&&esMesActual;
+            return(
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px"}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:14}}>
+                <h2 style={{...tx("h2"),color:C.text,margin:0,textTransform:"capitalize"}}>{esHoyPanel?"Hoy":diaPanel?new Date(mes.getFullYear(),mes.getMonth(),diaPanel).toLocaleDateString("es-AR",{weekday:"long",day:"numeric"}):"Agenda"}</h2>
+                {diaPanel&&<span style={{...tx("meta"),color:C.muted}}>{clasesP.length} clase{clasesP.length!==1?"s":""}</span>}
+              </div>
+              {clasesP.length===0
+                ?<div style={{color:C.muted,...tx("body"),textAlign:"center",padding:"24px 8px"}}>{diaPanel?"Sin clases este día. ¡Aprovechá para descansar!":"Elegí un día con clases para ver el detalle."}</div>
+                :clasesP.map((item,i)=>(
                     <div key={i} role="button" tabIndex={0} aria-label={`Abrir ${item.post?.titulo||"clase"}`} onClick={()=>onOpenCurso(item.post)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenCurso(item.post);}}}
                       style={{marginBottom:8,background:C.surface,borderRadius:12,overflow:"hidden",
                         border:`1px solid ${colorPost(item.post)}33`,cursor:"pointer",
@@ -276,28 +285,29 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                       onMouseEnter={e=>{e.currentTarget.style.transform="translateX(4px)";e.currentTarget.style.boxShadow=`0 4px 16px ${colorPost(item.post)}25`;}}
                       onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${colorPost(item.post)}15`;}}>
                       <div style={{width:5,background:colorPost(item.post),flexShrink:0}}/>
-                      <div style={{padding:"12px 14px",flex:1}}>
+                      <div style={{padding:"12px 14px",flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4,flexWrap:"wrap"}}>
-                          <div style={{fontWeight:700,color:C.text,fontSize:14,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.post.titulo}</div>
+                          <div style={{...tx("bodyStrong"),fontWeight:700,color:C.text,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.post.titulo}</div>
                           <RolBadge rol={item.post._rol}/>
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                           <span style={{fontWeight:700,color:colorPost(item.post),fontSize:13,display:"flex",alignItems:"center",gap:4}}><Clock size={13} strokeWidth={2}/>{item.clase.hora_inicio}</span>
                           <span style={{color:C.muted,fontSize:12}}>→ {item.clase.hora_fin}</span>
-                          {item.post.materia&&<span style={{fontSize:11,color:"#fff",background:colorPost(item.post),borderRadius:20,padding:"2px 10px",fontWeight:600}}>{item.post.materia}</span>}
+                          {item.post.materia&&<span style={{...tx("micro"),color:"#fff",background:colorPost(item.post),borderRadius:20,padding:"2px 10px",fontWeight:600}}>{item.post.materia}</span>}
                         </div>
                       </div>
                     </div>
                   ))
                 }
-              </div>
-            )}
+            </div>
+            );
+          })()}
           </div>
 
           {/* Próximas clases */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 20px"}}>
             <div role="button" tabIndex={0} aria-expanded={proximasOpen} aria-label="Mostrar u ocultar próximas clases" onClick={()=>setProximasOpen(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setProximasOpen(v=>!v);}}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:proximasOpen?12:0,cursor:"pointer"}}>
-              <div style={{...tx("h2"),color:C.text}}>Próximas clases {proximas.length>0&&<span style={{...tx("meta"),color:C.muted,fontWeight:400}}>({proximas.slice(0,10).length})</span>}</div>
+              <div style={{...tx("h2"),color:C.text}}>Esta semana {proximas.length>0&&<span style={{...tx("meta"),color:C.muted,fontWeight:400}}>({proximas.slice(0,10).length})</span>}</div>
               <span style={{color:C.muted,fontSize:13,transform:proximasOpen?"rotate(0deg)":"rotate(-90deg)",display:"inline-block",transition:"transform .2s"}}>▾</span>
             </div>
             {proximasOpen&&(
