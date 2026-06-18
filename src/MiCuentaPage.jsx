@@ -3,7 +3,7 @@ import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles,
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
-  C, FONT, FONT_DISPLAY, toast,
+  C, FONT, FONT_DISPLAY, toast, accentFor, tx,
   Avatar, Spinner, Btn, Label, Modal,
   fmtRel, fmtPrice, calcAvg,
   safeDisplayName, sanitizeContactInfo, moderarMensaje, avatarColor,
@@ -1799,12 +1799,14 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   return(
     <div style={{fontFamily:FONT}}>
 
-      {/* ── HEADER PERFIL LINKEDIN-STYLE ── */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
-        {/* Banner */}
-        <div style={{height:80,background:bannerUrl?undefined:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+      {/* ── HEADER PERFIL (estilo prototipo: portada + avatar flotante + pills) ── */}
+      <div style={{position:"relative",overflow:"hidden",background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,marginBottom:16,boxShadow:C.shadow}}>
+        {/* Portada */}
+        <div style={{position:"relative",height:150,background:bannerUrl?undefined:accentFor("cursos").heroGrad,overflow:"hidden"}}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota */}
-          {bannerUrl&&<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>}
+          {bannerUrl
+            ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
+            :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.25), transparent 55%)"}}/>}
           <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Subir portada" style={{display:"none"}} onChange={async e=>{
             const file=e.target.files?.[0];if(!file)return;
             if(file.size>5*1024*1024){toast("La imagen no debe superar 5 MB","error");return;}
@@ -1817,40 +1819,52 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             finally{setBannerUploading(false);if(bannerInputRef.current)bannerInputRef.current.value="";}
           }}/>
           <button onClick={()=>bannerInputRef.current?.click()} disabled={bannerUploading}
-            style={{position:"absolute",bottom:6,right:8,background:"rgba(0,0,0,.38)",border:"1px solid rgba(255,255,255,.25)",borderRadius:7,color:"#fff",padding:"4px 9px",cursor:"pointer",fontSize:11,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,backdropFilter:"blur(4px)"}}>
-            <Camera size={11}/>{bannerUploading?"Subiendo…":"Editar portada"}
+            style={{position:"absolute",top:14,right:14,display:"inline-flex",alignItems:"center",gap:7,padding:"8px 14px",borderRadius:20,border:"none",background:"rgba(255,255,255,.22)",color:"#fff",fontFamily:FONT,fontSize:12.5,fontWeight:600,cursor:"pointer",backdropFilter:"blur(4px)"}}>
+            <Camera size={15}/>{bannerUploading?"Subiendo…":"Editar portada"}
           </button>
         </div>
-        <div style={{padding:"0 24px 20px",position:"relative"}}>
-          {/* Avatar flotante sobre el banner */}
-          <div style={{position:"relative",display:"inline-block",marginTop:-30,marginBottom:10}}>
-            <div style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.surface}`,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.12)"}}>
+        <div style={{position:"relative",padding:"0 26px 24px"}}>
+          {/* Avatar flotante con badge de edición */}
+          <div style={{position:"relative",width:112,marginTop:-58}}>
+            <div style={{width:112,height:112,borderRadius:"50%",overflow:"hidden",border:`4px solid ${C.surface}`,background:C.surface,boxShadow:"0 2px 10px rgba(0,0,0,.12)"}}>
               {avatarUrl&&avatarUrl.startsWith("https://")
                 // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta el avatar roto
                 ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
-                :<div style={{width:"100%",height:"100%",background:currentColor,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:26,color:"#fff",fontFamily:FONT}}>{nombre[0].toUpperCase()}</div>
+                :<div style={{width:"100%",height:"100%",background:currentColor,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:46,color:"#fff",fontFamily:FONT}}>{nombre[0].toUpperCase()}</div>
               }
             </div>
+            <button onClick={()=>setEditingPerfil(true)} aria-label="Cambiar foto"
+              style={{position:"absolute",bottom:8,right:8,width:30,height:30,borderRadius:"50%",border:`2px solid ${C.surface}`,background:accentFor("cursos").solid,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <Camera size={14}/>
+            </button>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <h2 style={{color:C.text,fontSize:18,fontWeight:700,margin:0}}>{displayName||nombre}</h2>
-                <StreakBadge session={session}/>
-              </div>
-              {bio&&<p style={{color:C.muted,fontSize:13,margin:"4px 0 0",lineHeight:1.5}}>{bio}</p>}
-              {ubicacionPerfil&&<div style={{color:C.muted,fontSize:12,marginTop:4,display:"flex",alignItems:"center",gap:3}}><MapPin size={11} strokeWidth={2}/>{ubicacionPerfil}</div>}
-              <div style={{display:"flex",gap:12,marginTop:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:13,color:C.muted}}><span style={{color:C.text,fontWeight:600}}>{pubs.length}</span> publicaciones</span>
-                <span style={{fontSize:13,color:C.muted}}><span style={{color:C.text,fontWeight:600}}>{reseñas.length}</span> reseñas</span>
-                {avg&&<span style={{fontSize:13,color:"#B45309",fontWeight:600}}>★ {avg.toFixed(1)}</span>}
-              </div>
-            </div>
+          {/* Nombre + verificación */}
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:12,flexWrap:"wrap"}}>
+            <h2 style={{...tx("display"),fontSize:24,color:C.text,margin:0}}>{displayName||nombre}</h2>
+            <StreakBadge session={session}/>
+          </div>
+          {/* Titular / bio */}
+          {bio&&<p style={{...tx("body"),color:C.textSoft||C.muted,margin:"5px 0 0",maxWidth:620}}>{bio}</p>}
+          {/* Meta: ubicación · publicaciones · reseñas · rating */}
+          <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",marginTop:9}}>
+            {ubicacionPerfil&&<span style={{...tx("meta"),color:C.muted,display:"inline-flex",alignItems:"center",gap:5}}><MapPin size={14} strokeWidth={2}/>{ubicacionPerfil}</span>}
+            <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{pubs.length}</span> publicaciones</span>
+            <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{reseñas.length}</span> reseñas</span>
+            {avg&&<><span style={{width:3,height:3,borderRadius:"50%",background:C.faint||C.border}}/><span style={{...tx("meta"),color:"#B45309",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Star size={14} fill="#F5B301" stroke="#F5B301"/>{avg.toFixed(1)}</span></>}
+          </div>
+          {/* Acciones (pills) */}
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:18}}>
+            <button onClick={onNew}
+              style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid,transition:"all .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(26,110,216,.35)"}
+              onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+              <span style={{fontSize:16,lineHeight:1}}>+</span>Publicar
+            </button>
             <button onClick={()=>setEditingPerfil(v=>!v)}
-              style={{background:"transparent",border:`1px solid ${C.accent}`,borderRadius:20,color:C.accent,padding:"7px 18px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,flexShrink:0,transition:"all .15s"}}
-              onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#fff";}}
-              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.accent;}}>
-              Editar perfil
+              style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer",transition:"all .15s"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=accentFor("cursos").solid;e.currentTarget.style.background=accentFor("cursos").soft;e.currentTarget.style.color=accentFor("cursos").text;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borderStrong||C.border;e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.textSoft||C.text;}}>
+              <Camera size={16}/>Editar perfil
             </button>
           </div>
           {/* Form edición inline */}
