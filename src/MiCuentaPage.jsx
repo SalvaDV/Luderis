@@ -2117,23 +2117,29 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             );
             return null;
           })()}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-              {[
-                {v:"all",l:"Todo",cnt:pubs.length},
-                {v:"curso",l:"Cursos",cnt:pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")).length},
-                {v:"clase",l:"Clases",cnt:pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="particular"||!p.modo)).length},
-                {v:"busqueda",l:"Pedidos",cnt:pubs.filter(p=>p.tipo==="busqueda").length},
-              ].map(({v,l,cnt})=>(
-                <button key={v} onClick={()=>setFiltroPubsTipo(v)}
-                  style={{padding:"5px 13px",borderRadius:20,fontSize:12,fontWeight:filtroPubsTipo===v?600:400,cursor:"pointer",fontFamily:FONT,
-                    background:filtroPubsTipo===v?C.accent:"transparent",color:filtroPubsTipo===v?"#fff":C.muted,
-                    border:`1px solid ${filtroPubsTipo===v?C.accent:C.border}`,transition:"all .12s",display:"flex",alignItems:"center",gap:4}}>{l}
-                  {cnt>0&&<span style={{opacity:.7}}>{cnt}</span>}
-                </button>
-              ))}
-            </div>
+          {/* Conteo + nueva publicación */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+            <div style={{...tx("body"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{pubs.length}</span> publicación{pubs.length!==1?"es":""} activa{pubs.length!==1?"s":""}</div>
             <Btn onClick={onNew} style={{padding:"7px 18px",fontSize:13,borderRadius:20}}>+ Nueva publicación</Btn>
+          </div>
+          {/* Filtros por tipo */}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
+            {[
+              {v:"all",l:"Todo",cnt:pubs.length},
+              {v:"curso",l:"Cursos",cnt:pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")).length},
+              {v:"clase",l:"Clases",cnt:pubs.filter(p=>p.tipo==="oferta"&&(p.modo==="particular"||!p.modo)).length},
+              {v:"busqueda",l:"Pedidos",cnt:pubs.filter(p=>p.tipo==="busqueda").length},
+            ].map(({v,l,cnt})=>{
+              const active=filtroPubsTipo===v;
+              return(
+                <button key={v} onClick={()=>setFiltroPubsTipo(v)}
+                  style={{display:"inline-flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:10,cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:active?650:500,
+                    background:active?C.accent:C.surface,color:active?"#fff":C.textSoft||C.muted,
+                    border:`1px solid ${active?"transparent":C.border}`,transition:"all .14s"}}>{l}
+                  {cnt>0&&<span style={{...tx("micro"),fontWeight:700,color:active?"#fff":C.faint||C.muted,background:active?"rgba(255,255,255,.22)":C.surfaceAlt||C.bg,borderRadius:7,padding:"1px 7px"}}>{cnt}</span>}
+                </button>
+              );
+            })}
           </div>
           {loading?<Spinner/>:(()=>{const pubsFiltradas=
             filtroPubsTipo==="all"?pubs:
@@ -2148,19 +2154,10 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               <Btn onClick={onNew} style={{borderRadius:20}}>Crear primera publicación</Btn>
             </div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
               {pubsFiltradas.map(p=>(<div key={p.id}>
-                {/* Banner clickeable → abre DetailPage */}
-                <div role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"10px 10px 0 0",padding:"9px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,borderBottom:"none",transition:"background .15s"}}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.accentDim}
-                  onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
-                  <span style={{fontSize:12,color:C.accent,fontWeight:600}}>Ver publicación →</span>
-                  <span style={{fontSize:12,color:C.muted,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</span>
-                </div>
-                <div style={{borderTop:"none"}}>
-                  <MyPostCard post={p} session={session} onEdit={onEdit} onToggle={toggle} onDelete={remove} onOpenCurso={onOpenCurso} toggling={toggling} ofertasPendientes={ofertasMap[p.id]||0} inscriptos={inscritosMap[p.id]}/>
-                </div>
-                {ofertasMap[p.id]>0&&<button onClick={()=>setOfertasModal(p)} style={{width:"100%",marginTop:4,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:"0 0 10px 10px",color:C.accent,padding:"7px",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:FONT}}>Ver {ofertasMap[p.id]} oferta{ofertasMap[p.id]!==1?"s":""} nueva{ofertasMap[p.id]!==1?"s":""} →</button>}
+                <MyPostCard post={p} session={session} onEdit={onEdit} onToggle={toggle} onDelete={remove} onOpenCurso={onOpenCurso} onOpenDetail={onOpenDetail} toggling={toggling} ofertasPendientes={ofertasMap[p.id]||0} inscriptos={inscritosMap[p.id]}/>
+                {ofertasMap[p.id]>0&&<button onClick={()=>setOfertasModal(p)} style={{width:"100%",marginTop:4,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,color:C.accent,padding:"8px",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:FONT}}>Ver {ofertasMap[p.id]} oferta{ofertasMap[p.id]!==1?"s":""} nueva{ofertasMap[p.id]!==1?"s":""} →</button>}
               </div>))}
             </div>
           );})()}
