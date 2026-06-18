@@ -17,7 +17,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench, Plus } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, ArrowLeft, SlidersHorizontal, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench, Plus } from "lucide-react";
 
 // Mapa categoría → icono de línea (lucide) + acento, según el rediseño (sin emojis)
 const CAT_ICONS={
@@ -798,68 +798,69 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
       {/* ══ VISTA RESULTADOS ══ */}
       {modoVista==="resultados"&&(
         <div>
-          {/* ── Barra superior: volver + buscador IA ── */}
-          <div style={{background:C.surface,borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${C.border}`,boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-              <button onClick={goHome}
-                style={{width:34,height:34,borderRadius:"50%",background:C.bg,border:`1px solid ${C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:C.text,flexShrink:0,transition:"background .15s"}}
-                onMouseEnter={e=>e.currentTarget.style.background=C.border}
-                onMouseLeave={e=>e.currentTarget.style.background=C.bg}>←</button>
-              {/* Buscador principal — input real */}
-              <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,background:C.bg,border:`2px solid ${busqueda?C.accent:C.border}`,borderRadius:10,padding:"8px 12px",transition:"border-color .15s"}}
-                onFocusCapture={e=>e.currentTarget.style.borderColor=C.accent}
-                onBlurCapture={e=>e.currentTarget.style.borderColor=busqueda?C.accent:C.border}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input
-                  ref={searchInputRef}
-                  aria-label="Buscar clases, cursos o materias"
-                  value={busqueda}
-                  onChange={e=>{setBusqueda(e.target.value);if(e.target.value&&iaResults!==null){setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}}}
-                  onKeyDown={e=>e.key==="Escape"&&setBusqueda("")}
-                  placeholder={seccion==="pedidos"?"Buscar pedidos…":"Buscar clases, cursos, docentes…"}
-                  style={{flex:1,background:"transparent",border:"none",outline:"none",color:C.text,fontSize:13,fontFamily:FONT,minWidth:0}}
-                />
-                {busqueda&&<button onClick={()=>setBusqueda("")} style={{background:"none",border:"none",color:C.muted,fontSize:16,lineHeight:1,cursor:"pointer",padding:"0 2px",flexShrink:0}}>×</button>}
-              </div>
-              {/* Botón IA — separado y claramente etiquetado */}
-              <button onClick={()=>setShowBusquedaIA(true)}
-                title="Búsqueda con inteligencia artificial"
-                style={{display:"flex",alignItems:"center",gap:5,background:iaResults?C.accentDim:"transparent",border:`1.5px solid ${iaResults?C.accent:C.border}`,borderRadius:10,color:iaResults?C.accent:C.muted,padding:"10px 12px",cursor:"pointer",fontFamily:FONT,fontSize:12,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",transition:"all .15s"}}
-                onMouseEnter={e=>{if(!iaResults){e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}}
-                onMouseLeave={e=>{if(!iaResults){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}}>
-                <span style={{background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>✦</span>
-                {iaResults?"IA activa":"IA"}
-                {iaResults&&<span role="button" tabIndex={0} aria-label="Quitar búsqueda con IA" onClick={e=>{e.stopPropagation();setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}}} style={{marginLeft:3,color:C.muted,fontSize:14,lineHeight:1,cursor:"pointer"}}>×</span>}
-              </button>
-              <button onClick={()=>setPanelOpen(v=>!v)}
-                style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",background:hasFilters?C.accentDim:C.bg,border:`1px solid ${hasFilters?C.accent:C.border}`,borderRadius:10,color:hasFilters?C.accent:C.muted,padding:"11px 13px",cursor:"pointer",flexShrink:0}}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                {activeFilters.length>0&&<span style={{position:"absolute",top:-5,right:-5,background:C.accent,color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{activeFilters.length}</span>}
-              </button>
-            </div>
-
-            {/* Chips de sección: Cursos / Clases / Pedidos */}
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+          {/* ── Hero colapsado: tabs de sección + buscador (estilo prototipo) ── */}
+          <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",background:accentFor(seccion).heroGrad,borderRadius:14,padding:"12px 18px",boxShadow:C.shadow,marginBottom:16}}>
+            {/* SegTabs de sección sobre el degradado */}
+            <div role="tablist" style={{display:"inline-flex",gap:4,padding:4,background:"rgba(255,255,255,.16)",border:"1px solid rgba(255,255,255,.22)",borderRadius:12,backdropFilter:"blur(6px)",flexShrink:0}}>
               {[
-                {id:"cursos",label:"Cursos",T:TIPO_PUB.curso},
-                {id:"clases",label:"Clases",T:TIPO_PUB.particular},
-                ...(esDocente?[{id:"pedidos",label:"Pedidos",T:TIPO_PUB.pedido}]:[]),
-              ].map(({id,label,T})=>{
+                {id:"cursos",label:"Cursos",Icon:GraduationCap},
+                {id:"clases",label:"Clases",Icon:User},
+                ...(esDocente?[{id:"pedidos",label:"Pedidos",Icon:Megaphone}]:[]),
+              ].map(({id,label,Icon})=>{
                 const active=seccion===id;
-                return(<button key={id}
+                return(<button key={id} role="tab" aria-selected={active}
                   onClick={()=>{setSeccion(id);setFiltroTipo("all");setFiltroModo("all");if(id!=="cursos")setFiltroSinc("all");try{sessionStorage.setItem("cl_seccion_explore",id);}catch{}}}
-                  style={{padding:"6px 18px",borderRadius:20,fontSize:13,fontWeight:active?700:400,cursor:"pointer",fontFamily:FONT,
-                    background:active?T.accent:"transparent",
-                    color:active?"#fff":C.muted,
-                    border:`1.5px solid ${active?T.accent:C.border}`,
-                    boxShadow:active?"0 2px 8px rgba(0,0,0,.12)":"none",
-                    transition:"all .15s"}}>{label}</button>);
+                  style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,background:active?"#fff":"transparent",color:active?accentFor(id).text:"rgba(255,255,255,.88)",boxShadow:active?"0 2px 8px rgba(0,0,0,.15)":"none",transition:"all .16s"}}>
+                  <Icon size={16} strokeWidth={2}/>{label}</button>);
               })}
             </div>
-            {/* Ordenar + resultados + vista — una sola fila compacta */}
-            <div style={{display:"flex",alignItems:"center",gap:6,overflow:"visible"}}>
-              <span style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",flexShrink:0}}>Ordenar</span>
-              <MiniDropdown value={ordenamiento} onChange={v=>{setOrdenamiento(v);setPagina(1);}} fontSize={12} options={[
+            {/* Buscador + IA embebido */}
+            <div style={{flex:1,minWidth:200,display:"flex",alignItems:"center",gap:8,background:C.surface,border:`1.5px solid ${busqueda?accentFor(seccion).solid:C.border}`,borderRadius:13,padding:"5px 6px 5px 16px",transition:"all .16s"}}
+              onFocusCapture={e=>e.currentTarget.style.borderColor=accentFor(seccion).solid}
+              onBlurCapture={e=>e.currentTarget.style.borderColor=busqueda?accentFor(seccion).solid:C.border}>
+              <Search size={18} color={C.faint||C.muted} strokeWidth={2} style={{flexShrink:0}}/>
+              <input
+                ref={searchInputRef}
+                aria-label="Buscar clases, cursos o materias"
+                value={busqueda}
+                onChange={e=>{setBusqueda(e.target.value);if(e.target.value&&iaResults!==null){setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}}}
+                onKeyDown={e=>e.key==="Escape"&&setBusqueda("")}
+                placeholder={seccion==="pedidos"?"Buscar pedidos…":"Buscar clases, cursos, docentes…"}
+                style={{flex:1,background:"transparent",border:"none",outline:"none",color:C.text,fontSize:14,fontFamily:FONT,padding:"9px 0",minWidth:0}}
+              />
+              {busqueda
+                ?<button onClick={()=>setBusqueda("")} aria-label="Limpiar" style={{border:"none",background:"transparent",color:C.faint||C.muted,fontSize:16,lineHeight:1,cursor:"pointer",padding:8,display:"flex",flexShrink:0}}>×</button>
+                :iaResults
+                  ?<span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"9px 15px",borderRadius:10,fontFamily:FONT,fontSize:13,fontWeight:650,color:accentFor("pedidos").text,background:accentFor("pedidos").soft,whiteSpace:"nowrap",flexShrink:0}}>
+                      <Sparkles size={15} strokeWidth={2} style={{fill:accentFor("pedidos").solid}}/>IA activa
+                      <button aria-label="Quitar búsqueda con IA" onClick={()=>{setIaResults(null);setIaQuery("");setIaExplanation("");setPagina(1);}} style={{border:"none",background:"transparent",color:accentFor("pedidos").text,fontSize:14,lineHeight:1,cursor:"pointer",padding:0,display:"flex"}}>×</button>
+                    </span>
+                  :<button onClick={()=>setShowBusquedaIA(true)} title="Búsqueda con inteligencia artificial"
+                      style={{display:"inline-flex",alignItems:"center",gap:6,padding:"9px 15px",borderRadius:10,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:650,color:accentFor("pedidos").text,background:accentFor("pedidos").soft,whiteSpace:"nowrap",flexShrink:0}}>
+                      <Sparkles size={15} strokeWidth={2} style={{fill:accentFor("pedidos").solid}}/>Buscar con IA</button>}
+            </div>
+          </div>
+
+          {/* ── Volver al inicio ── */}
+          <button onClick={goHome} style={{display:"inline-flex",alignItems:"center",gap:6,border:"none",background:"transparent",color:C.muted,fontFamily:FONT,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>
+            <ArrowLeft size={15}/>Volver al inicio
+          </button>
+
+          {/* ── Toolbar de resultados: conteo + vista + orden + filtros ── */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{...tx("body"),color:C.muted,fontWeight:500}}>
+              <span style={{color:C.text,fontWeight:700}}>{sorted.length}</span> resultado{sorted.length!==1?"s":""}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              {/* Botones de vista */}
+              <div style={{display:"flex",gap:2,background:C.surfaceAlt||C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:3,flexShrink:0}}>
+                {[["cards",<LayoutGrid size={16} strokeWidth={1.9}/>],["lista",<List size={16} strokeWidth={1.9}/>],["ranking",<Trophy size={16} strokeWidth={1.9}/>]].map(([m,icon])=>{
+                  const act=viewMode===m;
+                  return(<button key={m} onClick={()=>setViewMode(m)} aria-label={m} style={{width:34,height:34,borderRadius:8,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",background:act?C.surface:"transparent",color:act?accentFor(seccion).solid:C.faint||C.muted,boxShadow:act?C.shadow:"none",transition:"all .14s"}}>{icon}</button>);
+                })}
+              </div>
+              {/* Orden */}
+              <MiniDropdown value={ordenamiento} onChange={v=>{setOrdenamiento(v);setPagina(1);}} fontSize={13} options={[
                 {value:"relevancia",label:"Relevancia"},
                 {value:"recientes",label:"Recientes"},
                 {value:"rating",label:"Calificados"},
@@ -868,14 +869,17 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 {value:"vistas",label:"Populares"},
                 {value:"cercania",label:"Cercanos"},
               ]}/>
-              <span style={{...tx("meta"),color:C.muted,whiteSpace:"nowrap",marginLeft:"auto",flexShrink:0}}><span style={{color:C.text,fontWeight:700}}>{sorted.length}</span> resultado{sorted.length!==1?"s":""}</span>
-              <div style={{display:"flex",gap:2,background:C.surfaceAlt||C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:3,flexShrink:0}}>
-                {[["cards",<LayoutGrid size={15} strokeWidth={1.9}/>],["lista",<List size={15} strokeWidth={1.9}/>],["ranking",<Trophy size={15} strokeWidth={1.9}/>]].map(([m,icon])=>{
-                  const act=viewMode===m;
-                  return(<button key={m} onClick={()=>setViewMode(m)} aria-label={m} style={{width:32,height:30,borderRadius:8,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",background:act?C.surface:"transparent",color:act?accentFor(seccion).solid:C.faint||C.muted,boxShadow:act?C.shadow:"none",transition:"all .14s"}}>{icon}</button>);
-                })}
-              </div>
+              {/* Filtros */}
+              <button onClick={()=>setPanelOpen(v=>!v)}
+                style={{position:"relative",display:"inline-flex",alignItems:"center",gap:7,padding:"9px 13px",borderRadius:10,border:`1px solid ${hasFilters?accentFor(seccion).solid:C.border}`,background:hasFilters?accentFor(seccion).soft:C.surface,color:hasFilters?accentFor(seccion).text:C.textSoft||C.muted,fontFamily:FONT,fontSize:13,fontWeight:600,cursor:"pointer",flexShrink:0}}>
+                <SlidersHorizontal size={16}/>Filtros
+                {activeFilters.length>0&&<span style={{background:accentFor(seccion).solid,color:"#fff",borderRadius:8,fontSize:11,fontWeight:700,minWidth:17,height:17,padding:"0 4px",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>{activeFilters.length}</span>}
+              </button>
             </div>
+          </div>
+
+          {/* ── Filtros activos / alertas / explicación IA ── */}
+          {(activeFilters.length>0||iaExplanation)&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
             {activeFilters.length>0&&(()=>{
               const alertaActual=alertas.find(a=>
                 (a.materia||null)===(filtroMateria||null)&&
@@ -884,7 +888,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 (a.ubicacion||null)===(filtroUbicacion||null)
               );
               return(
-                <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+                <div>
                   <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
                     {activeFilters.map(f=><span key={f} style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:20,padding:"2px 10px",fontSize:11,color:C.accent,fontWeight:500}}>{f}</span>)}
                     <button onClick={clearAll} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:FONT,textDecoration:"underline",marginLeft:4}}>Limpiar todo</button>
@@ -914,12 +918,12 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             })()}
             {/* Explanation de la búsqueda */}
             {iaExplanation&&(
-              <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
+              <div style={{marginTop:activeFilters.length>0?8:0,paddingTop:activeFilters.length>0?8:0,borderTop:activeFilters.length>0?`1px solid ${C.border}`:"none",display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:13,background:"linear-gradient(135deg,#7B3FBE,#1A6ED8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700,flexShrink:0}}>✦</span>
                 <span style={{fontSize:12,color:C.muted,flex:1,lineHeight:1.4}}>{iaExplanation}</span>
               </div>
             )}
-          </div>
+          </div>}
 
           {/* Banner rechazadas — aparece cuando hay IDs nuevos no vistos */}
           {(()=>{const nuevas=[...rechazadasIds].filter(id=>!seenRechazadas.has(id));return nuevas.length>0&&(
