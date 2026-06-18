@@ -997,7 +997,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             <LeaderboardView posts={posts} reseñasMap={reseñasMap} reseñasUserMap={reseñasUserMap} onOpenPerfil={onOpenPerfil} filtroMateria={filtroMateria}/>
           ):(
             <div>
-              <div style={viewMode==="cards"?{display:"grid",gap:11}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
+              <div style={viewMode==="cards"?{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
                 {(modoVista==="resultados"?sorted:sorted.slice(0,pagina*PAGE_SIZE)).map(p=>(
                   viewMode==="lista"?(
                     <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
