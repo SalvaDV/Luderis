@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, Grid3x3, Flame, CheckCircle, Trophy } from 'lucide-react';
-import { C, FONT, FONT_DISPLAY, Spinner } from './shared';
+import { Lightbulb, Grid3x3, Flame, CheckCircle, Trophy, TrendingUp, Star } from 'lucide-react';
+import { C, FONT, FONT_DISPLAY, Spinner, tx, accentFor } from './shared';
 import * as sb from './supabase';
 import Leaderboard from './components/Leaderboard';
 
@@ -245,23 +245,39 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku,
     </div>
   );
 
-  return (
-    <div style={{
-      maxWidth: 480, margin: '0 auto',
-      fontFamily: FONT, padding: '4px 0 48px',
-    }}>
-      {/* Toggle */}
-      <div style={{ marginBottom: 20 }}>
-        <Toggle />
+  const myFaros=lbFaros.find(r=>r.is_me);
+  const myShik=lbShikaku.find(r=>r.is_me);
+  const puntosTot=(Number(myFaros?.total_score)||0)+(Number(myShik?.total_score)||0);
+  const poss=[myFaros?.pos,myShik?.pos].map(Number).filter(n=>n>0);
+  const posicion=poss.length?Math.min(...poss):null;
+  const rachaTot=Math.max(farosStreak,shikStreak);
+  const accJ=accentFor("cursos");
+  const StatCard=({Ico,value,label,iconColor})=>(
+    <div style={{flex:1,minWidth:150,background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:C.shadow}}>
+      <span style={{width:38,height:38,borderRadius:11,background:accJ.soft,color:iconColor||accJ.solid,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ico size={19} strokeWidth={2}/></span>
+      <div style={{minWidth:0}}>
+        <div style={{fontFamily:FONT_DISPLAY,fontSize:22,fontWeight:800,letterSpacing:"-.02em",color:C.text,lineHeight:1.1}}>{value}</div>
+        <div style={{...tx("micro"),color:C.muted}}>{label}</div>
       </div>
-
-      {/* ── Vista: Juegos ──────────────────────────────────────────────────────── */}
-      {view === 'juegos' && (
+    </div>
+  );
+  return (
+    <div style={{ fontFamily: FONT, padding: '0 0 48px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 18 }}>
+        <h2 style={{ ...tx("display"), fontFamily: FONT_DISPLAY, color: C.text, margin: 0 }}>Juegos</h2>
+        <p style={{ ...tx("body"), color: C.muted, margin: "4px 0 0" }}>Desafíos diarios para mantener la mente activa. Sumá puntos y cuidá tu racha.</p>
+      </div>
+      {/* Stats strip */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
+        <StatCard Ico={Flame} value={rachaTot} label="Racha actual" iconColor="#F97316"/>
+        <StatCard Ico={TrendingUp} value={puntosTot.toLocaleString('es-AR')} label="Puntos totales"/>
+        <StatCard Ico={Star} value={posicion?`#${posicion}`:"—"} label="Posición"/>
+      </div>
+      {/* GameCards lado a lado */}
+      {true && (
         <>
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 13, color: C.muted }}>Un puzzle nuevo cada día</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 16, marginBottom: 24 }}>
             <GameCard
               icon={<Lightbulb size={22} color="#fff" strokeWidth={2} />}
               gradient="linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0)"
@@ -290,14 +306,14 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku,
         </>
       )}
 
-      {/* ── Vista: Tabla ───────────────────────────────────────────────────────── */}
-      {view === 'tabla' && (
-        <div style={{
-          background: C.card,
-          borderRadius: 20,
+      {/* Tabla de líderes */}
+      <h2 style={{ ...tx("h2"), color: C.text, margin: "0 0 14px" }}>Tabla de líderes</h2>
+      <div style={{
+          background: C.surface,
+          borderRadius: 16,
           border: `1px solid ${C.border}`,
           overflow: 'hidden',
-          boxShadow: '0 2px 12px rgba(0,0,0,.05)',
+          boxShadow: C.shadow,
         }}>
           {/* Game tabs */}
           <div style={{
@@ -340,7 +356,6 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku,
             />
           )}
         </div>
-      )}
     </div>
   );
 }
