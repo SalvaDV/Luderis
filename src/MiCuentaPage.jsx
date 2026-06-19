@@ -1466,18 +1466,19 @@ function AlertasTab({session}){
 
   return(
     <div style={{fontFamily:FONT}}>
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,gap:12,flexWrap:"wrap"}}>
+      {/* Header card (estilo prototipo) */}
+      <div style={{background:accentFor("cursos").soft,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:14,display:"flex",alignItems:"flex-start",gap:12}}>
+        <div style={{width:40,height:40,borderRadius:11,background:C.surface,color:accentFor("cursos").solid,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Bell size={20} strokeWidth={2}/></div>
         <div>
-          <div style={{fontWeight:700,color:C.text,fontSize:16,marginBottom:4,display:"flex",alignItems:"center",gap:6}}><Bell size={15} strokeWidth={2}/>Alertas de publicaciones</div>
-          <div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
-            Recibís un email cuando se publique algo que coincida con tus criterios.
-          </div>
+          <div style={{...tx("cardTitle"),color:C.text}}>Alertas de publicaciones</div>
+          <div style={{...tx("meta"),color:C.muted,marginTop:2,lineHeight:1.5}}>Te avisamos por email cuando aparezca una clase o pedido que coincida con tus criterios.</div>
         </div>
-        <button onClick={()=>setShowForm(v=>!v)}
-          style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 12px rgba(26,110,216,.25)",flexShrink:0}}>
-          + Nueva alerta
-        </button>
+      </div>
+      {/* Nueva alerta */}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+        {showForm
+          ?<button onClick={()=>{setShowForm(false);setDesc("");}} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+          :<button onClick={()=>setShowForm(true)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid}}><span style={{fontSize:16,lineHeight:1}}>+</span>Nueva alerta</button>}
       </div>
 
       {/* Formulario nueva alerta */}
@@ -1523,12 +1524,12 @@ function AlertasTab({session}){
 
       {/* Lista de alertas */}
       {loading?<Spinner/>:alertas.length===0?(
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"48px 24px",textAlign:"center"}}>
-          <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Bell size={40} color={C.border} strokeWidth={1.5}/></div>
-          <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin alertas activas</div>
-          <div style={{color:C.muted,fontSize:13,marginBottom:20}}>Creá una alerta y te avisamos cuando aparezca algo que te interese.</div>
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"48px 24px",textAlign:"center",boxShadow:C.shadow}}>
+          <div style={{width:52,height:52,borderRadius:14,background:accentFor("cursos").soft,color:accentFor("cursos").solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><Bell size={26} strokeWidth={1.8}/></div>
+          <div style={{...tx("cardTitle"),color:C.text,marginBottom:6}}>Sin alertas activas</div>
+          <div style={{...tx("body"),color:C.muted,maxWidth:420,margin:"0 auto 20px"}}>Creá una alerta y te avisamos cuando aparezca algo que te interese.</div>
           <button onClick={()=>setShowForm(true)}
-            style={{background:LUD.grad,border:"none",borderRadius:20,color:"#fff",padding:"10px 24px",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
+            style={{display:"inline-flex",alignItems:"center",gap:7,padding:"10px 22px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid}}>
             Crear mi primera alerta
           </button>
         </div>
@@ -1555,16 +1556,15 @@ function AlertasTab({session}){
                   </div>
                   <div style={{fontSize:11,color:C.muted}}>Creada {fmtRel(a.created_at)}</div>
                 </div>
-                <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
+                <div style={{display:"flex",gap:10,flexShrink:0,alignItems:"center"}}>
                   {/* Toggle activa/pausada */}
-                  <button onClick={()=>toggleActiva(a)}
-                    style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:20,border:`1px solid ${a.activa?C.accent+"40":C.border}`,background:a.activa?C.accentDim:"transparent",color:a.activa?C.accent:C.muted,cursor:"pointer",fontFamily:FONT,whiteSpace:"nowrap"}}>
-                    {a.activa?"● Activa":"Pausada"}
+                  <button onClick={()=>toggleActiva(a)} role="switch" aria-checked={a.activa} aria-label={a.activa?"Pausar alerta":"Activar alerta"} title={a.activa?"Activa":"Pausada"}
+                    style={{width:44,height:25,borderRadius:13,border:"none",cursor:"pointer",background:a.activa?accentFor("cursos").solid:C.borderStrong||C.border,position:"relative",flexShrink:0,transition:"background .16s"}}>
+                    <span style={{position:"absolute",top:3,left:a.activa?22:3,width:19,height:19,borderRadius:"50%",background:"#fff",transition:"left .16s",boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}/>
                   </button>
-                  <button onClick={()=>eliminar(a.id)}
-                    style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.danger,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>
-                    Eliminar
-                  </button>
+                  <button onClick={()=>eliminar(a.id)} aria-label="Eliminar alerta" title="Eliminar"
+                    style={{width:32,height:32,borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .12s"}}
+                    onMouseEnter={e=>{e.currentTarget.style.color=C.danger;e.currentTarget.style.borderColor=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}><Trash2 size={15}/></button>
                 </div>
               </div>
             );
