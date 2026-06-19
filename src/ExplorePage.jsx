@@ -176,6 +176,15 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     if(!userCity)detectarUbicacion();
   },[]);// eslint-disable-line
 
+  // Bloquear el scroll del fondo mientras el panel de filtros está abierto:
+  // así solo scrollea el contenido del drawer y el gris cubre toda la pantalla.
+  useEffect(()=>{
+    if(!panelOpen)return;
+    const prev=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    return()=>{document.body.style.overflow=prev;};
+  },[panelOpen]);
+
   // ── Alertas de búsqueda (S2-M1) ──────────────────────────────────────────
   const [alertas,setAlertas]=useState([]);
   const [savingAlerta,setSavingAlerta]=useState(false);
@@ -387,7 +396,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     return true;
   });
   const _filtroBase=modoVista==="resultados"?_seccionFiltrada:visiblePosts;
-  const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax)&&(!filtroNivel||p.nivel===filtroNivel||p.nivel==="todos"||!p.nivel);
+  const _filtroCriteria=(p)=>matchesText(p)&&(filtroTipo==="all"||p.tipo===filtroTipo)&&(filtroModo==="all"||p.modo===filtroModo||(filtroModo==="curso"&&p.modo==="grupal"))&&(!filtroMateria||norm(p.materia)===norm(filtroMateria))&&(filtroModalidad==="all"||p.modalidad===filtroModalidad)&&(filtroSinc==="all"||p.sinc===filtroSinc)&&(sliderMin===precioMin||!p.precio||(+p.precio)>=sliderMin)&&(sliderMax===precioMax||!p.precio||(+p.precio)<=sliderMax)&&(!filtroNivel||p.nivel===filtroNivel||p.nivel==="todos"||!p.nivel)&&(!filtroUbicacion||norm(p.ubicacion||"").includes(norm(filtroUbicacion)))&&(!filtroMoneda||(p.moneda||"ARS")===filtroMoneda)&&(!filtroFechaDesde||(p.fecha_inicio&&p.fecha_inicio.slice(0,10)>=filtroFechaDesde))&&(!filtroFechaHasta||(p.fecha_inicio&&p.fecha_inicio.slice(0,10)<=filtroFechaHasta))&&(filtroDurMin<=0||(p.fecha_inicio&&p.fecha_fin&&Math.ceil((new Date(p.fecha_fin)-new Date(p.fecha_inicio))/604800000)>=filtroDurMin));
   // IA: busca dentro del tipo de sección (pedidos vs clases/cursos) pero sin restringir por modo
   const _iaBase=seccion==="pedidos"
     ?postsPorRol.filter(p=>p.tipo==="busqueda"&&p.autor_email!==session.user.email)
@@ -423,7 +432,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
   useEffect(()=>{
     setPagina(1);
     if(busquedaDebounced)trackSearchManual(busquedaDebounced);
-  },[busquedaDebounced,filtroTipo,filtroModo,filtroModalidad,filtroSinc,filtroMateria,sliderMin,sliderMax,filtroFechaDesde,filtroFechaHasta,filtroDurMin,iaResults]);// eslint-disable-line
+  },[busquedaDebounced,filtroTipo,filtroModo,filtroModalidad,filtroSinc,filtroMateria,sliderMin,sliderMax,filtroFechaDesde,filtroFechaHasta,filtroDurMin,filtroUbicacion,filtroMoneda,filtroNivel,iaResults]);// eslint-disable-line
   useEffect(()=>{if(isSentinelVisible&&!loading)setPagina(p=>p+1);},[isSentinelVisible]);// eslint-disable-line
   // Propagate section accent to CSS custom properties so the entire app page reflects it
   const sT=seccion==="clases"?TIPO_PUB.particular:seccion==="pedidos"?TIPO_PUB.pedido:TIPO_PUB.curso;
@@ -457,7 +466,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
           {/* Backdrop: el cierre por teclado lo cubre el botón × del panel; click es solo-mouse */}
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
           <div onClick={()=>setPanelOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:1100,animation:"fadeIn .15s ease"}}/>
-          <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(320px,90vw)",background:C.surface,zIndex:1101,boxShadow:"-4px 0 24px rgba(0,0,0,.12)",overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"slideInRight .2s ease",display:"flex",flexDirection:"column",fontFamily:FONT}}>
+          <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(320px,90vw)",background:C.surface,zIndex:1101,boxShadow:"-4px 0 24px rgba(0,0,0,.12)",animation:"slideInRight .2s ease",display:"flex",flexDirection:"column",fontFamily:FONT}}>
             <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,background:C.surface,zIndex:1}}>
               <span style={{fontWeight:700,color:C.text,fontSize:16}}>Filtros</span>
@@ -466,7 +475,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 <button onClick={()=>setPanelOpen(false)} style={{width:32,height:32,borderRadius:"50%",background:C.bg,border:`1px solid ${C.border}`,cursor:"pointer",fontSize:18,color:C.text,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
               </div>
             </div>
-            <div style={{padding:"16px 20px",flex:1}}>
+            <div style={{padding:"16px 20px",flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
               {/* Filtros contextuales a la sección activa */}
               {seccion==="cursos"&&(<div style={{marginBottom:16}}><FL ch="Sincronismo"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todos"],["sinc","En vivo"],["asinc","A tu ritmo"]].map(([v,l])=><FC key={v} label={l} active={filtroSinc===v} onClick={()=>setFiltroSinc(v)}/>)}</div></div>)}
               <div style={{marginBottom:16}}><FL ch="Modalidad"/><div style={{display:"flex",flexWrap:"wrap"}}>{[["all","Todas"],["presencial","Presencial"],["virtual","Virtual"],["mixto","Mixto"]].map(([v,l])=><FC key={v} label={l} active={filtroModalidad===v} onClick={()=>setFiltroModalidad(v)}/>)}</div></div>
@@ -500,7 +509,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               </div>
               {maxDurSemanas>0&&(<div style={{marginBottom:16}}><FL ch="Duración mínima"/><select value={filtroDurMin} onChange={e=>setFiltroDurMin(+e.target.value)} style={selS}><option value={0}>Cualquier duración</option>{[1,2,4,8,12,16].filter(v=>v<maxDurSemanas).map(v=><option key={v} value={v}>{v} sem.</option>)}</select></div>)}
             </div>
-            <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,position:"sticky",bottom:0,background:C.surface}}>
+            <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,background:C.surface,flexShrink:0}}>
               <button
                 onClick={()=>{if(countForPanel>0){setPanelOpen(false);setModoVista("resultados");}}}
                 disabled={countForPanel===0}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Megaphone, Eye, BookOpen, HelpCircle, Layers, GraduationCap, Users, Lock,
   AlertTriangle, Check, Inbox, Video, Folder, FileText, Bell, Bookmark, Link2,
@@ -29,6 +29,12 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   const esAyudante=(post.ayudantes||[]).includes(session.user.id);
   const autorAvatar=useAutorAvatar(post.autor_email,session?.access_token);
 
+  // Anti click-through: en táctil, el "click" sintético tras el tap sobre la card
+  // cae sobre el botón de autor recién montado y saltaba al perfil. Ignoramos
+  // los clicks que ocurren apenas se abre el modal.
+  const openedAtRef=useRef(Date.now());
+  const irAlPerfil=()=>{if(Date.now()-openedAtRef.current<400)return;onClose();onOpenPerfil(post.autor_email);};
+
   useEffect(()=>{
     // JSON-LD Course schema para SEO
     const schema={
@@ -48,6 +54,8 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   },[post.id]);// eslint-disable-line
 
   useEffect(()=>{
+    // Reiniciar el guard al cambiar de publicación (p.ej. abrir una relacionada)
+    openedAtRef.current=Date.now();
     // Bloquear scroll del body mientras la página está abierta
     document.body.style.overflow="hidden";
     let mounted=true;
@@ -145,9 +153,9 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
             {/* Autor */}
             <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20,paddingBottom:20,borderBottom:`1px solid ${C.border}`}}>
-              <button onClick={()=>{onClose();onOpenPerfil(post.autor_email);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}><Avatar letra={nombre[0]} size={52} img={autorAvatar||undefined}/></button>
+              <button onClick={irAlPerfil} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}><Avatar letra={nombre[0]} size={52} img={autorAvatar||undefined}/></button>
               <div style={{flex:1,minWidth:0}}>
-                <button onClick={()=>{onClose();onOpenPerfil(post.autor_email);}}
+                <button onClick={irAlPerfil}
                   style={{fontWeight:700,color:C.text,fontSize:16,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,textAlign:"left",display:"block",marginBottom:3}}
                   onMouseEnter={e=>e.currentTarget.style.color=C.accent} onMouseLeave={e=>e.currentTarget.style.color=C.text}>
                   {nombre}
