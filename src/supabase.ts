@@ -80,9 +80,12 @@ export const setDisplayName = (email?: string | null, name?: string | null): voi
 
 // ── Usuarios ──────────────────────────────────────────────────────────────────
 
-// Se llama al registrarse para crear el registro en la tabla pública usuarios
+// Se llama al registrarse para crear el registro en la tabla pública usuarios.
+// return=minimal: pedir la fila de vuelta (RETURNING *) requiere SELECT en TODAS
+// las columnas, pero authenticated no lo tiene en columnas sensibles (tokens MP)
+// → daba 403 y revertía el INSERT/UPDATE entero. No necesitamos la fila de vuelta.
 export const insertUsuario = (data: Row, token: Token) =>
-  db("usuarios", "POST", data, token, "return=representation");
+  db("usuarios", "POST", data, token, "return=minimal");
 
 // ── Quejas (libro de quejas público) ─────────────────────────────────────────
 export const insertQueja = (data: Row) =>
@@ -90,11 +93,11 @@ export const insertQueja = (data: Row) =>
 
 // Actualiza campos del perfil (nombre, bio, etc.) en la tabla usuarios
 export const updateUsuario = (id: Id, data: Row, token: Token) =>
-  db(`usuarios?id=eq.${id}`, "PATCH", data, token, "return=representation");
+  db(`usuarios?id=eq.${id}`, "PATCH", data, token, "return=minimal");
 
 // Se llama al hacer login para asegurarse que existe (por si se creó antes del fix)
 export const upsertUsuario = (data: Row, token: Token) =>
-  db("usuarios", "POST", data, token, "return=representation,resolution=merge-duplicates");
+  db("usuarios", "POST", data, token, "return=minimal,resolution=merge-duplicates");
 
 let _onSessionRefresh: (() => Promise<any>) | null = null;
 export const setSessionRefreshCallback = (fn: () => Promise<any>): void => { _onSessionRefresh = fn; };
