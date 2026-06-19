@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck } from "lucide-react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
@@ -2317,12 +2317,14 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {/* ── TAB: CREDENCIALES ── */}
       {tabCuenta==="credenciales"&&(
         <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontSize:13,color:C.muted}}>Tus títulos y certificados son visibles en tu perfil público.</div>
-            <button onClick={()=>setShowAddDoc(v=>!v)} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:20,color:C.accent,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT}}>+ Agregar</button>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:8,flexWrap:"wrap"}}>
+            <div style={{...tx("body"),color:C.muted}}>Tus títulos y certificados respaldan tu perfil docente.</div>
+            {showAddDoc
+              ?<button onClick={()=>setShowAddDoc(false)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              :<button onClick={()=>setShowAddDoc(true)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid}}><span style={{fontSize:16,lineHeight:1}}>+</span>Agregar credencial</button>}
           </div>
           {showAddDoc&&(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:14}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,marginBottom:14,boxShadow:C.shadow}}>
               <Label>Tipo</Label>
               <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
                 {TIPOS_DOC.map(({v,l})=>(<button key={v} onClick={()=>setDocTipo(v)} style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",background:docTipo===v?C.accent:"transparent",color:docTipo===v?"#fff":C.muted,border:`1px solid ${docTipo===v?C.accent:C.border}`,fontFamily:FONT,fontWeight:600,transition:"all .12s"}}>{l}</button>))}
@@ -2346,26 +2348,32 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             </div>
           )}
           {loading?<Spinner/>:docs.length===0&&!showAddDoc?(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"40px 24px",textAlign:"center"}}>
-              <div style={{fontSize:32,marginBottom:12}}>📜</div>
-              <div style={{color:C.text,fontWeight:600,fontSize:15,marginBottom:8}}>Sin credenciales aún</div>
-              <div style={{color:C.muted,fontSize:13}}>Agregar títulos aumenta la confianza de los alumnos en tu perfil.</div>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"48px 24px",textAlign:"center",boxShadow:C.shadow}}>
+              <div style={{width:52,height:52,borderRadius:14,background:accentFor("cursos").soft,color:accentFor("cursos").solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><ScrollText size={26} strokeWidth={1.8}/></div>
+              <div style={{...tx("cardTitle"),color:C.text,marginBottom:6}}>Sin credenciales aún</div>
+              <div style={{...tx("body"),color:C.muted,maxWidth:420,margin:"0 auto"}}>Agregar títulos aumenta la confianza de los alumnos en tu perfil.</div>
             </div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {docs.map(d=>(<div key={d.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:40,height:40,borderRadius:8,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{(()=>{const DIcon=TIPO_ICON[d.tipo]||FileText;return<DIcon size={20} color={C.accent} strokeWidth={1.8}/>;})()}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:600,color:C.text,fontSize:14}}>{d.titulo}</div>
-                  {d.institucion&&<div style={{color:C.muted,fontSize:12,marginTop:2}}>{d.institucion}</div>}
-                  {d.año&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{d.año}</div>}
-                  {d.pais&&<div style={{color:C.muted,fontSize:11,marginTop:2,display:"flex",alignItems:"center",gap:3}}><Globe size={10} strokeWidth={2}/>{d.pais}</div>}
-                  {d.descripcion&&<div style={{color:C.muted,fontSize:12,marginTop:6,lineHeight:1.5}}>{d.descripcion}</div>}
-                  {safeUrl(d.url_verificacion)&&<a href={safeUrl(d.url_verificacion)} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:C.accent,marginTop:4,display:"inline-flex",alignItems:"center",gap:4}}><ExternalLink size={11} strokeWidth={2}/>Verificar credencial</a>}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+              {docs.map(d=>{
+                const DIcon=TIPO_ICON[d.tipo]||FileText;
+                const tipoLabel=(TIPOS_DOC.find(t=>t.v===d.tipo)?.l||d.tipo||"").toUpperCase();
+                return(
+                <div key={d.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,boxShadow:C.shadow}}>
+                  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:12}}>
+                    <div style={{width:44,height:44,borderRadius:12,background:accentFor("cursos").soft,color:accentFor("cursos").solid,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><DIcon size={22} strokeWidth={1.9}/></div>
+                    <button onClick={()=>removeDoc(d.id)} aria-label="Eliminar credencial" title="Eliminar" style={{width:32,height:32,borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .12s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.color=C.danger;e.currentTarget.style.borderColor=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}><Trash2 size={15}/></button>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:5,...tx("micro"),fontWeight:700,letterSpacing:.6,color:C.faint||C.muted,marginBottom:3}}>{tipoLabel}{d.verificado&&<BadgeCheck size={13} color={accentFor("cursos").solid}/>}</div>
+                  <div style={{...tx("bodyStrong"),color:C.text}}>{d.titulo}</div>
+                  {(d.institucion||d.año)&&<div style={{...tx("meta"),color:C.muted,marginTop:3}}>{[d.institucion,d.año].filter(Boolean).join(" · ")}</div>}
+                  {d.pais&&<div style={{...tx("micro"),color:C.faint||C.muted,marginTop:3,display:"inline-flex",alignItems:"center",gap:3}}><Globe size={10} strokeWidth={2}/>{d.pais}</div>}
+                  {d.descripcion&&<div style={{...tx("meta"),color:C.muted,marginTop:8,lineHeight:1.5}}>{d.descripcion}</div>}
+                  {safeUrl(d.url_verificacion)&&<a href={safeUrl(d.url_verificacion)} target="_blank" rel="noopener noreferrer" style={{...tx("meta"),color:accentFor("cursos").text,marginTop:8,display:"inline-flex",alignItems:"center",gap:4}}><ExternalLink size={11} strokeWidth={2}/>Verificar credencial</a>}
                 </div>
-                <button onClick={()=>removeDoc(d.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,cursor:"pointer",fontSize:12,padding:"4px 9px",flexShrink:0,transition:"all .12s"}}
-                  onMouseEnter={e=>{e.currentTarget.style.color=C.danger;e.currentTarget.style.borderColor=C.danger;}} onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}>Eliminar</button>
-              </div>))}
+                );
+              })}
             </div>
           )}
         </div>
