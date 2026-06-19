@@ -277,7 +277,7 @@ export default function JuegosHub({ session, onPlayFaros, onPlayShikaku,
       {/* GameCards lado a lado */}
       {true && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 16, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,300px),1fr))', gap: 16, marginBottom: 24 }}>
             <GameCard
               icon={<Lightbulb size={22} color="#fff" strokeWidth={2} />}
               gradient="linear-gradient(135deg,#0F3F7A,#1A6ED8,#2EC4A0)"

@@ -698,7 +698,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                 </div>
                 <button onClick={()=>setModoVista("resultados")} style={{display:"inline-flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:accentFor(seccion).text,fontFamily:FONT,...tx("meta"),fontWeight:650,cursor:"pointer",whiteSpace:"nowrap"}}>Ver todos →</button>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,320px),1fr))",gap:14}}>
                 {destacados.map(p=>(
                   <PostCard key={p.id} post={p} session={session} onOpenChat={onOpenChat} onOpenDetail={onOpenDetail} onOpenPerfil={onOpenPerfil} avgPub={reseñasMap[p.id]?.avg} countPub={reseñasMap[p.id]?.count} avgUser={reseñasUserMap[p.autor_email]} yaOferte={pendientesIds.has(p.id)} fueRechazado={rechazadasIds.has(p.id)} isFav={p.id in favsMap} favId={favsMap[p.id]||null} onFavChange={()=>{cargar();}}/>
                 ))}
@@ -1001,7 +1001,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
             <LeaderboardView posts={posts} reseñasMap={reseñasMap} reseñasUserMap={reseñasUserMap} onOpenPerfil={onOpenPerfil} filtroMateria={filtroMateria}/>
           ):(
             <div>
-              <div style={viewMode==="cards"?{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
+              <div style={viewMode==="cards"?{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,320px),1fr))",gap:14}:{display:"flex",flexDirection:"column",gap:1,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
                 {(modoVista==="resultados"?sorted:sorted.slice(0,pagina*PAGE_SIZE)).map(p=>(
                   viewMode==="lista"?(
                     <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
