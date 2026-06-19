@@ -982,18 +982,11 @@ function PagosTab({session}){
 
       {/* ── Dashboard de cobros ──────────────────────────────────────── */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><Banknote size={14} strokeWidth={1.8}/>Mis cobros</div>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><Banknote size={16} strokeWidth={1.9}/>Mis cobros</div>
         {/* Resumen */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-          {[
-            {label:"Por recibir",val:totalPendiente,color:"#3B82F6"},
-            {label:"Ya cobrado",val:totalCobrado,color:"#10B981"},
-          ].map(s=>(
-            <div key={s.label} style={{background:C.bg,borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
-              <div style={{fontSize:11,color:C.muted,marginBottom:4}}>{s.label}</div>
-              <div style={{fontWeight:800,fontSize:18,color:s.color}}>${s.val.toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
-            </div>
-          ))}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:16}}>
+          <StatCard icon={Clock} label="Por recibir" value={`$${totalPendiente.toLocaleString("es-AR",{maximumFractionDigits:0})}`} accentKey="pedidos"/>
+          <StatCard icon={CheckCircle2} label="Ya cobrado" value={`$${totalCobrado.toLocaleString("es-AR",{maximumFractionDigits:0})}`} accentKey="clases"/>
         </div>
 
         {/* Lista de cobros */}
@@ -1168,19 +1161,19 @@ function BilleteraTab({session}){
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
 
       {/* Saldo actual */}
-      <div style={{background:"linear-gradient(135deg,#0F3F7A,#1A6ED8)",borderRadius:18,padding:"24px 22px",color:"#fff",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,.06)"}}/>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,opacity:.75,marginBottom:8}}>SALDO DISPONIBLE</div>
+      <div style={{background:accentFor("cursos").heroGrad,borderRadius:18,padding:"24px 22px",color:"#fff",position:"relative",overflow:"hidden",boxShadow:C.shadow}}>
+        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,.08)"}}/>
+        <div style={{...tx("micro"),fontWeight:700,letterSpacing:.8,opacity:.8,marginBottom:8}}>SALDO DISPONIBLE</div>
         {loading
-          ?<div style={{fontSize:36,fontWeight:800}}>…</div>
-          :<div style={{fontSize:42,fontWeight:800}}>${(saldo||0).toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
+          ?<div style={{...tx("display"),fontSize:36,color:"#fff"}}>…</div>
+          :<div style={{...tx("display"),fontSize:42,color:"#fff",lineHeight:1}}>${(saldo||0).toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
         }
-        <div style={{fontSize:12,opacity:.65,marginTop:4}}>Créditos Luderis · ARS</div>
+        <div style={{...tx("meta"),opacity:.7,marginTop:6}}>Créditos Luderis · ARS</div>
       </div>
 
       {/* Cargar saldo */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>Cargar saldo</div>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Cargar saldo</div>
         <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
           {[500,1000,2000,5000].map(n=>(
             <button key={n} onClick={()=>setMonto(String(n))}
@@ -1260,8 +1253,8 @@ function BilleteraTab({session}){
       )}
 
       {/* Movimientos */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:12}}>Historial</div>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Historial</div>
         {loading?<Spinner small/>:movimientos.length===0
           ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"12px 0"}}>Sin movimientos aún.</div>
           :movimientos.map((m,i)=>{
@@ -1577,13 +1570,14 @@ function FinanzasTab({session}){
   return(
     <div>
       {subs.length>1&&(
-        <div style={{display:"flex",gap:2,marginBottom:16,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:3}}>
+        <div style={{display:"inline-flex",gap:2,marginBottom:16,background:C.surfaceAlt||C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:3}}>
           {subs.map(t=>(
             <button key={t.id} onClick={()=>setSub(t.id)}
-              style={{flex:1,padding:"7px",borderRadius:8,border:"none",fontWeight:sub===t.id?700:400,
-                fontSize:12,cursor:"pointer",fontFamily:FONT,
-                background:sub===t.id?C.accent:"transparent",
-                color:sub===t.id?"#fff":C.muted,transition:"all .15s"}}>
+              style={{padding:"8px 18px",borderRadius:8,border:"none",fontWeight:sub===t.id?700:500,
+                fontSize:12.5,cursor:"pointer",fontFamily:FONT,transition:"all .14s",
+                background:sub===t.id?C.surface:"transparent",
+                color:sub===t.id?accentFor("cursos").text:C.muted,
+                boxShadow:sub===t.id?C.shadow:"none"}}>
               {t.label}
             </button>
           ))}
