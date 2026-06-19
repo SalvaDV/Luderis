@@ -1597,28 +1597,28 @@ function AjustesTab({session}){
   const memberSince=session.user.created_at
     ?new Date(session.user.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})
     :"—";
-  const Row=({label,value})=>(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:C.bg,borderRadius:10}}>
-      <div style={{fontSize:12,color:C.muted,fontWeight:600}}>{label}</div>
-      <div style={{fontSize:13,color:C.text}}>{value}</div>
+  const Row=({label,value,last})=>(
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,padding:"11px 0",borderBottom:last?"none":`1px solid ${C.hairline||C.border}`}}>
+      <span style={{...tx("meta"),color:C.muted,fontWeight:500}}>{label}</span>
+      <span style={{...tx("meta"),color:C.text,fontWeight:600,textAlign:"right"}}>{value}</span>
     </div>
   );
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
 
       {/* Cuenta */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Información de cuenta</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px 22px",boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:14}}>Información de cuenta</div>
+        <div>
           <Row label="Email" value={session.user.email}/>
           <Row label="Miembro desde" value={memberSince}/>
-          <Row label="ID de usuario" value={<span style={{fontSize:11,fontFamily:"monospace",color:C.muted}}>{session.user.id.slice(0,18)}…</span>}/>
+          <Row label="ID de usuario" value={<span style={{fontSize:11,fontFamily:"monospace",color:C.muted}}>{session.user.id.slice(0,18)}…</span>} last/>
         </div>
       </div>
 
       {/* Notificaciones */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:4}}>Notificaciones</div>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px 22px",boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:4}}>Notificaciones</div>
         <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.6}}>Recibís notificaciones dentro de la app y por email para ofertas, mensajes y actualizaciones importantes.</div>
         <div style={{background:C.bg,borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:10}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1627,8 +1627,8 @@ function AjustesTab({session}){
       </div>
 
       {/* Privacidad y legales */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:14}}>Privacidad y legales</div>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px 22px",boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:14}}>Privacidad y legales</div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {[["Política de privacidad","/privacidad"],["Términos y condiciones","/terminos"],["Política de devoluciones","/devoluciones"],["Libro de quejas","/quejas"],["Accesibilidad","/accesibilidad"]].map(([label,href])=>(
             <a key={href} href={href}
@@ -1643,8 +1643,8 @@ function AjustesTab({session}){
       </div>
 
       {/* Zona de peligro */}
-      <div style={{background:C.surface,border:`1px solid ${C.danger}33`,borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontWeight:700,color:C.danger,fontSize:14,marginBottom:4}}>Zona de peligro</div>
+      <div style={{background:C.surface,border:`1px solid ${C.danger}33`,borderRadius:16,padding:"20px 22px",boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.danger,marginBottom:4}}>Zona de peligro</div>
         <div style={{fontSize:12,color:C.muted,marginBottom:14,lineHeight:1.6}}>Eliminar tu cuenta borrará permanentemente tu perfil, publicaciones y datos. Esta acción no se puede deshacer.</div>
         {!confirmDelete?(
           <button onClick={()=>setConfirmDelete(true)}
