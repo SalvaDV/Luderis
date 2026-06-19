@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck, Mail } from "lucide-react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
@@ -1322,82 +1322,71 @@ ${refUrl}`;
   const pendientes=referidos.filter(r=>r.estado==="pendiente").length;
 
   return(
-    <div style={{padding:"4px 0",display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
 
-      {/* Header con stats */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-        {[
-          {n:referidos.length,label:"Invitados",Icon:Users,color:C.accent},
-          {n:completados,label:"Completados",Icon:CheckCircle2,color:C.successText},
-          {n:pendientes,label:"Pendientes",Icon:Clock,color:C.warn},
-        ].map(({n,label,Icon:SI,color})=>(
-          <div key={label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:2}}><SI size={20} color={color} strokeWidth={1.8}/></div>
-            <div style={{fontSize:22,fontWeight:800,color}}>{n}</div>
-            <div style={{fontSize:11,color:C.muted}}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Beneficio */}
-      <div style={{background:"linear-gradient(135deg,#7B3FBE15,#1A6ED815)",border:"1px solid #7B3FBE30",borderRadius:14,padding:"16px 18px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:6,display:"flex",alignItems:"center",gap:6}}><Gift size={14} strokeWidth={1.8}/>¿Qué ganan?</div>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <Eye size={16} strokeWidth={1.5} color={C.muted} style={{flexShrink:0}}/>
-            <span style={{fontSize:13,color:C.muted}}>Tu amigo se registra y obtiene <strong style={{color:C.text}}>acceso prioritario</strong> a docentes verificados</span>
-          </div>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <Star size={16} strokeWidth={1.5} color={C.muted} style={{flexShrink:0}}/>
-            <span style={{fontSize:13,color:C.muted}}>Vos sumás <strong style={{color:C.text}}>puntos de reputación</strong> por cada referido que completa su primer clase</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Link */}
-      <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:14,padding:"16px 18px"}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.4,marginBottom:8}}>TU LINK ÚNICO</div>
-        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
-          <div style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",fontSize:12,color:C.text,wordBreak:"break-all",fontFamily:"monospace",lineHeight:1.4}}>
-            {refUrl}
+      {/* Hero degradado (estilo prototipo) — modelo real: reputación + acceso prioritario */}
+      <div style={{background:accentFor("cursos").heroGrad,borderRadius:18,padding:"24px 26px",boxShadow:C.shadow}}>
+        <h2 style={{...tx("h1"),color:"#fff",margin:0}}>Invitá a tus amigos a Luderis</h2>
+        <p style={{...tx("body"),color:"rgba(255,255,255,.9)",margin:"6px 0 18px",maxWidth:560}}>Tu amigo obtiene <strong style={{color:"#fff"}}>acceso prioritario</strong> a docentes verificados y vos sumás <strong style={{color:"#fff"}}>puntos de reputación</strong> por cada referido que completa su primera clase.</p>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:200,display:"flex",alignItems:"center",gap:8,background:C.surface,borderRadius:11,padding:"10px 14px"}}>
+            <Globe size={15} color={C.muted} style={{flexShrink:0}}/>
+            <span style={{...tx("meta"),color:C.text,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{refUrl}</span>
           </div>
           <button onClick={copiar}
-            style={{background:copiado?C.success:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:9,color:"#fff",padding:"9px 16px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0,transition:"background .2s",minWidth:80}}>
-            {copiado?"✓ Copiado":"Copiar"}
+            style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"none",borderRadius:11,color:accentFor("cursos").text,padding:"11px 18px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
+            {copiado?<><CheckCircle2 size={15} strokeWidth={2.5}/>Copiado</>:<><Bookmark size={15} strokeWidth={2}/>Copiar link</>}
           </button>
         </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <button onClick={compartirWhatsApp}
-            style={{display:"flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:"#25D36615",border:"1px solid #25D36640",color:"#25D366",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
-            <MessageCircle size={14} strokeWidth={2}/>WhatsApp
-          </button>
-          <a href={`https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${encodeURIComponent("¡Sumate a Luderis! La plataforma para aprender y enseñar en Argentina")}`}
-            target="_blank" rel="noreferrer"
-            style={{display:"flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:"#0088cc15",border:"1px solid #0088cc40",color:"#0088cc",fontWeight:600,fontSize:13,textDecoration:"none",fontFamily:FONT}}>
-            <Send size={13} strokeWidth={2}/>Telegram
-          </a>
-          <a href={`mailto:?subject=${encodeURIComponent("Te invito a Luderis")}&body=${encodeURIComponent("¡Hola! Te invito a Luderis. Registrate con mi link: "+refUrl)}`}
-            style={{display:"flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:C.accentDim,border:`1px solid ${C.accent}40`,color:C.accent,fontWeight:600,fontSize:13,textDecoration:"none",fontFamily:FONT}}>
-            📧 Email
-          </a>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
+          {[
+            {el:"button",label:"WhatsApp",Icon:MessageCircle,onClick:compartirWhatsApp},
+            {el:"a",label:"Telegram",Icon:Send,href:`https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${encodeURIComponent("¡Sumate a Luderis! La plataforma para aprender y enseñar en Argentina")}`},
+            {el:"a",label:"Email",Icon:Mail,href:`mailto:?subject=${encodeURIComponent("Te invito a Luderis")}&body=${encodeURIComponent("¡Hola! Te invito a Luderis. Registrate con mi link: "+refUrl)}`},
+          ].map(({el,label,Icon:SI,onClick,href})=>{
+            const st={display:"inline-flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:20,background:"rgba(255,255,255,.18)",border:"1px solid rgba(255,255,255,.3)",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:FONT,textDecoration:"none"};
+            return el==="a"
+              ?<a key={label} href={href} target="_blank" rel="noreferrer" style={st}><SI size={14} strokeWidth={2}/>{label}</a>
+              :<button key={label} onClick={onClick} style={st}><SI size={14} strokeWidth={2}/>{label}</button>;
+          })}
         </div>
       </div>
 
-      {/* Lista de referidos */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
-        <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:12}}>Historial de invitaciones</div>
-        {loadingRef?<div style={{color:C.muted,fontSize:13}}>Cargando…</div>:
-          referidos.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"12px 0"}}>Todavía no invitaste a nadie. ¡Compartí tu link!</div>:
-          referidos.map((r,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<referidos.length-1?`1px solid ${C.border}`:"none"}}>
-              <div style={{fontSize:13,color:C.text}}>{r.referido_email||"Usuario"}</div>
-              <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,
-                background:r.estado==="completado"?C.success+"20":C.warn+"20",
-                color:r.estado==="completado"?C.success:C.warn}}>
-                {r.estado==="completado"?<><CheckCircle2 size={10} strokeWidth={2.5}/> Completado</>:<><Clock size={10} strokeWidth={2}/> Pendiente</>}
-              </span>
+      {/* StatCards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12}}>
+        <StatCard icon={Users} label="Invitados" value={referidos.length} accentKey="cursos"/>
+        <StatCard icon={CheckCircle2} label="Completados" value={completados} accentKey="clases"/>
+        <StatCard icon={Clock} label="Pendientes" value={pendientes} accentKey="pedidos"/>
+      </div>
+
+      {/* Tus invitados */}
+      <div>
+        <SubHead icon={Users} title="Tus invitados"/>
+        {loadingRef?<Spinner/>:
+          referidos.length===0?(
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"40px 24px",textAlign:"center",boxShadow:C.shadow}}>
+              <div style={{...tx("body"),color:C.muted}}>Todavía no invitaste a nadie. ¡Compartí tu link!</div>
             </div>
-          ))
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {referidos.map((r,i)=>{
+                const completado=r.estado==="completado";
+                return(
+                <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"12px 16px",boxShadow:C.shadow,display:"flex",alignItems:"center",gap:12}}>
+                  <Avatar letra={(r.referido_email||"U")[0]} size={36}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{...tx("bodyStrong"),color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.referido_email||"Usuario"}</div>
+                    {r.created_at&&<div style={{...tx("micro"),color:C.muted}}>{fmtRel(r.created_at)}</div>}
+                  </div>
+                  <span style={{...tx("micro"),fontWeight:700,padding:"3px 10px",borderRadius:20,display:"inline-flex",alignItems:"center",gap:4,flexShrink:0,
+                    background:completado?C.success+"18":C.warn+"18",color:completado?C.successText:"#B45309",border:`1px solid ${completado?C.success+"33":"#F59E0B33"}`}}>
+                    {completado?<><CheckCircle2 size={11} strokeWidth={2.5}/>Completado</>:<><Clock size={11} strokeWidth={2}/>Pendiente</>}
+                  </span>
+                </div>
+                );
+              })}
+            </div>
+          )
         }
       </div>
     </div>
