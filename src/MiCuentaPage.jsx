@@ -1156,19 +1156,18 @@ function BilleteraTab({session}){
   const ESTADO_RETIRO={pendiente:{label:"Pendiente",color:"#F59E0B"},procesado:{label:"Acreditado",color:"#10B981"},rechazado:{label:"Rechazado",color:"#EF4444"}};
   const TIPO_ICONS={recarga:ArrowUp,pago:ArrowDown,reembolso:RefreshCw,bono:Gift};
   const TIPO_LABELS={recarga:"Recarga",pago:"Pago de clase",reembolso:"Reembolso",bono:"Bono"};
+  const fmtMonto=(n)=>`$${Math.abs(n||0).toLocaleString("es-AR",{maximumFractionDigits:0})}`;
+  const totalCargado=movimientos.filter(m=>m.tipo==="recarga"||m.tipo==="bono"||m.tipo==="reembolso").reduce((a,m)=>a+Math.abs(m.monto||0),0);
+  const totalGastado=movimientos.filter(m=>m.tipo==="pago").reduce((a,m)=>a+Math.abs(m.monto||0),0);
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
 
-      {/* Saldo actual */}
-      <div style={{background:accentFor("cursos").heroGrad,borderRadius:18,padding:"24px 22px",color:"#fff",position:"relative",overflow:"hidden",boxShadow:C.shadow}}>
-        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,.08)"}}/>
-        <div style={{...tx("micro"),fontWeight:700,letterSpacing:.8,opacity:.8,marginBottom:8}}>SALDO DISPONIBLE</div>
-        {loading
-          ?<div style={{...tx("display"),fontSize:36,color:"#fff"}}>…</div>
-          :<div style={{...tx("display"),fontSize:42,color:"#fff",lineHeight:1}}>${(saldo||0).toLocaleString("es-AR",{maximumFractionDigits:0})}</div>
-        }
-        <div style={{...tx("meta"),opacity:.7,marginTop:6}}>Créditos Luderis · ARS</div>
+      {/* StatCards de billetera (estilo prototipo) */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12}}>
+        <StatCard icon={CreditCard} label="Saldo disponible" value={loading?"…":fmtMonto(saldo)} accentKey="cursos"/>
+        <StatCard icon={ArrowUp} label="Total cargado" value={fmtMonto(totalCargado)} accentKey="clases"/>
+        <StatCard icon={ArrowDown} label="Total gastado" value={fmtMonto(totalGastado)} accentKey="pedidos"/>
       </div>
 
       {/* Cargar saldo */}
@@ -1254,7 +1253,7 @@ function BilleteraTab({session}){
 
       {/* Movimientos */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,boxShadow:C.shadow}}>
-        <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Historial</div>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Movimientos recientes</div>
         {loading?<Spinner small/>:movimientos.length===0
           ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"12px 0"}}>Sin movimientos aún.</div>
           :movimientos.map((m,i)=>{
