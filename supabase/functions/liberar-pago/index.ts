@@ -44,25 +44,38 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  let pago_id: string | null = null;
   try {
-    const { pago_id } = await req.json();
+    const body = await req.json();
+    pago_id = body?.pago_id ?? null;
     if (!pago_id) return new Response(JSON.stringify({ error: "Falta pago_id" }), { status: 400, headers: CORS });
 
-    // 1. Obtener el pago
-    const { data: pago, error: pagoErr } = await supabase
+    // 1. Reclamar el pago de forma ATÓMICA: compare-and-swap "retenido" -> "procesando".
+    //    Evita un race condition: si el cron y el admin (o dos disparos del cron) corren a la vez,
+    //    solo UNO matchea la fila en estado "retenido" y avanza; el otro recibe 0 filas y aborta.
+    //    Sin esto, ambos pasarían el check y producirían doble inserción en billetera_movimientos
+    //    y doble notificación. Incluimos mp_payment_id y raw_data en el RETURNING porque pasos
+    //    posteriores los usan (antes no se seleccionaban → quedaban undefined: bug latente).
+    const { data: pago, error: claimErr } = await supabase
       .from("pagos")
-      .select("id, monto, docente_email, alumno_email, estado_escrow, publicacion_id")
+      .update({ estado_escrow: "procesando" })
       .eq("id", pago_id)
-      .single();
+      .eq("estado_escrow", "retenido")
+      .select("id, monto, docente_email, alumno_email, publicacion_id, mp_payment_id, raw_data")
+      .maybeSingle();
 
-    if (pagoErr || !pago) {
-      return new Response(JSON.stringify({ error: "Pago no encontrado" }), { status: 404, headers: CORS });
-    }
+    if (claimErr) throw claimErr;
 
-    if (pago.estado_escrow !== "retenido") {
+    if (!pago) {
+      // No matcheó: o no existe, o ya no está "retenido" (otro proceso lo tomó/liberó).
+      const { data: existe } = await supabase
+        .from("pagos").select("estado_escrow").eq("id", pago_id).maybeSingle();
+      if (!existe) {
+        return new Response(JSON.stringify({ error: "Pago no encontrado" }), { status: 404, headers: CORS });
+      }
       return new Response(
-        JSON.stringify({ error: `Estado inválido: ${pago.estado_escrow}. Debe ser "retenido".` }),
-        { status: 400, headers: CORS }
+        JSON.stringify({ error: `Estado inválido: ${existe.estado_escrow}. Debe ser "retenido" (¿ya procesado?).` }),
+        { status: 409, headers: CORS }
       );
     }
 
@@ -184,6 +197,19 @@ Deno.serve(async (req) => {
 
   } catch (err) {
     console.error("liberar-pago error:", err);
+    // Rollback best-effort: si alcanzamos a reclamar el pago ("procesando") pero algo falló
+    // antes de marcarlo "liberado", lo devolvemos a "retenido" para que el cron lo reintente.
+    // El reintento NO duplica dinero: la transferencia MP usa X-Idempotency-Key = pago_id.
+    // El WHERE estado_escrow='procesando' garantiza que solo afecta una fila que nosotros
+    // dejamos a medias (si nunca reclamamos, matchea 0 filas y es inocuo).
+    if (pago_id) {
+      try {
+        await supabase.from("pagos")
+          .update({ estado_escrow: "retenido" })
+          .eq("id", pago_id)
+          .eq("estado_escrow", "procesando");
+      } catch (_) { /* best-effort, ya estamos en el handler de error */ }
+    }
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
       { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
