@@ -1820,6 +1820,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const ofertas=pubs.filter(p=>p.tipo==="oferta");
   const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return"publicaciones";});
   const [filtroPubsTipo,setFiltroPubsTipo]=useState("all");
+  const [negocTab,setNegocTab]=useState("todas");
   const pendientesVal=pubs.filter(p=>p.tipo==="oferta"&&p.activo===false&&p.estado_validacion==="pendiente");
   // ── Tab list role-aware ────────────────────────────────────────────────────
   const rolLocal=localStorage.getItem("cl_rol_"+email)||"alumno";
@@ -2221,69 +2222,90 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
         <div>
           {(()=>{
             const ofertasEnviadas=misOfertasEnv.filter(o=>!descartadas.includes(o.id));
-            const ofertasAceptadasNuevas=ofertasAceptRec.filter(o=>!vistasState.includes(o.id));
-            return(
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {/* Ofertas recibidas */}
-                {ofertasAceptadasNuevas.length>0&&(
-                  <div style={{background:C.success+"08",border:`1px solid ${C.success}25`,borderRadius:10,padding:"14px 16px"}}>
-                    <div style={{fontWeight:600,color:C.successText,fontSize:14,marginBottom:10}}>✓ Ofertas aceptadas</div>
-                    {ofertasAceptadasNuevas.map(o=>{
-                      const soyDoc=o.busqueda_autor_email===email;
-                      const otroN=soyDoc?(o.ofertante_nombre||safeDisplayName(null,o.ofertante_email)):(o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email));
-                      return(<div key={o.id} style={{background:C.surface,borderRadius:9,padding:"12px 14px",marginBottom:8,border:`1px solid ${C.border}`}}>
-                        <div style={{fontSize:12,color:C.muted,marginBottom:4}}>Con: <span style={{color:C.text,fontWeight:600}}>{otroN}</span></div>
-                        <div style={{fontSize:13,color:C.text,fontWeight:600,marginBottom:6}}>{o.busqueda_titulo}</div>
-                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                          {o.precio&&<span style={{fontSize:11,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:6,padding:"2px 8px",color:C.accent,fontWeight:600}}>{fmtPrice(o.precio)}/{o.precio_tipo}</span>}
-                          {o.contraoferta_precio&&(<><span style={{color:C.muted,fontSize:11}}>→</span><span style={{fontSize:11,background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:6,padding:"2px 7px",color:C.accent,fontWeight:600}}>Contra: {fmtPrice(o.contraoferta_precio)}/{o.contraoferta_tipo||o.precio_tipo}</span></>)}
-                        </div>
-                        <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
-                          <Btn onClick={()=>onOpenChat({id:o.busqueda_id,autor_email:soyDoc?o.ofertante_email:o.busqueda_autor_email,titulo:o.busqueda_titulo,autor_nombre:otroN})} style={{padding:"6px 14px",fontSize:12,borderRadius:20}}>Chatear</Btn>
-                          <button onClick={()=>setAcuerdoModal(o)} style={{background:"none",border:`1px solid ${C.success}`,borderRadius:20,color:C.successText,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:FONT}}>Ver acuerdo</button>
-                          <button onClick={()=>{const nv=[...vistasState,o.id];setVistasState(nv);try{localStorage.setItem(vistasKey2,JSON.stringify(nv));}catch{}}} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Marcar vista</button>
-                        </div>
-                      </div>);
-                    })}
-                  </div>
-                )}
-                {/* Mis ofertas enviadas en búsquedas */}
-                {ofertasEnviadas.length>0&&(
-                  <div>
-                    <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:10}}>Mis ofertas enviadas</div>
-                    {ofertasEnviadas.map(o=>{
-                      const tieneContraAlumno=o.estado==="pendiente"&&o.contraoferta_precio&&o.contraoferta_de==="alumno";
-                      return(
-                      <div key={o.id} style={{background:C.surface,border:`1px solid ${tieneContraAlumno?"#C85CE050":o.estado==="aceptada"?C.success+"50":o.estado==="rechazada"?C.danger+"50":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>{o.busqueda_titulo}</div>
-                            <div style={{fontSize:12,color:C.muted}}>Para: {o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email)}</div>
-                            {o.precio&&<div style={{fontSize:12,color:C.accent,fontWeight:600,marginTop:4}}>{fmtPrice(o.precio)}/{o.precio_tipo}</div>}
-                            {tieneContraAlumno&&<div style={{fontSize:12,color:"#C85CE0",fontWeight:600,marginTop:2}}>↔ Contraoferta: {fmtPrice(o.contraoferta_precio)}/{o.contraoferta_tipo||o.precio_tipo}</div>}
-                          </div>
-                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-                            <span style={{fontSize:11,fontWeight:600,padding:"3px 8px",borderRadius:20,flexShrink:0,
-                              background:tieneContraAlumno?"#C85CE015":o.estado==="aceptada"?C.success+"12":o.estado==="rechazada"?C.danger+"12":"#F59E0B12",
-                              color:tieneContraAlumno?"#C85CE0":o.estado==="aceptada"?C.success:o.estado==="rechazada"?C.danger:"#B45309",
-                              border:`1px solid ${tieneContraAlumno?"#C85CE033":o.estado==="aceptada"?C.success+"30":o.estado==="rechazada"?C.danger+"30":"#F59E0B30"}`}}>
-                              {tieneContraAlumno?"↔ Negociando":o.estado==="aceptada"?"✓ Aceptada":o.estado==="rechazada"?"✕ Rechazada":o.estado==="retirada"?"Retirada":"Pendiente"}
-                            </span>
-                            {tieneContraAlumno&&<ContraRespondedor oferta={o} session={session} onActualizado={cargar} onVer={()=>{}} onChat={(of)=>onOpenChat({id:of.busqueda_id,autor_email:of.busqueda_autor_email,titulo:of.busqueda_titulo,autor_nombre:of.busqueda_autor_nombre||safeDisplayName(null,of.busqueda_autor_email)})}/>}
-                          </div>
-                        </div>
-                        <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
-                          {o.estado==="aceptada"&&<Btn onClick={()=>onOpenChat({id:o.busqueda_id,autor_email:o.busqueda_autor_email,titulo:o.busqueda_titulo,autor_nombre:o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email)})} style={{padding:"5px 14px",fontSize:12,borderRadius:20}}>Chatear</Btn>}
-                          <button onClick={()=>descartarOferta(o.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"5px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Ocultar</button>
-                        </div>
+            const ofertasRecibidas=ofertasAceptRec.filter(o=>!vistasState.includes(o.id));
+            const subtabs=[
+              {id:"todas",l:"Todas",c:ofertasEnviadas.length+ofertasRecibidas.length},
+              {id:"recibidas",l:"Recibidas",c:ofertasRecibidas.length},
+              {id:"enviadas",l:"Enviadas",c:ofertasEnviadas.length},
+            ];
+            const lista=negocTab==="recibidas"?ofertasRecibidas.map(o=>({o,recibida:true}))
+              :negocTab==="enviadas"?ofertasEnviadas.map(o=>({o,recibida:false}))
+              :[...ofertasRecibidas.map(o=>({o,recibida:true})),...ofertasEnviadas.map(o=>({o,recibida:false}))];
+
+            const renderOferta=(o,recibida)=>{
+              const soyDoc=o.busqueda_autor_email===email;
+              const otroN=recibida
+                ?(soyDoc?(o.ofertante_nombre||safeDisplayName(null,o.ofertante_email)):(o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email)))
+                :(o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email));
+              const tieneContraAlumno=!recibida&&o.estado==="pendiente"&&o.contraoferta_precio&&o.contraoferta_de==="alumno";
+              const estado=recibida?"aceptada":o.estado;
+              const st=tieneContraAlumno?{t:"Negociando",c:"#C85CE0",bg:"#C85CE015",bd:"#C85CE033"}
+                :estado==="aceptada"?{t:"Aceptada",c:C.successText,bg:C.success+"12",bd:C.success+"30"}
+                :estado==="rechazada"?{t:"Rechazada",c:C.danger,bg:C.danger+"12",bd:C.danger+"30"}
+                :estado==="retirada"?{t:"Retirada",c:C.muted,bg:C.bg,bd:C.border}
+                :{t:"Pendiente",c:"#B45309",bg:"#F59E0B12",bd:"#F59E0B30"};
+              const badge=recibida?accentFor("pedidos"):accentFor("clases");
+              return(
+                <div key={(recibida?"r":"e")+o.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:16,boxShadow:C.shadow}}>
+                  <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                    <Avatar letra={(otroN||"?")[0]} size={42}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <span style={{...tx("bodyStrong"),color:C.text}}>{otroN}</span>
+                        <span style={{...tx("micro"),fontWeight:700,padding:"2px 8px",borderRadius:6,background:badge.soft,color:badge.text}}>{recibida?"Recibida":"Enviada"}</span>
                       </div>
-                      );
-                    })}
+                      <div style={{...tx("meta"),color:C.muted,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.busqueda_titulo}</div>
+                    </div>
+                    {o.precio&&<div style={{textAlign:"right",flexShrink:0,whiteSpace:"nowrap"}}><span style={{...tx("price"),color:C.text}}>{fmtPrice(o.precio)}</span><span style={{...tx("micro"),color:C.faint}}> /{o.precio_tipo}</span></div>}
                   </div>
-                )}
-                {ofertasEnviadas.length===0&&ofertasAceptadasNuevas.length===0&&(
-                  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"40px 24px",textAlign:"center",color:C.muted,fontSize:13}}>
-                    No hay actividad de ofertas reciente.
+                  {o.mensaje&&<div style={{...tx("body"),color:C.textSoft||C.muted,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",marginTop:12,fontStyle:"italic"}}>“{o.mensaje}”</div>}
+                  {(tieneContraAlumno||(recibida&&o.contraoferta_precio))&&<div style={{...tx("meta"),color:"#C85CE0",fontWeight:600,marginTop:8}}>↔ Contraoferta: {fmtPrice(o.contraoferta_precio)}/{o.contraoferta_tipo||o.precio_tipo}</div>}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginTop:12,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{...tx("micro"),fontWeight:700,padding:"3px 10px",borderRadius:20,background:st.bg,color:st.c,border:`1px solid ${st.bd}`}}>{st.t}</span>
+                      {o.created_at&&<span style={{...tx("micro"),color:C.faint}}>{fmtRel(o.created_at)}</span>}
+                    </div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {recibida?(<>
+                        <Btn onClick={()=>onOpenChat({id:o.busqueda_id,autor_email:soyDoc?o.ofertante_email:o.busqueda_autor_email,titulo:o.busqueda_titulo,autor_nombre:otroN})} style={{padding:"6px 14px",fontSize:12,borderRadius:20}}>Chatear</Btn>
+                        <button onClick={()=>setAcuerdoModal(o)} style={{background:"none",border:`1px solid ${C.success}`,borderRadius:20,color:C.successText,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:FONT}}>Ver acuerdo</button>
+                        <button onClick={()=>{const nv=[...vistasState,o.id];setVistasState(nv);try{localStorage.setItem(vistasKey2,JSON.stringify(nv));}catch{}}} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Marcar vista</button>
+                      </>):(<>
+                        {tieneContraAlumno&&<ContraRespondedor oferta={o} session={session} onActualizado={cargar} onVer={()=>{}} onChat={(of)=>onOpenChat({id:of.busqueda_id,autor_email:of.busqueda_autor_email,titulo:of.busqueda_titulo,autor_nombre:of.busqueda_autor_nombre||safeDisplayName(null,of.busqueda_autor_email)})}/>}
+                        {o.estado==="aceptada"&&<Btn onClick={()=>onOpenChat({id:o.busqueda_id,autor_email:o.busqueda_autor_email,titulo:o.busqueda_titulo,autor_nombre:o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email)})} style={{padding:"6px 14px",fontSize:12,borderRadius:20}}>Chatear</Btn>}
+                        <button onClick={()=>descartarOferta(o.id)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontFamily:FONT}}>Ocultar</button>
+                      </>)}
+                    </div>
+                  </div>
+                </div>
+              );
+            };
+
+            return(
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {/* Sub-tabs Todas / Recibidas / Enviadas */}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {subtabs.map(s=>{
+                    const active=negocTab===s.id;
+                    return(
+                      <button key={s.id} onClick={()=>setNegocTab(s.id)}
+                        style={{display:"inline-flex",alignItems:"center",gap:7,padding:"8px 16px",borderRadius:10,cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:active?650:500,
+                          background:active?C.accent:C.surface,color:active?"#fff":C.textSoft||C.muted,
+                          border:`1px solid ${active?"transparent":C.border}`,transition:"all .14s"}}>{s.l}
+                        <span style={{...tx("micro"),fontWeight:700,color:active?"#fff":C.faint||C.muted,background:active?"rgba(255,255,255,.22)":C.surfaceAlt||C.bg,borderRadius:7,padding:"1px 7px"}}>{s.c}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {lista.length===0?(
+                  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"48px 24px",textAlign:"center",boxShadow:C.shadow}}>
+                    <div style={{width:52,height:52,borderRadius:14,background:accentFor("pedidos").soft,color:accentFor("pedidos").solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><MessageCircle size={26} strokeWidth={1.8}/></div>
+                    <div style={{...tx("cardTitle"),color:C.text,marginBottom:6}}>Sin negociaciones</div>
+                    <div style={{...tx("body"),color:C.muted,maxWidth:420,margin:"0 auto"}}>Cuando envíes o recibas ofertas en pedidos, las vas a ver acá.</div>
+                  </div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                    {lista.map(({o,recibida})=>renderOferta(o,recibida))}
                   </div>
                 )}
               </div>
