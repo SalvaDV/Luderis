@@ -838,38 +838,40 @@ const resizeImage = (file: File, maxDim: number, quality: number = 0.85): Promis
 });
 
 // Sube foto de avatar al bucket público "avatars" y devuelve la URL pública
-export const uploadAvatar = async (userId: Id, file: File, token: Token): Promise<string> => {
-  const { body, type, ext } = await resizeImage(file, 512);
-  const path = `${userId}/avatar_${Date.now()}.${ext}`;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
+// Sube al bucket público "avatars" con refresh+retry ante token vencido.
+// Las subidas NO pasaban por db(), así que no tenían el manejo de JWT expirado:
+// con la sesión vencida el storage trata el request como anon y RLS lo rechaza
+// (HTTP 400 con cuerpo {statusCode:"403", "new row violates row-level security policy"}).
+// Replicamos el patrón de db(): si falla por auth, refrescamos la sesión y reintentamos 1 vez.
+const uploadToAvatars = async (path: string, body: Blob | File, type: string, token: Token): Promise<string> => {
+  const doReq = (t?: Token) => fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${token}`,
+      "Authorization": `Bearer ${t || SUPABASE_KEY}`,
       "Content-Type": type,
       "apikey": SUPABASE_KEY,
       "x-upsert": "true",
     },
     body,
   });
+  let res = await doReq(token);
+  // Token vencido → storage responde 400/401/403 (RLS como anon). Refrescamos y reintentamos.
+  if (!res.ok && (res.status === 400 || res.status === 401 || res.status === 403) && _onSessionRefresh) {
+    const s = await _onSessionRefresh();
+    if (s?.access_token) res = await doReq(s.access_token);
+  }
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
 };
 
+export const uploadAvatar = async (userId: Id, file: File, token: Token): Promise<string> => {
+  const { body, type, ext } = await resizeImage(file, 512);
+  return uploadToAvatars(`${userId}/avatar_${Date.now()}.${ext}`, body, type, token);
+};
+
 export const uploadBanner = async (userId: Id, file: File, token: Token): Promise<string> => {
   const { body, type, ext } = await resizeImage(file, 1280);
-  const path = `${userId}/banner_${Date.now()}.${ext}`;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": type,
-      "apikey": SUPABASE_KEY,
-      "x-upsert": "true",
-    },
-    body,
-  });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Upload error ${res.status}`); }
-  return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+  return uploadToAvatars(`${userId}/banner_${Date.now()}.${ext}`, body, type, token);
 };
 
 export const uploadDniFoto = async (userId: Id, file: File, token: Token): Promise<string> => {
