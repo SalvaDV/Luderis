@@ -50,6 +50,44 @@ function StatCard({icon:Icon,label,value,suffix,accentKey="cursos"}){
 function SubHead({icon:Icon,title}){
   return <h3 style={{...tx("h2"),color:C.text,margin:"0 0 14px",display:"flex",alignItems:"center",gap:8}}><Icon size={17} color={C.muted} strokeWidth={2}/>{title}</h3>;
 }
+// Card "Vistas / actividad por mes" (estilo prototipo)
+function VistasCard({totalVistas,mesesData}){
+  const ac=accentFor("cursos");
+  const max=Math.max(...mesesData.map(d=>d.v),1);
+  return(
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:20,boxShadow:C.shadow}}>
+      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:14}}>
+        <div>
+          <div style={{...tx("meta"),color:C.muted,fontWeight:500}}>Vistas totales</div>
+          <div style={{...tx("display"),fontSize:24,color:C.text,letterSpacing:"-.02em"}}>{(totalVistas||0).toLocaleString("es-AR")}</div>
+        </div>
+      </div>
+      <div style={{...tx("micro"),color:C.faint||C.muted,fontWeight:700,letterSpacing:.6,marginBottom:8}}>PUBLICACIONES POR MES</div>
+      <div style={{display:"flex",alignItems:"flex-end",gap:10,height:84}}>
+        {mesesData.map((d,i)=>(
+          <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:7}}>
+            <div style={{width:"100%",maxWidth:26,height:`${Math.max((d.v/max)*64,2)}px`,borderRadius:6,background:`linear-gradient(180deg,${ac.solid},${ac.solid}aa)`,opacity:i===mesesData.length-1?1:.55}}/>
+            <span style={{...tx("micro"),color:C.faint||C.muted}}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+// Card "Ingresos estimados" (estilo prototipo)
+function IngresosCard({ingresosEst,onVerDetalle}){
+  const ac=accentFor("cursos");
+  return(
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:20,boxShadow:C.shadow,display:"flex",flexDirection:"column"}}>
+      <div style={{...tx("meta"),color:C.muted,fontWeight:500,marginBottom:4}}>Ingresos estimados (mes)</div>
+      <div style={{...tx("display"),fontSize:28,color:C.text,letterSpacing:"-.02em",marginBottom:4}}>{ingresosEst>0?`$${ingresosEst.toLocaleString("es-AR",{maximumFractionDigits:0})}`:"—"}</div>
+      <div style={{...tx("micro"),color:C.faint||C.muted,marginBottom:"auto"}}>Precio × inscriptos · no refleja pagos reales</div>
+      <button onClick={onVerDetalle} style={{marginTop:18,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px 16px",borderRadius:10,border:`1px solid ${ac.solid}`,background:ac.soft,color:ac.text,fontFamily:FONT,fontSize:13,fontWeight:650,cursor:"pointer"}}>
+        <TrendingUp size={16}/>Ver detalle de cobros
+      </button>
+    </div>
+  );
+}
 
 function MiActividadCard({session}){
   const [insc,setInsc]=useState(null);
@@ -157,22 +195,24 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
   const statStyle={background:C.surface,borderRadius:12,padding:"12px 14px"};
 
   const KPIS=[
-    {label:"Clases activas",val:ofertas.length,Icon:Megaphone,acc:"clases"},
-    {label:"Total alumnos",val:totalAlumnos,Icon:Users,acc:"cursos"},
-    {label:"Vistas totales",val:totalVistas||0,Icon:Eye,acc:"pedidos"},
-    {label:"Rating",val:avg?avg.toFixed(1):"—",suffix:avg?"★":"",Icon:Star,acc:"clases"},
-    {label:"Finalizadas",val:finalizadas.length,Icon:CheckCircle2,acc:"cursos"},
-    {label:"Reseñas",val:reseñas.length,Icon:MessageCircle,acc:"pedidos"},
-    ...(impactScore!==null?[{label:"Impact score",val:impactScore,suffix:"/100",Icon:Sparkles,acc:"pedidos"}]:[]),
-    ...(precioPromedio?[{label:"Precio prom.",val:`$${parseInt(precioPromedio).toLocaleString("es-AR")}`,Icon:Banknote,acc:"clases"}]:[]),
+    {label:"Publicaciones activas",val:ofertas.length,Icon:Megaphone,acc:"clases"},
+    {label:"Alumnos activos",val:alumnosActivos||totalAlumnos,Icon:Users,acc:"cursos"},
+    {label:"Valoración",val:avg?avg.toFixed(1):"—",suffix:avg?"★":"",Icon:Star,acc:"clases"},
+    {label:"Tasa de aceptación",val:tasaOfertas!==null?tasaOfertas:0,suffix:"%",Icon:MessageCircle,acc:"pedidos"},
   ];
   return(
     <div style={{marginBottom:20}}>
       <SubHead icon={TrendingUp} title="Mi actividad como docente"/>
 
-      {/* KPIs como StatCards (estilo prototipo) */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:18}}>
+      {/* 4 KPIs como StatCards (estilo prototipo) */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:14}}>
         {KPIS.map(k=>(<StatCard key={k.label} icon={k.Icon} label={k.label} value={k.val} suffix={k.suffix} accentKey={k.acc}/>))}
+      </div>
+
+      {/* Vistas + Ingresos (2 columnas, estilo prototipo) */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12,marginBottom:20}}>
+        <VistasCard totalVistas={totalVistas} mesesData={mesesData}/>
+        <IngresosCard ingresosEst={ingresosEst} onVerDetalle={()=>setSeccion("ingresos")}/>
       </div>
 
       {/* Sub-tabs de detalle */}
@@ -193,19 +233,16 @@ function DocenteStats({pubs,reseñas,inscritosMap,misOfertasEnv=[],session}){
       {seccion==="resumen"&&(
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
 
-          {/* Ingresos estimados + conversión */}
-          <div style={{...statStyle,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Facturación potencial</div>
-              <div style={{fontSize:22,fontWeight:700,color:C.successText}}>{fmtARS(ingresosEst)}</div>
-              <div style={{fontSize:10,color:C.muted}}>Precio × inscriptos · no refleja pagos reales</div>
-            </div>
-            {tasaConversion&&<div style={{textAlign:"right"}}>
-              <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Conversión</div>
+          {/* Conversión visitas → inscriptos */}
+          {tasaConversion&&(
+            <div style={{...statStyle,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Conversión</div>
+                <div style={{fontSize:10,color:C.muted}}>visitas → inscriptos</div>
+              </div>
               <div style={{fontSize:20,fontWeight:700,color:C.info}}>{tasaConversion}%</div>
-              <div style={{fontSize:10,color:C.muted}}>visitas → inscriptos</div>
-            </div>}
-          </div>
+            </div>
+          )}
 
           {/* Alumnos activos vs finalizados */}
           {(alumnosActivos>0||alumnosFinalizados>0)&&(
