@@ -3,7 +3,7 @@ import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles,
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
-  C, FONT, FONT_DISPLAY, toast, accentFor, tx,
+  C, FONT, FONT_DISPLAY, toast, accentFor, tx, BANNER_PRESETS,
   Avatar, Spinner, Btn, Label, Modal,
   fmtRel, fmtPrice, calcAvg,
   safeDisplayName, sanitizeContactInfo, moderarMensaje, avatarColor,
@@ -1745,7 +1745,17 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const avatarInputRef=useRef(null);
   const [bannerUrl,setBannerUrl]=useState("");
   const [bannerUploading,setBannerUploading]=useState(false);
+  const [bannerMenuOpen,setBannerMenuOpen]=useState(false);
   const bannerInputRef=useRef(null);
+  // Aplica un preset de gradiente (o lo quita) como portada. Guarda el string CSS
+  // en banner_url; el render distingue http (imagen) de linear-gradient (preset).
+  const aplicarPortada=async(val)=>{
+    setBannerMenuOpen(false);
+    const prev=bannerUrl;
+    setBannerUrl(val);
+    try{await sb.updateUsuario(session.user.id,{banner_url:val||null},session.access_token);toast(val?"Portada actualizada":"Portada quitada","success");}
+    catch(err){setBannerUrl(prev);toast("Error al actualizar la portada: "+err.message,"error");}
+  };
   const [savingDisplayName,setSavingDisplayName]=useState(false);
   const [perfilLoaded,setPerfilLoaded]=useState(false);
   // Docente extra fields
@@ -1862,13 +1872,14 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {/* ── HEADER PERFIL (estilo prototipo: portada + avatar flotante + pills) ── */}
       <div style={{position:"relative",overflow:"hidden",background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,marginBottom:16,boxShadow:C.shadow}}>
         {/* Portada */}
-        <div style={{position:"relative",height:150,background:bannerUrl?undefined:accentFor("cursos").heroGrad,overflow:"hidden"}}>
+        <div style={{position:"relative",height:150,background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,overflow:"hidden"}}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota */}
-          {bannerUrl
+          {bannerUrl?.startsWith("http")
             ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
             :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.25), transparent 55%)"}}/>}
           <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Subir portada" style={{display:"none"}} onChange={async e=>{
             const file=e.target.files?.[0];if(!file)return;
+            setBannerMenuOpen(false);
             if(file.size>5*1024*1024){toast("La imagen no debe superar 5 MB","error");return;}
             setBannerUploading(true);
             try{
@@ -1878,10 +1889,24 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             }catch(err){toast("Error al subir la portada: "+err.message,"error");}
             finally{setBannerUploading(false);if(bannerInputRef.current)bannerInputRef.current.value="";}
           }}/>
-          <button onClick={()=>bannerInputRef.current?.click()} disabled={bannerUploading}
-            style={{position:"absolute",top:14,right:14,display:"inline-flex",alignItems:"center",gap:7,padding:"8px 14px",borderRadius:20,border:"none",background:"rgba(255,255,255,.22)",color:"#fff",fontFamily:FONT,fontSize:12.5,fontWeight:600,cursor:"pointer",backdropFilter:"blur(4px)"}}>
+          <button onClick={()=>setBannerMenuOpen(o=>!o)} disabled={bannerUploading}
+            style={{position:"absolute",top:14,right:14,zIndex:2,display:"inline-flex",alignItems:"center",gap:7,padding:"8px 14px",borderRadius:20,border:"none",background:"rgba(255,255,255,.22)",color:"#fff",fontFamily:FONT,fontSize:12.5,fontWeight:600,cursor:"pointer",backdropFilter:"blur(4px)"}}>
             <Camera size={15}/>{bannerUploading?"Subiendo…":"Editar portada"}
           </button>
+          {bannerMenuOpen&&(
+            <div style={{position:"absolute",left:14,right:14,bottom:14,zIndex:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"rgba(0,0,0,.45)",backdropFilter:"blur(6px)",borderRadius:12,padding:"10px 12px"}}>
+              <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.85)"}}>Color</span>
+              {BANNER_PRESETS.map(p=>(
+                <button key={p.key} title={p.label} aria-label={`Portada ${p.label}`} onClick={()=>aplicarPortada(p.grad)}
+                  style={{width:34,height:24,borderRadius:7,cursor:"pointer",background:p.grad,border:bannerUrl===p.grad?"2px solid #fff":"1px solid rgba(255,255,255,.5)",padding:0}}/>
+              ))}
+              <button onClick={()=>{setBannerMenuOpen(false);bannerInputRef.current?.click();}}
+                style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,border:"none",background:"#fff",color:C.text,fontFamily:FONT,fontSize:12,fontWeight:650,cursor:"pointer"}}>
+                <Camera size={13}/>Subir imagen
+              </button>
+              {bannerUrl&&<button onClick={()=>aplicarPortada("")} style={{background:"none",border:"none",color:"rgba(255,255,255,.85)",fontSize:11,cursor:"pointer",fontFamily:FONT,textDecoration:"underline"}}>Quitar</button>}
+            </div>
+          )}
         </div>
         <div style={{position:"relative",padding:"0 26px 24px"}}>
           {/* Avatar flotante con badge de edición */}

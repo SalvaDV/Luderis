@@ -59,6 +59,16 @@ export const accentFor=(seccion)=>{
   return ACCENTS[tema][key];
 };
 
+// Presets de portada (banner del perfil) — gradientes on-brand derivados de los
+// heroGrad de ACCENTS (idénticos en claro/oscuro). Se guardan como string CSS en
+// usuarios.banner_url; el render distingue: empieza con "http" → imagen subida,
+// empieza con "linear-gradient" → preset, vacío → degradado por defecto.
+export const BANNER_PRESETS=[
+  {key:"curso", label:"Azul",    grad:ACCENTS.light.curso.heroGrad},
+  {key:"clase", label:"Ámbar",   grad:ACCENTS.light.clase.heroGrad},
+  {key:"pedido",label:"Violeta", grad:ACCENTS.light.pedido.heroGrad},
+];
+
 // ─── LOGGING ─────────────────────────────────────────────────────────────────
 // Centralizado para poder agregar Sentry u otro servicio después sin tocar cada archivo
 export const logError = (context, error) => {
