@@ -767,18 +767,17 @@ function ClasesTab({session,misPubs}){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-        <div style={{fontSize:13,color:C.muted}}>Registrá y confirmá clases realizadas para habilitar reseñas verificadas.</div>
+        <div style={{...tx("body"),color:C.muted}}>Registrá y confirmá clases realizadas para habilitar reseñas verificadas.</div>
         {misOfertas.length>0&&(
-          <button onClick={()=>setShowRegistrar(v=>!v)}
-            style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:20,color:C.accent,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT}}>
-            {showRegistrar?"Cancelar":"+ Registrar clase"}
-          </button>
+          showRegistrar
+            ?<button onClick={()=>setShowRegistrar(false)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            :<button onClick={()=>setShowRegistrar(true)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid}}><span style={{fontSize:16,lineHeight:1}}>+</span>Registrar clase</button>
         )}
       </div>
 
       {showRegistrar&&(
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:16}}>
-          <div style={{fontWeight:600,color:C.text,fontSize:14,marginBottom:12}}>Registrar clase dada</div>
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,boxShadow:C.shadow}}>
+          <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Registrar clase dada</div>
           {misOfertas.length>0&&(
             <div style={{marginBottom:8}}>
               <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Publicación (opcional)</div>
@@ -797,17 +796,17 @@ function ClasesTab({session,misPubs}){
           <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Notas (opcional)</div>
           <textarea value={regNotas} onChange={e=>setRegNotas(e.target.value)} aria-label="Notas de la clase" placeholder="Temas vistos, observaciones..." rows={2} style={{...iS,resize:"vertical"}}/>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={registrar} disabled={saving} style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:saving?0.6:1}}>{saving?"Guardando...":"Registrar"}</button>
-            <button onClick={()=>setShowRegistrar(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"8px 16px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
+            <button onClick={registrar} disabled={saving} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid,opacity:saving?0.6:1}}>{saving?"Guardando...":"Registrar"}</button>
+            <button onClick={()=>setShowRegistrar(false)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
           </div>
         </div>
       )}
 
       {loading?<Spinner/>:clases.length===0?(
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"40px 24px",textAlign:"center"}}>
-          <div style={{marginBottom:12}}><Clipboard size={36} color={C.muted} strokeWidth={1.5}/></div>
-          <div style={{fontWeight:600,color:C.text,fontSize:15,marginBottom:8}}>Sin clases registradas</div>
-          <div style={{color:C.muted,fontSize:13}}>Registrá las clases que diste para que tus alumnos puedan confirmarte y dejarte reseñas verificadas.</div>
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"48px 24px",textAlign:"center",boxShadow:C.shadow}}>
+          <div style={{width:52,height:52,borderRadius:14,background:accentFor("cursos").soft,color:accentFor("cursos").solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><Clipboard size={26} strokeWidth={1.8}/></div>
+          <div style={{...tx("cardTitle"),color:C.text,marginBottom:6}}>Sin clases registradas</div>
+          <div style={{...tx("body"),color:C.muted,maxWidth:420,margin:"0 auto"}}>Registrá las clases que diste para que tus alumnos puedan confirmarte y dejarte reseñas verificadas.</div>
         </div>
       ):(
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -817,10 +816,10 @@ function ClasesTab({session,misPubs}){
             const yaConfirme=soyDocente?c.confirmado_docente:c.confirmado_alumno;
             const ambasConfirmaron=c.confirmado_docente&&c.confirmado_alumno;
             return(
-              <div key={c.id} style={{background:C.surface,border:`1px solid ${ambasConfirmaron?C.success+"44":C.border}`,borderRadius:12,padding:"14px 16px"}}>
+              <div key={c.id} style={{background:C.surface,border:`1px solid ${ambasConfirmaron?C.success+"44":C.border}`,borderLeft:`3px solid ${ambasConfirmaron?C.success:accentFor("cursos").solid}`,borderRadius:14,padding:16,boxShadow:C.shadow}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
+                    <div style={{...tx("meta"),color:C.muted,marginBottom:4}}>
                       {soyDocente?"Alumno":"Docente"}: <span style={{color:C.text,fontWeight:600}}>{contraparte}</span>
                     </div>
                     {c.publicacion_id&&<div style={{fontSize:12,color:C.accent,marginBottom:4,display:"flex",alignItems:"center",gap:3}}><Bookmark size={11} strokeWidth={2}/>Publicación vinculada</div>}
