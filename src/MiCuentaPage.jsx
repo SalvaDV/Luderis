@@ -981,7 +981,7 @@ function PagosTab({session}){
       </div>
 
       {/* ── Dashboard de cobros ──────────────────────────────────────── */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
+      <div>
         <div style={{...tx("cardTitle"),color:C.text,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><Banknote size={16} strokeWidth={1.9}/>Mis cobros</div>
         {/* Resumen */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:16}}>
@@ -1590,9 +1590,12 @@ function FinanzasTab({session}){
 }
 
 // ─── AJUSTES TAB ──────────────────────────────────────────────────────────────
-function AjustesTab({session}){
+function AjustesTab({session,nombre,displayName,bio,ubicacion,tituloProf,avatarUrl,currentColor,onEditPerfil}){
   const [confirmDelete,setConfirmDelete]=useState(false);
   const [deleteText,setDeleteText]=useState("");
+  const nombreShow=displayName||nombre||session.user.email.split("@")[0];
+  const subtitleParts=[tituloProf,ubicacion].filter(Boolean);
+  const cambiarPass=async()=>{try{await sb.resetPassword(session.user.email);toast("Te enviamos un email para cambiar tu contraseña","success",4000);}catch(e){toast("Error: "+e.message,"error");}};
   const iS={background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",width:"100%"};
   const memberSince=session.user.created_at
     ?new Date(session.user.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})
@@ -1606,13 +1609,46 @@ function AjustesTab({session}){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
 
+      {/* Datos personales */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px 22px",boxShadow:C.shadow}}>
+        <div style={{...tx("cardTitle"),color:C.text,marginBottom:14}}>Datos personales</div>
+        <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+          <div style={{width:52,height:52,borderRadius:"50%",overflow:"hidden",flexShrink:0}}>
+            {avatarUrl&&avatarUrl.startsWith("https://")
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+              ?<img src={avatarUrl} alt="avatar" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
+              :<div style={{width:"100%",height:"100%",background:currentColor||accentFor("cursos").solid,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:22,color:"#fff",fontFamily:FONT}}>{(nombreShow[0]||"U").toUpperCase()}</div>}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{...tx("bodyStrong"),color:C.text}}>{nombreShow}</div>
+            {subtitleParts.length>0&&<div style={{...tx("meta"),color:C.muted,marginTop:2}}>{subtitleParts.join(" · ")}</div>}
+          </div>
+          {onEditPerfil&&<button onClick={onEditPerfil}
+            style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer",flexShrink:0}}>
+            <Camera size={15}/>Editar
+          </button>}
+        </div>
+        {bio&&<p style={{...tx("body"),color:C.textSoft||C.muted,margin:"12px 0 0",lineHeight:1.6}}>{bio}</p>}
+      </div>
+
       {/* Cuenta */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px 22px",boxShadow:C.shadow}}>
         <div style={{...tx("cardTitle"),color:C.text,marginBottom:14}}>Información de cuenta</div>
         <div>
           <Row label="Email" value={session.user.email}/>
           <Row label="Miembro desde" value={memberSince}/>
+          <Row label="Plan" value="Gratuito"/>
           <Row label="ID de usuario" value={<span style={{fontSize:11,fontFamily:"monospace",color:C.muted}}>{session.user.id.slice(0,18)}…</span>} last/>
+        </div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:16}}>
+          <button onClick={cambiarPass}
+            style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            <MessageCircle size={15}/>Cambiar contraseña
+          </button>
+          <button onClick={()=>toast("Estamos preparando la descarga de tus datos. Te la enviamos por email.","info",4000)}
+            style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            <Bookmark size={15}/>Descargar mis datos
+          </button>
         </div>
       </div>
 
@@ -2425,7 +2461,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {tabCuenta==="alertas"&&<AlertasTab session={session}/>}
       {tabCuenta==="referidos"&&<ReferidosTab session={session}/>}
       {tabCuenta==="finanzas"&&<FinanzasTab session={session}/>}
-      {tabCuenta==="ajustes"&&<AjustesTab session={session}/>}
+      {tabCuenta==="ajustes"&&<AjustesTab session={session} nombre={nombre} displayName={displayName} bio={bio} ubicacion={ubicacionPerfil} tituloProf={tituloProfesional} avatarUrl={avatarUrl} currentColor={currentColor} onEditPerfil={()=>{setEditingPerfil(true);window.scrollTo({top:0,behavior:"smooth"});}}/>}
       {ofertasModal&&<OfertasRecibidasModal post={ofertasModal} session={session} onClose={()=>{setOfertasModal(null);cargar();if(onRefreshOfertas)onRefreshOfertas();}} onContactar={onOpenChat}/>}
       {espacioModal&&<EspacioClaseModal oferta={espacioModal} session={session} onClose={()=>setEspacioModal(null)}/>}
       {acuerdoModal&&<AcuerdoModal oferta={acuerdoModal} session={session} onClose={()=>setAcuerdoModal(null)} onConfirmado={()=>{cargar();setAcuerdoModal(null);}}/>}
