@@ -2383,27 +2383,58 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
       {tabCuenta==="resenas"&&(
         <div>
           {loading?<Spinner/>:reseñas.length===0?(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"40px 24px",textAlign:"center"}}>
-              <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><Star size={32} color={C.border} strokeWidth={1.5}/></div>
-              <div style={{color:C.text,fontWeight:600,fontSize:15,marginBottom:8}}>Sin reseñas aún</div>
-              <div style={{color:C.muted,fontSize:13}}>Cuando finalices clases, tus alumnos podrán valorarte aquí.</div>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"48px 24px",textAlign:"center",boxShadow:C.shadow}}>
+              <div style={{width:52,height:52,borderRadius:14,background:accentFor("clases").soft,color:accentFor("clases").solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><Star size={26} strokeWidth={1.8}/></div>
+              <div style={{...tx("cardTitle"),color:C.text,marginBottom:6}}>Sin reseñas aún</div>
+              <div style={{...tx("body"),color:C.muted,maxWidth:420,margin:"0 auto"}}>Cuando finalices clases, tus alumnos podrán valorarte aquí.</div>
             </div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {reseñas.map(r=>(<div key={r.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px"}}>
-                <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
-                  <Avatar letra={r.autor_nombre?.[0]||"?"} size={32}/>
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                      <span style={{fontWeight:600,color:C.text,fontSize:13}}>{r.autor_nombre}</span>
-                      {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {/* Resumen: promedio + distribución */}
+              {(()=>{
+                const total=reseñas.length;
+                const prom=avg||(reseñas.reduce((a,r)=>a+(r.estrellas||0),0)/total);
+                const dist=[5,4,3,2,1].map(n=>({n,c:reseñas.filter(r=>(r.estrellas||0)===n).length}));
+                return(
+                  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:20,boxShadow:C.shadow,display:"flex",gap:24,alignItems:"center",flexWrap:"wrap"}}>
+                    <div style={{textAlign:"center",flexShrink:0,minWidth:90}}>
+                      <div style={{...tx("display"),fontSize:40,color:C.text,lineHeight:1}}>{prom.toFixed(1)}</div>
+                      <div style={{color:"#F5B301",display:"inline-flex",alignItems:"center",gap:3,marginTop:6,...tx("meta"),fontWeight:700}}><Star size={14} fill="#F5B301" stroke="#F5B301"/>{prom.toFixed(1)}</div>
+                      <div style={{...tx("micro"),color:C.muted,marginTop:2}}>{total} reseña{total!==1?"s":""}</div>
                     </div>
-                    <div style={{color:"#B45309",fontSize:12,marginTop:1}}>{"★".repeat(r.estrellas||0)}{"☆".repeat(5-(r.estrellas||0))}</div>
+                    <div style={{flex:1,minWidth:200,display:"flex",flexDirection:"column",gap:6}}>
+                      {dist.map(({n,c})=>(
+                        <div key={n} style={{display:"flex",alignItems:"center",gap:10}}>
+                          <span style={{...tx("micro"),color:C.muted,display:"inline-flex",alignItems:"center",gap:2,width:22}}>{n}<Star size={10} fill="#F5B301" stroke="#F5B301"/></span>
+                          <div style={{flex:1,height:8,background:C.surfaceAlt||C.bg,borderRadius:6,overflow:"hidden"}}><div style={{height:"100%",width:`${total>0?(c/total)*100:0}%`,background:"#F5B301",borderRadius:6}}/></div>
+                          <span style={{...tx("micro"),color:C.faint||C.muted,width:36,textAlign:"right"}}>{total>0?Math.round((c/total)*100):0}%</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</div>
+                );
+              })()}
+              {/* Lista de reseñas */}
+              {reseñas.map(r=>{
+                const fecha=r.created_at?new Date(r.created_at).toLocaleDateString("es-AR",{month:"long",year:"numeric"}):"";
+                const sub=[r.pub_titulo,fecha].filter(Boolean).join(" · ");
+                return(
+                <div key={r.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:16,boxShadow:C.shadow}}>
+                  <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                    <Avatar letra={r.autor_nombre?.[0]||"?"} size={42}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                        <span style={{...tx("bodyStrong"),color:C.text}}>{r.autor_nombre}</span>
+                        {r.verificada&&<span style={{...tx("micro"),background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><BadgeCheck size={10}/>Verificada</span>}
+                      </div>
+                      {sub&&<div style={{...tx("meta"),color:C.muted,marginTop:2}}>{sub}</div>}
+                    </div>
+                    <div style={{color:"#F5B301",...tx("meta"),flexShrink:0,whiteSpace:"nowrap",letterSpacing:1}}>{"★".repeat(r.estrellas||0)}{"☆".repeat(5-(r.estrellas||0))}</div>
+                  </div>
+                  {r.texto&&<p style={{...tx("body"),color:C.textSoft||C.muted,margin:"12px 0 0",lineHeight:1.6}}>{r.texto}</p>}
                 </div>
-                {r.texto&&<p style={{color:C.muted,fontSize:13,margin:0,lineHeight:1.6}}>{r.texto}</p>}
-              </div>))}
+                );
+              })}
             </div>
           )}
         </div>
