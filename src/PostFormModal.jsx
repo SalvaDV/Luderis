@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
 import {
-  C, FONT, FONT_DISPLAY, useDebounce, toast,
+  C, FONT, FONT_DISPLAY, useDebounce, toast, accentFor, tx,
   Spinner, Btn, Label, ErrMsg, Modal,
   SearchableSelect,
   fmtRel, calcAvg, calcDuracion,
@@ -1021,27 +1021,29 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
 
         {/* Hero — LinkedIn style: fixed banner + avatar overlapping below */}
         <div style={{position:"relative"}}>
-          {/* Banner */}
-          <div style={{height:110,background:bannerUrl?undefined:`linear-gradient(135deg,${C.accent}22,${C.accent}08)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
-            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota */}
-            {bannerUrl&&<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>}
+          {/* Banner — portada con degradado de marca (estilo prototipo) */}
+          <div style={{height:150,background:bannerUrl?undefined:accentFor("cursos").heroGrad,position:"relative",overflow:"hidden"}}>
+            {bannerUrl
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota
+              ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
+              :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.25), transparent 55%)"}}/>}
           </div>
           {/* Avatar — overlaps banner */}
-          <div style={{position:"absolute",bottom:-44,left:20,zIndex:2}}>
-            <div style={{width:88,height:88,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.bg}`,boxShadow:"0 4px 16px rgba(0,0,0,.18)"}}>
+          <div style={{position:"absolute",bottom:-52,left:24,zIndex:2}}>
+            <div style={{width:104,height:104,borderRadius:"50%",overflow:"hidden",border:`4px solid ${C.bg}`,boxShadow:"0 4px 16px rgba(0,0,0,.18)"}}>
               {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")
                 // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo gestiona el fallback del avatar
                 ?<img src={perfilData.avatar_url} alt={displayNombre} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.currentTarget.style.display="none";e.currentTarget.nextSibling.style.display="flex";}}/>
                 :null
               }
-              <div style={{width:"100%",height:"100%",background:perfilColor,display:perfilData?.avatar_url?"none":"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:34,color:"#fff"}}>
+              <div style={{width:"100%",height:"100%",background:perfilColor,display:perfilData?.avatar_url?"none":"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:42,color:"#fff"}}>
                 {displayNombre[0].toUpperCase()}
               </div>
             </div>
           </div>
         </div>
         {/* Name / badges / location below banner */}
-        <div style={{paddingTop:56,paddingLeft:20,paddingRight:20,paddingBottom:4}}>
+        <div style={{paddingTop:64,paddingLeft:24,paddingRight:24,paddingBottom:4}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <h1 style={{color:C.text,fontFamily:FONT_DISPLAY,fontSize:21,fontWeight:800,letterSpacing:"-.02em",margin:0}}>{displayNombre}</h1>
             {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
@@ -1064,25 +1066,27 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
         </div>
 
         <div style={{padding:"28px 20px 20px"}}>
-          {/* Stats bar */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:20}}>
+          {/* Stats bar (estilo prototipo: ícono en caja soft) */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:12,marginBottom:20}}>
             {[
-              {n:avg?avg.toFixed(1):"—",label:"Rating",icon:<Star size={14} color="#F59E0B"/>,color:"#F59E0B"},
-              {n:reseñas.length,label:"Reseñas",icon:<MessageCircle size={14} color={C.accent}/>,color:C.accent},
-              {n:pubs.length,label:"Clases",icon:<BookOpen size={14} color={C.success}/>,color:C.successText},
-              {n:totalInscriptos,label:"Alumnos",icon:<Users size={14} color={C.purple||"#7B3FBE"}/>,color:C.purple||"#7B3FBE"},
-            ].map(s=>(
-              <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px",textAlign:"center"}}>
-                <div style={{display:"flex",justifyContent:"center",marginBottom:2}}>{s.icon}</div>
-                <div style={{fontSize:18,fontWeight:800,color:s.color}}>{s.n}</div>
-                <div style={{fontSize:10,color:C.muted}}>{s.label}</div>
+              {n:avg?avg.toFixed(1):"—",label:"Valoración",Icon:Star,acc:"clases"},
+              {n:reseñas.length,label:"Reseñas",Icon:MessageCircle,acc:"pedidos"},
+              {n:pubs.length,label:"Publicaciones",Icon:BookOpen,acc:"cursos"},
+              {n:totalInscriptos,label:"Alumnos",Icon:Users,acc:"pedidos"},
+            ].map(s=>{const ac=accentFor(s.acc);return(
+              <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px",textAlign:"center",boxShadow:C.shadow}}>
+                <div style={{width:38,height:38,borderRadius:11,background:ac.soft,color:ac.solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}><s.Icon size={18} strokeWidth={2}/></div>
+                <div style={{...tx("display"),fontSize:22,color:C.text,lineHeight:1}}>{s.n}</div>
+                <div style={{...tx("micro"),color:C.muted,marginTop:3}}>{s.label}</div>
               </div>
-            ))}
+            );})}
           </div>
 
-          {/* Bio + enriched docente info */}
+          {/* Sobre mí + Presentación (2 columnas en desktop, estilo prototipo) */}
+          {((perfilData?.bio||perfilData?.titulo_profesional||perfilData?.metodologia)||videoUrl)&&(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,280px),1fr))",gap:12,marginBottom:16,alignItems:"start"}}>
           {(perfilData?.bio||perfilData?.titulo_profesional||perfilData?.metodologia)&&(
-            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
               {perfilData?.titulo_profesional&&(
                 <div style={{fontSize:13,color:C.accent,fontWeight:700,marginBottom:6}}>{perfilData.titulo_profesional}</div>
               )}
@@ -1114,15 +1118,17 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
             </div>
           )}
 
-          {/* Video de presentación */}
+          {/* Presentación (video) */}
           {videoUrl&&(
-            <div style={{marginBottom:16}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><Video size={14}/>Video de presentación</div>
-              <div style={{borderRadius:14,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
+              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><Video size={14}/>Presentación</div>
+              <div style={{borderRadius:12,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
                 <iframe title={`Video de presentación de ${displayNombre}`} src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl}
                   style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
               </div>
             </div>
+          )}
+          </div>
           )}
 
           {/* Tabs */}

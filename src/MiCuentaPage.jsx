@@ -1712,7 +1712,7 @@ function AjustesTab({session,nombre,displayName,bio,ubicacion,tituloProf,avatarU
   );
 }
 
-function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
+function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
   const {resetCuentaBadge}=useAppActions();
   const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);const [loading,setLoading]=useState(true);
   const [toggling,setToggling]=useState(null);const [ofertasMap,setOfertasMap]=useState({});const [ofertasModal,setOfertasModal]=useState(null);
@@ -1951,6 +1951,12 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
               onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borderStrong||C.border;e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.textSoft||C.text;}}>
               <Camera size={16}/>Editar perfil
             </button>
+            {onOpenPerfil&&<button onClick={()=>onOpenPerfil(session.user.email)}
+              style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer",transition:"all .15s"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=accentFor("cursos").solid;e.currentTarget.style.background=accentFor("cursos").soft;e.currentTarget.style.color=accentFor("cursos").text;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borderStrong||C.border;e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.textSoft||C.text;}}>
+              <Eye size={16}/>Ver perfil público
+            </button>}
           </div>
           {/* Form edición inline */}
           {editingPerfil&&(
