@@ -477,7 +477,7 @@ export const deleteDocumento = (id: Id, token: Token) =>
 // ── Verificación IA ───────────────────────────────────────────────────────────
 
 export const getUsuarioByIdFull = (id: Id, token: Token) =>
-  db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,banner_url,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
+  db(`usuarios?id=eq.${id}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,avatar_color,banner_url,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web`, "GET", null, token)
     .then((r: any) => r?.[0] || null).catch(() => null);
 
 export const getUsuarioById = (id: Id, token: Token) =>
@@ -485,7 +485,7 @@ export const getUsuarioById = (id: Id, token: Token) =>
     .then((r: any) => r?.[0] || null).catch(() => null);
 
 export const getUsuarioByEmail = (email: string, token: Token) =>
-  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,banner_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes`, "GET", null, token)
+  db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,avatar_color,banner_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes`, "GET", null, token)
     .then((r: any) => r?.[0] || null).catch(() => null);
 
 // ── IA helper — llama a la Supabase Edge Function "ai-proxy" ─────────────────

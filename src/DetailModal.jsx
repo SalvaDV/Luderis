@@ -153,7 +153,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
             {/* Autor */}
             <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20,paddingBottom:20,borderBottom:`1px solid ${C.border}`}}>
-              <button onClick={irAlPerfil} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}><Avatar letra={nombre[0]} size={52} img={autorAvatar||undefined}/></button>
+              <button onClick={irAlPerfil} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}><Avatar letra={nombre[0]} size={52} img={autorAvatar||undefined} color={post.autor_avatar_color||undefined}/></button>
               <div style={{flex:1,minWidth:0}}>
                 <button onClick={irAlPerfil}
                   style={{fontWeight:700,color:C.text,fontSize:16,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,padding:0,textAlign:"left",display:"block",marginBottom:3}}

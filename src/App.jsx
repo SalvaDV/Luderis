@@ -895,7 +895,7 @@ export default function App(){
       )}
       <main style={{marginLeft:SW,flex:1,padding:isMobile?"62px 8px 70px":"20px 24px 24px",minHeight:"100vh",width:`calc(100vw - ${SW}px)`,maxWidth:`calc(100vw - ${SW}px)`,boxSizing:"border-box",background:"transparent",overflowX:"hidden"}}>
         {/* Barra de saludo (desktop) — diseño */}
-        {!isMobile&&(()=>{const totalNoLeidas=notifs.filter(n=>!n.leida).length;const primerNombre=(sb.getDisplayName(session.user.email)||"").split(" ")[0];const av=_avatarCache[session.user.email]||localStorage.getItem("cl_avatar_"+session.user.email)||null;return(
+        {!isMobile&&(()=>{const totalNoLeidas=notifs.filter(n=>!n.leida).length;const primerNombre=(sb.getDisplayName(session.user.email)||"").split(" ")[0];const av=_avatarCache[session.user.email]||localStorage.getItem("cl_avatar_"+session.user.email)||null;const avColor=(()=>{try{return localStorage.getItem("avatarColor_"+session.user.email)||undefined;}catch{return undefined;}})();return(
           <div style={{maxWidth:1100,margin:"0 auto 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
             <div style={{fontSize:14,color:C.muted,fontWeight:500}}>Buen día, <span style={{color:C.text,fontWeight:800,fontFamily:FONT_DISPLAY,letterSpacing:"-.01em"}}>{primerNombre}</span> 👋</div>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -904,7 +904,7 @@ export default function App(){
                 {totalNoLeidas>0&&<span style={{position:"absolute",top:-4,right:-4,minWidth:16,height:16,padding:"0 4px",borderRadius:8,background:"#E5484D",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{totalNoLeidas>9?"9+":totalNoLeidas}</span>}
               </button>
               <button onClick={()=>setPage("cuenta")} aria-label="Mi cuenta" style={{border:"none",background:"transparent",padding:0,cursor:"pointer",borderRadius:"50%",display:"flex"}}>
-                {av&&av.startsWith("http")?<div style={{width:40,height:40,borderRadius:"50%",overflow:"hidden"}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(primerNombre||"U")[0]} size={40}/>}
+                {av&&av.startsWith("http")?<div style={{width:40,height:40,borderRadius:"50%",overflow:"hidden"}}><img src={av} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>:<Avatar letra={(primerNombre||"U")[0]} size={40} color={avColor}/>}
               </button>
             </div>
           </div>

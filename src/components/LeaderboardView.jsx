@@ -9,10 +9,11 @@ export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpe
     posts.filter(p=>p.tipo==="oferta"&&p.activo!==false).forEach(p=>{
       const email=p.autor_email;
       if(!map[email])map[email]={
-        email,nombre:p.autor_nombre||p.autor_display_name||email.split("@")[0],avatar:p.autor_avatar_url||null,
+        email,nombre:p.autor_nombre||p.autor_display_name||email.split("@")[0],avatar:p.autor_avatar_url||null,color:p.autor_avatar_color||null,
         pubs:[],totalInscriptos:0,avgRating:0,materias:new Set(),
       };
       if(p.autor_avatar_url&&!map[email].avatar)map[email].avatar=p.autor_avatar_url;
+      if(p.autor_avatar_color&&!map[email].color)map[email].color=p.autor_avatar_color;
       map[email].pubs.push(p);
       map[email].materias.add(p.materia||"");
     });
@@ -59,7 +60,7 @@ export default function LeaderboardView({posts,reseñasMap,reseñasUserMap,onOpe
             {i+1}
           </div>
           {/* Avatar */}
-          <Avatar letra={d.nombre[0]} size={44} img={d.avatar||undefined}/>
+          <Avatar letra={d.nombre[0]} size={44} img={d.avatar||undefined} color={d.color||undefined}/>
           {/* Info */}
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2}}>{d.nombre}</div>

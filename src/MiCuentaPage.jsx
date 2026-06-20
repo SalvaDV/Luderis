@@ -1777,6 +1777,7 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
         if(u.ubicacion)setUbicacionPerfil(u.ubicacion);
         if(u.avatar_url)setAvatarUrl(u.avatar_url);
         if(u.banner_url)setBannerUrl(u.banner_url);
+        if(u.avatar_color){setAvatarColor2(u.avatar_color);try{localStorage.setItem("avatarColor_"+email,u.avatar_color);}catch{}}
         if(u.video_presentacion)setVideoPresentacion(u.video_presentacion);
         if(u.titulo_profesional)setTituloProfesional(u.titulo_profesional);
         if(u.anios_experiencia!=null)setAniosExperiencia(String(u.anios_experiencia));
@@ -1842,7 +1843,12 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
     }catch(e){toast("Error: "+e.message,"error");}finally{setSavingDoc(false);}
   };
   const removeDoc=async(id)=>{try{await sb.deleteDocumento(id,session.access_token);await cargar();}catch(e){toast(e.message,"error");}};
-  const saveColor=(c)=>{localStorage.setItem("avatarColor_"+email,c);setAvatarColor2(c);};
+  const saveColor=(c)=>{
+    localStorage.setItem("avatarColor_"+email,c);setAvatarColor2(c);
+    // Persistir en la DB para que el color se vea en publicaciones, ranking y perfil público.
+    sb.updateUsuario(uid,{avatar_color:c},session.access_token).catch(()=>{});
+    try{window.dispatchEvent(new Event("avatar-updated"));}catch{}
+  };
   const TIPOS_DOC=[{v:"titulo",l:"Título"},{v:"certificado",l:"Certificado"},{v:"experiencia",l:"Experiencia"},{v:"otro",l:"Otro"}];
   const TIPO_ICON={titulo:GraduationCap,certificado:ScrollText,experiencia:Briefcase,otro:FileText};
   const ofertas=pubs.filter(p=>p.tipo==="oferta");

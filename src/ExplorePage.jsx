@@ -596,7 +596,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${TIPO_PUB.pedido.accent}22`;e.currentTarget.style.borderColor=TIPO_PUB.pedido.accent+"66";}}
                       onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=TIPO_PUB.pedido.border;}}>
                       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                        <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={30} img={p.autor_avatar_url||undefined}/>
+                        <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={30} img={p.autor_avatar_url||undefined} color={p.autor_avatar_color||undefined}/>
                         <div style={{minWidth:0,flex:1}}>
                           <div style={{fontSize:11,fontWeight:600,color:TIPO_PUB.pedido.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{safeDisplayName(p.autor_nombre,p.autor_email)}</div>
                           <div style={{fontSize:10,color:C.muted}}>{p.materia||"Sin materia"}</div>
@@ -1016,7 +1016,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                     <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",cursor:"pointer",background:C.surface,borderBottom:`1px solid ${C.border}`,transition:"background .12s"}}
                       onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                       onMouseLeave={e=>e.currentTarget.style.background=C.surface}>
-                      <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={36} img={p.autor_avatar_url||undefined}/>
+                      <Avatar letra={(p.autor_nombre||p.autor_email||"?")[0]} size={36} img={p.autor_avatar_url||undefined} color={p.autor_avatar_color||undefined}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontWeight:600,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
                         <div style={{fontSize:12,color:C.muted}}>{p.materia} · {fmtRel(p.created_at)}</div>

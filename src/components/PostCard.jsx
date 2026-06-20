@@ -59,7 +59,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
 
       {/* Header */}
       <div style={{display:"flex",alignItems:"flex-start",gap:11,marginBottom:13}}>
-        <Avatar letra={nombre[0]} size={42} img={autorAvatar||undefined}/>
+        <Avatar letra={nombre[0]} size={42} img={autorAvatar||undefined} color={post.autor_avatar_color||undefined}/>
         <div style={{minWidth:0,flex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
             <button onClick={e=>{e.stopPropagation();onOpenPerfil(post.autor_email);}}

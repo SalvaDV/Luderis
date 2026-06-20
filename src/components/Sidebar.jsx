@@ -21,6 +21,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
   ];
   const accN=accentFor("cursos");// acento del rediseño para el nav activo (azul curso)
   const avatarUrl=_avatarCache[session.user.email]||localStorage.getItem("cl_avatar_"+session.user.email)||null;
+  const avatarColorSelf=(()=>{try{return localStorage.getItem("avatarColor_"+session.user.email)||undefined;}catch{return undefined;}})();
   const inner=(
     <div style={{width:236,height:"100%",background:C.surface,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",fontFamily:FONT}}>
       {/* Logo */}
@@ -85,7 +86,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
           <button onClick={()=>{setPage("cuenta");if(mobile)onClose();}} style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:FONT,textAlign:"left"}}>
             {avatarUrl&&avatarUrl.startsWith("http")
               ?<div style={{width:36,height:36,borderRadius:"50%",overflow:"hidden",flexShrink:0}}><img src={avatarUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/></div>
-              :<Avatar letra={nombre[0]} size={36}/>}
+              :<Avatar letra={nombre[0]} size={36} color={avatarColorSelf}/>}
             <div style={{overflow:"hidden",flex:1,minWidth:0}}>
               <div style={{color:C.text,fontSize:13,fontWeight:650,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nombre}</div>
               <div style={{color:C.faint||C.muted,fontSize:11.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{session.user.email}</div>

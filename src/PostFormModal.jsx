@@ -982,7 +982,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const avg=calcAvg(reseñas);
   const totalInscriptos=pubs.reduce((a,p)=>a+(p.cantidad_inscriptos||0),0);
   const materias=[...new Set(pubs.map(p=>p.materia).filter(Boolean))];
-  const perfilColor=localStorage.getItem("avatarColor_"+autorEmail)||avatarColor(displayNombre[0]);
+  const perfilColor=perfilData?.avatar_color||localStorage.getItem("avatarColor_"+autorEmail)||avatarColor(displayNombre[0]);
   const videoUrl=perfilData?.video_presentacion||null;
   const TIPO_ICON={titulo:<GraduationCap size={20}/>,certificado:<ScrollText size={20}/>,experiencia:<Briefcase size={20}/>,otro:<FileText size={20}/>};
   const [bannerUrl,setBannerUrl]=useState(null);
