@@ -6,6 +6,10 @@ alter table public.usuarios add column if not exists avatar_color text;
 
 -- authenticated puede actualizar su propio color (RLS "usuarios update own" ya limita por id).
 grant update (avatar_color) on public.usuarios to authenticated;
+-- IMPORTANTE: usuarios usa grants POR COLUMNA. Sin SELECT en la columna nueva, cualquier
+-- query que la incluya (getUsuarioByIdFull/ByEmail) falla con 42501 → 401 y NO carga el
+-- perfil (avatar/banner se ven default). Replicamos los grants de avatar_url.
+grant select (avatar_color) on public.usuarios to anon, authenticated;
 
 -- Exponer el color en la vista que usan las cards/ranking (columna nueva al final).
 create or replace view public.publicaciones_con_autor as

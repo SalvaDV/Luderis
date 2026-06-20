@@ -3,9 +3,19 @@ import { MessageCircle, X } from "lucide-react";
 import { C, FONT } from "../shared";
 import * as sb from "../supabase";
 
+const LUDY_GREETING={from:"bot",text:"¡Hola! Soy Ludy 🦊, la asistente virtual de Luderis. Podés preguntarme cualquier cosa sobre la plataforma — cómo publicar, inscribirte, usar el chat, exámenes, pagos, o lo que necesites. ¿En qué te ayudo?"};
+const LUDY_TTL=3*60*60*1000; // el chat se autoborra tras 3h sin actividad
+const LUDY_KEY="cl_ludy_chat";
+const loadLudyMsgs=()=>{
+  try{const raw=localStorage.getItem(LUDY_KEY);if(raw){const {ts,msgs}=JSON.parse(raw);if(Array.isArray(msgs)&&msgs.length>1&&Date.now()-ts<LUDY_TTL)return msgs;}}catch{}
+  return [LUDY_GREETING];
+};
+
 export default function ChatBotWidget(){
   const [open,setOpen]=useState(false);
-  const [msgs,setMsgs]=useState([{from:"bot",text:"¡Hola! Soy Ludy 🦊, la asistente virtual de Luderis. Podés preguntarme cualquier cosa sobre la plataforma — cómo publicar, inscribirte, usar el chat, exámenes, pagos, o lo que necesites. ¿En qué te ayudo?"}]);
+  const [msgs,setMsgs]=useState(loadLudyMsgs);
+  // Persistir el chat (sobrevive navegación) pero con TTL: se limpia tras unas horas.
+  useEffect(()=>{try{localStorage.setItem(LUDY_KEY,JSON.stringify({ts:Date.now(),msgs}));}catch{}},[msgs]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
   const [,setFailCount]=useState(0);
@@ -52,7 +62,7 @@ export default function ChatBotWidget(){
   const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20Luderis","_blank","noopener,noreferrer");
   return(
     <div style={{position:"fixed",bottom:22,right:22,zIndex:500,fontFamily:FONT}} className="cl-chatbot-fab">
-      <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel{position:fixed!important;left:10px!important;right:10px!important;bottom:78px!important;top:auto!important;width:auto!important;max-height:72vh!important}.cl-chat-panel .cl-chat-bubble{max-width:78%!important}}`}</style>
+      <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel{position:fixed!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:100%!important;max-height:100%!important;border-radius:0!important}.cl-chat-panel .cl-chat-bubble{max-width:80%!important}.cl-fab-hide-mobile{display:none!important}}`}</style>
       {open&&(
         <div className="cl-chat-panel" style={{position:"absolute",bottom:64,right:0,width:"min(340px,88vw)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,boxShadow:"0 8px 32px #0008",display:"flex",flexDirection:"column",maxHeight:460,overflow:"hidden"}}>
           {/* Header */}
@@ -99,8 +109,8 @@ export default function ChatBotWidget(){
           </div>
         </div>
       )}
-      {/* FAB button */}
-      <button onClick={()=>setOpen(v=>!v)} style={{width:52,height:52,borderRadius:"50%",background:open?C.border:"var(--cl-section-accent)",border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      {/* FAB button — en mobile se oculta cuando el chat está abierto (es fullscreen con su propia X) */}
+      <button onClick={()=>setOpen(v=>!v)} className={open?"cl-fab-hide-mobile":undefined} style={{width:52,height:52,borderRadius:"50%",background:open?C.border:"var(--cl-section-accent)",border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
         {open?<X size={20} strokeWidth={2}/>:<MessageCircle size={22} strokeWidth={1.8}/>}
       </button>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
