@@ -2076,9 +2076,10 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                         setAvatarFile(null);
                         setAvatarPreview(null);
                       }catch(uploadErr){
-                        toast("Error al subir la foto: "+uploadErr.message,"error");
-                        setSavingDisplayName(false);
-                        return;
+                        // No abortamos el guardado: si la foto falla, igual persistimos
+                        // el resto del perfil (idiomas, bio, etc.) con el avatar previo.
+                        toast("No se pudo subir la foto; guardamos el resto del perfil.","warn");
+                        finalAvatarUrl=avatarUrl;
                       }
                     }
                     // Calcular disponible_hasta según duración seleccionada
