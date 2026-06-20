@@ -1017,12 +1017,12 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
       </div>
 
       {error?<div style={{color:C.danger,textAlign:"center",padding:40}}>{error}</div>:(
-      <div style={{maxWidth:720,margin:"0 auto"}}>
+      <div style={{maxWidth:920,margin:"0 auto"}}>
 
         {/* Hero — LinkedIn style: fixed banner + avatar overlapping below */}
         <div style={{position:"relative"}}>
           {/* Banner — portada: imagen subida, preset de gradiente, o degradado de marca por defecto */}
-          <div style={{height:150,background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,position:"relative",overflow:"hidden"}}>
+          <div style={{height:"clamp(110px,26vw,150px)",background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,position:"relative",overflow:"hidden"}}>
             {bannerUrl?.startsWith("http")
               // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota
               ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>

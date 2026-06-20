@@ -217,6 +217,8 @@ export default function App(){
   const [recoverySession,setRecoverySession]=useState(null);
   // Tema: fuerza re-render global al cambiar
   const [,forceThemeRender]=useState(0);
+  // Refrescar avatares (sidebar/topbar leen de _avatarCache) al subir/eliminar foto.
+  useEffect(()=>{const h=()=>forceThemeRender(n=>n+1);window.addEventListener("avatar-updated",h);return()=>window.removeEventListener("avatar-updated",h);},[]);
   const { showBanner: showPushBanner, subscribe: subscribePush, dismiss: dismissPush, triggerBanner: triggerPushBanner } = usePushSubscription(session);
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [onboardingUpgrade,setOnboardingUpgrade]=useState(false);

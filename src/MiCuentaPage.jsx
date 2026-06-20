@@ -1872,7 +1872,7 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
       {/* ── HEADER PERFIL (estilo prototipo: portada + avatar flotante + pills) ── */}
       <div style={{position:"relative",overflow:"hidden",background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,marginBottom:16,boxShadow:C.shadow}}>
         {/* Portada */}
-        <div style={{position:"relative",height:150,background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,overflow:"hidden"}}>
+        <div style={{position:"relative",height:"clamp(110px,26vw,150px)",background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,overflow:"hidden"}}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota */}
           {bannerUrl?.startsWith("http")
             ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
