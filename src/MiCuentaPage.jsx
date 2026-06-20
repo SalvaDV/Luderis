@@ -1744,9 +1744,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
   const [avatarPreview,setAvatarPreview]=useState(null);
   const avatarInputRef=useRef(null);
   const [bannerUrl,setBannerUrl]=useState("");
-  const [bannerUploading,setBannerUploading]=useState(false);
   const [bannerMenuOpen,setBannerMenuOpen]=useState(false);
-  const bannerInputRef=useRef(null);
   // Aplica un preset de gradiente (o lo quita) como portada. Guarda el string CSS
   // en banner_url; el render distingue http (imagen) de linear-gradient (preset).
   const aplicarPortada=async(val)=>{
@@ -1877,21 +1875,9 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
           {bannerUrl?.startsWith("http")
             ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
             :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.25), transparent 55%)"}}/>}
-          <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Subir portada" style={{display:"none"}} onChange={async e=>{
-            const file=e.target.files?.[0];if(!file)return;
-            setBannerMenuOpen(false);
-            if(file.size>5*1024*1024){toast("La imagen no debe superar 5 MB","error");return;}
-            setBannerUploading(true);
-            try{
-              const url=await sb.uploadBanner(session.user.id,file,session.access_token);
-              await sb.updateUsuario(session.user.id,{banner_url:url},session.access_token);
-              setBannerUrl(url);toast("Portada actualizada","success");
-            }catch(err){toast("Error al subir la portada: "+err.message,"error");}
-            finally{setBannerUploading(false);if(bannerInputRef.current)bannerInputRef.current.value="";}
-          }}/>
-          <button onClick={()=>setBannerMenuOpen(o=>!o)} disabled={bannerUploading}
+          <button onClick={()=>setBannerMenuOpen(o=>!o)}
             style={{position:"absolute",top:14,right:14,zIndex:2,display:"inline-flex",alignItems:"center",gap:7,padding:"8px 14px",borderRadius:20,border:"none",background:"rgba(255,255,255,.22)",color:"#fff",fontFamily:FONT,fontSize:12.5,fontWeight:600,cursor:"pointer",backdropFilter:"blur(4px)"}}>
-            <Camera size={15}/>{bannerUploading?"Subiendo…":"Editar portada"}
+            <Camera size={15}/>Editar portada
           </button>
           {bannerMenuOpen&&(
             <div style={{position:"absolute",left:14,right:14,top:56,zIndex:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"rgba(0,0,0,.45)",backdropFilter:"blur(6px)",borderRadius:12,padding:"10px 12px"}}>
@@ -1900,10 +1886,6 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
                 <button key={p.key} title={p.label} aria-label={`Portada ${p.label}`} onClick={()=>aplicarPortada(p.grad)}
                   style={{width:34,height:24,borderRadius:7,cursor:"pointer",background:p.grad,border:bannerUrl===p.grad?"2px solid #fff":"1px solid rgba(255,255,255,.5)",padding:0}}/>
               ))}
-              <button onClick={()=>{setBannerMenuOpen(false);bannerInputRef.current?.click();}}
-                style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,border:"none",background:"#fff",color:C.text,fontFamily:FONT,fontSize:12,fontWeight:650,cursor:"pointer"}}>
-                <Camera size={13}/>Subir imagen
-              </button>
               {bannerUrl&&<button onClick={()=>aplicarPortada("")} style={{background:"none",border:"none",color:"rgba(255,255,255,.85)",fontSize:11,cursor:"pointer",fontFamily:FONT,textDecoration:"underline"}}>Quitar</button>}
             </div>
           )}
