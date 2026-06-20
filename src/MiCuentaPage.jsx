@@ -1894,7 +1894,7 @@ function MiCuentaPage({session,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,
             <Camera size={15}/>{bannerUploading?"Subiendo…":"Editar portada"}
           </button>
           {bannerMenuOpen&&(
-            <div style={{position:"absolute",left:14,right:14,bottom:14,zIndex:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"rgba(0,0,0,.45)",backdropFilter:"blur(6px)",borderRadius:12,padding:"10px 12px"}}>
+            <div style={{position:"absolute",left:14,right:14,top:56,zIndex:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"rgba(0,0,0,.45)",backdropFilter:"blur(6px)",borderRadius:12,padding:"10px 12px"}}>
               <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.85)"}}>Color</span>
               {BANNER_PRESETS.map(p=>(
                 <button key={p.key} title={p.label} aria-label={`Portada ${p.label}`} onClick={()=>aplicarPortada(p.grad)}
