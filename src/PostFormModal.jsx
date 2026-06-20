@@ -1021,9 +1021,9 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
 
         {/* Hero — LinkedIn style: fixed banner + avatar overlapping below */}
         <div style={{position:"relative"}}>
-          {/* Banner — portada con degradado de marca (estilo prototipo) */}
-          <div style={{height:150,background:bannerUrl?undefined:accentFor("cursos").heroGrad,position:"relative",overflow:"hidden"}}>
-            {bannerUrl
+          {/* Banner — portada: imagen subida, preset de gradiente, o degradado de marca por defecto */}
+          <div style={{height:150,background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,position:"relative",overflow:"hidden"}}>
+            {bannerUrl?.startsWith("http")
               // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota
               ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
               :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.25), transparent 55%)"}}/>}

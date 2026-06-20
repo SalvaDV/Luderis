@@ -16,10 +16,11 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
   posts.filter(p=>p.tipo==="oferta"&&p.activo).forEach(p=>{
     const email=p.autor_email;
     if(!docenteMap[email])docenteMap[email]={
-      email,nombre:p.autor_nombre||email.split("@")[0],
+      email,nombre:p.autor_nombre||email.split("@")[0],avatar:p.autor_avatar_url||null,
       rating:0,inscriptos:0,reseñas:0,materias:new Set(),pubs:0,verificado:false
     };
     const d=docenteMap[email];
+    if(p.autor_avatar_url&&!d.avatar)d.avatar=p.autor_avatar_url;
     d.pubs++;
     d.materias.add(p.materia);
     if(p.verificado)d.verificado=true;
@@ -57,7 +58,7 @@ function DocentesDestacados({posts,onOpenPerfil,session}){
               onMouseLeave={e=>{e.currentTarget.style.boxShadow=C.shadow;e.currentTarget.style.transform="none";e.currentTarget.style.borderColor=C.border;}}>
               {/* Avatar cuadrado-redondeado + badge verificado */}
               <div style={{position:"relative",marginBottom:12}}>
-                <Avatar letra={d.nombre[0]} size={56} radius={16}/>
+                <Avatar letra={d.nombre[0]} size={56} radius={16} img={d.avatar||undefined}/>
                 {d.verificado&&<span title="Verificado" style={{position:"absolute",bottom:-4,right:-4,width:20,height:20,borderRadius:"50%",background:ac.solid,border:`2px solid ${C.surface}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Check size={10} strokeWidth={3} color="#fff"/></span>}
                 {d.inscriptos>0&&<span title="Activo" style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:"50%",background:C.teal,border:`2px solid ${C.surface}`}}/>}
               </div>

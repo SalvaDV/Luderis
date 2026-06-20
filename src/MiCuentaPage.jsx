@@ -1994,6 +1994,20 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
                     ?<div style={{fontSize:11,color:C.successText,display:"flex",alignItems:"center",gap:4}}><CheckCircle2 size={10} strokeWidth={2.5}/>{avatarFile.name}</div>
                     :<div style={{fontSize:11,color:C.muted}}>JPG, PNG o WebP · Máx. 5 MB</div>
                   }
+                  {avatarUrl&&avatarUrl.startsWith("https://")&&(
+                    <button onClick={async()=>{
+                      try{
+                        await sb.updateUsuario(session.user.id,{avatar_url:null},session.access_token);
+                        setAvatarUrl("");setAvatarFile(null);setAvatarPreview(null);
+                        _avatarCache[email]=null;
+                        try{localStorage.removeItem("cl_avatar_"+email);}catch{}
+                        try{window.dispatchEvent(new Event("avatar-updated"));}catch{}
+                        toast("Foto eliminada — queda tu inicial con el color elegido","success");
+                      }catch(e){toast("Error al eliminar la foto: "+e.message,"error");}
+                    }} style={{background:"none",border:"none",color:C.danger,padding:"6px 0 0",cursor:"pointer",fontSize:12,fontFamily:FONT,textDecoration:"underline",display:"block"}}>
+                      Eliminar foto
+                    </button>
+                  )}
                 </div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12,marginBottom:12}}>
