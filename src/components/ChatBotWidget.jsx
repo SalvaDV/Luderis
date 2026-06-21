@@ -21,6 +21,14 @@ export default function ChatBotWidget(){
   const [,setFailCount]=useState(0);
   const endRef=useRef(null);
   useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,open]);
+  // Bloquear el scroll del fondo mientras Ludy está abierto (en mobile es fullscreen):
+  // así no se ve ni se scrollea la pantalla de atrás; solo scrollea el chat.
+  useEffect(()=>{
+    if(!open)return;
+    const prevBody=document.body.style.overflow, prevHtml=document.documentElement.style.overflow;
+    document.body.style.overflow="hidden";document.documentElement.style.overflow="hidden";
+    return()=>{document.body.style.overflow=prevBody;document.documentElement.style.overflow=prevHtml;};
+  },[open]);
 
   // SYSTEM_LUDY movido a la edge function ludy-chat — no exponer en el cliente
 
@@ -62,7 +70,7 @@ export default function ChatBotWidget(){
   const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20Luderis","_blank","noopener,noreferrer");
   return(
     <div style={{position:"fixed",bottom:22,right:22,zIndex:500,fontFamily:FONT}} className="cl-chatbot-fab">
-      <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel{position:fixed!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:100%!important;max-height:100%!important;border-radius:0!important}.cl-chat-panel .cl-chat-bubble{max-width:80%!important}.cl-fab-hide-mobile{display:none!important}}`}</style>
+      <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel{position:fixed!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:100%!important;height:100dvh!important;max-height:none!important;border-radius:0!important;z-index:9000!important}.cl-chat-panel .cl-chat-bubble{max-width:80%!important}.cl-chat-input{font-size:16px!important}.cl-fab-hide-mobile{display:none!important}}`}</style>
       {open&&(
         <div className="cl-chat-panel" style={{position:"absolute",bottom:64,right:0,width:"min(340px,88vw)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,boxShadow:"0 8px 32px #0008",display:"flex",flexDirection:"column",maxHeight:460,overflow:"hidden"}}>
           {/* Header */}
@@ -84,7 +92,7 @@ export default function ChatBotWidget(){
             {QUICK_ACTIONS.slice(0,4).map((a,i)=>(<button key={i} onClick={()=>handleQuick(a.q)} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"4px 9px",fontSize:10,cursor:"pointer",fontFamily:FONT,marginBottom:8}}>{a.label}</button>))}
           </div>
           {/* Messages */}
-          <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:9}}>
+          <div style={{flex:1,overflowY:"auto",overscrollBehavior:"contain",WebkitOverflowScrolling:"touch",padding:"12px 14px",display:"flex",flexDirection:"column",gap:9}}>
             {msgs.map((m,i)=>(
               <div key={i} style={{display:"flex",justifyContent:m.from==="user"?"flex-end":"flex-start"}}>
                 {m.action?(
@@ -104,7 +112,7 @@ export default function ChatBotWidget(){
           </div>
           {/* Input */}
           <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8}}>
-            <input value={input} onChange={e=>setInput(e.target.value)} aria-label="Escribí tu pregunta" onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Escribí tu pregunta..." style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 13px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT}}/>
+            <input className="cl-chat-input" value={input} onChange={e=>setInput(e.target.value)} aria-label="Escribí tu pregunta" onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Escribí tu pregunta..." style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 13px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,minWidth:0}}/>
             <button onClick={()=>sendMsg()} disabled={!input.trim()||loading} style={{background:"var(--cl-section-accent)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:15,flexShrink:0,opacity:!input.trim()?0.5:1}}>↑</button>
           </div>
         </div>
