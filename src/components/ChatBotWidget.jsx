@@ -22,13 +22,15 @@ export default function ChatBotWidget(){
   const endRef=useRef(null);
   useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,open]);
   const isMobile=typeof window!=="undefined"&&window.innerWidth<768;
-  // Alto del área visible (sin el teclado) vía visualViewport → el input no queda tapado.
-  const [vvh,setVvh]=useState(null);
+  // Pegar el panel EXACTO al viewport visible (alto + posición) vía visualViewport: al abrir
+  // el teclado, el panel se ajusta al área visible y el input queda justo arriba — sin scroll
+  // automático, sin zoom, sin mostrar el fondo.
+  const [vv,setVv]=useState(null);
   useEffect(()=>{
     if(!open||!isMobile||typeof window==="undefined"||!window.visualViewport)return;
-    const vv=window.visualViewport;const upd=()=>setVvh(Math.round(vv.height));
-    upd();vv.addEventListener("resize",upd);vv.addEventListener("scroll",upd);
-    return()=>{vv.removeEventListener("resize",upd);vv.removeEventListener("scroll",upd);setVvh(null);};
+    const v=window.visualViewport;const upd=()=>setVv({h:Math.round(v.height),top:Math.round(v.offsetTop)});
+    upd();v.addEventListener("resize",upd);v.addEventListener("scroll",upd);
+    return()=>{v.removeEventListener("resize",upd);v.removeEventListener("scroll",upd);setVv(null);};
   },[open,isMobile]);
   // Bloqueo fuerte del fondo mientras Ludy está abierto (técnica iOS: body position:fixed),
   // para que NO se vea ni se scrollee la pantalla de atrás; solo scrollea el chat.
@@ -84,7 +86,7 @@ export default function ChatBotWidget(){
       <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel .cl-chat-bubble{max-width:80%!important}}`}</style>
       {open&&(
         <div className="cl-chat-panel" style={isMobile
-          ?{position:"fixed",top:0,left:0,right:0,width:"100%",height:vvh?`${vvh}px`:"100dvh",background:C.surface,boxShadow:"none",display:"flex",flexDirection:"column",overflow:"hidden",zIndex:9000,borderRadius:0}
+          ?{position:"fixed",top:vv?`${vv.top}px`:0,left:0,right:0,width:"100%",height:vv?`${vv.h}px`:"100dvh",background:C.surface,boxShadow:"none",display:"flex",flexDirection:"column",overflow:"hidden",zIndex:9000,borderRadius:0}
           :{position:"absolute",bottom:64,right:0,width:"min(340px,88vw)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,boxShadow:"0 8px 32px #0008",display:"flex",flexDirection:"column",maxHeight:460,overflow:"hidden"}}>
           {/* Header */}
           <div style={{background:"var(--cl-section-accent)",borderRadius:"20px 20px 0 0",padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
