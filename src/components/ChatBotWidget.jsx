@@ -21,13 +21,24 @@ export default function ChatBotWidget(){
   const [,setFailCount]=useState(0);
   const endRef=useRef(null);
   useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,open]);
-  // Bloquear el scroll del fondo mientras Ludy está abierto (en mobile es fullscreen):
-  // así no se ve ni se scrollea la pantalla de atrás; solo scrollea el chat.
+  const isMobile=typeof window!=="undefined"&&window.innerWidth<768;
+  // Alto del área visible (sin el teclado) vía visualViewport → el input no queda tapado.
+  const [vvh,setVvh]=useState(null);
+  useEffect(()=>{
+    if(!open||!isMobile||typeof window==="undefined"||!window.visualViewport)return;
+    const vv=window.visualViewport;const upd=()=>setVvh(Math.round(vv.height));
+    upd();vv.addEventListener("resize",upd);vv.addEventListener("scroll",upd);
+    return()=>{vv.removeEventListener("resize",upd);vv.removeEventListener("scroll",upd);setVvh(null);};
+  },[open,isMobile]);
+  // Bloqueo fuerte del fondo mientras Ludy está abierto (técnica iOS: body position:fixed),
+  // para que NO se vea ni se scrollee la pantalla de atrás; solo scrollea el chat.
   useEffect(()=>{
     if(!open)return;
-    const prevBody=document.body.style.overflow, prevHtml=document.documentElement.style.overflow;
-    document.body.style.overflow="hidden";document.documentElement.style.overflow="hidden";
-    return()=>{document.body.style.overflow=prevBody;document.documentElement.style.overflow=prevHtml;};
+    const b=document.body.style,h=document.documentElement.style;
+    const prev={position:b.position,top:b.top,left:b.left,right:b.right,width:b.width,overflow:b.overflow,hOverflow:h.overflow};
+    const y=window.scrollY||window.pageYOffset||0;
+    b.position="fixed";b.top=`-${y}px`;b.left="0";b.right="0";b.width="100%";b.overflow="hidden";h.overflow="hidden";
+    return()=>{b.position=prev.position;b.top=prev.top;b.left=prev.left;b.right=prev.right;b.width=prev.width;b.overflow=prev.overflow;h.overflow=prev.hOverflow;window.scrollTo(0,y);};
   },[open]);
 
   // SYSTEM_LUDY movido a la edge function ludy-chat — no exponer en el cliente
@@ -70,9 +81,11 @@ export default function ChatBotWidget(){
   const openWhatsApp=()=>window.open("https://wa.me/5492345459787?text=Hola,%20necesito%20ayuda%20con%20Luderis","_blank","noopener,noreferrer");
   return(
     <div style={{position:"fixed",bottom:22,right:22,zIndex:500,fontFamily:FONT}} className="cl-chatbot-fab">
-      <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel{position:fixed!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:100%!important;height:100dvh!important;max-height:none!important;border-radius:0!important;z-index:9000!important}.cl-chat-panel .cl-chat-bubble{max-width:80%!important}.cl-chat-input{font-size:16px!important}.cl-fab-hide-mobile{display:none!important}}`}</style>
+      <style>{`.cl-chatbot-fab{bottom:22px!important;right:22px!important}@media(max-width:768px){.cl-chatbot-fab{bottom:74px!important;right:14px!important}.cl-chat-panel .cl-chat-bubble{max-width:80%!important}}`}</style>
       {open&&(
-        <div className="cl-chat-panel" style={{position:"absolute",bottom:64,right:0,width:"min(340px,88vw)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,boxShadow:"0 8px 32px #0008",display:"flex",flexDirection:"column",maxHeight:460,overflow:"hidden"}}>
+        <div className="cl-chat-panel" style={isMobile
+          ?{position:"fixed",top:0,left:0,right:0,width:"100%",height:vvh?`${vvh}px`:"100dvh",background:C.surface,boxShadow:"none",display:"flex",flexDirection:"column",overflow:"hidden",zIndex:9000,borderRadius:0}
+          :{position:"absolute",bottom:64,right:0,width:"min(340px,88vw)",background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,boxShadow:"0 8px 32px #0008",display:"flex",flexDirection:"column",maxHeight:460,overflow:"hidden"}}>
           {/* Header */}
           <div style={{background:"var(--cl-section-accent)",borderRadius:"20px 20px 0 0",padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -112,13 +125,13 @@ export default function ChatBotWidget(){
           </div>
           {/* Input */}
           <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8}}>
-            <input className="cl-chat-input" value={input} onChange={e=>setInput(e.target.value)} aria-label="Escribí tu pregunta" onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Escribí tu pregunta..." style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 13px",color:C.text,fontSize:12,outline:"none",fontFamily:FONT,minWidth:0}}/>
+            <input className="cl-chat-input" value={input} onChange={e=>setInput(e.target.value)} aria-label="Escribí tu pregunta" onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Escribí tu pregunta..." style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:"8px 13px",color:C.text,fontSize:isMobile?16:12,outline:"none",fontFamily:FONT,minWidth:0}}/>
             <button onClick={()=>sendMsg()} disabled={!input.trim()||loading} style={{background:"var(--cl-section-accent)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:15,flexShrink:0,opacity:!input.trim()?0.5:1}}>↑</button>
           </div>
         </div>
       )}
       {/* FAB button — en mobile se oculta cuando el chat está abierto (es fullscreen con su propia X) */}
-      <button onClick={()=>setOpen(v=>!v)} className={open?"cl-fab-hide-mobile":undefined} style={{width:52,height:52,borderRadius:"50%",background:open?C.border:"var(--cl-section-accent)",border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <button onClick={()=>setOpen(v=>!v)} style={{display:open&&isMobile?"none":"flex",width:52,height:52,borderRadius:"50%",background:open?C.border:"var(--cl-section-accent)",border:"none",cursor:"pointer",fontSize:22,boxShadow:"0 4px 16px #0006",transition:"all .2s",alignItems:"center",justifyContent:"center"}}>
         {open?<X size={20} strokeWidth={2}/>:<MessageCircle size={22} strokeWidth={1.8}/>}
       </button>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
