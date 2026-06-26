@@ -8,7 +8,7 @@ import {
   safeDisplayName, avatarColor, MATERIAS,
   getPubTipo,
 } from "./shared";
-import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, Share2, GraduationCap, ScrollText, Briefcase, FileText, Search, Target } from "lucide-react";
+import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, Share2, GraduationCap, ScrollText, Briefcase, FileText, Search, Target, BadgeCheck, ChevronRight, Languages, Zap, Calendar } from "lucide-react";
 
 function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,token}){
   const [pregunta,setPregunta]=useState("");const [respuesta,setRespuesta]=useState("");const [estado,setEstado]=useState("cargando");const [feedback,setFeedback]=useState("");
@@ -985,6 +985,34 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const perfilColor=perfilData?.avatar_color||localStorage.getItem("avatarColor_"+autorEmail)||avatarColor(displayNombre[0]);
   const videoUrl=perfilData?.video_presentacion||null;
   const TIPO_ICON={titulo:<GraduationCap size={20}/>,certificado:<ScrollText size={20}/>,experiencia:<Briefcase size={20}/>,otro:<FileText size={20}/>};
+  // ── Derivados para el perfil estilo "Confianza" (diseño aprobado) ──
+  const isMobile=typeof window!=="undefined"&&window.innerWidth<768;
+  const esPropio=autorEmail===session.user.email;
+  const acc=accentFor("cursos");// acento de marca (curso)
+  const rolDocente=perfilData?.titulo_profesional||"Docente en Luderis";
+  const preciosActivos=pubs.filter(p=>+p.precio>0).map(p=>+p.precio);
+  const desdePrecio=preciosActivos.length?Math.min(...preciosActivos):null;
+  const dispHoy=perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date();
+  // Helpers visuales (tokens, sin hex crudos)
+  const Pill=({icon:Ic,children,tone})=>(
+    <span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:12,fontWeight:600,padding:"4px 10px",borderRadius:20,whiteSpace:"nowrap",
+      ...(tone==="success"?{background:C.success+"18",color:C.successText,border:`1px solid ${C.success}33`}:{background:C.bg,color:C.muted,border:`1px solid ${C.border}`})}}>
+      {Ic&&<Ic size={13} strokeWidth={2}/>}{children}
+    </span>
+  );
+  const Stars=({size=15})=>avg>0?(
+    <span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:size}}>
+      <Star size={size} fill="#F59E0B" color="#F59E0B" strokeWidth={0}/>
+      <b style={{color:C.text}}>{avg.toFixed(1)}</b>{reseñas.length>0&&<small style={{color:C.muted}}>({reseñas.length})</small>}
+    </span>
+  ):null;
+  const Detail=({icon:Ic,label,value})=>(
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <Ic size={16} color={C.faint||C.muted} strokeWidth={2}/>
+      <span style={{fontSize:13.5,color:C.muted,flex:1}}>{label}</span>
+      <span style={{fontSize:13.5,fontWeight:650,color:C.text}}>{value}</span>
+    </div>
+  );
   const [bannerUrl,setBannerUrl]=useState(null);
   useEffect(()=>{if(perfilData?.banner_url)setBannerUrl(perfilData.banner_url);},[perfilData]);
 
@@ -1017,226 +1045,174 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
       </div>
 
       {error?<div style={{color:C.danger,textAlign:"center",padding:40}}>{error}</div>:(
-      <div style={{maxWidth:920,margin:"0 auto"}}>
+      <div style={{maxWidth:980,margin:"0 auto",paddingBottom:48}}>
 
-        {/* Hero — LinkedIn style: fixed banner + avatar overlapping below */}
-        <div style={{position:"relative"}}>
-          {/* Banner — portada: imagen subida, preset de gradiente, o degradado de marca por defecto */}
-          <div style={{height:"clamp(110px,26vw,150px)",background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:accentFor("cursos").heroGrad,position:"relative",overflow:"hidden"}}>
-            {bannerUrl?.startsWith("http")
-              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota
-              ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
-              :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.25), transparent 55%)"}}/>}
-          </div>
-          {/* Avatar — overlaps banner */}
-          <div style={{position:"absolute",bottom:-52,left:24,zIndex:2}}>
-            <div style={{width:104,height:104,borderRadius:"50%",overflow:"hidden",border:`4px solid ${C.bg}`,boxShadow:"0 4px 16px rgba(0,0,0,.18)"}}>
-              {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")
-                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo gestiona el fallback del avatar
-                ?<img src={perfilData.avatar_url} alt={displayNombre} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.currentTarget.style.display="none";e.currentTarget.nextSibling.style.display="flex";}}/>
-                :null
-              }
-              <div style={{width:"100%",height:"100%",background:perfilColor,display:perfilData?.avatar_url?"none":"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:42,color:"#fff"}}>
-                {displayNombre[0].toUpperCase()}
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Name / badges / location below banner */}
-        <div style={{paddingTop:64,paddingLeft:24,paddingRight:24,paddingBottom:4}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <h1 style={{color:C.text,fontFamily:FONT_DISPLAY,fontSize:21,fontWeight:800,letterSpacing:"-.02em",margin:0}}>{displayNombre}</h1>
-            {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&(
-              <span style={{fontSize:11,fontWeight:700,color:"#fff",background:"#16A34A",borderRadius:20,padding:"3px 10px",display:"flex",alignItems:"center",gap:4}}>
-                <span style={{width:7,height:7,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>Disponible hoy
-              </span>
-            )}
-          </div>
-          {perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date()&&perfilData?.disponible_mensaje&&(
-            <div style={{color:C.muted,fontSize:12,marginTop:2,fontStyle:"italic"}}>"{perfilData.disponible_mensaje}"</div>
-          )}
-          {perfilData?.ubicacion&&(
-            <div style={{color:C.muted,fontSize:13,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-              <MapPin size={12}/>{perfilData.ubicacion}
-            </div>
-          )}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
-            {materias.slice(0,4).map(m=><span key={m} style={{fontSize:11,background:C.accentDim,color:C.accent,borderRadius:20,padding:"2px 10px",fontWeight:600}}>{m}</span>)}
-          </div>
+        {/* Portada (banner del perfil): imagen subida, preset de gradiente, o degradado de marca */}
+        <div style={{height:"clamp(110px,26vw,150px)",background:bannerUrl?.startsWith("http")?undefined:bannerUrl?.startsWith("linear-gradient")?bannerUrl:acc.heroGrad,position:"relative",overflow:"hidden"}}>
+          {bannerUrl?.startsWith("http")
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError solo oculta la portada rota
+            ?<img src={bannerUrl} alt="portada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.currentTarget.style.display="none"}/>
+            :<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% -20%, rgba(255,255,255,.22), transparent 55%)"}}/>}
         </div>
 
-        <div style={{padding:"28px 20px 20px"}}>
-          {/* Stats bar (estilo prototipo: ícono en caja soft) */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:12,marginBottom:20}}>
-            {[
-              {n:avg?avg.toFixed(1):"—",label:"Valoración",Icon:Star,acc:"clases"},
-              {n:reseñas.length,label:"Reseñas",Icon:MessageCircle,acc:"pedidos"},
-              {n:pubs.length,label:"Publicaciones",Icon:BookOpen,acc:"cursos"},
-              {n:totalInscriptos,label:"Alumnos",Icon:Users,acc:"pedidos"},
-            ].map(s=>{const ac=accentFor(s.acc);return(
-              <div key={s.label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px",textAlign:"center",boxShadow:C.shadow}}>
-                <div style={{width:38,height:38,borderRadius:11,background:ac.soft,color:ac.solid,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}><s.Icon size={18} strokeWidth={2}/></div>
-                <div style={{...tx("display"),fontSize:22,color:C.text,lineHeight:1}}>{s.n}</div>
-                <div style={{...tx("micro"),color:C.muted,marginTop:3}}>{s.label}</div>
-              </div>
-            );})}
-          </div>
+        {/* Layout 2 columnas estilo "Confianza": identidad + contacto (izq) · contenido (der) */}
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"320px 1fr",gap:isMobile?16:32,alignItems:"start",padding:isMobile?"0 14px":"0 24px",marginTop:isMobile?16:18}}>
 
-          {/* Sobre mí + Presentación (2 columnas en desktop, estilo prototipo) */}
-          {((perfilData?.bio||perfilData?.titulo_profesional||perfilData?.metodologia)||videoUrl)&&(
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,280px),1fr))",gap:12,marginBottom:16,alignItems:"start"}}>
-          {(perfilData?.bio||perfilData?.titulo_profesional||perfilData?.metodologia)&&(
-            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
-              {perfilData?.titulo_profesional&&(
-                <div style={{fontSize:13,color:C.accent,fontWeight:700,marginBottom:6}}>{perfilData.titulo_profesional}</div>
-              )}
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:perfilData?.bio||perfilData?.metodologia?10:0}}>
-                {perfilData?.anios_experiencia!=null&&perfilData.anios_experiencia>0&&(
-                  <span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"2px 10px",fontWeight:700}}>{perfilData.anios_experiencia} {perfilData.anios_experiencia===1?"año":"años"} de experiencia</span>
-                )}
-                {perfilData?.franja_horaria&&(
-                  <span style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 10px",display:"inline-flex",alignItems:"center",gap:4}}><Clock size={11}/>{perfilData.franja_horaria}</span>
-                )}
+          {/* ── Columna izquierda ── */}
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {/* Identidad */}
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,padding:24,textAlign:"center",boxShadow:C.shadow}}>
+              <div style={{width:96,height:96,borderRadius:"50%",overflow:"hidden",border:`4px solid ${C.surface}`,boxShadow:"0 4px 16px rgba(0,0,0,.18)",margin:"0 auto"}}>
+                {perfilData?.avatar_url&&perfilData.avatar_url.startsWith("https://")
+                  // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError gestiona el fallback del avatar
+                  ?<img src={perfilData.avatar_url} alt={displayNombre} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.currentTarget.style.display="none";e.currentTarget.nextSibling.style.display="flex";}}/>
+                  :null}
+                <div style={{width:"100%",height:"100%",background:perfilColor,display:perfilData?.avatar_url?"none":"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:40,color:"#fff"}}>{displayNombre[0].toUpperCase()}</div>
               </div>
-              {perfilData?.bio&&(
-                <>
-                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6}}>Sobre mí</div>
-                  <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0,marginBottom:perfilData?.metodologia?10:0}}>{perfilData.bio}</p>
-                </>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,marginTop:14}}>
+                <h1 style={{...tx("display"),fontSize:22,color:C.text,margin:0}}>{displayNombre}</h1>
+                {perfilData?.verificado&&<BadgeCheck size={18} color={acc.solid} strokeWidth={2} aria-label="Docente verificada"/>}
+              </div>
+              <div style={{color:C.muted,fontSize:14,marginTop:3}}>{rolDocente}</div>
+              <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:14,flexWrap:"wrap"}}>
+                {perfilData?.ubicacion&&<Pill icon={MapPin}>{perfilData.ubicacion}</Pill>}
+                {dispHoy&&<Pill tone="success" icon={Clock}>Disponible hoy</Pill>}
+              </div>
+              {avg>0&&<div style={{marginTop:14,display:"flex",justifyContent:"center"}}><Stars size={16}/></div>}
+            </div>
+
+            {/* Contacto (sticky en desktop) */}
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,padding:22,boxShadow:C.shadow,position:isMobile?"static":"sticky",top:16}}>
+              {desdePrecio!=null&&(
+                <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:16}}>
+                  <span style={{fontSize:13,color:C.muted}}>desde</span>
+                  <span style={{...tx("display"),fontSize:26,color:C.text}}>${desdePrecio.toLocaleString("es-AR")}</span>
+                </div>
               )}
-              {perfilData?.metodologia&&(
-                <>
-                  <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:6,marginTop:perfilData?.bio?10:0}}>Metodología</div>
-                  <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:0}}>{perfilData.metodologia}</p>
-                </>
+              {!esPropio&&onOpenChat&&(
+                <button onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
+                  style={{width:"100%",marginBottom:10,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:14,fontWeight:700,color:"#fff",background:acc.solid}}>
+                  <MessageCircle size={16} strokeWidth={2.2}/>Enviar mensaje
+                </button>
               )}
-              {perfilData?.idiomas&&perfilData.idiomas.length>0&&(
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-                  {perfilData.idiomas.map(id=><span key={id} style={{fontSize:11,background:C.surface,color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 9px"}}>{id}</span>)}
+              <button onClick={()=>document.getElementById("perfil-pubs")?.scrollIntoView({behavior:"smooth"})}
+                style={{width:"100%",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8,padding:"11px",borderRadius:12,border:`1px solid ${C.border}`,cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:C.text,background:C.bg}}>
+                <BookOpen size={15} strokeWidth={2}/>Ver publicaciones
+              </button>
+              {(perfilData?.idiomas?.length>0||totalInscriptos>0||perfilData?.anios_experiencia>0)&&(
+                <div style={{borderTop:`1px solid ${C.hairline||C.border}`,marginTop:18,paddingTop:16,display:"flex",flexDirection:"column",gap:11}}>
+                  {perfilData?.anios_experiencia>0&&<Detail icon={Zap} label="Experiencia" value={`${perfilData.anios_experiencia} ${perfilData.anios_experiencia===1?"año":"años"}`}/>}
+                  {perfilData?.idiomas?.length>0&&<Detail icon={Languages} label="Idiomas" value={perfilData.idiomas.join(", ")}/>}
+                  {totalInscriptos>0&&<Detail icon={Users} label="Alumnos" value={`${totalInscriptos}+`}/>}
                 </div>
               )}
             </div>
-          )}
-
-          {/* Presentación (video) */}
-          {videoUrl&&(
-            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
-              <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><Video size={14}/>Presentación</div>
-              <div style={{borderRadius:12,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
-                <iframe title={`Video de presentación de ${displayNombre}`} src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl}
-                  style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
-              </div>
-            </div>
-          )}
-          </div>
-          )}
-
-          {/* Tabs */}
-          <div style={{display:"flex",gap:2,background:C.surface,borderRadius:12,padding:3,marginBottom:16}}>
-            {[["clases",`Publicaciones (${pubs.length})`],["reseñas",`Reseñas (${reseñas.length})`],["credenciales",`Credenciales (${docs.length})`]].map(([id,label])=>(
-              <button key={id} onClick={()=>setTab(id)}
-                style={{flex:1,padding:"7px",borderRadius:10,border:"none",fontSize:12,cursor:"pointer",fontFamily:FONT,
-                  fontWeight:tab===id?700:400,background:tab===id?C.accent:"transparent",color:tab===id?"#fff":C.muted,transition:"all .15s"}}>
-                {label}
-              </button>
-            ))}
           </div>
 
-          {loading&&<Spinner/>}
+          {/* ── Columna derecha ── */}
+          <div style={{display:"flex",flexDirection:"column",gap:28,marginTop:isMobile?4:0}}>
+            {loading&&<Spinner/>}
 
-          {/* Tab: Clases */}
-          {!loading&&tab==="clases"&&(
-            pubs.length===0
-              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin publicaciones activas</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {pubs.map(p=>{const T=getPubTipo(p);const tipoBadge=p.tipo==="busqueda"?"Pedido":(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase";return(
-                  <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail&&onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail&&onOpenDetail(p);}}}
-                    style={{background:C.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .15s",display:"flex",gap:12,alignItems:"center",borderLeft:`3px solid ${T.accent}`}}
-                    onMouseEnter={e=>{e.currentTarget.style.boxShadow=`0 4px 14px ${T.dim}`;e.currentTarget.style.borderColor=T.accent+"44";}}
-                    onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=T.border;}}>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                        <span style={{fontSize:10,fontWeight:700,color:T.accent,background:T.dim,borderRadius:20,padding:"1px 8px",flexShrink:0}}>{tipoBadge}</span>
-                        <div style={{fontWeight:700,color:C.text,fontSize:14,lineHeight:1.3}}>{p.titulo}</div>
-                      </div>
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                        {p.precio&&<span style={{fontSize:12,color:T.accent,fontWeight:700}}>${Number(p.precio).toLocaleString("es-AR")}/{p.precio_tipo||"hora"}</span>}
-                        {p.modalidad&&<span style={{fontSize:11,color:C.muted,background:C.surface,borderRadius:6,padding:"1px 7px"}}>{p.modalidad}</span>}
-                        {p.tiene_prueba&&<span style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:20,padding:"1px 8px"}}>Prueba gratis</span>}
-                        {p.sinc==="sinc"&&p.clases_sinc&&<span style={{fontSize:10,color:T.accent,fontWeight:700,background:T.dim,borderRadius:20,padding:"1px 8px"}}>Recurrente</span>}
-                      </div>
-                    </div>
-                    <span style={{color:C.muted,fontSize:18,flexShrink:0}}>›</span>
-                  </div>
-                );})}
-              </div>
-          )}
+            {(perfilData?.bio||perfilData?.metodologia)&&(
+              <section>
+                <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 10px"}}>Sobre mí</p>
+                {perfilData?.bio&&<p style={{margin:0,fontSize:15.5,lineHeight:1.6,color:C.textSoft||C.muted}}>{perfilData.bio}</p>}
+                {perfilData?.metodologia&&<><div style={{fontWeight:700,color:C.text,fontSize:14,margin:"14px 0 6px"}}>Metodología</div><p style={{margin:0,fontSize:15,lineHeight:1.6,color:C.textSoft||C.muted}}>{perfilData.metodologia}</p></>}
+              </section>
+            )}
 
-          {/* Tab: Reseñas */}
-          {!loading&&tab==="reseñas"&&(
-            reseñas.length===0
-              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin reseñas todavía</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {/* Rating summary */}
-                {avg>0&&(
-                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px",display:"flex",gap:16,alignItems:"center",marginBottom:4}}>
-                    <div style={{textAlign:"center",flexShrink:0}}>
-                      <div style={{fontSize:40,fontWeight:800,color:"#F59E0B",lineHeight:1}}>{avg.toFixed(1)}</div>
-                      <div style={{fontSize:11,color:C.muted}}>{reseñas.length} reseña{reseñas.length!==1?"s":""}</div>
-                    </div>
-                    <div style={{flex:1}}>
-                      {[5,4,3,2,1].map(n=>{
-                        const cnt=reseñas.filter(r=>r.estrellas===n).length;
-                        const pct=reseñas.length?Math.round(cnt/reseñas.length*100):0;
-                        return(
-                          <div key={n} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                            <span style={{fontSize:10,color:C.muted,width:8}}>{n}</span>
-                            <div style={{flex:1,height:6,background:C.border,borderRadius:3}}>
-                              <div style={{width:`${pct}%`,height:"100%",background:"#F59E0B",borderRadius:3}}/>
-                            </div>
-                            <span style={{fontSize:10,color:C.muted,width:24}}>{cnt}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {reseñas.map((r,i)=>(
-                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                        <div style={{display:"flex",gap:2}}>
-                          {Array.from({length:5}).map((_,j)=><span key={j} style={{color:j<r.estrellas?"#F59E0B":C.border,fontSize:14}}>★</span>)}
+            {materias.length>0&&(
+              <section>
+                <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 10px"}}>Especialidades</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {materias.map(m=><span key={m} style={{fontSize:13,fontWeight:600,padding:"5px 12px",borderRadius:20,background:acc.soft,color:acc.text,border:`1px solid ${acc.solid}22`}}>{m}</span>)}
+                </div>
+              </section>
+            )}
+
+            {videoUrl&&(
+              <section>
+                <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 10px"}}>Presentación</p>
+                <div style={{borderRadius:14,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
+                  <iframe title={`Video de presentación de ${displayNombre}`} src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl} style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
+                </div>
+              </section>
+            )}
+
+            <section id="perfil-pubs">
+              <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 14px"}}>Publicaciones · {pubs.length}</p>
+              {!loading&&pubs.length===0
+                ?<div style={{color:C.muted,fontSize:14}}>Sin publicaciones activas.</div>
+                :<div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {pubs.map(p=>{const T=getPubTipo(p);const tipoBadge=p.tipo==="busqueda"?"Pedido":(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase";return(
+                    <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail&&onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail&&onOpenDetail(p);}}}
+                      style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:16,cursor:"pointer",display:"flex",gap:14,alignItems:"center",boxShadow:C.shadow,transition:"all .15s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.boxShadow=C.shadowHover||C.shadow;e.currentTarget.style.borderColor=T.accent+"55";}}
+                      onMouseLeave={e=>{e.currentTarget.style.boxShadow=C.shadow;e.currentTarget.style.borderColor=C.border;}}>
+                      <div style={{width:50,height:50,borderRadius:12,background:T.dim,color:T.accent,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        {(p.modo==="grupal"||p.modo==="curso")?<GraduationCap size={24} strokeWidth={1.8}/>:p.tipo==="busqueda"?<Target size={24} strokeWidth={1.8}/>:<BookOpen size={24} strokeWidth={1.8}/>}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
+                          <span style={{fontSize:10,fontWeight:700,color:T.accent,background:T.dim,borderRadius:20,padding:"1px 8px"}}>{tipoBadge}</span>
+                          {p.tiene_prueba&&<Pill tone="success" icon={Zap}>Prueba gratis</Pill>}
                         </div>
-                        {r.verificada&&<span style={{fontSize:9,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700}}>✓ Verificada</span>}
+                        <div style={{fontWeight:650,fontSize:15,color:C.text,letterSpacing:"-.005em",marginBottom:6,lineHeight:1.3}}>{p.titulo}</div>
+                        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+                          {p.modalidad&&<span style={{fontSize:12,color:C.muted}}>{p.modalidad}</span>}
+                          {p.cantidad_inscriptos>0&&<span style={{fontSize:12,color:C.muted}}>{p.cantidad_inscriptos} inscriptos</span>}
+                        </div>
                       </div>
-                      <span style={{fontSize:11,color:C.muted}}>{fmtRel(r.created_at)}</span>
+                      <div style={{textAlign:"right",flexShrink:0}}>
+                        {p.precio?<><div style={{...tx("price"),fontSize:18,color:C.text}}>${Number(p.precio).toLocaleString("es-AR")}</div><div style={{fontSize:12,color:C.muted}}>/{p.precio_tipo||"hora"}</div></>:<div style={{fontSize:13,fontWeight:700,color:C.successText}}>Gratis</div>}
+                      </div>
+                      <ChevronRight size={18} color={C.faint||C.muted}/>
                     </div>
-                    {r.comentario&&<p style={{color:C.text,fontSize:13,margin:"0 0 6px",lineHeight:1.5}}>{r.comentario}</p>}
-                    <div style={{fontSize:11,color:C.muted}}>{r.alumno_nombre||safeDisplayName(null,r.alumno_email)}</div>
-                  </div>
-                ))}
-              </div>
-          )}
+                  );})}
+                </div>}
+            </section>
 
-          {/* Tab: Credenciales */}
-          {!loading&&tab==="credenciales"&&(
-            docs.length===0
-              ?<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Sin credenciales cargadas</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {docs.map((d,i)=>(
-                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",gap:12,alignItems:"center"}}>
-                    <span style={{flexShrink:0,color:C.accent}}>{TIPO_ICON[d.tipo_doc]||<FileText size={20}/>}</span>
-                    <div>
-                      <div style={{fontWeight:600,color:C.text,fontSize:13}}>{d.titulo}</div>
-                      {d.descripcion&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{d.descripcion}</div>}
+            {reseñas.length>0&&(
+              <section>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:0}}>Reseñas</p>
+                  <Stars size={14}/>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {reseñas.map((r,i)=>{const rn=r.alumno_nombre||safeDisplayName(null,r.alumno_email)||"Alumno";const ap=accentFor("pedidos");return(
+                    <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:18,boxShadow:C.shadow}}>
+                      <div style={{display:"flex",gap:11,alignItems:"center",marginBottom:10}}>
+                        <div style={{width:36,height:36,borderRadius:"50%",background:ap.soft,color:ap.text,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15,flexShrink:0}}>{rn[0].toUpperCase()}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:650,fontSize:14,color:C.text}}>{rn}</div>
+                          <div style={{fontSize:12,color:C.faint||C.muted}}>{fmtRel(r.created_at)}</div>
+                        </div>
+                        <span style={{display:"inline-flex",gap:2}}>{Array.from({length:5}).map((_,j)=><Star key={j} size={13} fill={j<r.estrellas?"#F59E0B":"none"} color={j<r.estrellas?"#F59E0B":C.border} strokeWidth={j<r.estrellas?0:1.5}/>)}</span>
+                      </div>
+                      {r.comentario&&<p style={{margin:0,fontSize:14,lineHeight:1.55,color:C.textSoft||C.muted}}>{r.comentario}</p>}
                     </div>
-                  </div>
-                ))}
-              </div>
-          )}
+                  );})}
+                </div>
+              </section>
+            )}
 
-
+            {docs.length>0&&(
+              <section>
+                <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 14px"}}>Credenciales</p>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {docs.map((d,i)=>(
+                    <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",display:"flex",gap:12,alignItems:"center",boxShadow:C.shadow}}>
+                      <span style={{flexShrink:0,color:acc.solid}}>{TIPO_ICON[d.tipo_doc]||<FileText size={20}/>}</span>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontWeight:650,color:C.text,fontSize:14}}>{d.titulo}</div>
+                        {d.descripcion&&<div style={{fontSize:13,color:C.muted,marginTop:2}}>{d.descripcion}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
         </div>
       </div>
       )}
