@@ -1,4 +1,4 @@
-const CACHE = 'luderis-v3';
+const CACHE = 'luderis-v4';
 
 const PRECACHE = ['/index.html', '/'];
 
@@ -46,10 +46,17 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Navigation — network-first, fallback to shell
+  // Navigation — SIEMPRE HTML fresco de la red (cache:'no-store' evita servir un
+  // index.html viejo del HTTP cache, que referenciaría chunks JS viejos → app
+  // vieja tras un deploy). Solo cae al shell cacheado si no hay red (offline).
   if (request.mode === 'navigate') {
     e.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      fetch(request, { cache: 'no-store' })
+        .then((res) => {
+          if (res && res.ok) { const clone = res.clone(); caches.open(CACHE).then((c) => c.put('/index.html', clone)); }
+          return res;
+        })
+        .catch(() => caches.match('/index.html').then((h) => h || caches.match('/')))
     );
   }
 });
