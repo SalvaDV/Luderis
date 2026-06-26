@@ -27,7 +27,7 @@ export default function PreguntasSection({ publicacionId, session, docenteId, do
   const cargarPreguntas = async () => {
     setLoading(true);
     try {
-      const data = await sb.getPreguntasPublicacion(publicacionId);
+      const data = await sb.getPreguntasPublicacion(publicacionId, token);
       setPreguntas(Array.isArray(data) ? data : []);
     } catch {}
     setLoading(false);

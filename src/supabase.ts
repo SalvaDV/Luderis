@@ -1132,8 +1132,8 @@ export const dispararAlertas = async (pub: Row, token: Token): Promise<void> => 
 
 // ── Q&A pública en publicaciones ──────────────────────────────────────────────
 
-export const getPreguntasPublicacion = (publicacionId: Id) =>
-  db(`preguntas_publicacion?publicacion_id=eq.${publicacionId}&flag_pregunta=eq.false&order=created_at.asc&select=*`);
+export const getPreguntasPublicacion = (publicacionId: Id, token?: Token) =>
+  db(`preguntas_publicacion?publicacion_id=eq.${publicacionId}&flag_pregunta=eq.false&order=created_at.asc&select=*`, "GET", null, token);
 
 export const insertPregunta = (data: Row, token: Token) =>
   db("preguntas_publicacion", "POST", data, token, "return=representation");
