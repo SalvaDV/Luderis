@@ -453,8 +453,12 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     :MATERIAS.map(m=>({label:m,count:visiblePosts.filter(p=>p.materia===m).length}))
   ).filter(c=>c.count>0).slice(0,19);
 
-  // Categorías para la sección pedidos (conteo desde busquedas)
-  const catsPedidos=MATERIAS.map(m=>({label:m,count:posts.filter(p=>p.tipo==="busqueda"&&p.materia===m&&p.autor_email!==session.user.email).length})).filter(c=>c.count>0).slice(0,19);
+  // Categorías para la sección pedidos. Las búsquedas guardan el nombre de
+  // categoría en `materia`, que puede no estar en MATERIAS; las derivamos de los
+  // pedidos reales (no propios) para que el explorador no quede vacío.
+  const catsPedidos=[...new Set(todosPedidos.map(p=>p.materia).filter(Boolean))]
+    .map(label=>({label,count:todosPedidos.filter(p=>p.materia===label).length}))
+    .slice(0,19);
 
   const cursos=posts.filter(p=>p.tipo==="oferta"&&(p.modo==="curso"||p.modo==="grupal")).slice(0,6);
   const particulares=posts.filter(p=>p.tipo==="oferta"&&p.modo==="particular").slice(0,6);
