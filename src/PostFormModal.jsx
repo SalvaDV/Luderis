@@ -948,6 +948,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const [loading,setLoading]=useState(true);const [error,setError]=useState(null);
   const [perfilData,setPerfilData]=useState(null);
   const [tab,setTab]=useState("clases");// clases | reseñas | credenciales
+  const [pubVista,setPubVista]=useState(null);// "ofertas" | "pedidos" | null=auto según rol
 
   useEffect(()=>{
     if(!autorEmail){setError("Email no disponible.");setLoading(false);return;}
@@ -980,8 +981,12 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const nombre=safeDisplayName(null,autorEmail)||"Usuario";
   const displayNombre=perfilData?.display_name||perfilData?.nombre||nombre;
   const avg=calcAvg(reseñas);
-  const totalInscriptos=pubs.reduce((a,p)=>a+(p.cantidad_inscriptos||0),0);
-  const materias=[...new Set(pubs.map(p=>p.materia).filter(Boolean))];
+  // Cursos+clases (ofertas) vs pedidos (búsquedas). Tener ofertas ⇒ es docente.
+  const ofertas=pubs.filter(p=>p.tipo!=="busqueda");
+  const pedidos=pubs.filter(p=>p.tipo==="busqueda");
+  const esDocentePerfil=perfilData?.rol==="docente"||ofertas.length>0;
+  const totalInscriptos=ofertas.reduce((a,p)=>a+(p.cantidad_inscriptos||0),0);
+  const materias=[...new Set(ofertas.map(p=>p.materia).filter(Boolean))];
   const perfilColor=perfilData?.avatar_color||localStorage.getItem("avatarColor_"+autorEmail)||avatarColor(displayNombre[0]);
   const videoUrl=perfilData?.video_presentacion||null;
   const TIPO_ICON={titulo:<GraduationCap size={20}/>,certificado:<ScrollText size={20}/>,experiencia:<Briefcase size={20}/>,otro:<FileText size={20}/>};
@@ -989,9 +994,15 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const isMobile=typeof window!=="undefined"&&window.innerWidth<768;
   const esPropio=autorEmail===session.user.email;
   const acc=accentFor("cursos");// acento de marca (curso)
-  const rolDocente=perfilData?.titulo_profesional||"Docente en Luderis";
-  const preciosActivos=pubs.filter(p=>+p.precio>0).map(p=>+p.precio);
+  const accPedido=accentFor("pedidos");
+  const rolDocente=perfilData?.titulo_profesional||(esDocentePerfil?"Docente en Luderis":"Estudiante en Luderis");
+  const preciosActivos=ofertas.filter(p=>+p.precio>0).map(p=>+p.precio);
   const desdePrecio=preciosActivos.length?Math.min(...preciosActivos):null;
+  // Vista de publicaciones: docentes alternan cursos/clases ↔ pedidos; no docentes ven pedidos.
+  const vistaDefault=(esDocentePerfil&&ofertas.length>0)?"ofertas":"pedidos";
+  const vistaActiva=pubVista||vistaDefault;
+  const pubsAVer=vistaActiva==="pedidos"?pedidos:ofertas;
+  const mostrarToggle=esDocentePerfil&&ofertas.length>0&&pedidos.length>0;
   const dispHoy=perfilData?.disponible_ahora&&perfilData?.disponible_hasta&&new Date(perfilData.disponible_hasta)>new Date();
   // Helpers visuales (tokens, sin hex crudos)
   const Pill=({icon:Ic,children,tone})=>(
@@ -1031,7 +1042,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
         <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT,flexShrink:0}}>← Volver</button>
         <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
           <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayNombre}</div>
-          <div style={{fontSize:11,color:C.muted}}>Docente en Luderis</div>
+          <div style={{fontSize:11,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rolDocente}</div>
         </div>
         <button id="btn-comp-perf" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
           <Share2 size={13}/> Compartir
@@ -1140,11 +1151,20 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
             )}
 
             <section id="perfil-pubs">
-              <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 14px"}}>Publicaciones · {pubs.length}</p>
-              {!loading&&pubs.length===0
-                ?<div style={{color:C.muted,fontSize:14}}>Sin publicaciones activas.</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",margin:"0 0 14px"}}>
+                <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:0}}>{vistaActiva==="pedidos"?"Pedidos":"Cursos y clases"} · {pubsAVer.length}</p>
+                {mostrarToggle&&(
+                  <div role="group" aria-label="Filtrar publicaciones" style={{display:"inline-flex",gap:4,background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:3}}>
+                    {[{k:"ofertas",l:"Cursos y clases",a:acc},{k:"pedidos",l:"Pedidos",a:accPedido}].map(({k,l,a})=>{const on=vistaActiva===k;return(
+                      <button key={k} aria-pressed={on} onClick={()=>setPubVista(k)} style={{border:"none",cursor:"pointer",fontFamily:FONT,fontSize:12.5,fontWeight:700,padding:"6px 12px",borderRadius:9,background:on?a.solid:"transparent",color:on?"#fff":C.muted,transition:"all .15s"}}>{l}</button>
+                    );})}
+                  </div>
+                )}
+              </div>
+              {!loading&&pubsAVer.length===0
+                ?<div style={{color:C.muted,fontSize:14}}>{vistaActiva==="pedidos"?"Sin pedidos activos.":"Sin cursos ni clases activos."}</div>
                 :<div style={{display:"flex",flexDirection:"column",gap:12}}>
-                  {pubs.map(p=>{const T=getPubTipo(p);const tipoBadge=p.tipo==="busqueda"?"Pedido":(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase";return(
+                  {pubsAVer.map(p=>{const T=getPubTipo(p);const tipoBadge=p.tipo==="busqueda"?"Pedido":(p.modo==="grupal"||p.modo==="curso")?"Curso":"Clase";return(
                     <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail&&onOpenDetail(p)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail&&onOpenDetail(p);}}}
                       style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:16,cursor:"pointer",display:"flex",gap:14,alignItems:"center",boxShadow:C.shadow,transition:"all .15s"}}
                       onMouseEnter={e=>{e.currentTarget.style.boxShadow=C.shadowHover||C.shadow;e.currentTarget.style.borderColor=T.accent+"55";}}
