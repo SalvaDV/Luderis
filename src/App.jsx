@@ -623,6 +623,11 @@ export default function App(){
       setOfertasAceptadasNuevas(notifsCuenta.length);
     }).catch(()=>{});
   },[session]);
+  // refreshUnread vía ref: el efecto de Realtime no debe rearmarse (ni cerrar el
+  // WebSocket) cada vez que se renueva el token; el socket vivo ya recibe el token
+  // nuevo por heartbeat. Así evitamos el "WebSocket closed before established".
+  const refreshUnreadRef=useRef(refreshUnread);
+  useEffect(()=>{refreshUnreadRef.current=refreshUnread;},[refreshUnread]);
   // ── Supabase Realtime: notificaciones instantáneas ─────────────────────────
   useEffect(()=>{
     if(!session?.user?.email)return;
@@ -705,7 +710,7 @@ export default function App(){
             if(msg.event==="postgres_changes"){
               const record=msg.payload?.data?.record;
               if(!record)return;
-              refreshUnread();
+              refreshUnreadRef.current?.();
               if(record.tipo){
                 const info=NOTIF_LABELS[record.tipo]||{icon:"🔔",label:"Notificación",type:"info"};
                 const texto=record.pub_titulo?`${info.icon} ${info.label} — ${record.pub_titulo}`:`${info.icon} ${info.label}`;
@@ -726,7 +731,7 @@ export default function App(){
     };
     connect();
     return()=>{dead=true;clearInterval(heartbeat);clearTimeout(reconnectTimer);try{ws?.close();}catch{}};
-  },[session?.user?.email,refreshUnread]);// eslint-disable-line react-hooks/exhaustive-deps
+  },[session?.user?.email]);// eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(()=>{
     refreshUnread();
