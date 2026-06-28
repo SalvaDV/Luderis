@@ -1039,16 +1039,16 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
     <div style={{position:"fixed",inset:0,background:C.bg,zIndex:150,overflowY:"auto",fontFamily:FONT}}>
       {/* Sticky nav */}
       <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
-        <button onClick={onClose} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT,flexShrink:0}}>← Volver</button>
+        <button onClick={onClose} className="cl-tap" style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT,flexShrink:0}}>← Volver</button>
         <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
           <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayNombre}</div>
           <div style={{fontSize:11,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rolDocente}</div>
         </div>
-        <button id="btn-comp-perf" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
+        <button id="btn-comp-perf" className="cl-tap" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
           <Share2 size={13}/> Compartir
         </button>
         {onOpenChat&&autorEmail!==session.user.email&&(
-          <button onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
+          <button className="cl-tap" onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
             style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:600,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
             <MessageCircle size={14}/> Consultar
           </button>
@@ -1156,7 +1156,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
                 {mostrarToggle&&(
                   <div role="group" aria-label="Filtrar publicaciones" style={{display:"inline-flex",gap:4,background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:3}}>
                     {[{k:"ofertas",l:"Cursos y clases",a:acc},{k:"pedidos",l:"Pedidos",a:accPedido}].map(({k,l,a})=>{const on=vistaActiva===k;return(
-                      <button key={k} aria-pressed={on} onClick={()=>setPubVista(k)} style={{border:"none",cursor:"pointer",fontFamily:FONT,fontSize:12.5,fontWeight:700,padding:"6px 12px",borderRadius:9,background:on?a.solid:"transparent",color:on?"#fff":C.muted,transition:"all .15s"}}>{l}</button>
+                      <button key={k} className="cl-tap" aria-pressed={on} onClick={()=>setPubVista(k)} style={{border:"none",cursor:"pointer",fontFamily:FONT,fontSize:12.5,fontWeight:700,padding:"6px 12px",borderRadius:9,background:on?a.solid:"transparent",color:on?"#fff":C.muted,transition:"all .15s"}}>{l}</button>
                     );})}
                   </div>
                 )}

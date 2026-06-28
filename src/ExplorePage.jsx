@@ -547,7 +547,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   {id:"clases",Icon:User,label:"Clases",acc:"clases"},
                   ...(esDocente?[{id:"pedidos",Icon:Megaphone,label:"Pedidos",acc:"pedidos"}]:[]),
                 ].map(tab=>(
-                  <button key={tab.id} id={"tour-tab-"+tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");if(tab.id!=="cursos")setFiltroSinc("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
+                  <button key={tab.id} className="cl-tap" id={"tour-tab-"+tab.id} onClick={()=>{setSeccion(tab.id);setFiltroModo("all");if(tab.id!=="cursos")setFiltroSinc("all");setModoVista("home");trackSeccionExplore(tab.id);try{sessionStorage.setItem("cl_seccion_explore",tab.id);}catch{}}}
                     style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:9,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,transition:"all .2s",
                       background:seccion===tab.id?"#fff":"transparent",
                       color:seccion===tab.id?accentFor(tab.acc).text:"rgba(255,255,255,.88)",

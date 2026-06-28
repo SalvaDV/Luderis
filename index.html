@@ -137,6 +137,17 @@
 
       /* Inputs/buttons heredan la fuente por default */
       button, input, select, textarea { font-family: inherit; color: inherit; }
+
+      /* En mobile, iOS Safari hace zoom al enfocar un control con fuente <16px.
+         Forzamos 16px SOLO en mobile para evitarlo (desktop queda como está, con
+         sus estilos inline compactos). No aplica a checkbox/radio/range. */
+      @media (max-width: 768px) {
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+        textarea, select { font-size: 16px !important; }
+        /* Touch targets cómodos (>=44px) en controles marcados con .cl-tap.
+           Opt-in por control para no deformar botones-ícono circulares. */
+        .cl-tap { min-height: 44px; }
+      }
     </style>
 
     <!-- Microsoft Clarity (heatmaps & session recordings) se carga desde
