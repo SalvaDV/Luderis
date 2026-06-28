@@ -491,7 +491,7 @@ function EspacioClaseModal({oferta,session,onClose}){
         </div>
         <div style={{display:"flex",gap:8}}>
           {oferta.precio&&<span style={{fontSize:12,color:C.accent,fontWeight:700,background:C.accentDim,borderRadius:8,padding:"4px 10px"}}>{fmtPrice(oferta.precio)}/{oferta.precio_tipo||"hora"}</span>}
-          <span style={{fontSize:11,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"3px 10px",fontWeight:700}}>Acordada</span>
+          <span style={{fontSize:11,background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"3px 10px",fontWeight:700}}>Acordada</span>
         </div>
       </div>
       <div style={{maxWidth:760,margin:"0 auto",padding:"24px 20px"}}>
@@ -536,7 +536,7 @@ function EspacioClaseModal({oferta,session,onClose}){
                       <div style={{fontWeight:600,color:m.col,fontSize:13,marginBottom:2}}>{i+1}. {item.titulo}</div>
                       {item.tipo==="texto"&&item.texto&&<p style={{color:C.muted,fontSize:12,margin:0,lineHeight:1.6}}>{item.texto}</p>}
                       {item.tipo==="aviso"&&item.texto&&<p style={{color:C.accent,fontSize:12,margin:0,background:C.accentDim,borderRadius:7,padding:"6px 9px"}}>{item.texto}</p>}
-                      {item.tipo==="tarea"&&item.texto&&<p style={{color:C.purple,fontSize:12,margin:0,background:"#C85CE015",borderRadius:7,padding:"6px 9px"}}>{item.texto}</p>}
+                      {item.tipo==="tarea"&&item.texto&&<p style={{color:C.purple,fontSize:12,margin:0,background:C.purple+"15",borderRadius:7,padding:"6px 9px"}}>{item.texto}</p>}
                       {(item.tipo==="video"||item.tipo==="link"||item.tipo==="archivo")&&safeUrl(item.url)&&<a href={safeUrl(item.url)} target="_blank" rel="noopener noreferrer" style={{color:C.info,fontSize:12,textDecoration:"none"}}>{item.tipo==="video"?"▶ Ver":item.tipo==="archivo"?"↓ Abrir":"↗ Link"}</a>}
                     </div>
                     {soyDocente&&<button onClick={()=>removeC(item.id)} style={{background:"none",border:"none",color:C.danger,fontSize:16,cursor:"pointer",flexShrink:0,lineHeight:1}}>×</button>}
@@ -679,13 +679,13 @@ function ContraRespondedor({oferta,session,onActualizado,onVer,onChat}){
               {oferta.contraoferta_mensaje&&<p style={{color:C.muted,fontSize:12,margin:"6px 0 0",lineHeight:1.5}}>{oferta.contraoferta_mensaje}</p>}
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button onClick={aceptar} disabled={saving} style={{background:"#4ECB7122",border:"1px solid #4ECB7144",borderRadius:10,color:C.successText,padding:"11px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,opacity:saving?0.5:1}}>
+              <button onClick={aceptar} disabled={saving} style={{background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:10,color:C.successText,padding:"11px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,opacity:saving?0.5:1}}>
                 ✓ Aceptar y acordar
               </button>
               {onChat&&<button onClick={()=>{cerrar();onChat(oferta);}} style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,color:C.accent,padding:"11px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                 <MessageCircle size={14} strokeWidth={2}/> Negociar por chat
               </button>}
-              <button onClick={rechazar} disabled={saving} style={{background:"#E05C5C15",border:"1px solid #E05C5C33",borderRadius:10,color:C.danger,padding:"11px",cursor:"pointer",fontSize:13,fontFamily:FONT,opacity:saving?0.5:1}}>
+              <button onClick={rechazar} disabled={saving} style={{background:C.danger+"15",border:`1px solid ${C.danger}33`,borderRadius:10,color:C.danger,padding:"11px",cursor:"pointer",fontSize:13,fontFamily:FONT,opacity:saving?0.5:1}}>
                 ✗ Rechazar
               </button>
             </div>
@@ -831,13 +831,13 @@ function ClasesTab({session,misPubs}){
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
                     {ambasConfirmaron?(
-                      <span style={{fontSize:11,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"3px 10px",fontWeight:700}}>✓ Confirmada</span>
+                      <span style={{fontSize:11,background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"3px 10px",fontWeight:700}}>✓ Confirmada</span>
                     ):(
-                      <span style={{fontSize:11,background:"#F59E0B12",color:"#B45309",border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2}/>Pendiente confirmación</span>
+                      <span style={{fontSize:11,background:"#F59E0B12",color:C.warn,border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2}/>Pendiente confirmación</span>
                     )}
                     {!yaConfirme&&!ambasConfirmaron&&(
                       <button onClick={()=>confirmar(c)} disabled={confirmando===c.id}
-                        style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:confirmando===c.id?0.5:1}}>
+                        style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:confirmando===c.id?0.5:1}}>
                         {confirmando===c.id?"...":"✓ Confirmar que se realizó"}
                       </button>
                     )}
@@ -846,7 +846,7 @@ function ClasesTab({session,misPubs}){
                     )}
                     {ambasConfirmaron&&soyDocente&&!liberados[c.id]&&(
                       <button onClick={()=>liberarPago(c)} disabled={liberando===c.id}
-                        style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:liberando===c.id?0.5:1}}>
+                        style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:liberando===c.id?0.5:1}}>
                         {liberando===c.id?"...":<span style={{display:"inline-flex",alignItems:"center",gap:3}}><Banknote size={10} strokeWidth={2}/>Liberar pago</span>}
                       </button>
                     )}
@@ -884,11 +884,11 @@ function PagosTab({session}){
   },[session?.user?.email]);// eslint-disable-line
 
   const ESCROW_INFO={
-    pendiente:{label:"Pendiente",color:"#F59E0B",bg:"#FEF3C720",Icon:Clock,desc:"La clase aún no fue marcada como finalizada"},
-    retenido: {label:"En ventana",color:"#3B82F6",bg:"#EFF6FF",Icon:Lock,desc:"Clase finalizada — 72hs de disputa abiertas"},
-    en_disputa:{label:"En disputa",color:"#EF4444",bg:"#FEF2F2",Icon:AlertTriangle,desc:"Disputa abierta — Luderis está revisando"},
-    liberado:  {label:"Cobrado",color:"#10B981",bg:"#F0FDF4",Icon:CheckCircle2,desc:"Transferido a tu Mercado Pago"},
-    reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#F9FAFB",Icon:RefreshCw,desc:"Reembolsado al alumno"},
+    pendiente:{label:"Pendiente",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"La clase aún no fue marcada como finalizada"},
+    retenido: {label:"En ventana",color:"#3B82F6",bg:"#3B82F618",Icon:Lock,desc:"Clase finalizada — 72hs de disputa abiertas"},
+    en_disputa:{label:"En disputa",color:"#EF4444",bg:"#EF444418",Icon:AlertTriangle,desc:"Disputa abierta — Luderis está revisando"},
+    liberado:  {label:"Cobrado",color:"#10B981",bg:"#10B98118",Icon:CheckCircle2,desc:"Transferido a tu Mercado Pago"},
+    reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#6B728018",Icon:RefreshCw,desc:"Reembolsado al alumno"},
   };
 
   const totalPendiente=cobros.filter(p=>p.estado_escrow==="pendiente"||p.estado_escrow==="retenido").reduce((a,p)=>a+Number(p.monto||0),0);
@@ -949,7 +949,7 @@ function PagosTab({session}){
                 {status.connected_at&&<div style={{fontSize:11,color:C.muted,marginTop:1}}>Conectada el {new Date(status.connected_at).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}</div>}
               </div>
             </div>
-            <div style={{background:"#2EC4A010",border:"1px solid #2EC4A040",borderRadius:10,padding:"12px 14px",fontSize:13,color:"#0F6E56",lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:8}}><Sparkles size={14} strokeWidth={1.8} style={{flexShrink:0,marginTop:1}}/>Los pagos de tus alumnos van directo a tu cuenta de Mercado Pago.</div>
+            <div style={{background:"#2EC4A010",border:"1px solid #2EC4A040",borderRadius:10,padding:"12px 14px",fontSize:13,color:C.successText,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:8}}><Sparkles size={14} strokeWidth={1.8} style={{flexShrink:0,marginTop:1}}/>Los pagos de tus alumnos van directo a tu cuenta de Mercado Pago.</div>
             <button onClick={desconectar} disabled={disconnecting} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"9px 16px",fontSize:13,cursor:"pointer",fontFamily:FONT,alignSelf:"flex-start",opacity:disconnecting?.5:1}}>{disconnecting?"Desconectando…":"Desconectar cuenta"}</button>
           </div>
         ):(
@@ -1371,7 +1371,7 @@ ${refUrl}`;
                     {r.created_at&&<div style={{...tx("micro"),color:C.muted}}>{fmtRel(r.created_at)}</div>}
                   </div>
                   <span style={{...tx("micro"),fontWeight:700,padding:"3px 10px",borderRadius:20,display:"inline-flex",alignItems:"center",gap:4,flexShrink:0,
-                    background:completado?C.success+"18":C.warn+"18",color:completado?C.successText:"#B45309",border:`1px solid ${completado?C.success+"33":"#F59E0B33"}`}}>
+                    background:completado?C.success+"18":C.warn+"18",color:completado?C.successText:C.warn,border:`1px solid ${completado?C.success+"33":"#F59E0B33"}`}}>
                     {completado?<><CheckCircle2 size={11} strokeWidth={2.5}/>Completado</>:<><Clock size={11} strokeWidth={2}/>Pendiente</>}
                   </span>
                 </div>
@@ -1689,7 +1689,7 @@ function AjustesTab({session,nombre,displayName,bio,ubicacion,tituloProf,avatarU
             Eliminar mi cuenta
           </button>
         ):(
-          <div style={{background:"#EF444410",border:"1px solid #EF444430",borderRadius:12,padding:"14px 16px"}}>
+          <div style={{background:C.danger+"10",border:`1px solid ${C.danger}30`,borderRadius:12,padding:"14px 16px"}}>
             <div style={{fontSize:13,color:C.text,marginBottom:10}}>Escribí <strong>ELIMINAR</strong> para confirmar:</div>
             <input value={deleteText} onChange={e=>setDeleteText(e.target.value)} aria-label="Escribí ELIMINAR para confirmar" placeholder="ELIMINAR"
               style={{...iS,marginBottom:10,borderColor:deleteText==="ELIMINAR"?C.danger:C.border}}/>
@@ -1700,7 +1700,7 @@ function AjustesTab({session,nombre,displayName,bio,ubicacion,tituloProf,avatarU
               </button>
               <button disabled={deleteText!=="ELIMINAR"}
                 onClick={()=>window.open("/quejas","_self")}
-                style={{background:deleteText==="ELIMINAR"?C.danger:"#EF444440",border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:deleteText==="ELIMINAR"?"pointer":"not-allowed",fontSize:13,fontWeight:700,fontFamily:FONT,opacity:deleteText==="ELIMINAR"?1:0.6,transition:"all .15s"}}>
+                style={{background:deleteText==="ELIMINAR"?C.danger:C.danger+"40",border:"none",borderRadius:20,color:"#fff",padding:"8px 20px",cursor:deleteText==="ELIMINAR"?"pointer":"not-allowed",fontSize:13,fontWeight:700,fontFamily:FONT,opacity:deleteText==="ELIMINAR"?1:0.6,transition:"all .15s"}}>
                 Solicitar eliminación →
               </button>
             </div>
@@ -1941,7 +1941,7 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
             {ubicacionPerfil&&<span style={{...tx("meta"),color:C.muted,display:"inline-flex",alignItems:"center",gap:5}}><MapPin size={14} strokeWidth={2}/>{ubicacionPerfil}</span>}
             <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{pubs.length}</span> publicaciones</span>
             <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{reseñas.length}</span> reseñas</span>
-            {avg&&<><span style={{width:3,height:3,borderRadius:"50%",background:C.faint||C.border}}/><span style={{...tx("meta"),color:"#B45309",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Star size={14} fill="#F5B301" stroke="#F5B301"/>{avg.toFixed(1)}</span></>}
+            {avg&&<><span style={{width:3,height:3,borderRadius:"50%",background:C.faint||C.border}}/><span style={{...tx("meta"),color:C.warn,fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Star size={14} fill="#F5B301" stroke="#F5B301"/>{avg.toFixed(1)}</span></>}
           </div>
           {/* Acciones (pills) */}
           <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:18}}>
@@ -2082,7 +2082,7 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
                 );
               })()}
               {/* Disponibilidad ahora */}
-              <div style={{background:disponibleAhora?"#F0FDF4":C.bg,border:`1px solid ${disponibleAhora?C.success+"40":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+              <div style={{background:disponibleAhora?C.success+"12":C.bg,border:`1px solid ${disponibleAhora?C.success+"40":C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:disponibleAhora?10:0}}>
                   <button onClick={()=>setDisponibleAhora(v=>!v)} role="switch" aria-checked={disponibleAhora} aria-label="Estoy disponible ahora" style={{width:38,height:22,borderRadius:11,background:disponibleAhora?C.success:C.border,border:"none",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,padding:0}}>
                     <span style={{position:"absolute",top:3,left:disponibleAhora?18:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",display:"block",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
@@ -2309,11 +2309,11 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
                 :(o.busqueda_autor_nombre||safeDisplayName(null,o.busqueda_autor_email));
               const tieneContraAlumno=!recibida&&o.estado==="pendiente"&&o.contraoferta_precio&&o.contraoferta_de==="alumno";
               const estado=recibida?"aceptada":o.estado;
-              const st=tieneContraAlumno?{t:"Negociando",c:"#C85CE0",bg:"#C85CE015",bd:"#C85CE033"}
+              const st=tieneContraAlumno?{t:"Negociando",c:C.purple,bg:C.purple+"15",bd:C.purple+"33"}
                 :estado==="aceptada"?{t:"Aceptada",c:C.successText,bg:C.success+"12",bd:C.success+"30"}
                 :estado==="rechazada"?{t:"Rechazada",c:C.danger,bg:C.danger+"12",bd:C.danger+"30"}
                 :estado==="retirada"?{t:"Retirada",c:C.muted,bg:C.bg,bd:C.border}
-                :{t:"Pendiente",c:"#B45309",bg:"#F59E0B12",bd:"#F59E0B30"};
+                :{t:"Pendiente",c:C.warn,bg:C.warn+"12",bd:C.warn+"30"};
               const badge=recibida?accentFor("pedidos"):accentFor("clases");
               return(
                 <div key={(recibida?"r":"e")+o.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:16,boxShadow:C.shadow}}>
@@ -2329,7 +2329,7 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
                     {o.precio&&<div style={{textAlign:"right",flexShrink:0,whiteSpace:"nowrap"}}><span style={{...tx("price"),color:C.text}}>{fmtPrice(o.precio)}</span><span style={{...tx("micro"),color:C.faint}}> /{o.precio_tipo}</span></div>}
                   </div>
                   {o.mensaje&&<div style={{...tx("body"),color:C.textSoft||C.muted,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",marginTop:12,fontStyle:"italic"}}>“{o.mensaje}”</div>}
-                  {(tieneContraAlumno||(recibida&&o.contraoferta_precio))&&<div style={{...tx("meta"),color:"#C85CE0",fontWeight:600,marginTop:8}}>↔ Contraoferta: {fmtPrice(o.contraoferta_precio)}/{o.contraoferta_tipo||o.precio_tipo}</div>}
+                  {(tieneContraAlumno||(recibida&&o.contraoferta_precio))&&<div style={{...tx("meta"),color:C.purple,fontWeight:600,marginTop:8}}>↔ Contraoferta: {fmtPrice(o.contraoferta_precio)}/{o.contraoferta_tipo||o.precio_tipo}</div>}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginTop:12,flexWrap:"wrap"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{...tx("micro"),fontWeight:700,padding:"3px 10px",borderRadius:20,background:st.bg,color:st.c,border:`1px solid ${st.bd}`}}>{st.t}</span>
@@ -2495,7 +2495,7 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                         <span style={{...tx("bodyStrong"),color:C.text}}>{r.autor_nombre}</span>
-                        {r.verificada&&<span style={{...tx("micro"),background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 7px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><BadgeCheck size={10}/>Verificada</span>}
+                        {r.verificada&&<span style={{...tx("micro"),background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"1px 7px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><BadgeCheck size={10}/>Verificada</span>}
                       </div>
                       {sub&&<div style={{...tx("meta"),color:C.muted,marginTop:2}}>{sub}</div>}
                     </div>
@@ -2614,7 +2614,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
         {confirmado?(
           /* Vista de solo lectura si ya está confirmado */
           <div>
-            <div style={{background:"#4ECB7115",border:"1px solid #4ECB7133",borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}>✓</span>
               <div>
                 <div style={{color:C.successText,fontWeight:700,fontSize:13}}>Acuerdo confirmado</div>
@@ -2664,7 +2664,7 @@ function AcuerdoModal({oferta,session,onClose,onConfirmado}){
                 <div style={{fontWeight:700,color:C.text,fontSize:13}}>Mercado Pago</div>
                 <div style={{fontSize:11,color:C.muted}}>El pago se realiza a través de Luderis — protegido y garantizado</div>
               </div>
-              <span style={{marginLeft:"auto",fontSize:10,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"2px 8px",fontWeight:700}}>Único</span>
+              <span style={{marginLeft:"auto",fontSize:10,background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"2px 8px",fontWeight:700}}>Único</span>
             </div>
             <div style={{color:C.muted,fontSize:11,fontWeight:600,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Notas adicionales (opcional)</div>
             <textarea value={notas} onChange={e=>setNotas(e.target.value.slice(0,400))} aria-label="Notas adicionales" placeholder="Horarios acordados, condiciones especiales, etc." style={{...iS,minHeight:65,resize:"vertical"}}/>
