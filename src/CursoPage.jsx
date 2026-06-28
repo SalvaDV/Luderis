@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY, toast, accentFor, tx,
+  C, FONT, FONT_DISPLAY, toast, accentFor, tx, Z,
   Avatar, Spinner, Btn, Modal, ErrMsg, Chip,
   VerifiedBadge, Tag,
   fmt, fmtRel, fmtPrice, calcDuracion,
@@ -4412,7 +4412,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   // Gate: if not owner and not inscribed, show access wall
   if(!tieneAcceso&&!loading&&!inscLoading){
     const cerrado=localCerrado||post.inscripciones_cerradas;
-    return(<div style={{position:"fixed",inset:0,background:C.bg,zIndex:300,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:FONT,gap:16,padding:24}}>
+    return(<div style={{position:"fixed",inset:0,background:C.bg,zIndex:Z.overlayPage,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:FONT,gap:16,padding:24}}>
       <button onClick={onClose} style={{position:"absolute",top:20,left:20,background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>← Volver</button>
       <div style={{fontSize:48,marginBottom:8,color:C.muted,fontWeight:300}}>·</div>
       <h2 style={{color:C.text,fontSize:20,fontWeight:700,margin:0}}>{cerrado?"Inscripciones cerradas":"Contenido restringido"}</h2>
@@ -4429,7 +4429,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   }
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
   return(
-    <div  ref={pageRef} style={{position:"fixed",inset:0,background:C.bg,zIndex:300,overflowY:"auto",fontFamily:FONT}}>
+    <div  ref={pageRef} style={{position:"fixed",inset:0,background:C.bg,zIndex:Z.overlayPage,overflowY:"auto",fontFamily:FONT}}>
       {confirmElCP}
       {showJitsiCurso&&<JitsiModal roomName={jitsiRoomCurso} displayName={docenteDisplayName} onClose={()=>{setShowJitsiCurso(false);if(esMio){setClaseActiva(false);}else{setTab("contenido");}}}/>}
       {/* Banner "Clase en vivo" para alumnos */}

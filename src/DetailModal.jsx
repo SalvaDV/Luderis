@@ -8,7 +8,7 @@ import {
 import * as sb from "./supabase";
 import { trackPostView, trackChatStart } from "./analytics";
 import {
-  C, FONT, FONT_DISPLAY, tx,
+  C, FONT, FONT_DISPLAY, tx, Z,
   Avatar, Spinner, StarRating, Tag, VerifiedBadge,
   fmt, fmtRel, fmtPrice, calcAvg, calcDuracion,
   safeDisplayName, CATEGORIAS_DATA, CalendarioCurso,
@@ -87,7 +87,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
   const trapRef=useFocusTrap(true);
 
   return(
-    <div ref={trapRef} role="dialog" aria-modal="true" aria-label={post?.titulo||"Detalle de publicación"} tabIndex={-1} style={{position:"fixed",inset:0,zIndex:200,background:C.bg,display:"flex",flexDirection:"column",fontFamily:FONT,overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"fadeIn .18s ease",outline:"none"}}>
+    <div ref={trapRef} role="dialog" aria-modal="true" aria-label={post?.titulo||"Detalle de publicación"} tabIndex={-1} style={{position:"fixed",inset:0,zIndex:Z.overlayDetail,background:C.bg,display:"flex",flexDirection:"column",fontFamily:FONT,overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"fadeIn .18s ease",outline:"none"}}>
       <style>{`
         @media(max-width:600px){
           .dm-topbar{padding:0 14px!important}

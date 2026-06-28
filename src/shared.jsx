@@ -20,6 +20,21 @@ export const FONT="'Hanken Grotesk','Inter',system-ui,-apple-system,'Segoe UI',s
 // Fuente para títulos/displays (más carácter en headings grandes)
 export const FONT_DISPLAY="'Plus Jakarta Sans','Hanken Grotesk',system-ui,sans-serif";
 
+// ── Escala de z-index (fuente única de verdad para el apilamiento) ──────────────
+// Los overlays full-screen se apilan en este orden. Mantener los huecos para poder
+// intercalar capas sin renumerar. Usar estos tokens en vez de números mágicos.
+export const Z={
+  base:1,
+  stickyHeader:10,   // headers sticky DENTRO de un overlay
+  dropdown:50,
+  overlayProfile:150,// PerfilPage (perfil público) — debajo de detalle
+  overlayDetail:200, // DetailModal — se abre sobre el perfil
+  overlayPage:300,   // CursoPage (página completa)
+  dialog:500,        // diálogos anidados dentro de una página
+  toast:700,
+  max:999,
+};
+
 // ─── ESCALA TIPOGRÁFICA (rediseño) ────────────────────────────────────────────
 // Usar con el helper tx("h1") en el style de cualquier elemento de texto.
 export const TYPE={

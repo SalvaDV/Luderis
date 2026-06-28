@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
 import {
-  C, FONT, FONT_DISPLAY, useDebounce, toast, accentFor, tx,
+  C, FONT, FONT_DISPLAY, useDebounce, toast, accentFor, tx, Z,
   Spinner, Btn, Label, ErrMsg, Modal,
   SearchableSelect,
   fmtRel, calcAvg, calcDuracion,
@@ -1036,7 +1036,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   };
 
   return(
-    <div style={{position:"fixed",inset:0,background:C.bg,zIndex:150,overflowY:"auto",fontFamily:FONT}}>
+    <div style={{position:"fixed",inset:0,background:C.bg,zIndex:Z.overlayProfile,overflowY:"auto",fontFamily:FONT}}>
       {/* Sticky nav */}
       <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
         <button onClick={onClose} className="cl-tap" style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 12px",cursor:"pointer",fontSize:13,fontFamily:FONT,flexShrink:0}}>← Volver</button>
