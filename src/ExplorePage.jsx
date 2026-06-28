@@ -17,7 +17,7 @@ import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
 import { PriceSlider } from "./PostFormModal";
-import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, ArrowLeft, SlidersHorizontal, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench, Plus } from "lucide-react";
+import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, ArrowLeft, SlidersHorizontal, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench, Plus, Package } from "lucide-react";
 
 // Mapa categoría → icono de línea (lucide) + acento, según el rediseño (sin emojis)
 const CAT_ICONS={
@@ -365,8 +365,8 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
     filtroFechaDesde&&`Desde ${fmt(filtroFechaDesde)}`,
     filtroFechaHasta&&`Hasta ${fmt(filtroFechaHasta)}`,
     filtroDurMin>0&&`Duración`,
-    filtroUbicacion&&`📍 ${filtroUbicacion}`,
-    filtroMoneda&&`💱 ${filtroMoneda}`,
+    filtroUbicacion&&filtroUbicacion,
+    filtroMoneda&&filtroMoneda,
     filtroNivel&&({primaria:"Primaria",secundaria:"Secundaria",universitario:"Universitario",adultos:"Adultos / Prof.",todos:"Todos los niveles"}[filtroNivel]),
   ].filter(Boolean);
   const hasFilters=activeFilters.length>0||busqueda;
@@ -560,7 +560,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               <div style={{fontSize:12,fontWeight:600,letterSpacing:".09em",textTransform:"uppercase",color:"rgba(255,255,255,.85)",marginBottom:8}}>{heroEyebrow}</div>
               <h1 style={{color:"#fff",fontFamily:FONT_DISPLAY,fontSize:"clamp(20px,4vw,27px)",fontWeight:800,margin:"0 0 6px",letterSpacing:"-.02em",lineHeight:1.18,maxWidth:620,textShadow:"0 1px 12px rgba(0,0,0,.12)"}}>{heroTitle}</h1>
               <p style={{color:"rgba(255,255,255,.8)",fontSize:14,margin:"0 0 18px",lineHeight:1.5,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>📍 {userCity}</span>}
+                {userCity&&<span style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)",display:"inline-flex",alignItems:"center",gap:4}}><MapPin size={12} strokeWidth={2}/>{userCity}</span>}
                 {loading?<span style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"2px 24px",animation:"pulse 1.5s infinite"}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>:
                   seccion==="pedidos"?`${todosPedidos.length} pedido${todosPedidos.length!==1?"s":""} esperando respuesta`:
                   visiblePosts.filter(p=>p.tipo==="oferta").length>0
@@ -910,7 +910,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       <button onClick={guardarAlerta} disabled={savingAlerta}
                         style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,background:alertaActual?C.accentDim:"none",border:`1px solid ${alertaActual?C.accent:C.border}`,borderRadius:20,color:alertaActual?C.accent:C.muted,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:FONT,transition:"all .15s",flexShrink:0,opacity:savingAlerta?.6:1}}>
                         <Bell size={11} strokeWidth={2}/>
-                        {savingAlerta?"Guardando…":alertaActual?"🔔 Alerta activa":"Guardar búsqueda"}
+                        {savingAlerta?"Guardando…":alertaActual?"Alerta activa":"Guardar búsqueda"}
                       </button>
                     )}
                   </div>
@@ -920,7 +920,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       <span style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:.3}}>MIS ALERTAS:</span>
                       {alertas.map(a=>(
                         <span key={a.id} style={{display:"flex",alignItems:"center",gap:4,background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"2px 8px",fontSize:10,color:C.text}}>
-                          🔔 {a.nombre}
+                          <Bell size={10} strokeWidth={2}/>{a.nombre}
                           <button onClick={()=>sb.deleteAlertaExploracion(a.id,session.access_token).then(()=>{setAlertas(p=>p.filter(x=>x.id!==a.id));toast("Alerta eliminada","info",2000);})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",padding:0,fontSize:12,lineHeight:1,marginLeft:2}} title="Eliminar alerta">×</button>
                         </span>
                       ))}
@@ -1028,7 +1028,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                       <div style={{flexShrink:0,textAlign:"right"}}>
                         {p.precio?<div style={{fontWeight:700,color:C.accent,fontSize:14}}>{fmtPrice(p.precio)}</div>:<div style={{fontSize:12,color:C.successText,fontWeight:600}}>Gratis</div>}
                       {p.tiene_prueba&&<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>✓ Clase de prueba</div>}
-                      {(()=>{try{const pqs=JSON.parse(p.paquetes||"[]");const mejor=pqs.filter(x=>x.clases>0).sort((a,b)=>(b.descuento||0)-(a.descuento||0))[0];return mejor?.descuento>0?<div style={{fontSize:10,color:"#0F6E56",fontWeight:700,background:"#2EC4A012",borderRadius:6,padding:"1px 6px",marginTop:2}}>📦 Pack -{mejor.descuento}%</div>:null;}catch{return null;}})()}
+                      {(()=>{try{const pqs=JSON.parse(p.paquetes||"[]");const mejor=pqs.filter(x=>x.clases>0).sort((a,b)=>(b.descuento||0)-(a.descuento||0))[0];return mejor?.descuento>0?<div style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:C.successText,fontWeight:700,background:C.success+"18",borderRadius:6,padding:"1px 6px",marginTop:2}}><Package size={9} strokeWidth={2.2}/>Pack -{mejor.descuento}%</div>:null;}catch{return null;}})()}
                         <Tag tipo={p.tipo} modo={p.modo}/>
                       </div>
                     </div>
@@ -1068,13 +1068,13 @@ function TourGuide({session,esDocente,onDone}){
   const [rect,setRect]=useState(null);
 
   const steps=[
-    {targetId:"tour-tab-cursos",icon:"🎓",title:"Cursos",
+    {targetId:"tour-tab-cursos",icon:GraduationCap,title:"Cursos",
       desc:"Clases estructuradas con contenido, seguimiento y certificado al terminar."},
-    {targetId:"tour-tab-clases",icon:"📚",title:"Clases particulares",
+    {targetId:"tour-tab-clases",icon:BookOpen,title:"Clases particulares",
       desc:"Clases 1 a 1 con atención personalizada."},
-    ...(esDocente?[{targetId:"tour-tab-pedidos",icon:"📣",title:"Pedidos de alumnos",
+    ...(esDocente?[{targetId:"tour-tab-pedidos",icon:Megaphone,title:"Pedidos de alumnos",
       desc:"Alumnos que necesitan un docente. Podés ver sus pedidos y ofrecerte directamente."}]:[]),
-    {targetId:"tour-btn-publicar",icon:"✦",title:"Publicar",
+    {targetId:"tour-btn-publicar",icon:Sparkles,title:"Publicar",
       desc:esDocente
         ?"Publicá tus clases o cursos, o creá un pedido para encontrar alumnos nuevos."
         :"Publicá tu clase, curso o un pedido de docente. Todo en pocos minutos."},
@@ -1122,7 +1122,7 @@ function TourGuide({session,esDocente,onDone}){
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
         <div style={{display:"flex",alignItems:"center",gap:7}}>
-          <span style={{fontSize:16}}>{cur.icon}</span>
+          {cur.icon&&<cur.icon size={18} strokeWidth={2} color={C.accent}/>}
           <span style={{fontWeight:700,color:C.text,fontSize:14}}>{cur.title}</span>
         </div>
         <button onClick={done} style={{background:"none",border:"none",color:C.muted,fontSize:18,cursor:"pointer",lineHeight:1,padding:"0 0 2px 8px",flexShrink:0}}>×</button>
