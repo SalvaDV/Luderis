@@ -349,6 +349,16 @@ export const updateMensajesNombre = (email: string, nuevoNombre: string, token: 
 export const marcarLeidos = (pubId: Id, miEmail: string, token: Token) =>
   db(`mensajes?publicacion_id=eq.${pubId}&para_nombre=eq.${encodeURIComponent(miEmail)}&leido=eq.false`, "PATCH", { leido: true }, token);
 
+// ── Chat directo (sin publicación): publicacion_id NULL, identificado por el par
+// de emails. Lo usan el perfil ("Consultar") y Admin, cuyos ids no son UUID. ──────
+export const getMensajesDirecto = (miEmail: string, otroEmail: string, token: Token) => {
+  const q = `mensajes?publicacion_id=is.null&or=(and(de_nombre.eq.${encodeURIComponent(miEmail)},para_nombre.eq.${encodeURIComponent(otroEmail)}),and(de_nombre.eq.${encodeURIComponent(otroEmail)},para_nombre.eq.${encodeURIComponent(miEmail)}))&order=created_at.asc`;
+  return db(q, "GET", null, token);
+};
+
+export const marcarLeidosDirecto = (miEmail: string, otroEmail: string, token: Token) =>
+  db(`mensajes?publicacion_id=is.null&de_nombre=eq.${encodeURIComponent(otroEmail)}&para_nombre=eq.${encodeURIComponent(miEmail)}&leido=eq.false`, "PATCH", { leido: true }, token);
+
 // ── Inscripciones ─────────────────────────────────────────────────────────────
 
 export const getInscripciones = (pubId: Id, token: Token) =>

@@ -7,9 +7,16 @@ const ANON_KEY = process.env.REACT_APP_SUPABASE_KEY;
 
 export default function ChatModal({post,session,onClose,onUnreadChange,embedded=false}){
   const miEmail=session.user.email;const otroEmail=post.autor_email;
-  // Canal Realtime por-par (mismo string para ambos lados): scopea el "escribiendo…"
-  // a esta conversación. Los INSERT de mensajes se filtran además por RLS + por par.
-  const chanTopic=`realtime:chat_${post.id}_${[miEmail,otroEmail].map(s=>(s||"").toLowerCase().replace(/[^a-z0-9]/g,"")).sort().join("_")}`;
+  // Chat "directo" (sin publicación): el opener pasa un id no-UUID ("direct_…"/"admin_…").
+  // mensajes.publicacion_id es uuid y rechaza ids sintéticos, así que estos mensajes se
+  // guardan con publicacion_id NULL e identifican la conversación por el par de emails.
+  const _UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const esDirecto=!_UUID_RE.test(String(post.id||""));
+  const pubId=esDirecto?null:post.id;
+  // Canal Realtime por-par (mismo string para ambos lados): scopea el "escribiendo…".
+  // En directo usamos solo el par (el post.id difiere por lado: "direct_<otro>").
+  const _pairKey=[miEmail,otroEmail].map(s=>(s||"").toLowerCase().replace(/[^a-z0-9]/g,"")).sort().join("_");
+  const chanTopic=esDirecto?`realtime:chat_direct_${_pairKey}`:`realtime:chat_${post.id}_${_pairKey}`;
   const [msgs,setMsgs]=useState([]);const [input,setInput]=useState("");const [loading,setLoading]=useState(true);
   const [enviando,setEnviando]=useState(false);
   const [otroEscribiendo,setOtroEscribiendo]=useState(false);
@@ -43,17 +50,17 @@ export default function ChatModal({post,session,onClose,onUnreadChange,embedded=
     emitirEscribiendo();
   };
   const marcar=useCallback(async()=>{
-    try{await sb.marcarLeidos(post.id,miEmail,session.access_token);}catch{}
+    try{if(esDirecto)await sb.marcarLeidosDirecto(miEmail,otroEmail,session.access_token);else await sb.marcarLeidos(post.id,miEmail,session.access_token);}catch{}
     // Borrar notificaciones de nuevo_mensaje de esta pub
     try{await sb.marcarNotifsTipoLeidas(miEmail,["nuevo_mensaje","chat_grupal"],session.access_token);}catch{}
     if(onUnreadChange)onUnreadChange();
-  },[post.id,miEmail,session.access_token,onUnreadChange]);
+  },[post.id,miEmail,otroEmail,esDirecto,session.access_token,onUnreadChange]);
   const cargar=useCallback(async()=>{
     if(cargandoRef.current)return;// evitar requests simultáneos
     cargandoRef.current=true;
     try{
       // Query dirigida: solo los mensajes de esta conversación (evita traer todos)
-      const data=await sb.getMensajes(post.id,miEmail,otroEmail,session.access_token);
+      const data=esDirecto?await sb.getMensajesDirecto(miEmail,otroEmail,session.access_token):await sb.getMensajes(post.id,miEmail,otroEmail,session.access_token);
       setMsgs(data||[]);setLoading(false);
       setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:"smooth"}),50);
       const tieneNoLeidos=data.some(m=>m.para_nombre===miEmail&&!m.leido);
@@ -93,7 +100,7 @@ export default function ChatModal({post,session,onClose,onUnreadChange,embedded=
             payload:{
               config:{
                 broadcast:{ack:false,self:false},
-                postgres_changes:[{event:"INSERT",schema:"public",table:"mensajes",filter:`publicacion_id=eq.${post.id}`}]
+                ...(esDirecto?{}:{postgres_changes:[{event:"INSERT",schema:"public",table:"mensajes",filter:`publicacion_id=eq.${post.id}`}]})
               },
               access_token:token
             },ref:"1"
@@ -126,6 +133,8 @@ export default function ChatModal({post,session,onClose,onUnreadChange,embedded=
       }
     }
     connect();
+    // Directo: sin postgres_changes (su filtro es por uuid), refrescamos por polling.
+    if(esDirecto)pollFallback=setInterval(cargar,5000);
     return()=>{
       dead=true;
       clearInterval(heartbeat);clearTimeout(reconnectTimer);clearInterval(pollFallback);
@@ -162,8 +171,8 @@ export default function ChatModal({post,session,onClose,onUnreadChange,embedded=
     const mensajeTexto=imagenPrevia?`[img]${imagenPrevia}[/img]${txt?" "+txt:""}`:txt;
     setInput("");setImagenPrevia(null);setEnviando(true);
     try{
-      await sb.insertMensaje({publicacion_id:post.id,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:mensajeTexto,leido:false,pub_titulo:post.titulo},session.access_token);
-      sb.insertNotificacion({usuario_id:null,alumno_email:otroEmail,tipo:"nuevo_mensaje",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
+      await sb.insertMensaje({publicacion_id:pubId,de_usuario:session.user.id,para_usuario:null,de_nombre:miEmail,para_nombre:otroEmail,texto:mensajeTexto,leido:false,pub_titulo:post.titulo},session.access_token);
+      sb.insertNotificacion({usuario_id:null,alumno_email:otroEmail,tipo:"nuevo_mensaje",publicacion_id:pubId,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       (()=>{const ck=`cl_email_sent_${post.id}_${otroEmail}`;const last=parseInt(localStorage.getItem(ck)||"0");if(Date.now()-last>2*60*60*1000){sb.sendEmail("nuevo_mensaje",otroEmail,{pub_titulo:post.titulo,de_nombre:sb.getDisplayName(miEmail)||miEmail.split("@")[0],preview:imagenPrevia?"[Imagen]":txt},session.access_token).catch(()=>{});try{localStorage.setItem(ck,Date.now());}catch{}}})();
       sb.sendPush(otroEmail,`Nuevo mensaje — ${post.titulo}`,imagenPrevia?"[Imagen]":txt.slice(0,80)||"…",`/?chat=${post.id}`,"nuevo_mensaje",session.access_token).catch(()=>{});
       cargar();
