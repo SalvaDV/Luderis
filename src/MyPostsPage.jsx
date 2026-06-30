@@ -33,7 +33,11 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,on
   const [confirmDelete,setConfirmDelete]=useState(false);
   const [ofertaAceptadaInfo,setOfertaAceptadaInfo]=useState(null);
   const [loadingDelete,setLoadingDelete]=useState(false);
+  const [inscritosReal,setInscritosReal]=useState(0);
   const activo=post.activo!==false;const finalizado=!!post.finalizado;
+  // Una oferta con alumnos inscriptos no se puede borrar: perderían acceso a lo
+  // pagado y el escrow quedaría sin liberar. Solo se permite Pausar.
+  const bloqueadoPorInscriptos=post.tipo==="oferta"&&inscritosReal>0;
   const pendienteValidacion=post.activo===false&&post.estado_validacion==="pendiente";
 
   const handleClickEliminar=async()=>{
@@ -43,6 +47,10 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,on
         const aceptada=todas.find(o=>o.estado==="aceptada");
         setOfertaAceptadaInfo(aceptada?{nombre:aceptada.ofertante_nombre||safeDisplayName(null,aceptada.ofertante_email),email:aceptada.ofertante_email}:null);
       }catch{setOfertaAceptadaInfo(null);}
+    }else{
+      // Ofertas: contar inscriptos reales (no confiar solo en el denormalizado).
+      try{const ins=await sb.getInscripciones(post.id,session.access_token);setInscritosReal(Array.isArray(ins)?ins.length:0);}
+      catch{setInscritosReal(post.cantidad_inscriptos||0);}
     }
     setConfirmDelete(true);
   };
@@ -53,8 +61,10 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,on
       if(post.tipo==="busqueda"&&ofertaAceptadaInfo?.email){
         sb.insertNotificacion({usuario_id:null,alumno_email:ofertaAceptadaInfo.email,tipo:"busqueda_eliminada",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(e=>logError("notif busqueda_eliminada",e));
       }
+      await onDelete(post);
       setConfirmDelete(false);
-      onDelete(post);
+    }catch(e){
+      toast("No se pudo eliminar: "+(e?.message||"intentá de nuevo"),"error");
     }finally{setLoadingDelete(false);}
   };
 
@@ -101,14 +111,24 @@ export function MyPostCard({post,session,onEdit,onToggle,onDelete,onOpenCurso,on
         // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions
         <div role="dialog" aria-modal="true" aria-label="Confirmar eliminación" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:FONT}} onClick={e=>{if(e.target===e.currentTarget)setConfirmDelete(false);}}>
           <div style={{background:C.surface,borderRadius:12,padding:"28px",width:"min(400px,92vw)",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.15)"}}>
-            <div style={{width:44,height:44,borderRadius:"50%",background:C.danger+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.danger}}><X size={20} strokeWidth={2.5}/></div>
-            <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>¿Eliminar {post.tipo==="busqueda"?"búsqueda":"publicación"}?</h3>
-            {ofertaAceptadaInfo&&<div style={{background:C.warn+"10",border:`1px solid ${C.warn}30`,borderRadius:8,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left",display:"flex",alignItems:"flex-start",gap:6}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0,marginTop:1}}/><span><strong style={{color:C.text}}>{ofertaAceptadaInfo.nombre}</strong> tiene una oferta aceptada. Se le avisará.</span></div>}
-            <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 22px"}}>Se eliminará <strong style={{color:C.text}}>"{post.titulo}"</strong> permanentemente.</p>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setConfirmDelete(false)} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"10px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
-              <button onClick={handleConfirmDelete} disabled={loadingDelete} style={{flex:1,background:C.danger,border:"none",borderRadius:20,color:"#fff",padding:"10px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:loadingDelete?.6:1}}>{loadingDelete?"...":"Sí, eliminar"}</button>
-            </div>
+            {bloqueadoPorInscriptos?(<>
+              <div style={{width:44,height:44,borderRadius:"50%",background:C.warn+"15",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.warn}}><AlertTriangle size={20} strokeWidth={2.4}/></div>
+              <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>No podés eliminar este curso</h3>
+              <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 22px"}}>Tiene <strong style={{color:C.text}}>{inscritosReal} alumno{inscritosReal!==1?"s":""}</strong> inscripto{inscritosReal!==1?"s":""}. Si lo eliminás perderían acceso a lo que pagaron y los fondos retenidos no se podrían liberar.{activo?" Pausalo para ocultarlo de nuevas inscripciones; los alumnos actuales conservan su acceso.":" Ya está pausado: no recibe nuevas inscripciones y los alumnos conservan su acceso."}</p>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setConfirmDelete(false)} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"10px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Entendido</button>
+                {activo&&<button onClick={()=>{setConfirmDelete(false);onToggle(post);}} style={{flex:1,background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"10px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT}}>Pausar</button>}
+              </div>
+            </>):(<>
+              <div style={{width:44,height:44,borderRadius:"50%",background:C.danger+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.danger}}><X size={20} strokeWidth={2.5}/></div>
+              <h3 style={{color:C.text,fontSize:17,fontWeight:700,margin:"0 0 8px"}}>¿Eliminar {post.tipo==="busqueda"?"búsqueda":"publicación"}?</h3>
+              {ofertaAceptadaInfo&&<div style={{background:C.warn+"10",border:`1px solid ${C.warn}30`,borderRadius:8,padding:"10px 13px",marginBottom:12,fontSize:12,color:C.warn,textAlign:"left",display:"flex",alignItems:"flex-start",gap:6}}><AlertTriangle size={12} strokeWidth={2} style={{flexShrink:0,marginTop:1}}/><span><strong style={{color:C.text}}>{ofertaAceptadaInfo.nombre}</strong> tiene una oferta aceptada. Se le avisará.</span></div>}
+              <p style={{color:C.muted,fontSize:13,lineHeight:1.6,margin:"0 0 22px"}}>Se eliminará <strong style={{color:C.text}}>"{post.titulo}"</strong> permanentemente.</p>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setConfirmDelete(false)} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"10px",cursor:"pointer",fontSize:13,fontFamily:FONT}}>Cancelar</button>
+                <button onClick={handleConfirmDelete} disabled={loadingDelete} style={{flex:1,background:C.danger,border:"none",borderRadius:20,color:"#fff",padding:"10px",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:FONT,opacity:loadingDelete?.6:1}}>{loadingDelete?"...":"Sí, eliminar"}</button>
+              </div>
+            </>)}
           </div>
         </div>
       )}
