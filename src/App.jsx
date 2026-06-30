@@ -485,7 +485,35 @@ export default function App(){
     }).catch(()=>{});
   },[]);// eslint-disable-line
 
-  useEffect(()=>{sb.setSessionRefreshCallback(async()=>{const c=sessionRef.current;if(!c?.refresh_token)return null;try{const s=await sb.refreshSession(c.refresh_token);sb.saveSession(s);setSession(s);return s;}catch{sb.clearSession();setSession(null);toast("Tu sesión expiró. Iniciá sesión nuevamente.","error",0);return null;}});},[]);
+  const refreshInFlightRef=useRef(null);
+  useEffect(()=>{sb.setSessionRefreshCallback(async()=>{
+    const c=sessionRef.current;
+    if(!c?.refresh_token)return null;
+    // Dedupe: si ya hay un refresh en curso, reusar su promesa. Evita que varios
+    // 401 simultáneos disparen múltiples refresh que rotan el token y se invalidan
+    // entre sí (lo que terminaba deslogueando sin necesidad).
+    if(refreshInFlightRef.current)return refreshInFlightRef.current;
+    refreshInFlightRef.current=(async()=>{
+      try{
+        const s=await sb.refreshSession(c.refresh_token);
+        sb.saveSession(s);setSession(s);return s;
+      }catch(e){
+        // Solo deslogueamos ante un fallo de AUTH real (refresh token inválido o
+        // expirado → status 400/401/403). Un error de RED (pestaña/dispositivo
+        // suspendido → ERR_NETWORK_IO_SUSPENDED, sin .status) NO debe cerrar la
+        // sesión: el refresh token sigue válido y se reintenta al volver el foco.
+        const st=e?.status;
+        if(st===400||st===401||st===403){
+          sb.clearSession();setSession(null);
+          toast("Tu sesión expiró. Iniciá sesión nuevamente.","error",0);
+        }
+        return null;
+      }finally{
+        refreshInFlightRef.current=null;
+      }
+    })();
+    return refreshInFlightRef.current;
+  });},[]);
 
   // ── Proactive token refresh — renueva el JWT 5 min antes de que expire ────────
   useEffect(()=>{
