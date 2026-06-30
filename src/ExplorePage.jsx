@@ -592,7 +592,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
                 {todosPedidos.length===0
-                  ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"40px",color:C.muted,fontSize:14}}>No hay pedidos activos en este momento.</div>
+                  ?<div style={{gridColumn:"1/-1",textAlign:"center",padding:"48px 24px",color:C.muted,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}><div style={{width:52,height:52,borderRadius:"50%",background:TIPO_PUB.pedido.dim,color:TIPO_PUB.pedido.accent,display:"flex",alignItems:"center",justifyContent:"center"}}><Megaphone size={24} strokeWidth={1.8}/></div><div style={{fontSize:15,fontWeight:700,color:C.text}}>Todavía no hay pedidos</div><div style={{fontSize:13.5,maxWidth:320,lineHeight:1.5}}>Cuando un alumno publique un pedido de clase, va a aparecer acá para que le ofrezcas tus servicios.</div></div>
                   :todosPedidos.map(p=>(
                     <div key={p.id} role="button" tabIndex={0} aria-label={`Ver ${p.titulo||"publicación"}`} onClick={()=>onOpenDetail(p)}
                       onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(p);}}}
