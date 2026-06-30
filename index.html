@@ -153,9 +153,21 @@
     <!-- Microsoft Clarity (heatmaps & session recordings) se carga desde
          src/analytics.js SOLO tras el consentimiento del usuario (ver CookieBanner). -->
 
-    <!-- Robots -->
+    <!-- Robots: solo se indexa el dominio de producción (luderis.com). Cualquier otro
+         host (classelink.vercel.app de desarrollo, previews *.vercel.app) pasa a
+         noindex para que Google no liste la versión sin terminar. Se auto-corrige al
+         lanzar: en luderis.com quedan index,follow. -->
     <meta name="robots" content="index, follow" />
     <meta name="googlebot" content="index, follow" />
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h !== 'luderis.com' && h !== 'www.luderis.com') {
+          document.querySelectorAll('meta[name="robots"],meta[name="googlebot"]')
+            .forEach(function (m) { m.setAttribute('content', 'noindex, nofollow'); });
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>
