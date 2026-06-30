@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
+import ShareBtn from "./components/ShareBtn";
 import {
   C, FONT, FONT_DISPLAY, useDebounce, toast, accentFor, tx, Z,
   Spinner, Btn, Label, ErrMsg, Modal,
@@ -8,7 +9,7 @@ import {
   safeDisplayName, avatarColor, MATERIAS,
   getPubTipo,
 } from "./shared";
-import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, Share2, GraduationCap, ScrollText, Briefcase, FileText, Search, Target, BadgeCheck, ChevronRight, Languages, Zap, Calendar } from "lucide-react";
+import { Star, MessageCircle, BookOpen, Users, MapPin, Clock, Video, GraduationCap, ScrollText, Briefcase, FileText, Search, Target, BadgeCheck, ChevronRight, Languages, Zap, Calendar } from "lucide-react";
 
 function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,token}){
   const [pregunta,setPregunta]=useState("");const [respuesta,setRespuesta]=useState("");const [estado,setEstado]=useState("cargando");const [feedback,setFeedback]=useState("");
@@ -1027,13 +1028,6 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const [bannerUrl,setBannerUrl]=useState(null);
   useEffect(()=>{if(perfilData?.banner_url)setBannerUrl(perfilData.banner_url);},[perfilData]);
 
-  const compartir=()=>{
-    const url=window.location.origin+"?perfil="+encodeURIComponent(autorEmail);
-    if(navigator.share)navigator.share({title:displayNombre+" en Luderis",url});
-    else navigator.clipboard.writeText(url).then(()=>{
-      toast("Enlace copiado","success");
-    }).catch(()=>{});
-  };
 
   return(
     <div style={{position:"fixed",inset:0,background:C.bg,zIndex:Z.overlayProfile,overflowY:"auto",fontFamily:FONT}}>
@@ -1044,9 +1038,8 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
           <div style={{fontWeight:700,color:C.text,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayNombre}</div>
           <div style={{fontSize:11,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rolDocente}</div>
         </div>
-        <button id="btn-comp-perf" className="cl-tap" onClick={compartir} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,color:C.text,padding:"7px 10px",cursor:"pointer",fontSize:12,fontFamily:FONT,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>
-          <Share2 size={13}/> Compartir
-        </button>
+        <ShareBtn url={`${window.location.origin}?perfil=${encodeURIComponent(autorEmail)}`} text={`${displayNombre} en Luderis`}
+          style={{background:C.surface,borderRadius:9,color:C.text,padding:"8px 10px",fontSize:12,flexShrink:0}}/>
         {onOpenChat&&autorEmail!==session.user.email&&(
           <button className="cl-tap" onClick={()=>{onClose();onOpenChat({autor_email:autorEmail,titulo:"Consulta directa",id:"direct_"+autorEmail});}}
             style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontFamily:FONT,fontWeight:600,flexShrink:0,display:"flex",alignItems:"center",gap:5}}>

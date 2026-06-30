@@ -18,10 +18,10 @@ export function useShareToast(){
   return [show,el];
 }
 
-export default function ShareBtn({post,style={}}){
+export default function ShareBtn({post,url:urlProp,text:textProp,label="Compartir",style={}}){
   const [menu,setMenu]=useState(false);
-  const url=`${window.location.origin}${window.location.pathname}?pub=${post.id}`;
-  const txt=`${post.titulo} — Luderis`;
+  const url=urlProp||`${window.location.origin}${window.location.pathname}?pub=${post.id}`;
+  const txt=textProp||`${post.titulo} — Luderis`;
   const copiar=async(e)=>{e.stopPropagation();try{await navigator.clipboard.writeText(url);toast("Link copiado","success");}catch{toast("No se pudo copiar","error");}setMenu(false);};
   const whatsapp=(e)=>{e.stopPropagation();window.open(`https://wa.me/?text=${encodeURIComponent(txt+" "+url)}`,"_blank","noopener,noreferrer");setMenu(false);};
   const email=(e)=>{e.stopPropagation();window.open(`mailto:?subject=${encodeURIComponent(txt)}&body=${encodeURIComponent(url)}`);setMenu(false);};
@@ -34,7 +34,7 @@ export default function ShareBtn({post,style={}}){
         title="Compartir" style={{background:"none",border:`1px solid ${C.border}`,fontSize:13,cursor:"pointer",color:C.muted,padding:"5px 10px",lineHeight:1,borderRadius:8,...style,display:"flex",alignItems:"center",gap:4,transition:"all .15s"}}
         onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
         onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-        <Share2 size={13} strokeWidth={2}/> <span style={{fontSize:11}}>Compartir</span>
+        <Share2 size={13} strokeWidth={2}/> <span style={{fontSize:11}}>{label}</span>
       </button>
       {menu&&(
         <>
