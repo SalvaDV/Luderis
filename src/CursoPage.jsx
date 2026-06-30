@@ -5335,14 +5335,14 @@ function InscripcionModal({post,session,onClose,onDone}){
 function InscribirseBtn({post,session,onDone}){
   const [showModal,setShowModal]=useState(false);
   const [ok,setOk]=useState(false);
-  if(ok)return<span style={{fontSize:12,color:C.successText,fontWeight:700}}>✓ Inscripto</span>;
+  if(ok)return<span style={{fontSize:12,color:C.successText,fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><CheckCircle size={13} strokeWidth={2.4}/>Inscripto</span>;
   return(
     <>
       <button onClick={()=>setShowModal(true)}
         style={{width:"100%",background:`linear-gradient(135deg,${C.accent},${C.info||C.accent})`,border:"none",borderRadius:20,color:"#fff",padding:"13px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 14px ${C.accent}40`,transition:"opacity .15s"}}
         onMouseEnter={e=>e.currentTarget.style.opacity=".88"}
         onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-        ✅ Inscribirme
+        <CheckCircle size={16} strokeWidth={2.2}/>Inscribirme
       </button>
       {showModal&&<InscripcionModal post={post} session={session} onClose={()=>setShowModal(false)} onDone={()=>{setOk(true);onDone();}}/>}
     </>
