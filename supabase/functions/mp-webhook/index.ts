@@ -40,7 +40,9 @@ serve(async (req) => {
     const topic = url.searchParams.get("topic") ?? url.searchParams.get("type");
     const id    = url.searchParams.get("id")    ?? url.searchParams.get("data.id");
 
-    if (topic !== "payment" && topic !== "merchant_order") {
+    // Solo procesamos pagos. merchant_order trae un id que NO es de pago: hacer
+    // GET /v1/payments/{merchant_order_id} daría 404 → 500 → MP reintentaría sin fin.
+    if (topic !== "payment") {
       return new Response("ok", { status: 200, headers: CORS });
     }
 
@@ -125,6 +127,24 @@ serve(async (req) => {
     const comisionPctValue = await getComisionPct(supabase);
 
     if (estado === "approved" && meta.publicacion_id && meta.alumno_email) {
+
+      // ── 0. Idempotencia (CRÍTICO) ──────────────────────────────────────
+      // MP entrega el webhook varias veces para el mismo pago (reintentos +
+      // notificaciones repetidas). Reclamamos la acreditación con un CAS atómico:
+      // solo la PRIMERA entrega matchea (acreditado_at IS NULL) y acredita; las
+      // repetidas matchean 0 filas y salen sin duplicar saldo/movimientos.
+      const { data: claim } = await supabase
+        .from("pagos")
+        .update({ acreditado_at: new Date().toISOString() })
+        .eq("mp_payment_id", mpPayId)
+        .is("acreditado_at", null)
+        .select("id")
+        .maybeSingle();
+      if (!claim) {
+        return new Response(JSON.stringify({ received: true, estado, idempotent: true }), {
+          status: 200, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
 
       // ── 1. Obtener user_id del alumno ──────────────────────────────────
       const { data: alumno } = await supabase
