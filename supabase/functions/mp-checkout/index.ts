@@ -6,6 +6,16 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Comisión Luderis: fuente única en la tabla config (clave comision_pct, en %).
+// Fallback a env var o 10%. Misma lógica en mp-webhook y liberar-pago.
+async function getComisionPct(supabase: ReturnType<typeof createClient>): Promise<number> {
+  try {
+    const { data } = await supabase.from("config").select("valor").eq("clave", "comision_pct").single();
+    if (data?.valor) return parseFloat(data.valor) / 100;
+  } catch {}
+  return parseFloat(Deno.env.get("LUDERIS_COMISION_PCT") ?? "10") / 100;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS });
@@ -139,7 +149,8 @@ Deno.serve(async (req) => {
 
     // ── Calcular comisión Luderis (10%) ──────────────────────────────────
     const precioTotal   = Number(precio) * Number(cantidad);
-    const comisionMonto = Math.round(precioTotal * 0.10); // en ARS, redondeado
+    const comisionPct   = await getComisionPct(supabase);
+    const comisionMonto = Math.round(precioTotal * comisionPct); // en ARS, redondeado
 
     // ── Crear preferencia en MercadoPago ────────────────────────────────
     const preferencia: Record<string, unknown> = {

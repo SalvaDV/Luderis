@@ -20,7 +20,15 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const COMISION_LUDERIS = 0.10; // 10%
+// Comisión Luderis: fuente única en la tabla config (clave comision_pct, en %).
+// Fallback a env var o 10%. Misma lógica en mp-webhook y mp-checkout.
+async function getComisionPct(supabase: ReturnType<typeof createClient>): Promise<number> {
+  try {
+    const { data } = await supabase.from("config").select("valor").eq("clave", "comision_pct").single();
+    if (data?.valor) return parseFloat(data.valor) / 100;
+  } catch {}
+  return parseFloat(Deno.env.get("LUDERIS_COMISION_PCT") ?? "10") / 100;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -94,7 +102,8 @@ Deno.serve(async (req) => {
     ]);
 
     const montoTotal  = Number(pago.monto);
-    const comision    = Math.round(montoTotal * COMISION_LUDERIS);
+    const comisionPct = await getComisionPct(supabase);
+    const comision    = Math.round(montoTotal * comisionPct);
     const montoNeto   = montoTotal - comision;
 
     let mpTransferId: string | null = null;
