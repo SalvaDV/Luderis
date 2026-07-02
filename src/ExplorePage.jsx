@@ -658,7 +658,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <div style={{width:36,height:36,borderRadius:"50%",background:`${C.accent}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                   </div>
-                  <span style={{fontSize:11,fontWeight:600,color:C.muted,lineHeight:1.2}}>Ver<br/>todas</span>
+                  <span style={{fontSize:11,fontWeight:600,color:C.muted,lineHeight:1.2}}>Ver<br/>todo</span>
                 </motion.button>
               </div>
             </div>
@@ -709,7 +709,7 @@ export default function ExplorePage({session,onOpenChat,onOpenDetail,onOpenPerfi
                   <h2 style={{...tx("h2"),color:C.text,margin:0}}>Destacados para vos</h2>
                   <p style={{...tx("meta"),color:C.muted,margin:"4px 0 0"}}>Seleccionados por valoración y disponibilidad</p>
                 </div>
-                <button onClick={()=>setModoVista("resultados")} style={{display:"inline-flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:accentFor(seccion).text,fontFamily:FONT,...tx("meta"),fontWeight:650,cursor:"pointer",whiteSpace:"nowrap"}}>Ver todos →</button>
+                <button onClick={()=>setModoVista("resultados")} style={{display:"inline-flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:accentFor(seccion).text,fontFamily:FONT,...tx("meta"),fontWeight:650,cursor:"pointer",whiteSpace:"nowrap"}}>Ver todo →</button>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,320px),1fr))",gap:14}}>
                 {destacados.map(p=>(

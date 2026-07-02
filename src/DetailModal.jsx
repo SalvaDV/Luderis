@@ -136,7 +136,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
         {/* ── Meta: rating + tags ── */}
         <div style={{padding:"16px 20px 0"}}>
           <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:16}}>
-            {avgPub?<span style={{fontSize:13,color:"#B45309",fontWeight:600}}>★ {parseFloat(avgPub).toFixed(1)} <span style={{color:C.muted,fontWeight:400}}>({reseñas.length} reseña{reseñas.length!==1?"s":""})</span></span>:null}
+            {avgPub?<span style={{fontSize:13,color:C.warn,fontWeight:600}}>★ {parseFloat(avgPub).toFixed(1)} <span style={{color:C.muted,fontWeight:400}}>({reseñas.length} reseña{reseñas.length!==1?"s":""})</span></span>:null}
             {post.verificado&&<VerifiedBadge/>}
             <Tag tipo={post.tipo} modo={post.modo}/>
             {post.vistas>0&&<span style={{fontSize:12,color:C.muted,display:"inline-flex",alignItems:"center",gap:3}}>· <Eye size={12} strokeWidth={2}/><strong>{post.vistas}</strong> vista{post.vistas!==1?"s":""}</span>}
@@ -300,7 +300,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {/* Stats rápidos */}
               <div style={{display:"flex",gap:12,marginBottom:16,paddingBottom:16,borderBottom:`1px solid ${C.border}`}}>
                 {avgPub&&<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{color:"#B45309",fontSize:13,fontWeight:700}}>★ {parseFloat(avgPub).toFixed(1)}</span>
+                  <span style={{color:C.warn,fontSize:13,fontWeight:700}}>★ {parseFloat(avgPub).toFixed(1)}</span>
                   <span style={{color:C.muted,fontSize:12}}>({reseñas.length})</span>
                 </div>}
                 {post.cantidad_inscriptos>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -323,7 +323,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               )}
               {/* Criterio de certificado */}
               {post.modo==="curso"&&post.otorga_certificado&&(
-                <div style={{background:"#1A6ED808",border:"1px solid #1A6ED822",borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
+                <div style={{background:C.info+"08",border:`1px solid ${C.info}22`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
                   <GraduationCap size={15} strokeWidth={1.8} color={C.accent} style={{flexShrink:0}}/>
                   <div>
                     <div style={{fontSize:12,fontWeight:700,color:C.text}}>Otorga certificado</div>
@@ -337,7 +337,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                   <Spinner small/>
                 ):(
                   <>
-                    {esAyudante&&<div style={{fontSize:12,color:C.purple,fontWeight:700,background:"#7B5CF010",border:"1px solid #7B5CF030",borderRadius:8,padding:"8px 12px",textAlign:"center"}}>✦ Sos co-docente de este curso</div>}
+                    {esAyudante&&<div style={{fontSize:12,color:C.purple,fontWeight:700,background:C.purple+"10",border:`1px solid ${C.purple}30`,borderRadius:8,padding:"8px 12px",textAlign:"center"}}>✦ Sos co-docente de este curso</div>}
 
                     {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&(
                       <div style={{display:"flex",flexDirection:"column",gap:8}} className="detail-body-inscribirse">
@@ -370,14 +370,14 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
               {/* Rating prominente */}
               {reseñasUsuario&&reseñasUsuario.length>0&&(()=>{const avg=calcAvg(reseñasUsuario);return avg>0&&(
-                <div style={{background:"#FFF9E6",border:"1px solid #F59E0B33",borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{background:C.warn+"12",border:"1px solid #F59E0B33",borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
                   <div style={{textAlign:"center",flexShrink:0}}>
                     <div style={{fontSize:22,fontWeight:800,color:"#F59E0B",lineHeight:1}}>{avg.toFixed(1)}</div>
-                    <div style={{display:"flex",gap:1}}>{Array.from({length:5}).map((_,j)=><span key={j} style={{fontSize:10,color:j<Math.round(avg)?"#F59E0B":"#E5E7EB"}}>★</span>)}</div>
+                    <div style={{display:"flex",gap:1}}>{Array.from({length:5}).map((_,j)=><span key={j} style={{fontSize:10,color:j<Math.round(avg)?"#F59E0B":C.border}}>★</span>)}</div>
                   </div>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700,color:"#92400E"}}>{reseñasUsuario.length} reseña{reseñasUsuario.length!==1?"s":""}</div>
-                    <div style={{fontSize:11,color:"#B45309"}}>de alumnos verificados</div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.warn}}>{reseñasUsuario.length} reseña{reseñasUsuario.length!==1?"s":""}</div>
+                    <div style={{fontSize:11,color:C.warn}}>de alumnos verificados</div>
                   </div>
                 </div>
               );})()}

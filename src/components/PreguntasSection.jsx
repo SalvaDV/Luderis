@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { HelpCircle, Check, Ban, AlertTriangle, AlertOctagon } from "lucide-react";
 import * as sb from "../supabase";
-
-const FONT = "'Inter','Segoe UI',sans-serif";
+import { FONT } from "../shared";
 
 // Regex pre-filtro: detecta emails, teléfonos, links y menciones a apps externas
 const CONTACT_REGEX = /(\b[\w.+-]+@[\w-]+\.\w{2,}\b)|(\b(?:\+?54\s?)?(?:11|2[0-9]{2}|3[0-9]{2}|4[0-9]{2}|9\s?\d{1,4})[\s-]?\d{3,4}[\s-]?\d{4}\b)|(https?:\/\/[^\s]+)|(wa\.me|t\.me|telegram|whatsapp|instagram|wpp|ws\s|wasap|ig\s|@\w{3,}(?:\s|$)|contactame\s+por|escribime\s+(?:al|por|a\s+mi)|mi\s+(?:mail|correo|cel|celu|numero|numero|whatsapp|insta|telegram)|por\s+(?:whatsapp|telegram|instagram|insta|mail|wpp|afuera\s+de\s+luderis|otro\s+lado)|fuera\s+de\s+(?:la\s+)?(?:plataforma|luderis|app))/i;
@@ -211,9 +210,9 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
               {p.respuesta && (
                 <div style={{ padding: "12px 16px", background: C.bg, borderTop: `1px solid ${C.border}` }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#d4edda", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Check size={12} strokeWidth={2.5} color="#2e7d32"/></div>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.success+"18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Check size={12} strokeWidth={2.5} color={C.successText}/></div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: FONT, fontSize: 11, fontWeight: 600, color: "#2e7d32", marginBottom: 4 }}>Respuesta del docente</div>
+                      <div style={{ fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.successText, marginBottom: 4 }}>Respuesta del docente</div>
                       <p style={{ fontFamily: FONT, fontSize: 13, color: C.text, margin: 0, lineHeight: 1.5 }}>{p.respuesta}</p>
                       <span style={{ fontFamily: FONT, fontSize: 11, color: C.muted }}>{formatFecha(p.respondido_at)}</span>
                     </div>
@@ -236,7 +235,7 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
                     <button
                       onClick={() => handleResponder(p.id)}
                       disabled={respondiendo === p.id || !(respTextos[p.id] || "").trim()}
-                      style={{ background: "#2e7d32", color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px", fontFamily: FONT, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: respondiendo === p.id || !(respTextos[p.id] || "").trim() ? 0.6 : 1 }}>
+                      style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px", fontFamily: FONT, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: respondiendo === p.id || !(respTextos[p.id] || "").trim() ? 0.6 : 1 }}>
                       {respondiendo === p.id ? "Verificando…" : "Responder"}
                     </button>
                   </div>
@@ -251,18 +250,18 @@ Si no hay infracción: {"bloqueado":false,"tipo_infraccion":null,"razon":""}`;
       {bloqueadoModal && (()=>{
         const t = bloqueadoModal?.tipo;
         const cfg = t === "contacto_externo"
-          ? { Icon:Ban, color:"#c62828", titulo:"Contacto externo no permitido",
+          ? { Icon:Ban, color:C.danger, titulo:"Contacto externo no permitido",
               desc:"Tu mensaje fue bloqueado porque parece contener datos de contacto (email, teléfono, redes sociales) o una invitación a comunicarse fuera de Luderis.",
               sub:"Toda la comunicación debe ocurrir dentro de la plataforma." }
           : t === "lenguaje_agresivo"
-          ? { Icon:AlertTriangle, color:"#e65100", titulo:"Lenguaje no permitido",
+          ? { Icon:AlertTriangle, color:C.warn, titulo:"Lenguaje no permitido",
               desc:"Tu mensaje fue bloqueado por contener insultos, groserías o lenguaje ofensivo. Luderis es una comunidad educativa que requiere un trato respetuoso.",
               sub:"Mantené un lenguaje apropiado para seguir participando." }
           : t === "violencia"
-          ? { Icon:AlertOctagon, color:"#b71c1c", titulo:"Contenido violento no permitido",
+          ? { Icon:AlertOctagon, color:C.danger, titulo:"Contenido violento no permitido",
               desc:"Tu mensaje fue bloqueado por contener amenazas, intimidación o contenido violento. Este tipo de comportamiento está terminantemente prohibido.",
               sub:"Ante reincidencias tu cuenta puede ser suspendida." }
-          : { Icon:Ban, color:"#c62828", titulo:"Mensaje no permitido",
+          : { Icon:Ban, color:C.danger, titulo:"Mensaje no permitido",
               desc:"Tu mensaje fue bloqueado por contener contenido que no está permitido en Luderis.",
               sub:"Un administrador fue notificado." };
         return(

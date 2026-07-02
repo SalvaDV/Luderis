@@ -135,20 +135,20 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
     const pendienteConfirmacion=!!ins.clase_finalizada&&!ins.alumno_confirmada;
     const ti=tiempoInfo(p,ins);
     const tieneNotif=pubsNotifPend.has(p.id);
-    const borderColor=pendienteConfirmacion?"#FFB84D":(tieneNotif?C.accent:C.border);
+    const borderColor=pendienteConfirmacion?C.warn:(tieneNotif?C.accent:C.border);
     return(
       // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div key={ins.id} style={{background:C.card,border:`1px solid ${borderColor}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",transition:"border-color .15s"}}
-        onMouseEnter={e=>e.currentTarget.style.borderColor=pendienteConfirmacion?"#FF9800":C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=borderColor}>
+        onMouseEnter={e=>e.currentTarget.style.borderColor=pendienteConfirmacion?C.warn:C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=borderColor}>
         <div role="button" tabIndex={0} aria-label={`Abrir ${p.titulo||"curso"}`} onClick={()=>{marcarNotifPubLeida(p.id);onOpenCurso(p);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();marcarNotifPubLeida(p.id);onOpenCurso(p);}}} style={{display:"flex",gap:12,alignItems:"center",flex:1,minWidth:0,cursor:"pointer"}}>
-          <div style={{width:44,height:44,borderRadius:11,background:finalizado?"#4ECB7115":tieneNotif?C.accentDim:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,position:"relative"}}>
+          <div style={{width:44,height:44,borderRadius:11,background:finalizado?C.success+"15":tieneNotif?C.accentDim:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,position:"relative"}}>
             {finalizado?<Check size={18} strokeWidth={2.5} color={C.success}/>:<span style={{fontSize:18,color:C.muted}}>·</span>}
             {tieneNotif&&<span style={{position:"absolute",top:-4,right:-4,background:C.danger,color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>!</span>}
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
-            {pendienteConfirmacion&&<span style={{fontSize:11,color:"#FF9800",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente finalizó · Confirmá para liberar el pago (o se acredita automático en 7 días)</span>}
+            {pendienteConfirmacion&&<span style={{fontSize:11,color:C.warn,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente finalizó · Confirmá para liberar el pago (o se acredita automático en 7 días)</span>}
             {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Bell size={10} strokeWidth={2}/>Clase finalizada — dejá tu reseña</span>}
             {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>{ti.Icon&&<ti.Icon size={10} strokeWidth={2}/>}{ti.texto}</span>
               :<span style={{fontSize:11,color:C.muted}}>Inscripto {fmt(ins.created_at)}</span>)}
@@ -156,7 +156,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
         </div>
         {pendienteConfirmacion&&(
           <button onClick={(e)=>{e.stopPropagation();confirmarClaseAlumno(ins);}}
-            style={{background:"#4ECB71",color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
+            style={{background:C.success,color:"#fff",border:"none",borderRadius:9,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>
             ✓ Confirmar
           </button>
         )}
@@ -193,7 +193,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           {clases.length>0&&<>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:700,color:C.text}}>Clases particulares</span>
-              <span style={{background:"#4ECB7115",color:C.successText,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px"}}>{clases.length}</span>
+              <span style={{background:C.success+"15",color:C.successText,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px"}}>{clases.length}</span>
             </div>
             <div style={{display:"grid",gap:9}}>{clases.map(renderCard)}</div>
           </>}
@@ -204,14 +204,14 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
         <div style={{marginTop:inscripciones.length>0?28:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
             <span style={{fontSize:13,fontWeight:700,color:C.text}}>Soy ayudante</span>
-            <span style={{background:"#C85CE015",color:C.purple,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",border:"1px solid #C85CE033"}}>{ayudantePubs.length}</span>
+            <span style={{background:C.purple+"15",color:C.purple,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",border:`1px solid ${C.purple}33`}}>{ayudantePubs.length}</span>
           </div>
           <div style={{display:"grid",gap:9}}>
             {ayudantePubs.map(p=>{
               const tieneNotif=!!ayudanteNotifs[p.id];
               return(
-              <div key={p.id} role="button" tabIndex={0} aria-label={`Abrir ${p.titulo||"curso"}`} style={{background:C.card,border:`1px solid ${tieneNotif?"#C85CE088":"#C85CE033"}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",cursor:"pointer",transition:"border-color .15s",position:"relative"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor=C.purple} onMouseLeave={e=>e.currentTarget.style.borderColor=tieneNotif?"#C85CE088":"#C85CE033"}
+              <div key={p.id} role="button" tabIndex={0} aria-label={`Abrir ${p.titulo||"curso"}`} style={{background:C.card,border:`1px solid ${tieneNotif?C.purple+"88":C.purple+"33"}`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",flexWrap:"wrap",cursor:"pointer",transition:"border-color .15s",position:"relative"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor=C.purple} onMouseLeave={e=>e.currentTarget.style.borderColor=tieneNotif?C.purple+"88":C.purple+"33"}
                 onClick={()=>{marcarAyudanteLeida(p.id);onOpenCurso(p);}}
                 onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();marcarAyudanteLeida(p.id);onOpenCurso(p);}}}>
                 {tieneNotif&&(
@@ -219,17 +219,17 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
                     🔔 Nuevo
                   </div>
                 )}
-                <div style={{width:44,height:44,borderRadius:11,background:"#C85CE015",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✦</div>
+                <div style={{width:44,height:44,borderRadius:11,background:C.purple+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✦</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4,flexWrap:"wrap"}}>
-                  <span style={{fontSize:10,fontWeight:700,textTransform:"uppercase",padding:"2px 7px",borderRadius:10,background:p.modo==="particular"?"#5CA8E015":"#4ECB7115",color:p.modo==="particular"?C.info:C.success,border:`1px solid ${p.modo==="particular"?"#5CA8E033":"#4ECB7133"}`}}>{p.modo==="particular"?"Clase particular":"Curso"}</span>
+                  <span style={{fontSize:10,fontWeight:700,textTransform:"uppercase",padding:"2px 7px",borderRadius:10,background:p.modo==="particular"?"#5CA8E015":C.success+"15",color:p.modo==="particular"?C.info:C.success,border:`1px solid ${p.modo==="particular"?"#5CA8E033":C.success+"33"}`}}>{p.modo==="particular"?"Clase particular":"Curso"}</span>
                   {p.sinc&&p.modo!=="particular"&&<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:C.surface,color:C.muted,border:`1px solid ${C.border}`}}>{p.sinc==="sinc"?"Sincrónico":"Asincrónico"}</span>}
                 </div>
                 <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
                   <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
                   <span style={{fontSize:11,color:C.purple,fontWeight:600}}>✦ Sos ayudante</span>
                 </div>
-                <button onClick={e=>{e.stopPropagation();marcarAyudanteLeida(p.id);onOpenCurso(p);}} style={{background:"#C85CE022",border:"1px solid #C85CE044",borderRadius:9,color:C.purple,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>Ver contenido →</button>
+                <button onClick={e=>{e.stopPropagation();marcarAyudanteLeida(p.id);onOpenCurso(p);}} style={{background:C.purple+"22",border:`1px solid ${C.purple}44`,borderRadius:9,color:C.purple,padding:"7px 14px",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:FONT,flexShrink:0}}>Ver contenido →</button>
               </div>
               );
             })}
@@ -241,20 +241,20 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
         <div style={{marginTop:inscripciones.length>0||ayudantePubs.length>0?28:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
             <span style={{fontSize:13,fontWeight:700,color:C.text}}>Clases particulares acordadas</span>
-            <span style={{background:"#4ECB7115",color:C.successText,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",border:"1px solid #4ECB7133"}}>{clasesAcordadas.length}</span>
+            <span style={{background:C.success+"15",color:C.successText,borderRadius:20,fontSize:10,fontWeight:700,padding:"2px 8px",border:`1px solid ${C.success}33`}}>{clasesAcordadas.length}</span>
           </div>
           <div style={{display:"grid",gap:9}}>
             {clasesAcordadas.map(o=>{
               const soyDoc=o._rol==="docente";
               const otroN=soyDoc?(o.busqueda_autor_nombre||safeDisplayName(o.busqueda_autor_nombre,o.busqueda_autor_email)):(o.ofertante_nombre||safeDisplayName(o.ofertante_nombre,o.ofertante_email));
               return(
-                <div key={o.id} role="button" tabIndex={0} aria-label={`Abrir espacio con ${otroN||"usuario"}`} onClick={()=>setEspacioActivo(o)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setEspacioActivo(o);}}} style={{background:C.card,border:"1px solid #4ECB7133",borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.success} onMouseLeave={e=>e.currentTarget.style.borderColor="#4ECB7133"}>
-                  <div style={{width:44,height:44,borderRadius:11,background:"#4ECB7115",border:"1px solid #4ECB7133",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.successText,fontWeight:700,flexShrink:0}}>{soyDoc?"✦":"◈"}</div>
+                <div key={o.id} role="button" tabIndex={0} aria-label={`Abrir espacio con ${otroN||"usuario"}`} onClick={()=>setEspacioActivo(o)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setEspacioActivo(o);}}} style={{background:C.card,border:`1px solid ${C.success}33`,borderRadius:14,padding:"14px 18px",display:"flex",gap:13,alignItems:"center",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.success} onMouseLeave={e=>e.currentTarget.style.borderColor=C.success+"33"}>
+                  <div style={{width:44,height:44,borderRadius:11,background:C.success+"15",border:`1px solid ${C.success}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.successText,fontWeight:700,flexShrink:0}}>{soyDoc?"✦":"◈"}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.busqueda_titulo||"Clase particular"}</div>
                     <div style={{fontSize:12,color:C.muted,marginBottom:4}}>{soyDoc?"Alumno":"Docente"}: <span style={{color:C.text,fontWeight:600}}>{otroN}</span></div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      <span style={{fontSize:11,background:"#4ECB7115",color:C.successText,border:"1px solid #4ECB7133",borderRadius:20,padding:"1px 8px",fontWeight:700}}>Acordada</span>
+                      <span style={{fontSize:11,background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"1px 8px",fontWeight:700}}>Acordada</span>
                       {soyDoc&&<span style={{fontSize:11,background:C.accentDim,color:C.accent,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"1px 8px",fontWeight:600}}>Sos el docente</span>}
                       {o.precio&&<span style={{fontSize:11,color:C.muted}}>{fmtPrice(o.precio)}/{o.precio_tipo||"hora"}</span>}
                     </div>
