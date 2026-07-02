@@ -4362,12 +4362,26 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     }finally{setInscLoading(false);}
   };
   const [desinscMsg,setDesinscMsg]=useState(false);
+  const {confirm,confirmEl}=useConfirm();
   // Mostrar examen final si el curso se finalizó y el alumno no lo rindió
   useEffect(()=>{if(post.finalizado&&inscripcion&&!esMio&&!esAyudante){setShowExamenFinal(true);}},[post.finalizado,inscripcion?.id]);// eslint-disable-line
   const desinscribirse=async()=>{
     if(!inscripcion)return;
     setInscLoading(true);
     try{
+      // Con pago asociado: el reembolso automático llega con MP-live; mientras
+      // tanto lo gestiona soporte (evita que el alumno pierda plata en silencio).
+      if(inscripcion.pagado_mp){
+        toast("Esta inscripción tiene un pago asociado. Escribinos por el chat de soporte y gestionamos el reembolso.","info",6000);
+        return;
+      }
+      // Ventana de arrepentimiento: solo hasta que arranca la primera clase.
+      const clases=await sb.getClasesRealizadas(miEmail,session.access_token).catch(()=>[]);
+      if((clases||[]).some(c=>c.publicacion_id===post.id)){
+        toast("Las clases ya comenzaron: ya no es posible desinscribirse.","warn",6000);
+        return;
+      }
+      if(!await confirm({msg:"¿Querés desinscribirte? Vas a perder el acceso al contenido de esta clase.",confirmLabel:"Desinscribirme",danger:true}))return;
       await sb.deleteInscripcion(inscripcion.id,session.access_token);
       setInscripcion(null);
       setDesinscMsg(true);
@@ -4430,6 +4444,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const iS={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FONT,marginBottom:8};
   return(
     <div  ref={pageRef} style={{position:"fixed",inset:0,background:C.bg,zIndex:Z.overlayPage,overflowY:"auto",fontFamily:FONT}}>
+      {confirmEl}
       {confirmElCP}
       {showJitsiCurso&&<JitsiModal roomName={jitsiRoomCurso} displayName={docenteDisplayName} onClose={()=>{setShowJitsiCurso(false);if(esMio){setClaseActiva(false);}else{setTab("contenido");}}}/>}
       {/* Banner "Clase en vivo" para alumnos */}
