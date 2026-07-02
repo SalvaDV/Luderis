@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck, Mail } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck, Mail, Plus } from "lucide-react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {
@@ -1964,6 +1964,42 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
               <Eye size={16}/>Ver perfil público
             </button>}
           </div>
+          {/* Medidor de perfil completo — desaparece al llegar al 100% */}
+          {(()=>{
+            const esDocenteRol=(localStorage.getItem("cl_rol_"+session.user.email)||"alumno")!=="alumno";
+            const items=[
+              {ok:!!avatarUrl,label:"Foto de perfil"},
+              {ok:(bio||"").trim().length>=30,label:"Bio (mín. 30 caracteres)"},
+              {ok:!!ubicacionPerfil,label:"Ubicación"},
+              {ok:idiomas.length>0,label:"Idiomas"},
+              ...(esDocenteRol?[
+                {ok:!!tituloProfesional,label:"Título profesional"},
+                {ok:!!aniosExperiencia,label:"Años de experiencia"},
+                {ok:(metodologia||"").trim().length>0,label:"Metodología"},
+                {ok:!!videoPresentacion,label:"Video de presentación"},
+              ]:[]),
+            ];
+            const done=items.filter(i=>i.ok).length;
+            const pct=Math.round((done/items.length)*100);
+            if(pct>=100)return null;
+            const faltan=items.filter(i=>!i.ok).slice(0,4);
+            const accM=accentFor("cursos");
+            return(
+              <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginTop:14,maxWidth:560}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:10}}>
+                  <span style={{...tx("meta"),fontWeight:700,color:C.text}}>Tu perfil está al {pct}%</span>
+                  <button onClick={()=>setEditingPerfil(true)} style={{background:"none",border:"none",color:accM.text,fontFamily:FONT,fontSize:12.5,fontWeight:700,cursor:"pointer",padding:0}}>Completar →</button>
+                </div>
+                <div style={{height:7,background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${pct}%`,background:accM.solid,borderRadius:4,transition:"width .4s ease"}}/>
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+                  {faltan.map(f=>(<span key={f.label} style={{...tx("micro"),color:C.muted,background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,padding:"3px 10px",display:"inline-flex",alignItems:"center",gap:4}}><Plus size={10} strokeWidth={2.5}/>{f.label}</span>))}
+                </div>
+                <div style={{...tx("micro"),color:C.faint||C.muted,marginTop:8}}>Los perfiles completos generan más confianza en los alumnos.</div>
+              </div>
+            );
+          })()}
           {/* Form edición inline */}
           {editingPerfil&&(
             <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginTop:14}}>

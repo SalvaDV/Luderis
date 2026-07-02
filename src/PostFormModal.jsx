@@ -779,6 +779,7 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);
   const [loading,setLoading]=useState(true);const [error,setError]=useState(null);
   const [perfilData,setPerfilData]=useState(null);
+  const [respMin,setRespMin]=useState(null);// mediana de minutos hasta responder (badge)
   const [tab,setTab]=useState("clases");// clases | reseñas | credenciales
   const [pubVista,setPubVista]=useState(null);// "ofertas" | "pedidos" | null=auto según rol
 
@@ -792,10 +793,12 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
         "GET",null,session.access_token).catch(()=>[]),
       sb.getDocumentos(autorEmail,session.access_token).catch(()=>[]),
       sb.getUsuarioByEmail(autorEmail,session.access_token).catch(()=>null),
-    ]).then(([p,r,d,u])=>{
+      sb.getTiempoRespuesta(autorEmail,session.access_token),
+    ]).then(([p,r,d,u,tr])=>{
       if(!mounted)return;
       setPubs((p||[]).filter(x=>x.activo!==false));
       setReseñas(r||[]);setDocs(d||[]);if(u)setPerfilData(u);
+      if(tr?.muestras>=3&&tr.mediana_min!=null)setRespMin(tr.mediana_min);
     }).catch(e=>{if(mounted)setError(e.message);}).finally(()=>{if(mounted)setLoading(false);});
     return()=>{mounted=false;};
   },[autorEmail,session]);
@@ -912,6 +915,9 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:14,flexWrap:"wrap"}}>
                 {perfilData?.ubicacion&&<Pill icon={MapPin}>{perfilData.ubicacion}</Pill>}
                 {dispHoy&&<Pill tone="success" icon={Clock}>Disponible hoy</Pill>}
+                {respMin!=null&&(respMin<=60
+                  ?<Pill tone="success" icon={Zap}>Responde rápido</Pill>
+                  :respMin<=1440?<Pill icon={Clock}>Responde en ~{Math.max(1,Math.round(respMin/60))} h</Pill>:null)}
               </div>
               {avg>0&&<div style={{marginTop:14,display:"flex",justifyContent:"center"}}><Stars size={16}/></div>}
             </div>

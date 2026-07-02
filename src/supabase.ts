@@ -356,6 +356,10 @@ export const getMensajesDirecto = (miEmail: string, otroEmail: string, token: To
   return db(q, "GET", null, token);
 };
 
+// Métrica agregada de velocidad de respuesta (RPC security definer; solo números)
+export const getTiempoRespuesta = (email: string, token: Token) =>
+  rpc("get_tiempo_respuesta_docente", { p_email: email }, token).catch(() => null);
+
 export const marcarLeidosDirecto = (miEmail: string, otroEmail: string, token: Token) =>
   db(`mensajes?publicacion_id=is.null&de_nombre=eq.${encodeURIComponent(otroEmail)}&para_nombre=eq.${encodeURIComponent(miEmail)}&leido=eq.false`, "PATCH", { leido: true }, token);
 
