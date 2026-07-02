@@ -19,7 +19,7 @@ import PostChatBtn from "./components/PostChatBtn";
 import ShareBtn from "./components/ShareBtn";
 import OfertarBtn from "./components/OfertarBtn";
 import Sidebar from "./components/Sidebar";
-import { User, GraduationCap, Sparkles } from "lucide-react";
+import { User, GraduationCap, Sparkles, ArrowUp } from "lucide-react";
 import ScrollToTopBtn from "./components/ScrollToTopBtn";
 import CookieBanner from "./components/CookieBanner";
 import UpdateBanner from "./components/UpdateBanner";
@@ -70,6 +70,27 @@ const JuegosHub      = React.lazy(() => import('./JuegosHub'));
 // Frecuencia del polling de fallback de notificaciones (el WebSocket Realtime
 // cubre el tiempo real; esto solo cubre el caso de que el WS esté caído).
 const POLL_MS = 90000;
+
+// ── Botón flotante "volver arriba" — aparece tras scrollear ~una pantalla ──────
+// Abajo-izquierda (Ludy ocupa abajo-derecha); en mobile queda sobre la bottom nav.
+function ScrollTopBtn({isMobile}){
+  const [show,setShow]=useState(false);
+  useEffect(()=>{
+    let raf=false;
+    const onScroll=()=>{if(raf)return;raf=true;requestAnimationFrame(()=>{setShow(window.scrollY>600);raf=false;});};
+    window.addEventListener("scroll",onScroll,{passive:true});
+    return()=>window.removeEventListener("scroll",onScroll);
+  },[]);
+  if(!show)return null;
+  return(
+    <button onClick={()=>window.scrollTo({top:0,behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches?"auto":"smooth"})} aria-label="Volver arriba"
+      style={{position:"fixed",left:14,bottom:isMobile?82:24,zIndex:60,width:44,height:44,borderRadius:"50%",background:C.surface,border:`1px solid ${C.border}`,boxShadow:C.shadow,color:C.muted,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",animation:"fadeUp .2s ease",transition:"color .15s,border-color .15s"}}
+      onMouseEnter={e=>{e.currentTarget.style.color=C.accent;e.currentTarget.style.borderColor=C.accent;}}
+      onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}>
+      <ArrowUp size={19} strokeWidth={2.2}/>
+    </button>
+  );
+}
 
 // ─── Router: mapeo sección ↔ ruta ──────────────────────────────────────────────
 // La navegación principal pasó de estado/sessionStorage a URL real (react-router).
@@ -1008,6 +1029,7 @@ export default function App(){
       {legalTab&&<LegalModal tab={legalTab} onClose={()=>{setLegalTab(null);window.history.replaceState({},"",window.location.pathname);}}/>}
       <ScrollToTopBtn/>
       {!chatPost&&!detailPost&&!cursoPost&&!showForm&&!notifPanelOpen&&<ChatBotWidget/>}
+      {!chatPost&&!detailPost&&!cursoPost&&!perfilEmail&&!showForm&&<ScrollTopBtn isMobile={isMobile}/>}
       <ToastContainer/>
       <UpdateBanner/>
       <CookieBanner/>
