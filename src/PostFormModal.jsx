@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import * as sb from "./supabase";
 import ShareBtn from "./components/ShareBtn";
+import { StreakBadge } from "./components/StreakBadge";
+import { PriceSlider } from "./components/PriceSlider";
+import { dispararAlertasIA } from "./alertasIA";
 import {
   C, FONT, FONT_DISPLAY, useDebounce, toast, accentFor, tx, Z,
   Spinner, Btn, Label, ErrMsg, Modal,
@@ -57,96 +60,6 @@ function VerificacionIA({titulo,materia,descripcion,onVerificado,onEstadoChange,
 // ─── STREAK / RACHA ───────────────────────────────────────────────────────────
 // ─── STREAK SYSTEM ────────────────────────────────────────────────────────────
 // Milestones con recompensas visuales
-const STREAK_MILESTONES=[3,7,14,30,60,100,365];
-const STREAK_LABELS={3:"3 días 🌱",7:"1 semana 🔥",14:"2 semanas ⚡",30:"1 mes 🏆",60:"2 meses 💎",100:"100 días 🦁",365:"1 año 👑"};
-
-// calcStreak ya no existe en frontend — la fuente de verdad es el servidor (RPC actualizar_streak)
-
-function StreakBadge({session}){
-  const [streak,setStreak]=React.useState(1);
-  const [showModal,setShowModal]=React.useState(false);
-  const [newMilestone,setNewMilestone]=React.useState(null);
-
-  React.useEffect(()=>{
-    // Llamamos al servidor para obtener/actualizar la racha con hora confiable
-    if(!session?.user?.id||!session?.access_token)return;
-    sb.actualizarStreak(session.user.id,session.access_token)
-      .then(dias=>{
-        const n=typeof dias==="number"?dias:1;
-        setStreak(n);
-        // Detectar si acabamos de alcanzar un milestone
-        const prev=parseInt(localStorage.getItem(`cl_streak_prev_${session.user.id}`)||"0");
-        if(STREAK_MILESTONES.includes(n)&&n>prev){
-          setNewMilestone(n);
-          localStorage.setItem(`cl_streak_prev_${session.user.id}`,String(n));
-          setTimeout(()=>setNewMilestone(null),5000);
-        }
-      })
-      .catch(()=>{}); // fire & forget: si falla el RPC, el badge queda en 1
-  },[session?.user?.id,session?.access_token]);
-
-  const nextMilestone=STREAK_MILESTONES.find(m=>m>streak)||null;
-  const progress=nextMilestone?(streak/(nextMilestone))*100:100;
-
-  return(
-    <>
-      <button onClick={()=>setShowModal(true)}
-        style={{display:"inline-flex",alignItems:"center",gap:6,background:streak>=7?"linear-gradient(135deg,#E0955C22,#F59E0B22)":"#E0955C12",border:`1px solid ${streak>=7?"#F59E0B55":"#E0955C33"}`,borderRadius:20,padding:"5px 14px",marginBottom:10,cursor:"pointer",fontFamily:FONT,transition:"all .15s"}}
-        onMouseEnter={e=>e.currentTarget.style.background=streak>=7?"linear-gradient(135deg,#E0955C33,#F59E0B33)":"#E0955C22"}
-        onMouseLeave={e=>e.currentTarget.style.background=streak>=7?"linear-gradient(135deg,#E0955C22,#F59E0B22)":"#E0955C12"}>
-        <span style={{fontSize:streak>=30?20:streak>=7?18:15}}>{streak>=30?"🏆":streak>=7?"🔥":"🌱"}</span>
-        <span style={{fontWeight:700,color:streak>=7?"#B45309":C.warn,fontSize:13}}>{streak} día{streak!==1?"s":""}</span>
-        {streak>=3&&<span style={{color:C.muted,fontSize:10}}>en Luderis</span>}
-      </button>
-
-      {/* Modal de detalle del streak */}
-      {showModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}}>
-          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,width:"min(360px,95vw)",padding:"28px 24px"}}>
-            <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:48,marginBottom:8}}>{streak>=100?"👑":streak>=30?"🏆":streak>=14?"⚡":streak>=7?"🔥":"🌱"}</div>
-              <div style={{fontSize:28,fontWeight:800,color:C.text}}>{streak} día{streak!==1?"s":" "} seguido{streak!==1?"s":""}</div>
-              <div style={{color:C.muted,fontSize:13,marginTop:4}}>Tu racha activa en Luderis</div>
-            </div>
-            {/* Barra de progreso al siguiente milestone */}
-            {nextMilestone&&(
-              <div style={{marginBottom:20}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.muted,marginBottom:6}}>
-                  <span>Progreso</span>
-                  <span>Próximo: {STREAK_LABELS[nextMilestone]}</span>
-                </div>
-                <div style={{height:8,background:C.bg,borderRadius:4,border:`1px solid ${C.border}`}}>
-                  <div style={{height:"100%",width:`${Math.min(progress,100)}%`,background:"linear-gradient(90deg,#F59E0B,#E0955C)",borderRadius:4,transition:"width .5s ease"}}/>
-                </div>
-                <div style={{textAlign:"right",fontSize:11,color:C.muted,marginTop:4}}>{nextMilestone-streak} día{nextMilestone-streak!==1?"s":""} más</div>
-              </div>
-            )}
-            {/* Milestones desbloqueados */}
-            <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:20}}>
-              {STREAK_MILESTONES.filter(m=>m<=streak).map(m=>(
-                <span key={m} style={{background:"linear-gradient(135deg,#F59E0B,#E0955C)",color:"#fff",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700}}>{STREAK_LABELS[m]}</span>
-              ))}
-              {STREAK_MILESTONES.filter(m=>m>streak).slice(0,2).map(m=>(
-                <span key={m} style={{background:C.bg,border:`1px solid ${C.border}`,color:C.muted,borderRadius:20,padding:"3px 10px",fontSize:11}}>🔒 {STREAK_LABELS[m]}</span>
-              ))}
-            </div>
-            <button onClick={()=>setShowModal(false)}
-              style={{width:"100%",background:C.accent,border:"none",borderRadius:12,color:"#fff",padding:"11px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>
-              ¡Seguir aprendiendo!
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Celebración de milestone */}
-      {newMilestone&&(
-        <div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:600,background:"linear-gradient(135deg,#F59E0B,#E0955C)",borderRadius:20,padding:"12px 24px",color:"#fff",fontWeight:700,fontSize:15,boxShadow:"0 8px 30px rgba(245,158,11,.4)",animation:"fadeUp .3s ease",fontFamily:FONT,display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:22}}>🎉</span> ¡Lograste {STREAK_LABELS[newMilestone]}!
-        </div>
-      )}
-    </>
-  );
-}
 
 // ─── ASISTENTE IA PUBLICACIÓN ─────────────────────────────────────────────────
 function AsistentePublicacion({tipo,materia,titulo,descripcion,modo,session,onApply}){
@@ -273,88 +186,6 @@ async function verificarAlertas(pub,token){
   }catch{}
 }
 
-// ─── FUNCIÓN GLOBAL: DISPARAR ALERTAS ────────────────────────────────────────
-// Se llama cuando una publicación pasa a estado activo:true
-// Puede ser al crear (si no tiene wizard), al omitir wizard, o al finalizar wizard
-async function dispararAlertasIA(pub, session){
-  try{
-    const alertas=await sb.db(
-      `alertas_publicacion?activa=eq.true&usuario_id=neq.${session.user.id}&select=*`,
-      "GET",null,session.access_token
-    ).catch(()=>[]);
-    if(!alertas?.length)return;
-
-    const pubPerfil={
-      titulo:pub.titulo||"",
-      descripcion:(pub.descripcion||"").slice(0,300),
-      materia:pub.materia||"",
-      tipo:pub.tipo||"oferta",
-      modalidad:pub.modalidad||"",
-      ubicacion:pub.ubicacion||"",
-      precio:pub.precio?String(pub.precio):"Gratis",
-      nivel:pub.nivel||"",
-      certificado:pub.otorga_certificado?"Sí":"No",
-      frecuencia:pub.frecuencia||"",
-    };
-
-    for(const alerta of alertas){
-      try{
-        const tipoAlerta=alerta.tipo_alerta||"ambos";
-        if(tipoAlerta!=="ambos"&&pubPerfil.tipo!==tipoAlerta)continue;
-
-        let criterios={};
-        try{criterios=JSON.parse(alerta.criterios_json||"{}");}catch{}
-
-        const alertaCtx=[
-          `Descripción libre: "${alerta.descripcion}"`,
-          criterios.materia?`Materia de interés: ${criterios.materia}`:"",
-          criterios.modalidad&&criterios.modalidad!=="cualquiera"?`Modalidad preferida: ${criterios.modalidad}`:"",
-          criterios.palabras_clave?.length?`Palabras clave: ${criterios.palabras_clave.join(", ")}`:"",
-          alerta.usuario_ciudad?`Ciudad del usuario: ${alerta.usuario_ciudad}`:"",
-        ].filter(Boolean).join("\n");
-
-        const pubCtx=[
-          `Título: "${pubPerfil.titulo}"`,
-          `Descripción: "${pubPerfil.descripcion}"`,
-          `Materia: ${pubPerfil.materia||"No especificada"}`,
-          `Modalidad: ${pubPerfil.modalidad||"No especificada"}`,
-          pubPerfil.ubicacion?`Ubicación: ${pubPerfil.ubicacion}`:"Sin ubicación",
-          `Precio: ${pubPerfil.precio}`,
-          pubPerfil.nivel?`Nivel: ${pubPerfil.nivel}`:"",
-          `Otorga certificado: ${pubPerfil.certificado}`,
-          pubPerfil.frecuencia?`Frecuencia: ${pubPerfil.frecuencia}`:"",
-        ].filter(Boolean).join("\n");
-
-        const raw=await sb.callIA(
-          `Sos un sistema de matching para alertas educativas en Argentina.\nEvaluá si una publicación nueva es relevante para la búsqueda del usuario.\n\nREGLAS (evaluá TODAS):\n1. TEMA: ¿El título/descripción/materia es relevante? Considerá sinónimos y conceptos relacionados. Es el criterio más importante.\n2. MODALIDAD: Si pidió "presencial" y es "virtual" → NO coincide. Si no especificó → cualquiera sirve.\n3. UBICACIÓN: Si mencionó ciudad y la clase es presencial en otra ciudad → NO coincide. Si es virtual → ubicación no importa.\n4. CERTIFICADO: Si explícitamente quiere certificado y la pub no lo otorga → NO coincide.\n5. NIVEL: Si mencionó nivel específico y no coincide → penaliza pero no descarta solo por esto.\n6. PRECIO: Solo considerar si el usuario mencionó un rango explícito.\n\nREGLA FINAL: El TEMA debe coincidir. Contradicciones duras (modalidad, ciudad, certificado) → NO coincide.\nSi el usuario NO especificó restricciones → solo el tema importa.\n\nRespondé SOLO con JSON sin markdown: {"match":true,"razon":"frase"} o {"match":false,"razon":"por qué no"}`,
-          `ALERTA DEL USUARIO:\n${alertaCtx}\n\nPUBLICACIÓN:\n${pubCtx}`,
-          120,session.access_token
-        );
-
-        let match=false;
-        try{
-          const j=JSON.parse(raw.match(/\{[\s\S]*?\}/)?.[0]||"{}");
-          match=j.match===true;
-        }catch{match=raw.includes('"match":true')||raw.includes('"match": true');}
-
-        if(match){
-          // Encolar en digest diario
-          sb.db("alertas_digest_queue","POST",{
-            usuario_email: alerta.usuario_email,
-            usuario_id:    alerta.usuario_id||null,
-            pub_id:        pub.id||null,
-            pub_titulo:    pub.titulo,
-            materia:       pub.materia||null,
-            tipo:          pub.tipo==="oferta"?"Clase/Curso":"Búsqueda",
-            precio:        pub.precio?`$${Number(pub.precio).toLocaleString("es-AR")}`:null,
-            modalidad:     pub.modalidad||null,
-            criterio_desc: alerta.descripcion||null,
-          },session.access_token,"resolution=ignore-duplicates").catch(()=>{});
-        }
-      }catch{}
-    }
-  }catch{}
-}
 
 function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const editing=!!postToEdit;
@@ -1233,30 +1064,6 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
   );
 }
 
-
-// ── PriceSlider — Slider de rango de precios ──────────────────────────────────
-function PriceSlider({min,max,valMin,valMax,onChangeMin,onChangeMax}){
-  const pct=(v)=>((v-min)/(max-min))*100;
-  return(
-    <div style={{padding:"4px 0 8px"}}>
-      <div style={{position:"relative",height:4,background:C.border,borderRadius:2,margin:"12px 8px"}}>
-        <div style={{position:"absolute",left:`${pct(valMin)}%`,right:`${100-pct(valMax)}%`,height:"100%",background:C.accent,borderRadius:2}}/>
-        {[{val:valMin,onChange:onChangeMin},{val:valMax,onChange:onChangeMax}].map(({val,onChange},i)=>(
-          <input key={i} type="range" aria-label={i===0?"Precio mínimo":"Precio máximo"} min={min} max={max} value={val}
-            onChange={e=>onChange(Number(e.target.value))}
-            style={{position:"absolute",top:"50%",transform:"translateY(-50%)",width:"100%",left:0,opacity:0,cursor:"pointer",height:20,margin:0,padding:0}}/>
-        ))}
-        {[valMin,valMax].map((v,i)=>(
-          <div key={i} style={{position:"absolute",top:"50%",transform:"translate(-50%,-50%)",left:`${pct(v)}%`,width:16,height:16,borderRadius:"50%",background:C.accent,border:"2px solid #fff",boxShadow:"0 1px 4px rgba(0,0,0,.2)",pointerEvents:"none"}}/>
-        ))}
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.muted,marginTop:4}}>
-        <span>${valMin.toLocaleString("es-AR")}</span>
-        <span>${valMax.toLocaleString("es-AR")}</span>
-      </div>
-    </div>
-  );
-}
 
 export { VerificacionIA, StreakBadge, PerfilPage, dispararAlertasIA, PriceSlider };
 export default PostFormModal;

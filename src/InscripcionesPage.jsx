@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Check, Circle, Calendar, AlertTriangle, Clock, Trash2, Bell } from "lucide-react";
 import { C, FONT, FONT_DISPLAY, Spinner, fmt, fmtPrice, logError, safeDisplayName, toast } from "./shared";
 import * as sb from "./supabase";
-import { EspacioClaseModal } from "./MiCuentaPage";
 import { useAppActions } from "./AppContext";
+
+// Lazy: importar EspacioClaseModal de forma estática arrastraba TODO MiCuentaPage
+// a este chunk (INEFFECTIVE_DYNAMIC_IMPORT). Se carga recién al abrir el modal.
+const EspacioClaseModal=React.lazy(()=>import("./MiCuentaPage").then(m=>({default:m.EspacioClaseModal})));
 
 // ─── INSCRIPCIONES PAGE — con tiempo hasta inicio / hasta fin ─────────────────
 export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMarkNotifsRead,onGoExplore}){
@@ -271,7 +274,7 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           {onGoExplore&&<button onClick={onGoExplore} style={{background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:20,color:"#fff",padding:"12px 28px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,boxShadow:"0 4px 14px rgba(26,110,216,.3)"}}>Explorar clases →</button>}
         </div>
       )}
-      {espacioActivo&&<EspacioClaseModal oferta={espacioActivo} session={session} onClose={()=>setEspacioActivo(null)}/>}
+      {espacioActivo&&<React.Suspense fallback={null}><EspacioClaseModal oferta={espacioActivo} session={session} onClose={()=>setEspacioActivo(null)}/></React.Suspense>}
     </div>
   );
 }

@@ -16,7 +16,7 @@ import PostCard from "./components/PostCard";
 import FavBtn from "./components/FavBtn";
 import LeaderboardView from "./components/LeaderboardView";
 import { DocentesDestacados } from "./AgendaPage";
-import { PriceSlider } from "./PostFormModal";
+import { PriceSlider } from "./components/PriceSlider";
 import { Zap, PlayCircle, Globe, MapPin, User, Bell, LayoutGrid, List, Trophy, Search, Shield, GraduationCap, BadgeCheck, Users, Megaphone, Monitor, ArrowLeftRight, ArrowLeft, SlidersHorizontal, Star, Sparkles, Mail, Lock, Flag, Timer, Languages, Code, FlaskConical, Music, Palette, Briefcase, Utensils, Dumbbell, BookOpen, Heart, PenTool, Car, PawPrint, Gamepad2, Plane, Wrench, Plus, Package } from "lucide-react";
 
 // Mapa categoría → icono de línea (lucide) + acento, según el rediseño (sin emojis)

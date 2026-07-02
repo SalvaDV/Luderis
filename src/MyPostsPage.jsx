@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Timer, Eye, Clock, AlertTriangle, X, FileText, SlidersHorizontal, Pause, Play, RefreshCw, Trash2, Users } from "lucide-react";
 import { C, FONT, FONT_DISPLAY, LUD, Spinner, SkeletonList, Btn, Modal, Label, Tag, StatusBadge, VerifiedBadge, Avatar, fmt, fmtPrice, logError, safeDisplayName, toast, tx, accentFor, getPubTipo } from "./shared";
 import * as sb from "./supabase";
-import { AcuerdoModal } from "./MiCuentaPage";
+// Lazy: importar AcuerdoModal de forma estática arrastraba TODO MiCuentaPage
+// a este chunk (INEFFECTIVE_DYNAMIC_IMPORT). Se carga recién al abrir el modal.
+const AcuerdoModal=React.lazy(()=>import("./MiCuentaPage").then(m=>({default:m.AcuerdoModal})));
 
 // Mini-stat del prototipo (valor grande + label chico)
 function MiniStat({icon:Icon,value,label}){
@@ -300,7 +302,7 @@ export function OfertasRecibidasModal({post,session,onClose,onContactar}){
         )}
       </div>
     </Modal>
-    {acuerdoOferta&&<AcuerdoModal oferta={acuerdoOferta} session={session} onClose={()=>setAcuerdoOferta(null)} onConfirmado={()=>{cargar();setAcuerdoOferta(null);}}/>}
+    {acuerdoOferta&&<React.Suspense fallback={null}><AcuerdoModal oferta={acuerdoOferta} session={session} onClose={()=>setAcuerdoOferta(null)} onConfirmado={()=>{cargar();setAcuerdoOferta(null);}}/></React.Suspense>}
     {contraModal&&<ContraofertaModal oferta={{...contraModal,busqueda_titulo:post.titulo}} miRol="alumno" session={session} onClose={()=>setContraModal(null)} onEnviada={()=>{setContraModal(null);cargar();}}/>}
     </>
   );

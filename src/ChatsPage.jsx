@@ -61,7 +61,8 @@ export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=fa
       // Fetch pub titles
       const sinTitulo=Object.values(pubMap).filter(g=>g.pubId&&!g.pubTitulo);
       if(sinTitulo.length>0){
-        try{const allPubs=await sb.getPublicaciones({},session.access_token);const pubById={};allPubs.forEach(p=>{pubById[p.id]=p.titulo;});sinTitulo.forEach(g=>{if(pubById[g.pubId])g.pubTitulo=pubById[g.pubId];});}catch{}
+        // Solo las pubs que faltan (antes traía TODAS las publicaciones para resolver títulos)
+        try{const pubs=await sb.getPublicacionesByIds(sinTitulo.map(g=>g.pubId),session.access_token);const pubById={};(pubs||[]).forEach(p=>{pubById[p.id]=p.titulo;});sinTitulo.forEach(g=>{if(pubById[g.pubId])g.pubTitulo=pubById[g.pubId];});}catch{}
       }
       // Fetch display names for all "otro" emails
       const otroEmails=[...new Set(Object.values(pubMap).flatMap(g=>Object.values(g.chats).map(c=>c.otro)))];

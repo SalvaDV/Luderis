@@ -14,7 +14,7 @@ import {
   SkeletonList,
   _avatarCache,
 } from "./shared";
-import { dispararAlertasIA } from "./PostFormModal";
+import { dispararAlertasIA } from "./alertasIA";
 import { DenunciaModal, FinalizarClaseModal } from "./App";
 import { Video, FileText, Folder, Megaphone, Pin, Link as LinkIcon, Puzzle, Sparkles, Brain, CheckCircle, Circle, Search as SearchIcon, Flag as FlagIcon, MapPin as MapPinIcon, Trophy, GraduationCap as GradCapIcon, Upload, Inbox, Lock, Play, MessageCircle, HelpCircle } from "lucide-react";
 

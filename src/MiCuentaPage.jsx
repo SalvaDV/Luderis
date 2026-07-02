@@ -11,7 +11,7 @@ import {
   _avatarCache,
 } from "./shared";
 import { MyPostCard, OfertasRecibidasModal } from "./App";
-import { StreakBadge } from "./PostFormModal";
+import { StreakBadge } from "./components/StreakBadge";
 
 // Sanitiza URLs para evitar javascript: protocol XSS
 const safeUrl=(url)=>{if(!url)return null;const u=String(url).trim();return(/^https?:\/\//i.test(u))?u:null;};
