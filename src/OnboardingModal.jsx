@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import * as sb from "./supabase";
-import { C, FONT, FONT_DISPLAY, LUD, MATERIAS, CATEGORIAS_DATA, useFocusTrap } from "./shared";
+import { C, FONT, FONT_DISPLAY, LUD, MATERIAS, useFocusTrap } from "./shared";
+import { GraduationCap, BookOpen, Zap, Monitor, School, Shuffle, Gift, Wallet, Coins, Gem, Receipt, BarChart3, Camera, Lock, AlertTriangle, Check, Hourglass, Rocket, Sparkles } from "lucide-react";
 
 function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
   const trapRef=useFocusTrap(true);
@@ -44,20 +45,20 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         <p style={{color:C.muted,fontSize:13,lineHeight:1.7,margin:0}}>{upgradeMode?"Completá tu verificación para empezar a enseñar en Luderis.":"Aprendé lo que quieras, enseñá lo que sabés. ¿Cómo vas a usar Luderis?"}</p>
         <div style={{display:"grid",gap:10,marginTop:4}}>
           {[
-            ...(!upgradeMode?[{v:"alumno",icon:"🎓",title:"Quiero aprender",sub:"Busco clases, cursos y docentes"}]:[]),
-            {v:"docente",icon:"📚",title:"Quiero enseñar",sub:"Voy a publicar clases y cursos"},
-            {v:"ambos",icon:"⚡",title:"Ambas cosas",sub:"Aprendo y enseño según lo que necesite"},
-          ].map(({v,icon,title,sub:s})=>(
+            ...(!upgradeMode?[{v:"alumno",icon:GraduationCap,title:"Quiero aprender",sub:"Busco clases, cursos y docentes"}]:[]),
+            {v:"docente",icon:BookOpen,title:"Quiero enseñar",sub:"Voy a publicar clases y cursos"},
+            {v:"ambos",icon:Zap,title:"Ambas cosas",sub:"Aprendo y enseño según lo que necesite"},
+          ].map(({v,icon:Ico,title,sub:s})=>(
             <button key={v} onClick={()=>setRolY(v)}
               style={{background:rol===v?C.accentDim:C.surface,border:`2px solid ${rol===v?C.accent:C.border}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",fontFamily:FONT,textAlign:"left",transition:"all .15s",display:"flex",gap:14,alignItems:"center"}}
               onMouseEnter={e=>{if(rol!==v){e.currentTarget.style.borderColor=C.accent+"60";}}}
               onMouseLeave={e=>{if(rol!==v){e.currentTarget.style.borderColor=C.border;}}}>
-              <span style={{fontSize:28,flexShrink:0}}>{icon}</span>
+              <Ico size={26} strokeWidth={1.8} color={rol===v?C.accent:C.muted} style={{flexShrink:0}}/>
               <div>
                 <div style={{fontWeight:700,color:rol===v?C.accent:C.text,fontSize:14,marginBottom:2}}>{title}</div>
                 <div style={{color:C.muted,fontSize:12}}>{s}</div>
               </div>
-              {rol===v&&<span style={{marginLeft:"auto",color:C.accent,fontSize:18,flexShrink:0}}>✓</span>}
+              {rol===v&&<Check size={17} strokeWidth={2.6} color={C.accent} style={{marginLeft:"auto",flexShrink:0}}/>}
             </button>
           ))}
         </div>
@@ -65,13 +66,13 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           <div role="checkbox" aria-checked={kycAck} tabIndex={0} aria-label="Confirmo que la información es correcta" onClick={()=>setKycAck(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setKycAck(v=>!v);}}}
             style={{cursor:"pointer",background:kycAck?"#2EC4A010":"#F59E0B0D",border:`2px solid ${kycAck?"#2EC4A0":"#F59E0B55"}`,borderRadius:12,padding:"13px 16px",display:"flex",gap:12,alignItems:"flex-start",transition:"all .15s",marginTop:4}}>
             <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${kycAck?"#2EC4A0":"#F59E0B"}`,background:kycAck?"#2EC4A0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .15s"}}>
-              {kycAck&&<span style={{color:"#fff",fontSize:13,fontWeight:800,lineHeight:1}}>✓</span>}
+              {kycAck&&<Check size={13} strokeWidth={3} color="#fff"/>}
             </div>
             <div>
-              <div style={{fontWeight:700,color:kycAck?"#2EC4A0":"#92400E",fontSize:13,marginBottom:3}}>
-                {kycAck?"✓ Entendido":"⚠ Verificación de identidad requerida"}
+              <div style={{fontWeight:700,color:kycAck?"#2EC4A0":C.warn,fontSize:13,marginBottom:3}}>
+                {kycAck?"Entendido":"Verificación de identidad requerida"}
               </div>
-              <div style={{fontSize:12,color:kycAck?"#2EC4A0":"#B45309",lineHeight:1.6}}>
+              <div style={{fontSize:12,color:kycAck?"#2EC4A0":C.warn,lineHeight:1.6}}>
                 Para publicar clases necesitarás completar una verificación de identidad (DNI + foto) al finalizar este proceso. El proceso tarda ~5 minutos y puede hacerse en 24-48 hs.
               </div>
             </div>
@@ -87,9 +88,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
       <div style={{marginTop:8}}>
         <p style={{color:C.muted,fontSize:13,margin:"0 0 12px"}}>Seleccioná las materias que más te interesan (podés elegir varias):</p>
         <div style={{display:"flex",flexWrap:"wrap",gap:7,maxHeight:260,overflowY:"auto"}}>
-          {MATERIAS.map(m=>{
-            const cat=CATEGORIAS_DATA[m]||{emoji:"📚"};
-            return(
+          {MATERIAS.map(m=>(
               <button key={m} onClick={()=>toggleM(m)}
                 style={{padding:"7px 13px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,
                   background:materias.includes(m)?C.accent:C.surface,
@@ -97,10 +96,9 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
                   border:`1px solid ${materias.includes(m)?C.accent:C.border}`,
                   fontWeight:materias.includes(m)?700:400,
                   display:"flex",alignItems:"center",gap:5,transition:"all .12s"}}>
-                <span>{cat.emoji}</span>{m}
+                {m}
               </button>
-            );
-          })}
+          ))}
         </div>
       </div>
     )},
@@ -118,7 +116,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         <div>
           <div style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿En qué etapa educativa estás?</div>
           <div role="group" aria-label="Etapa educativa" style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {[["secundaria","📗 Secundaria"],["universitario","🎓 Universitario"],["posgrado","📜 Posgrado"],["adulto_prof","💼 Adulto/Profesional"],["otro","Otro"]].map(([v,l])=>(
+            {[["secundaria","Secundaria"],["universitario","Universitario"],["posgrado","Posgrado"],["adulto_prof","Adulto/Profesional"],["otro","Otro"]].map(([v,l])=>(
               <button key={v} onClick={()=>setNivelEdu(v)}
                 style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,background:nivelEdu===v?C.accent:C.surface,color:nivelEdu===v?"#fff":C.muted,border:`1px solid ${nivelEdu===v?C.accent:C.border}`,transition:"all .12s"}}>
                 {l}
@@ -130,10 +128,10 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           <div style={{fontSize:12,fontWeight:600,color:C.muted,display:"block",marginBottom:5}}>¿Cuál es tu objetivo?</div>
           <div role="group" aria-label="Tu objetivo" style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {(rol==="docente"
-              ?[["ensenar_full","🧑‍🏫 Enseñar como actividad principal"],["ensenar_extra","💼 Enseñar como ingreso extra"],["compartir","🤝 Compartir conocimiento"],["crecer","📈 Crecer como docente"]]
+              ?[["ensenar_full","Enseñar como actividad principal"],["ensenar_extra","Enseñar como ingreso extra"],["compartir","Compartir conocimiento"],["crecer","Crecer como docente"]]
               :rol==="ambos"
-              ?[["aprender_nuevo","🌱 Aprender cosas nuevas"],["mejorar","📈 Mejorar habilidades"],["ensenar","🧑‍🏫 También enseñar"],["networking","🤝 Conectar con la comunidad"]]
-              :[["aprender_nuevo","🌱 Aprender algo nuevo"],["mejorar","📈 Mejorar habilidades"],["certificar","🏅 Obtener certificado"],["hobby","🎯 Hobby o interés personal"]]
+              ?[["aprender_nuevo","Aprender cosas nuevas"],["mejorar","Mejorar habilidades"],["ensenar","También enseñar"],["networking","Conectar con la comunidad"]]
+              :[["aprender_nuevo","Aprender algo nuevo"],["mejorar","Mejorar habilidades"],["certificar","Obtener certificado"],["hobby","Hobby o interés personal"]]
             ).map(([v,l])=>(
               <button key={v} onClick={()=>setObjetivo(v)}
                 style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:FONT,background:objetivo===v?C.accent:C.surface,color:objetivo===v?"#fff":C.muted,border:`1px solid ${objetivo===v?C.accent:C.border}`,transition:"all .12s"}}>
@@ -159,18 +157,18 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
         {[
-          {v:"virtual",icon:"💻",label:"Online / Virtual",desc:"Desde donde quieras, por videollamada"},
-          {v:"presencial",icon:"🏫",label:"Presencial",desc:"En persona, en un lugar físico"},
-          {v:"ambas",icon:"🔀",label:"Me da igual",desc:"Cualquiera de las dos opciones"},
-        ].map(({v,icon,label,desc})=>(
+          {v:"virtual",icon:Monitor,label:"Online / Virtual",desc:"Desde donde quieras, por videollamada"},
+          {v:"presencial",icon:School,label:"Presencial",desc:"En persona, en un lugar físico"},
+          {v:"ambas",icon:Shuffle,label:"Me da igual",desc:"Cualquiera de las dos opciones"},
+        ].map(({v,icon:Ico,label,desc})=>(
           <button key={v} onClick={()=>setModalidadPref(v)}
             style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",borderRadius:12,border:`2px solid ${modalidadPref===v?C.accent:C.border}`,background:modalidadPref===v?C.accentDim:C.bg,cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:FONT}}>
-            <span style={{fontSize:28,flexShrink:0}}>{icon}</span>
+            <Ico size={26} strokeWidth={1.8} color={modalidadPref===v?C.accent:C.muted} style={{flexShrink:0}}/>
             <div>
               <div style={{fontWeight:700,color:C.text,fontSize:14}}>{label}</div>
               <div style={{fontSize:12,color:C.muted,marginTop:2}}>{desc}</div>
             </div>
-            {modalidadPref===v&&<span style={{marginLeft:"auto",color:C.accent,fontSize:18,flexShrink:0}}>✓</span>}
+            {modalidadPref===v&&<Check size={17} strokeWidth={2.6} color={C.accent} style={{marginLeft:"auto",flexShrink:0}}/>}
           </button>
         ))}
       </div>
@@ -180,19 +178,19 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
         {[
-          {v:"gratis",icon:"🆓",label:"Gratuitas",desc:"Solo clases sin costo"},
-          {v:"bajo",icon:"💵",label:"Económico",desc:"Accesible para cualquier bolsillo"},
-          {v:"medio",icon:"💴",label:"Intermedio",desc:"Precio estándar del mercado"},
-          {v:"alto",icon:"💎",label:"Premium",desc:"Alta especialización o dedicación"},
-        ].map(({v,icon,label,desc})=>(
+          {v:"gratis",icon:Gift,label:"Gratuitas",desc:"Solo clases sin costo"},
+          {v:"bajo",icon:Wallet,label:"Económico",desc:"Accesible para cualquier bolsillo"},
+          {v:"medio",icon:Coins,label:"Intermedio",desc:"Precio estándar del mercado"},
+          {v:"alto",icon:Gem,label:"Premium",desc:"Alta especialización o dedicación"},
+        ].map(({v,icon:Ico,label,desc})=>(
           <button key={v} onClick={()=>setPresupuesto(v)}
             style={{display:"flex",alignItems:"center",gap:14,padding:"13px 18px",borderRadius:12,border:`2px solid ${presupuesto===v?C.accent:C.border}`,background:presupuesto===v?C.accentDim:C.bg,cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:FONT}}>
-            <span style={{fontSize:22,flexShrink:0}}>{icon}</span>
+            <Ico size={22} strokeWidth={1.8} color={presupuesto===v?C.accent:C.muted} style={{flexShrink:0}}/>
             <div style={{flex:1}}>
               <div style={{fontWeight:600,color:C.text,fontSize:14}}>{label}</div>
               <div style={{fontSize:11,color:C.muted,marginTop:2}}>{desc}</div>
             </div>
-            {presupuesto===v&&<span style={{color:C.accent,fontSize:18,flexShrink:0}}>✓</span>}
+            {presupuesto===v&&<Check size={16} strokeWidth={2.6} color={C.accent} style={{flexShrink:0}}/>}
           </button>
         ))}
       </div>
@@ -211,7 +209,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
         <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:"10px 14px",fontSize:12,color:C.accent,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <span>🔒</span>
+          <Lock size={13} strokeWidth={2} style={{flexShrink:0}}/>
           <span>Tus datos se guardan de forma segura y solo son usados para verificar tu identidad como docente.</span>
         </div>
         <div>
@@ -224,7 +222,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           <input id="onb-fechanac" aria-label="Fecha de nacimiento" type="date" value={fechaNac} onChange={e=>setFechaNac(e.target.value)}
             max={new Date(Date.now()-18*365*24*3600*1000).toISOString().split("T")[0]}
             style={{width:"100%",background:C.bg,border:`1px solid ${fechaNac?C.success:C.border}`,borderRadius:9,padding:"9px 12px",color:C.text,fontSize:13,outline:"none",fontFamily:FONT,boxSizing:"border-box",colorScheme:"dark"}}/>
-          {fechaNac&&(()=>{const edad=Math.floor((Date.now()-new Date(fechaNac).getTime())/(365.25*24*3600*1000));return edad<18?(<div style={{fontSize:11,color:C.danger,marginTop:4,fontWeight:600}}>⚠ Debés ser mayor de 18 años para registrarte como docente.</div>):(<div style={{fontSize:11,color:C.successText,marginTop:4}}>✓ Edad verificada</div>);})()}
+          {fechaNac&&(()=>{const edad=Math.floor((Date.now()-new Date(fechaNac).getTime())/(365.25*24*3600*1000));return edad<18?(<div style={{fontSize:11,color:C.danger,marginTop:4,fontWeight:600}}>Debés ser mayor de 18 años para registrarte como docente.</div>):(<div style={{fontSize:11,color:C.successText,marginTop:4}}>Edad verificada</div>);})()}
         </div>
       </div>
     )},
@@ -235,7 +233,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      body:(
       <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
         <div style={{background:C.accentDim,border:`1px solid ${C.accent}33`,borderRadius:10,padding:"10px 14px",fontSize:12,color:C.accent,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <span>🔒</span>
+          <Lock size={13} strokeWidth={2} style={{flexShrink:0}}/>
           <span>La foto se almacena de forma segura y solo la ve el equipo de Luderis para verificar tu identidad.</span>
         </div>
         {/* Drop zone / preview */}
@@ -252,7 +250,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           {fotoDniPreview?(
             <div style={{position:"relative",borderRadius:12,overflow:"hidden",border:`2px solid ${C.accent}`}}>
               <img src={fotoDniPreview} alt="DNI frente" style={{width:"100%",display:"block",maxHeight:200,objectFit:"cover"}}/>
-              <div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600}}>✓ Foto cargada — tocá para cambiar</div>
+              <div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600}}>Foto cargada — tocá para cambiar</div>
             </div>
           ):(
             // Zona dentro del <label>: el click lo gestiona el input asociado; el hover es decorativo
@@ -260,7 +258,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             <div style={{border:`2px dashed ${C.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",background:C.bg,transition:"border-color .15s"}}
               onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
               onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-              <div style={{fontSize:36,marginBottom:8}}>📷</div>
+              <div style={{marginBottom:8,display:"flex",justifyContent:"center"}}><Camera size={34} strokeWidth={1.6} color={C.muted}/></div>
               <div style={{fontWeight:600,color:C.text,fontSize:13,marginBottom:4}}>Seleccioná una foto del frente de tu DNI</div>
               <div style={{color:C.muted,fontSize:11}}>JPG, PNG o WEBP · Máx. 5 MB</div>
             </div>
@@ -277,24 +275,24 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
      canNext:true,
      body:(
       <div style={{marginTop:8}}>
-        <div style={{background:"#FEF3C710",border:"1px solid #F59E0B50",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#92400E",marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <span style={{flexShrink:0}}>⚠️</span>
+        <div style={{background:C.warn+"10",border:"1px solid #F59E0B50",borderRadius:10,padding:"10px 14px",fontSize:12,color:C.warn,marginBottom:12,display:"flex",gap:8,alignItems:"flex-start"}}>
+          <AlertTriangle size={14} strokeWidth={2.2} style={{flexShrink:0,marginTop:1}}/>
           <span>Podés completar esto después. Pero <strong>no podrás recibir pagos</strong> hasta ingresar tu situación fiscal y CUIT.</span>
         </div>
         <p style={{color:C.muted,fontSize:12,margin:"0 0 12px",lineHeight:1.6}}>Esta información nos ayuda a cumplir con las regulaciones de AFIP. Podés cambiarla más adelante.</p>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[
-            {v:"monotributo",icon:"🧾",title:"Monotributista",sub:"Estás inscripto en el monotributo"},
-            {v:"resp_inscripto",icon:"📊",title:"Responsable inscripto",sub:"Estás inscripto en IVA"},
-          ].map(({v,icon,title,sub:s})=>(
+            {v:"monotributo",icon:Receipt,title:"Monotributista",sub:"Estás inscripto en el monotributo"},
+            {v:"resp_inscripto",icon:BarChart3,title:"Responsable inscripto",sub:"Estás inscripto en IVA"},
+          ].map(({v,icon:Ico,title,sub:s})=>(
             <button key={v} onClick={()=>setSituacionFiscal(v)}
               style={{background:situacionFiscal===v?C.accentDim:C.surface,border:`2px solid ${situacionFiscal===v?C.accent:C.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",fontFamily:FONT,textAlign:"left",display:"flex",gap:12,alignItems:"center",transition:"all .12s"}}>
-              <span style={{fontSize:20,flexShrink:0}}>{icon}</span>
+              <Ico size={20} strokeWidth={1.8} color={situacionFiscal===v?C.accent:C.muted} style={{flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,color:situacionFiscal===v?C.accent:C.text,fontSize:13}}>{title}</div>
                 <div style={{fontSize:11,color:C.muted}}>{s}</div>
               </div>
-              {situacionFiscal===v&&<span style={{color:C.accent,fontSize:16}}>✓</span>}
+              {situacionFiscal===v&&<Check size={15} strokeWidth={2.6} color={C.accent} style={{flexShrink:0}}/>}
             </button>
           ))}
         </div>
@@ -327,10 +325,10 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             Necesario para emitir liquidaciones y cumplir con AFIP. Lo usamos solo para documentación fiscal.
           </p>
           {cuit.replace(/-/g,"").length>0&&cuit.replace(/-/g,"").length<11&&(
-            <p style={{fontSize:11,color:C.danger,margin:"4px 0 0",fontWeight:600}}>⚠ El CUIT debe tener 11 dígitos</p>
+            <p style={{fontSize:11,color:C.danger,margin:"4px 0 0",fontWeight:600}}>El CUIT debe tener 11 dígitos</p>
           )}
           {cuit.replace(/-/g,"").length===11&&(
-            <p style={{fontSize:11,color:C.successText,margin:"4px 0 0",fontWeight:600}}>✓ CUIT válido</p>
+            <p style={{fontSize:11,color:C.successText,margin:"4px 0 0",fontWeight:600}}>CUIT válido</p>
           )}
         </div>
       </div>
@@ -366,7 +364,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
           onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setTerminosAceptados(v=>!v);}}}
           style={{display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",background:terminosAceptados?C.accentDim:C.surface,border:`2px solid ${terminosAceptados?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",transition:"all .15s"}}>
           <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${terminosAceptados?C.accent:C.border}`,background:terminosAceptados?C.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .15s"}}>
-            {terminosAceptados&&<span style={{color:"#fff",fontSize:14,fontWeight:700}}>✓</span>}
+            {terminosAceptados&&<Check size={14} strokeWidth={3} color="#fff"/>}
           </div>
           <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
             <span style={{fontWeight:700,color:C.text}}>Declaración Jurada:</span> Declaro bajo juramento que todos los datos proporcionados en este formulario son verídicos, completos y actualizados. Entiendo que la falsedad de esta declaración puede implicar la inhabilitación de mi cuenta en Luderis.
@@ -382,7 +380,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
     canNext:true,
     body:(
       <div style={{textAlign:"center",padding:"20px 0"}}>
-        <div style={{fontSize:56,marginBottom:16,animation:"fadeUp .3s ease"}}>{esDocente?"⏳":"🚀"}</div>
+        <div style={{marginBottom:16,animation:"fadeUp .3s ease",display:"flex",justifyContent:"center"}}>{esDocente?<Hourglass size={52} strokeWidth={1.5} color={C.accent}/>:<Rocket size={52} strokeWidth={1.5} color={C.accent}/>}</div>
         <div style={{fontWeight:700,color:C.text,fontSize:17,marginBottom:10}}>
           {esDocente?"¡Solicitud enviada!":"¡Bienvenido/a a Luderis!"}
         </div>
@@ -392,9 +390,9 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             :"Explorá publicaciones, inscribite en cursos, y cuando quieras podés completar la verificación para enseñar también."}
         </p>
         {esDocente&&(
-          <div style={{background:"#FEF3C710",border:"1px solid #F59E0B30",borderRadius:14,padding:"14px 18px",marginBottom:16,textAlign:"left"}}>
-            <div style={{fontWeight:700,color:"#92400E",fontSize:13,marginBottom:4}}>⏱ ¿Qué pasa ahora?</div>
-            <ul style={{color:"#92400E",fontSize:12,margin:0,paddingLeft:18,lineHeight:1.8}}>
+          <div style={{background:C.warn+"10",border:"1px solid #F59E0B30",borderRadius:14,padding:"14px 18px",marginBottom:16,textAlign:"left"}}>
+            <div style={{fontWeight:700,color:C.warn,fontSize:13,marginBottom:4}}>⏱ ¿Qué pasa ahora?</div>
+            <ul style={{color:C.warn,fontSize:12,margin:0,paddingLeft:18,lineHeight:1.8}}>
               <li>El equipo de Luderis revisa tu DNI e información en 24-48 hs.</li>
               <li>Te enviamos un email cuando tu cuenta sea aprobada.</li>
               <li>Podés seguir usando Luderis como alumno mientras tanto.</li>
@@ -403,10 +401,9 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         )}
         {materias.length>0&&(
           <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginTop:8}}>
-            {materias.slice(0,5).map(m=>{
-              const cat=CATEGORIAS_DATA[m]||{emoji:"📚"};
-              return<span key={m} style={{background:C.accentDim,color:C.accent,borderRadius:20,padding:"4px 12px",fontSize:12,fontWeight:600}}>{cat.emoji} {m}</span>;
-            })}
+            {materias.slice(0,5).map(m=>(
+              <span key={m} style={{background:C.accentDim,color:C.accent,borderRadius:20,padding:"4px 12px",fontSize:12,fontWeight:600}}>{m}</span>
+            ))}
           </div>
         )}
         {/* Recomendaciones IA para alumnos */}
@@ -420,7 +417,7 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
             )}
             {matchResults&&matchResults.length>0&&(
               <div>
-                <div style={{fontSize:12,fontWeight:700,color:C.muted,letterSpacing:.4,marginBottom:8}}>✨ CLASES RECOMENDADAS PARA VOS</div>
+                <div style={{fontSize:12,fontWeight:700,color:C.muted,letterSpacing:.4,marginBottom:8,display:"flex",alignItems:"center",gap:5}}><Sparkles size={12} strokeWidth={2}/>CLASES RECOMENDADAS PARA VOS</div>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {matchResults.slice(0,3).map(p=>(
                     <div key={p.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",textAlign:"left"}}>
