@@ -975,7 +975,14 @@ function PerfilPage({autorEmail,session,onClose,onOpenDetail,onOpenChat}){
               <section>
                 <p style={{...tx("micro"),textTransform:"uppercase",letterSpacing:".05em",color:C.faint||C.muted,fontWeight:700,margin:"0 0 10px"}}>Presentación</p>
                 <div style={{borderRadius:14,overflow:"hidden",background:"#000",aspectRatio:"16/9"}}>
-                  <iframe title={`Video de presentación de ${displayNombre}`} src={videoUrl.includes("youtube")?videoUrl.replace("watch?v=","embed/").replace("youtu.be/","youtube.com/embed/"):videoUrl} style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
+                  <iframe title={`Video de presentación de ${displayNombre}`} src={(()=>{
+                    // youtube.com/watch?v=ID, youtu.be/ID, /shorts/ID, /embed/ID → embed
+                    // nocookie (permitido por la CSP frame-src). "youtu.be" NO contiene
+                    // "youtube", así que el replace anterior lo dejaba crudo y la CSP
+                    // bloqueaba el iframe.
+                    const m=/(?:youtube(?:-nocookie)?\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/i.exec(videoUrl||"");
+                    return m?`https://www.youtube-nocookie.com/embed/${m[1]}`:videoUrl;
+                  })()} style={{width:"100%",height:"100%",border:"none"}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
                 </div>
               </section>
             )}
