@@ -56,26 +56,29 @@ Deno.serve(async (req) => {
     const SB_URL     = Deno.env.get("SUPABASE_URL")!;
     const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // ── Verificar que el caller tiene un JWT de usuario válido ───────────
-    // Esto evita que cualquier visitante sin sesión pueda spamear push
-    // notifications a cualquier email conocido.
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
-
-    if (!jwtToken || jwtToken === SB_SERVICE) {
-      // Rechazar si no hay token o si se intenta usar la service role key directamente
-      // desde el browser (la service role key nunca debe llegar al cliente)
-      return new Response(JSON.stringify({ error: "No autorizado: se requiere sesión activa" }), {
-        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
-      });
-    }
-
-    const supaAdmin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
-    const { data: { user }, error: authErr } = await supaAdmin.auth.getUser(jwtToken);
-    if (authErr || !user) {
-      return new Response(JSON.stringify({ error: "No autorizado: token inválido o expirado" }), {
-        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
-      });
+    // ── Verificar caller ──────────────────────────────────────────────────
+    // Llamadas internas (send-email / smart-worker / recordatorio-clases) usan la
+    // service role key y NO pasan por acá. Para el resto (frontend) se exige un
+    // JWT de usuario válido: evita que un visitante sin sesión spamee push a
+    // cualquier email. (Antes este bloque rechazaba también al service role,
+    // contradiciendo el gate de arriba → las push internas fallaban en silencio.)
+    let callerEmail = "service";
+    if (!isServiceRole) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
+      if (!jwtToken) {
+        return new Response(JSON.stringify({ error: "No autorizado: se requiere sesión activa" }), {
+          status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+      const supaAdmin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
+      const { data: { user }, error: authErr } = await supaAdmin.auth.getUser(jwtToken);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: "No autorizado: token inválido o expirado" }), {
+          status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+      callerEmail = user.email ?? "user";
     }
 
     const VAPID_PUBLIC  = Deno.env.get("VAPID_PUBLIC_KEY")!;
@@ -124,7 +127,7 @@ Deno.serve(async (req) => {
     );
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
-    console.log(`[send-push] to=${to} sent=${sent}/${subs.length} caller=${user.email}`);
+    console.log(`[send-push] to=${to} sent=${sent}/${subs.length} caller=${callerEmail}`);
 
     return new Response(JSON.stringify({ ok: true, sent }), { headers: CORS });
   } catch (err: any) {
