@@ -177,7 +177,9 @@ Deno.serve(async (req) => {
 
     // 5. Registrar movimiento en billetera del docente
     if (docenteUser?.id) {
-      await supabase.from("billetera_movimientos").insert({
+      // (supabase-js no rechaza en errores de PG y su builder no tiene .catch:
+      // el patrón .catch anterior tiraba TypeError en runtime)
+      const { error: movErr } = await supabase.from("billetera_movimientos").insert({
         usuario_id:       docenteUser.id,
         tipo:             "ingreso",
         monto:            montoNeto,
@@ -186,7 +188,8 @@ Deno.serve(async (req) => {
         mp_payment_id:    mpTransferId ?? pago.mp_payment_id,
         comision_luderis: comision,
         estado:           "liberado",
-      }).catch((e: Error) => console.error("billetera insert error:", e.message));
+      });
+      if (movErr) console.error("billetera insert error:", movErr.message);
     }
 
     // 6. Notificar al docente (alumno_email = campo "destinatario" de la notif, aquí el docente)
@@ -197,7 +200,7 @@ Deno.serve(async (req) => {
       pub_titulo:     `Tu pago de $${montoNeto.toLocaleString("es")} fue acreditado en tu billetera.`,
       publicacion_id: pago.publicacion_id,
       leida:          false,
-    }).catch(() => {});
+    }).then(null, () => {});
 
     return new Response(
       JSON.stringify({ ok: true, metodo, monto_neto: montoNeto, comision, mp_transfer_id: mpTransferId }),

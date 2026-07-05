@@ -125,7 +125,7 @@ serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
           body: JSON.stringify({ to: uInfo.email, template: "ban_usuario", data: {} }),
-        }).catch(() => null);
+        }).then(null, () => null);
       }
 
     } else if (action === "eliminar_usuario") {
@@ -183,7 +183,7 @@ serve(async (req) => {
         tipo:          tipo ?? "info",
         enviada_por:   enviada_por ?? user.email,
         destinatarios: count,
-      }).catch(() => null); // silencioso si la tabla no existe aún
+      }).then(null, () => null); // silencioso si la tabla no existe aún
       result = { ok: true, destinatarios: count };
 
     } else if (action === "aprobar_docente") {
@@ -227,7 +227,7 @@ serve(async (req) => {
             template: "docente_aprobado",
             data: { nombre: usuarioData.nombre ?? "Docente" },
           }),
-        }).catch(() => null);
+        }).then(null, () => null);
       }
 
     } else if (action === "rechazar_verificacion") {
@@ -259,7 +259,7 @@ serve(async (req) => {
             template: "docente_rechazado",
             data: { nombre: usuarioData.nombre ?? "Usuario", razon: razon ?? "No se especificó motivo." },
           }),
-        }).catch(() => null);
+        }).then(null, () => null);
       }
 
     // ── Moderación: resolver una denuncia ────────────────────────────────────
@@ -285,7 +285,7 @@ serve(async (req) => {
             template: "ban_usuario",
             data: { razon: notas || "Denuncia de otro usuario." },
           }),
-        }).catch(() => null);
+        }).then(null, () => null);
 
       } else if (accion_tomada === "eliminar_pub" && publicacion_id) {
         await adminClient.from("publicaciones").delete().eq("id", publicacion_id);
@@ -299,7 +299,7 @@ serve(async (req) => {
           tipo:         "sistema",
           pub_titulo:   `⚠️ Tu cuenta recibió una advertencia por denuncia de otro usuario.${notas ? ` Motivo: ${notas}` : ""}`,
           leida:        false,
-        }).catch(() => null);
+        }).then(null, () => null);
       }
       result = { ok: true, accion_tomada };
 
@@ -356,7 +356,7 @@ serve(async (req) => {
               tipo:         "sistema",
               pub_titulo:   `La disputa fue resuelta: el pago fue liberado al docente.${resolucion ? ` Nota: ${resolucion}` : ""}`,
               leida:        false,
-            }).catch(() => null);
+            }).then(null, () => null);
           }
         } else if (estado === "resuelta_alumno") {
           // Marcar como reembolsado (el admin gestiona el reembolso en MP manualmente)
@@ -375,7 +375,7 @@ serve(async (req) => {
             leida:        false,
           } : null;
           const notifs = [notifAlumno, notifDocente].filter(Boolean);
-          if (notifs.length) await adminClient.from("notificaciones").insert(notifs).catch(() => null);
+          if (notifs.length) await adminClient.from("notificaciones").insert(notifs).then(null, () => null);
         }
       }
       result = { ok: true, estado, pago_id: disputa?.pago_id ?? null };

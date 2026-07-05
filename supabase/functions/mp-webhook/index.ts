@@ -205,10 +205,15 @@ serve(async (req) => {
 
           } else {
             // ── ACREDITACIÓN INMEDIATA (cursos, clases sueltas) ──────────
-            await supabase.rpc("incrementar_saldo", {
+            // supabase-js NO rechaza en errores de PG (resuelve {error}) y su
+            // builder ni siquiera tiene .catch: el patrón anterior tiraba
+            // TypeError en runtime y el fallback jamás podía ejecutarse
+            // (lo atraparon los tests de contrato antes de que MP fuera live).
+            const { error: saldoErr } = await supabase.rpc("incrementar_saldo", {
               p_usuario_id: docente.id,
               p_monto:      montoNeto,
-            }).catch(async () => {
+            });
+            if (saldoErr) {
               const { data: bilActual } = await supabase
                 .from("billetera").select("saldo")
                 .eq("usuario_id", docente.id).single();
@@ -216,7 +221,7 @@ serve(async (req) => {
                 { usuario_id: docente.id, saldo: (parseFloat(bilActual?.saldo ?? "0") + montoNeto) },
                 { onConflict: "usuario_id" }
               );
-            });
+            }
 
             await supabase.from("billetera_movimientos").insert({
               usuario_id:       docente.id,

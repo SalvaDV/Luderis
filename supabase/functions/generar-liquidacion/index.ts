@@ -443,7 +443,7 @@ Deno.serve(async (req) => {
           tipo:           "liquidacion_disponible",
           publicacion_id: null,
           leida:          false,
-        }).catch(() => {});
+        }).then(null, () => {});
 
         // ── Enviar email con PDF ────────────────────────────────────────
         if (pdfUrl) {
