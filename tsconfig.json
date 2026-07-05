@@ -16,5 +16,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Las edge functions son código Deno (globals Deno, imports por URL): las
+  // chequea el runtime de Supabase/Deno, no este tsc. Como "exclude" no corta
+  // imports transitivos, también se excluyen los tests de contrato de edge
+  // (archivos .js que las importan vía alias de vitest); esos los corre vitest.
+  "exclude": ["supabase/functions", "src/__tests__/edge-*.test.js"]
 }

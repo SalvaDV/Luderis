@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 
 // Migración CRA → Vite (Fase 6 arquitectura).
 // Estrategia de bajo churn: NO se tocan los `process.env.REACT_APP_*` del código
@@ -25,6 +26,17 @@ export default defineConfig(({ mode }) => {
     },
 
     server: { port: 3000, open: false },
+
+    // Alias SOLO relevantes para los tests de edge functions (vitest): mapean los
+    // imports Deno (esm.sh / deno.land) a módulos locales para poder ejecutar el
+    // handler real bajo Node. Inertes para el build de la app: ningún archivo de
+    // src/ importa estos especificadores.
+    resolve: {
+      alias: [
+        { find: "https://esm.sh/@supabase/supabase-js@2", replacement: "@supabase/supabase-js" },
+        { find: "https://deno.land/std@0.168.0/http/server.ts", replacement: fileURLToPath(new URL("./src/__tests__/helpers/serve-shim.js", import.meta.url)) },
+      ],
+    },
 
     build: {
       // Mantener la estructura de CRA para no tocar vercel.json (rewrites/headers/CSP).
