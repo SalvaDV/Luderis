@@ -17,6 +17,15 @@ const CORS = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+// HMAC-SHA256 en hex — firma el state del OAuth para que el callback pueda
+// verificar que lo generamos nosotros (anti CSRF de account-linking).
+async function hmacHex(secret: string, msg: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
+  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -46,9 +55,11 @@ Deno.serve(async (req) => {
       return Response.redirect(`${APP_URL}?mp_connect=error&reason=auth_mismatch`, 302);
     }
 
-    // Nonce aleatorio anti-CSRF incluido en state
-    const nonce = crypto.randomUUID().replace(/-/g, "");
-    const state = `${userId}:${nonce}`;
+    // State FIRMADO (userId.exp.hmac) — el callback verifica firma y vigencia.
+    // El nonce anterior se generaba pero nunca se verificaba (decorativo).
+    const exp   = Date.now() + 15 * 60 * 1000; // 15 min de validez
+    const sig   = await hmacHex(MP_SECRET, `${userId}.${exp}`);
+    const state = `${userId}.${exp}.${sig}`;
 
     const authUrl = new URL("https://auth.mercadopago.com/authorization");
     authUrl.searchParams.set("client_id",    MP_CLIENT_ID);
@@ -64,11 +75,15 @@ Deno.serve(async (req) => {
   if (req.method === "GET" && action === "callback") {
     const code      = url.searchParams.get("code");
     const stateRaw  = url.searchParams.get("state") ?? "";
-    // state puede ser "userId:nonce" (nuevo) o "userId" (retrocompat)
-    const userId    = stateRaw.includes(":") ? stateRaw.split(":")[0] : stateRaw;
+    // state firmado: userId.exp.hmac — sin firma válida, cualquiera podía
+    // forjar state=<userId_víctima> y vincular SU cuenta de MP a otro usuario.
+    const [userId, expStr, sig] = stateRaw.split(".");
+    const stateOk = !!(userId && expStr && sig)
+      && Number(expStr) > Date.now()
+      && (await hmacHex(MP_SECRET, `${userId}.${expStr}`)) === sig;
 
-    if (!code || !userId) {
-      return Response.redirect(`${APP_URL}?mp_connect=error`, 302);
+    if (!code || !stateOk) {
+      return Response.redirect(`${APP_URL}?mp_connect=error&reason=state_invalido`, 302);
     }
 
     try {

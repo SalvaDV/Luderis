@@ -38,6 +38,24 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── Rate limit: 40 req / 5 min por usuario (moderación + asistente + alertas)
+  // (fail-open: si el check falla, no bloqueamos el producto)
+  try {
+    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
+    const sub = JSON.parse(atob(pad(jwtToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))).sub ?? "";
+    const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const rl = await fetch(`${SUPA_URL}/rest/v1/rpc/ia_rate_check`, {
+      method: "POST",
+      headers: { "apikey": SERVICE, "Authorization": `Bearer ${SERVICE}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_clave: `ai:${sub}`, p_max: 40, p_ventana_seg: 300 }),
+    });
+    if (rl.ok && (await rl.json()) === false) {
+      return new Response(JSON.stringify({ error: "Demasiadas solicitudes de IA. Esperá unos minutos." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  } catch { /* fail-open */ }
+
   try {
     const body = await req.json().catch(() => ({}));
     const anthropicKey = Deno.env.get("ANTHROPIC_KEY") ?? "";

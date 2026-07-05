@@ -11,7 +11,7 @@ const loadLudyMsgs=()=>{
   return [LUDY_GREETING];
 };
 
-export default function ChatBotWidget(){
+export default function ChatBotWidget({session}){
   const [open,setOpen]=useState(false);
   const [msgs,setMsgs]=useState(loadLudyMsgs);
   // Persistir el chat (sobrevive navegación) pero con TTL: se limpia tras unas horas.
@@ -65,7 +65,7 @@ export default function ChatBotWidget(){
         .filter(m=>!m.action)
         .slice(-10)
         .map(m=>({role:m.from==="user"?"user":"assistant",content:m.text}));
-      const text=await sb.callLudy(history,600).catch(()=>null);
+      const text=await sb.callLudy(history,600,session?.access_token).catch(()=>null);
       if(!text){
         setFailCount(n=>n+1);
         setMsgs(prev=>[...prev,{from:"bot",text:"Lo siento, no pude procesar tu consulta en este momento.",action:true}]);

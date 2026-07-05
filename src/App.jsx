@@ -1028,7 +1028,7 @@ export default function App(){
       {showAdmin&&<React.Suspense fallback={null}><AdminPage session={session} onClose={()=>setShowAdmin(false)} onChatUser={(u)=>{setShowAdmin(false);openChat({autor_email:u.email,titulo:"Mensaje desde Admin",id:"admin_"+u.id});}}/></React.Suspense>}
       {legalTab&&<LegalModal tab={legalTab} onClose={()=>{setLegalTab(null);window.history.replaceState({},"",window.location.pathname);}}/>}
       <ScrollToTopBtn/>
-      {!chatPost&&!detailPost&&!cursoPost&&!showForm&&!notifPanelOpen&&<ChatBotWidget/>}
+      {!chatPost&&!detailPost&&!cursoPost&&!showForm&&!notifPanelOpen&&<ChatBotWidget session={session}/>}
       {!chatPost&&!detailPost&&!cursoPost&&!perfilEmail&&!showForm&&<ScrollTopBtn isMobile={isMobile}/>}
       <ToastContainer/>
       <UpdateBanner/>

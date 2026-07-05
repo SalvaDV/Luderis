@@ -28,7 +28,9 @@ export async function dispararAlertasIA(pub, session){
       frecuencia:pub.frecuencia||"",
     };
 
-    for(const alerta of alertas){
+    // Cap defensivo: cada alerta = 1 llamada a la IA desde el cliente. Con el
+    // rate-limit de ai-proxy (40/5min por usuario), procesar más igual fallaría.
+    for(const alerta of alertas.slice(0,25)){
       try{
         const tipoAlerta=alerta.tipo_alerta||"ambos";
         if(tipoAlerta!=="ambos"&&pubPerfil.tipo!==tipoAlerta)continue;

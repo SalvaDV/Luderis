@@ -222,8 +222,9 @@ function isValidSupabaseJwt(token: string, projectRef: string): boolean {
       payload.ref === projectRef ||
       (typeof payload.iss === "string" && payload.iss.includes(projectRef));
     if (!matchesProject) return false;
-    // Solo acepta role anon o authenticated (bloquea service_role)
-    if (!["anon", "authenticated"].includes(payload.role)) return false;
+    // Solo usuarios con sesión: la anon key es pública (va en el bundle) y
+    // permitía a cualquiera consumir la API de IA sin registrarse.
+    if (payload.role !== "authenticated") return false;
     // No expirado
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
     return true;
@@ -248,6 +249,24 @@ serve(async (req) => {
         status: 401, headers: { ...CORS, "Content-Type": "application/json" },
       });
     }
+
+    // ── Rate limit: 20 mensajes / 5 min por usuario ────────────────────────
+    // (fail-open: si el check falla, no bloqueamos el producto)
+    try {
+      const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
+      const sub = JSON.parse(atob(pad(jwtToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))).sub ?? "";
+      const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const rl = await fetch(`${SUPA_URL}/rest/v1/rpc/ia_rate_check`, {
+        method: "POST",
+        headers: { "apikey": SERVICE, "Authorization": `Bearer ${SERVICE}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_clave: `ludy:${sub}`, p_max: 20, p_ventana_seg: 300 }),
+      });
+      if (rl.ok && (await rl.json()) === false) {
+        return new Response(JSON.stringify({ error: "Demasiados mensajes seguidos. Esperá unos minutos y volvé a intentar." }), {
+          status: 429, headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+    } catch { /* fail-open */ }
 
     // max_tokens del cliente se ignora — siempre usamos el cap del servidor
     const { messages } = await req.json();
