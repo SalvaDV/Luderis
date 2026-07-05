@@ -2187,7 +2187,9 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
                     // Forzar re-render del sidebar
                     try{window.dispatchEvent(new Event("avatar-updated"));}catch{}
                     await sb.updateReseñasNombre(email,newName,session.access_token).catch(()=>{});
-                    await sb.updateMensajesNombre(email,newName,session.access_token).catch(()=>{});
+                    // OJO: NO sincronizar mensajes.de_nombre — guarda EMAILS (el pareo de
+                    // conversaciones filtra por email); pisarlo con el display name corrompía
+                    // los chats (bug reparado en la migración 20260704_mensajes_lockdown).
                     await sb.updatePublicacionesNombre(email,newName,session.access_token).catch(()=>{});
                     setEditingPerfil(false);
                   }catch(e){toast("Error: "+e.message,"error");}

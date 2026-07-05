@@ -114,7 +114,8 @@ const authFetch = async (path: string, opts: RequestInit = {}): Promise<any> => 
     ...opts,
   });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data: any = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
   if (!res.ok) {
     const msg = data.error_description || data.message || data.error || "Error";
     const err: any = new Error(msg);
@@ -196,10 +197,13 @@ export const db = async <T = any>(path: string, method: string = "GET", body: an
     });
     const text = await res.text();
     if (!res.ok) {
-      const err: any = text ? JSON.parse(text) : {};
+      // El error puede NO ser JSON (HTML de un 502/504 de gateway, texto plano):
+      // un JSON.parse sin guarda rompía justo el manejo de error y el retry.
+      let err: any = {};
+      try { err = text ? JSON.parse(text) : {}; } catch { err = { message: text }; }
       if (res.status === 401 || err.message?.includes("JWT") || err.code === "PGRST303" || err.code === "PGRST301")
         throw Object.assign(new Error(err.message || "JWT expired"), { isExpired: true });
-      throw new Error(text);
+      throw new Error(err.message || text || `HTTP ${res.status}`);
     }
     return text ? JSON.parse(text) : [];
   };
@@ -230,8 +234,9 @@ const rpc = async <T = any>(fn: string, params: any, token?: Token): Promise<T> 
     });
     const text = await res.text();
     if (!res.ok) {
-      const err: any = text ? JSON.parse(text) : {};
-      throw new Error(err.message || text);
+      let err: any = {};
+      try { err = text ? JSON.parse(text) : {}; } catch { err = { message: text }; }
+      throw new Error(err.message || text || `HTTP ${res.status}`);
     }
     return text ? JSON.parse(text) : [];
   };
@@ -341,10 +346,9 @@ export const updateReseñasNombre = (autorEmail: string, nuevoNombre: string, to
 export const updatePublicacionesNombre = (autorEmail: string, nuevoNombre: string, token: Token) =>
   db(`publicaciones?autor_email=eq.${encodeURIComponent(autorEmail)}`, "PATCH", { autor_nombre: nuevoNombre }, token);
 
-export const updateMensajesNombre = (email: string, nuevoNombre: string, token: Token) =>
-  Promise.all([
-    db(`mensajes?de_nombre=eq.${encodeURIComponent(email)}`, "PATCH", { de_nombre: nuevoNombre }, token).catch(() => {}),
-  ]);
+// updateMensajesNombre ELIMINADO: mensajes.de_nombre guarda EMAILS (el pareo de
+// conversaciones filtra por email). Pisarlo con el display name corrompía los
+// chats. Además los grants ya no permiten actualizar esa columna.
 
 export const marcarLeidos = (pubId: Id, miEmail: string, token: Token) =>
   db(`mensajes?publicacion_id=eq.${pubId}&para_nombre=eq.${encodeURIComponent(miEmail)}&leido=eq.false`, "PATCH", { leido: true }, token);
@@ -552,13 +556,15 @@ export const callIAChat = async (system: string, messages: any[], maxTokens: num
 };
 
 // Ludy usa su propia edge function — el system prompt vive en el servidor
-export const callLudy = async (messages: any[], maxTokens: number = 600): Promise<string> => {
+export const callLudy = async (messages: any[], maxTokens: number = 600, token?: Token): Promise<string> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ludy-chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      // ludy-chat exige sesión de usuario (la anon key es pública y permitía
+      // consumir la API de IA sin registrarse)
+      "Authorization": `Bearer ${token || SUPABASE_KEY}`,
     },
     body: JSON.stringify({ messages, max_tokens: maxTokens }),
   });
