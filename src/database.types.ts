@@ -1297,6 +1297,24 @@ export type Database = {
           },
         ]
       }
+      ia_rate_limits: {
+        Row: {
+          clave: string
+          contador: number
+          ventana_inicio: string
+        }
+        Insert: {
+          clave: string
+          contador?: number
+          ventana_inicio?: string
+        }
+        Update: {
+          clave?: string
+          contador?: number
+          ventana_inicio?: string
+        }
+        Relationships: []
+      }
       inscripciones: {
         Row: {
           alumno_confirmada: boolean | null
@@ -1842,6 +1860,7 @@ export type Database = {
       }
       pagos: {
         Row: {
+          acreditado_at: string | null
           alumno_email: string | null
           clase_finalizada_at: string | null
           created_at: string | null
@@ -1860,6 +1879,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          acreditado_at?: string | null
           alumno_email?: string | null
           clase_finalizada_at?: string | null
           created_at?: string | null
@@ -1878,6 +1898,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          acreditado_at?: string | null
           alumno_email?: string | null
           clase_finalizada_at?: string | null
           created_at?: string | null
@@ -2405,6 +2426,52 @@ export type Database = {
           },
         ]
       }
+      recordatorios_clase: {
+        Row: {
+          clase_key: string
+          created_at: string
+          fecha: string
+          id: string
+          publicacion_id: string
+        }
+        Insert: {
+          clase_key: string
+          created_at?: string
+          fecha: string
+          id?: string
+          publicacion_id: string
+        }
+        Update: {
+          clase_key?: string
+          created_at?: string
+          fecha?: string
+          id?: string
+          publicacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recordatorios_clase_publicacion_id_fkey"
+            columns: ["publicacion_id"]
+            isOneToOne: false
+            referencedRelation: "publicaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recordatorios_clase_publicacion_id_fkey"
+            columns: ["publicacion_id"]
+            isOneToOne: false
+            referencedRelation: "publicaciones_con_autor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recordatorios_clase_publicacion_id_fkey"
+            columns: ["publicacion_id"]
+            isOneToOne: false
+            referencedRelation: "publicaciones_publicas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referidos: {
         Row: {
           created_at: string | null
@@ -2788,6 +2855,7 @@ export type Database = {
           advertencias: number
           anios_experiencia: number | null
           avatar: string | null
+          avatar_color: string | null
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
@@ -2834,6 +2902,7 @@ export type Database = {
           advertencias?: number
           anios_experiencia?: number | null
           avatar?: string | null
+          avatar_color?: string | null
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
@@ -2880,6 +2949,7 @@ export type Database = {
           advertencias?: number
           anios_experiencia?: number | null
           avatar?: string | null
+          avatar_color?: string | null
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
@@ -3098,6 +3168,7 @@ export type Database = {
       publicaciones_con_autor: {
         Row: {
           activo: boolean | null
+          autor_avatar_color: string | null
           autor_avatar_url: string | null
           autor_display_name: string | null
           autor_email: string | null
@@ -3270,7 +3341,9 @@ export type Database = {
       }
     }
     Functions: {
+      _liberar_hold_pago: { Args: { p_mp_payment_id: string }; Returns: number }
       actualizar_streak: { Args: { p_usuario_id: string }; Returns: number }
+      auto_liberar_inscripciones_vencidas: { Args: never; Returns: Json }
       buscar_publicaciones: {
         Args: {
           p_categoria?: string
@@ -3332,9 +3405,17 @@ export type Database = {
           vistas: number
         }[]
       }
+      cancelar_publicacion_con_reembolso: {
+        Args: { p_motivo?: string; p_pub_id: string }
+        Returns: Json
+      }
       check_alertas_busqueda: { Args: never; Returns: number }
       confirmar_clase: {
         Args: { p_clase_id: string; p_usuario_email: string }
+        Returns: Json
+      }
+      confirmar_recepcion_inscripcion: {
+        Args: { p_inscripcion_id: string }
         Returns: Json
       }
       entregar_evaluacion: {
@@ -3442,6 +3523,11 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_tiempo_respuesta_docente: { Args: { p_email: string }; Returns: Json }
+      ia_rate_check: {
+        Args: { p_clave: string; p_max: number; p_ventana_seg: number }
+        Returns: boolean
+      }
       incrementar_clicks_contacto: {
         Args: { p_publicacion_id: string }
         Returns: undefined
@@ -3462,6 +3548,10 @@ export type Database = {
       recalcular_rating_publicacion: {
         Args: { p_pub_id: string }
         Returns: undefined
+      }
+      reembolsar_inscripcion: {
+        Args: { p_inscripcion_id: string; p_motivo?: string }
+        Returns: Json
       }
       sanitize_eval_content: { Args: { p_content: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
