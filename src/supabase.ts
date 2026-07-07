@@ -369,11 +369,13 @@ export const marcarLeidosDirecto = (miEmail: string, otroEmail: string, token: T
 
 // ── Inscripciones ─────────────────────────────────────────────────────────────
 
+// Se excluyen las canceladas (reembolsadas): no cuentan como inscripción activa
+// en ninguna vista (alumno inscripto, lista del docente, finalizar clase, etc.).
 export const getInscripciones = (pubId: Id, token: Token) =>
-  db(`inscripciones?publicacion_id=eq.${pubId}&order=created_at.desc`, "GET", null, token);
+  db(`inscripciones?publicacion_id=eq.${pubId}&estado=neq.cancelada&order=created_at.desc`, "GET", null, token);
 
 export const getMisInscripciones = (email: string, token: Token) =>
-  db(`inscripciones?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token);
+  db(`inscripciones?alumno_email=eq.${encodeURIComponent(email)}&estado=neq.cancelada&order=created_at.desc`, "GET", null, token);
 
 export const insertInscripcion = (data: Row, token: Token) =>
   db("inscripciones", "POST", data, token, "return=representation");
@@ -676,6 +678,19 @@ export const getClasesRealizadas = (email: string, token: Token) =>
   db(`clases_realizadas?or=(docente_email.eq.${encodeURIComponent(email)},alumno_email.eq.${encodeURIComponent(email)})&order=fecha_clase.desc`, 'GET', null, token);
 export const confirmarClase = (claseId: Id, userEmail: string, token: Token) =>
   rpc('confirmar_clase', { p_clase_id: claseId, p_usuario_email: userEmail }, token);
+
+// ── Escrow unificado (retención → liberación / reembolso al saldo interno) ────
+// El alumno confirma la recepción → libera el pago retenido al docente.
+export const confirmarRecepcionInscripcion = (inscripcionId: Id, token: Token) =>
+  rpc('confirmar_recepcion_inscripcion', { p_inscripcion_id: inscripcionId }, token);
+
+// Reembolsa al saldo del alumno lo que siga retenido y cancela la inscripción.
+export const reembolsarInscripcion = (inscripcionId: Id, motivo: string, token: Token) =>
+  rpc('reembolsar_inscripcion', { p_inscripcion_id: inscripcionId, p_motivo: motivo }, token);
+
+// El docente cancela una publicación → reembolsa a todos los inscriptos.
+export const cancelarPublicacionConReembolso = (pubId: Id, motivo: string, token: Token) =>
+  rpc('cancelar_publicacion_con_reembolso', { p_pub_id: pubId, p_motivo: motivo }, token);
 
 // ── Publicaciones por IDs ─────────────────────────────────────────────────────
 

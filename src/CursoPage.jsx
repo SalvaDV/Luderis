@@ -4261,7 +4261,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const esParticular=post.modo==="particular"||post.modo==="particulares";
   const [tabActivo,setTabActivo]=useState(()=>{if(post._openValidacion)return"aprender";try{const t=sessionStorage.getItem("curso_tab_"+post.id);const validos=["contenido","aprender","agenda","comunidad"];return validos.includes(t)?t:"contenido";}catch{return "contenido";}});
   const setTab=(t)=>{try{sessionStorage.setItem("curso_tab_"+post.id,t);}catch{}if(t==="chat"||t==="comunidad"){setMensajesNuevos(0);try{sessionStorage.setItem("chat_seen_"+post.id,Date.now());}catch{}}setTabActivo(t);};const [nuevoTipo,setNuevoTipo]=useState("video");const [nuevoTitulo,setNuevoTitulo]=useState("");const [nuevoUrl,setNuevoUrl]=useState("");const [nuevoTexto,setNuevoTexto]=useState("");const [savingC,setSavingC]=useState(false);
-  const [calExpanded,setCalExpanded]=useState(false);const [showEditCal,setShowEditCal]=useState(false);const [showFinalizar,setShowFinalizar]=useState(false);const [showDenuncia,setShowDenuncia]=useState(false);const [showCerrarInsc,setShowCerrarInsc]=useState(false);const [localFinalizado,setLocalFinalizado]=useState(!!post.finalizado);const [localCerrado,setLocalCerrado]=useState(!!post.inscripciones_cerradas);
+  const [calExpanded,setCalExpanded]=useState(false);const [showEditCal,setShowEditCal]=useState(false);const [showFinalizar,setShowFinalizar]=useState(false);const [cancelando,setCancelando]=useState(false);const [showDenuncia,setShowDenuncia]=useState(false);const [showCerrarInsc,setShowCerrarInsc]=useState(false);const [localFinalizado,setLocalFinalizado]=useState(!!post.finalizado);const [localCerrado,setLocalCerrado]=useState(!!post.inscripciones_cerradas);
   const [claseActiva,setClaseActiva]=useState(false);const [iniciandoClase,setIniciandoClase]=useState(false);
   const [showJitsiCurso,setShowJitsiCurso]=useState(false);
   const jitsiRoomCurso=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
@@ -4369,15 +4369,27 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     if(!inscripcion)return;
     setInscLoading(true);
     try{
-      // Con pago asociado: el reembolso automático llega con MP-live; mientras
-      // tanto lo gestiona soporte (evita que el alumno pierda plata en silencio).
-      if(inscripcion.pagado_mp){
-        toast("Esta inscripción tiene un pago asociado. Escribinos por el chat de soporte y gestionamos el reembolso.","info",6000);
-        return;
-      }
       // Ventana de arrepentimiento: solo hasta que arranca la primera clase.
       const clases=await sb.getClasesRealizadas(miEmail,session.access_token).catch(()=>[]);
-      if((clases||[]).some(c=>c.publicacion_id===post.id)){
+      const clasesEmpezaron=(clases||[]).some(c=>c.publicacion_id===post.id);
+      if(inscripcion.pagado_mp){
+        // Pago retenido en escrow → reembolso automático al saldo, salvo que las
+        // clases ya hayan empezado (el dinero ya no es reembolsable sin soporte).
+        if(clasesEmpezaron){
+          toast("Las clases ya comenzaron: el reembolso ya no es automático. Escribinos por soporte.","warn",6000);
+          return;
+        }
+        if(!await confirm({msg:"¿Querés desinscribirte? Te reembolsamos lo pagado a tu saldo de Luderis.",confirmLabel:"Desinscribirme y reembolsar",danger:true}))return;
+        const r=await sb.reembolsarInscripcion(inscripcion.id,"Desinscripción del alumno",session.access_token);
+        if(r?.error){toast("No se pudo reembolsar: "+r.error,"error",6000);return;}
+        setInscripcion(null);
+        toast(`Te reembolsamos $${Number(r?.monto_reembolsado||0).toLocaleString("es")} a tu saldo.`,"success",5000);
+        setDesinscMsg(true);
+        setTimeout(()=>onClose(),2200);
+        return;
+      }
+      // Sin pago (inscripción gratuita): se elimina directo.
+      if(clasesEmpezaron){
         toast("Las clases ya comenzaron: ya no es posible desinscribirse.","warn",6000);
         return;
       }
@@ -4389,6 +4401,23 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     }catch(e){
       toast("Error al desinscribirse: "+e.message,"error");
     }finally{setInscLoading(false);}
+  };
+  const cancelarConReembolso=async()=>{
+    const pagas=(inscripciones||[]).filter(i=>i.pagado_mp).length;
+    const msg=pagas>0
+      ? `Vas a cancelar y reembolsar a ${pagas} alumno${pagas!==1?"s":""} que pagaron: el dinero retenido vuelve a su saldo de Luderis. Esta acción no se puede deshacer.`
+      : "Vas a cancelar esta publicación. No hay pagos que reembolsar. Esta acción no se puede deshacer.";
+    if(!await confirm({msg,confirmLabel:"Cancelar y reembolsar",danger:true}))return;
+    setCancelando(true);
+    try{
+      const r=await sb.cancelarPublicacionConReembolso(post.id,"Cancelado por el docente",session.access_token);
+      if(r?.error){toast("No se pudo cancelar: "+r.error,"error",6000);return;}
+      await sb.updatePublicacion(post.id,{finalizado:true},session.access_token).catch(()=>{});
+      setLocalFinalizado(true);
+      toast(`Cancelado. Se reembolsaron $${Number(r?.monto_total||0).toLocaleString("es")} a ${r?.reembolsadas||0} alumno(s).`,"success",6000);
+      setTimeout(()=>onClose(),2500);
+    }catch(e){toast("Error al cancelar: "+e.message,"error");}
+    finally{setCancelando(false);}
   };
   const addContenido=async()=>{
     if(!nuevoTitulo.trim())return;
@@ -4477,6 +4506,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
           </button>}
           {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:C.success+"12",border:`1px solid ${C.success}33`,borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
+          {esMio&&!localFinalizado&&<button onClick={cancelarConReembolso} disabled={cancelando} style={{background:C.danger+"12",border:`1px solid ${C.danger}33`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:cancelando?"default":"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap",opacity:cancelando?0.6:1}}>{cancelando?"Cancelando…":"Cancelar y reembolsar"}</button>}
           {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:11,color:C.info,fontWeight:600,whiteSpace:"nowrap"}}>✓ Clase finalizada</span>}
           {!esMio&&inscripcion&&<button onClick={()=>setShowDenuncia(true)} style={{background:C.danger+"12",border:`1px solid ${C.danger}33`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,whiteSpace:"nowrap"}}>Denunciar</button>}
           {esMio?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Sos el docente</span>:

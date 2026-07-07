@@ -188,52 +188,25 @@ serve(async (req) => {
         if (docente?.id) {
           const comision  = parseFloat((monto * comisionPctValue).toFixed(2));
           const montoNeto = parseFloat((monto - comision).toFixed(2));
-          if (ES_PAQUETE) {
-            // ── RETENCIÓN: registrar como pendiente, NO sumar al saldo ──
-            await supabase.from("billetera_movimientos").insert({
-              usuario_id:       docente.id,
-              tipo:             "cobro_clase",
-              monto:            montoNeto,
-              estado:           "pendiente",          // ← retenido por Luderis
-              descripcion:      `Paquete ${meta.clases_cantidad ?? "N"} clases — alumno: ${meta.alumno_email}`,
-              publicacion_id:   meta.publicacion_id,
-              mp_payment_id:    mpPayId,
-              comision_luderis: comision,
-            });
-            // NOTA: el saldo NO se incrementa aquí.
-            // Se libera clase por clase via RPC liberar_pago_clase()
-
-          } else {
-            // ── ACREDITACIÓN INMEDIATA (cursos, clases sueltas) ──────────
-            // supabase-js NO rechaza en errores de PG (resuelve {error}) y su
-            // builder ni siquiera tiene .catch: el patrón anterior tiraba
-            // TypeError en runtime y el fallback jamás podía ejecutarse
-            // (lo atraparon los tests de contrato antes de que MP fuera live).
-            const { error: saldoErr } = await supabase.rpc("incrementar_saldo", {
-              p_usuario_id: docente.id,
-              p_monto:      montoNeto,
-            });
-            if (saldoErr) {
-              const { data: bilActual } = await supabase
-                .from("billetera").select("saldo")
-                .eq("usuario_id", docente.id).single();
-              await supabase.from("billetera").upsert(
-                { usuario_id: docente.id, saldo: (parseFloat(bilActual?.saldo ?? "0") + montoNeto) },
-                { onConflict: "usuario_id" }
-              );
-            }
-
-            await supabase.from("billetera_movimientos").insert({
-              usuario_id:       docente.id,
-              tipo:             "cobro_clase",
-              monto:            montoNeto,
-              estado:           "liberado",
-              descripcion:      `Pago por clase — alumno: ${meta.alumno_email}`,
-              publicacion_id:   meta.publicacion_id,
-              mp_payment_id:    mpPayId,
-              comision_luderis: comision,
-            });
-          }
+          // ── ESCROW UNIFICADO: SIEMPRE se retiene (pendiente), nunca se acredita
+          //    al instante. Antes los cursos/clases sueltas se acreditaban ya, lo
+          //    que rompía los reembolsos limpios. Ahora se libera al docente cuando:
+          //      • no-paquete: el alumno confirma la recepción (confirmar_recepcion_
+          //        inscripcion) o auto a los 7 días (auto_liberar_inscripciones_vencidas)
+          //      • paquete: al confirmar cada clase (liberar_pago_clase)
+          //    Mientras siga 'pendiente', es reembolsable al saldo del alumno.
+          await supabase.from("billetera_movimientos").insert({
+            usuario_id:       docente.id,
+            tipo:             "cobro_clase",
+            monto:            montoNeto,
+            estado:           "pendiente",          // ← retenido por Luderis
+            descripcion:      ES_PAQUETE
+              ? `Paquete ${meta.clases_cantidad ?? "N"} clases — alumno: ${meta.alumno_email}`
+              : `Pago retenido — alumno: ${meta.alumno_email}`,
+            publicacion_id:   meta.publicacion_id,
+            mp_payment_id:    mpPayId,
+            comision_luderis: comision,
+          });
         }
       }
 

@@ -87,7 +87,7 @@ describe("mp-webhook — gates de entrada", () => {
 });
 
 describe("mp-webhook — la ruta del dinero", () => {
-  test("primera entrega: inscribe, acredita UNA vez al docente (neto = monto - comisión)", async () => {
+  test("primera entrega: inscribe y RETIENE el pago (pendiente), sin acreditar al instante", async () => {
     const router = backendPrimeraEntrega();
     globalThis.fetch = router.fetch;
     const res = await reqWebhook("topic=payment&id=777", await signMpWebhook(SECRET, "777"));
@@ -104,14 +104,12 @@ describe("mp-webhook — la ruta del dinero", () => {
     expect(insc.body.pagado_mp).toBe(true);
     expect(insc.body.mp_payment_id).toBe("777");
 
-    // Acreditación al docente: exactamente UNA, por el neto (1000 - 10% = 900)
-    expect(countCalls(router, "POST", "rpc/incrementar_saldo")).toBe(1);
-    const rpc = router.calls.find((c) => c.url.includes("rpc/incrementar_saldo"));
-    expect(rpc.body).toEqual({ p_usuario_id: "u-docente", p_monto: 900 });
+    // Escrow: NO se acredita al instante (nada de incrementar_saldo)
+    expect(countCalls(router, "POST", "rpc/incrementar_saldo")).toBe(0);
 
-    // Movimiento liberado con la comisión correcta
+    // El pago queda RETENIDO (pendiente), neto = 1000 - 10% = 900, comisión 100
     const mov = router.calls.find((c) => c.method === "POST" && c.url.includes("billetera_movimientos"));
-    expect(mov.body.estado).toBe("liberado");
+    expect(mov.body.estado).toBe("pendiente");
     expect(mov.body.monto).toBe(900);
     expect(mov.body.comision_luderis).toBe(100);
   });

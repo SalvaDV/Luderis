@@ -115,7 +115,11 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
 
   const confirmarClaseAlumno=async(ins)=>{
     try{
-      await sb.updateInscripcion(ins.id,{alumno_confirmada:true,alumno_confirmada_at:new Date().toISOString()},session.access_token);
+      // Confirma la recepción Y libera el pago retenido al docente (atómico en DB).
+      // Antes solo seteaba el flag: la UI prometía "confirmá para liberar el pago"
+      // pero el backend no liberaba nada.
+      const r=await sb.confirmarRecepcionInscripcion(ins.id,session.access_token);
+      if(r?.error){toast("No se pudo confirmar: "+r.error,"error");return;}
       setInscripciones(prev=>prev.map(i=>i.id===ins.id?{...i,alumno_confirmada:true,alumno_confirmada_at:new Date().toISOString()}:i));
     }catch(e){
       logError("confirmarClaseAlumno",e);
