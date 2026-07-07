@@ -1078,7 +1078,7 @@ function BilleteraTab({session}){
       const reqs=[
         sb.db(`billetera?usuario_id=eq.${session.user.id}&select=saldo`,
           "GET",null,session.access_token).then(r=>r?.[0]||{saldo:0}).catch(()=>({saldo:0})),
-        sb.db(`billetera_movimientos?usuario_id=eq.${session.user.id}&order=created_at.desc&limit=20`,
+        sb.db(`billetera_movimientos?usuario_id=eq.${session.user.id}&order=created_at.desc&limit=100`,
           "GET",null,session.access_token).catch(()=>[]),
       ];
       if(esDocente) reqs.push(
@@ -1253,10 +1253,10 @@ function BilleteraTab({session}){
         <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Movimientos recientes</div>
         {loading?<Spinner small/>:movimientos.length===0
           ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"12px 0"}}>Sin movimientos aún.</div>
-          :movimientos.map((m,i)=>{
+          :movimientos.slice(0,20).map((m,i,arr)=>{
             const esIngreso=m.tipo==="recarga"||m.tipo==="reembolso"||m.tipo==="bono";
             return(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<movimientos.length-1?`1px solid ${C.border}`:"none"}}>
+              <div key={m.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
                 <div style={{display:"flex",gap:10,alignItems:"center"}}>
                   {(()=>{const TIcon=TIPO_ICONS[m.tipo]||CreditCard;return<div style={{display:"flex",alignItems:"center",justifyContent:"center",width:32,height:32,borderRadius:8,background:esIngreso?C.success+"18":C.danger+"12",flexShrink:0}}><TIcon size={16} color={esIngreso?C.success:C.danger} strokeWidth={2}/></div>;})()}
                   <div>
@@ -1936,8 +1936,8 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
           {/* Meta: ubicación · publicaciones · reseñas · rating */}
           <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",marginTop:9}}>
             {ubicacionPerfil&&<span style={{...tx("meta"),color:C.muted,display:"inline-flex",alignItems:"center",gap:5}}><MapPin size={14} strokeWidth={2}/>{ubicacionPerfil}</span>}
-            <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{pubs.length}</span> publicaciones</span>
-            <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{reseñas.length}</span> reseñas</span>
+            <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{pubs.length}</span> publicaci{pubs.length!==1?"ones":"ón"}</span>
+            <span style={{...tx("meta"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{reseñas.length}</span> reseña{reseñas.length!==1?"s":""}</span>
             {avg&&<><span style={{width:3,height:3,borderRadius:"50%",background:C.faint||C.border}}/><span style={{...tx("meta"),color:C.warn,fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Star size={14} fill="#F5B301" stroke="#F5B301"/>{avg.toFixed(1)}</span></>}
           </div>
           {/* Acciones (pills) */}
@@ -2266,7 +2266,9 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
           })()}
           {/* Conteo + nueva publicación */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-            <div style={{...tx("body"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{pubs.length}</span> publicación{pubs.length!==1?"es":""} activa{pubs.length!==1?"s":""}</div>
+            {(()=>{const nAct=pubs.filter(p=>p.activo!==false&&!p.finalizado).length;return(
+              <div style={{...tx("body"),color:C.muted}}><span style={{color:C.text,fontWeight:700}}>{nAct}</span> publicaci{nAct!==1?"ones":"ón"} activa{nAct!==1?"s":""}</div>
+            );})()}
             <Btn onClick={onNew} style={{padding:"7px 18px",fontSize:13,borderRadius:20}}>+ Nueva publicación</Btn>
           </div>
           {/* Filtros por tipo */}
