@@ -878,21 +878,21 @@ function PagosTab({session}){
     if(!session?.user?.email)return;
     setLoadingCobros(true);
     Promise.all([
-      sb.getPagosDocenteEscrow(session.user.email,session.access_token),
+      sb.getCobrosDocente(session.user.id,session.access_token),
       sb.getLiquidaciones(session.user.email,session.access_token),
     ]).then(([p,l])=>{setCobros(p||[]);setLiquidaciones(l||[]);}).finally(()=>setLoadingCobros(false));
-  },[session?.user?.email]);// eslint-disable-line
+  },[session?.user?.id]);// eslint-disable-line
 
+  // Estados del ledger interno (billetera_movimientos.estado). El pago se retiene
+  // (pendiente) y se libera al confirmar el alumno o a los 7 días.
   const ESCROW_INFO={
-    pendiente:{label:"Pendiente",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"La clase aún no fue marcada como finalizada"},
-    retenido: {label:"En ventana",color:"#3B82F6",bg:"#3B82F618",Icon:Lock,desc:"Clase finalizada — 72hs de disputa abiertas"},
-    en_disputa:{label:"En disputa",color:"#EF4444",bg:"#EF444418",Icon:AlertTriangle,desc:"Disputa abierta — Luderis está revisando"},
-    liberado:  {label:"Cobrado",color:"#10B981",bg:"#10B98118",Icon:CheckCircle2,desc:"Transferido a tu Mercado Pago"},
-    reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#6B728018",Icon:RefreshCw,desc:"Reembolsado al alumno"},
+    pendiente:{label:"Retenido",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"Se libera cuando el alumno confirma o a los 7 días"},
+    liberado:  {label:"Cobrado",color:"#10B981",bg:"#10B98118",Icon:CheckCircle2,desc:"Acreditado en tu saldo de Luderis"},
+    reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#6B728018",Icon:RefreshCw,desc:"Devuelto al alumno"},
   };
 
-  const totalPendiente=cobros.filter(p=>p.estado_escrow==="pendiente"||p.estado_escrow==="retenido").reduce((a,p)=>a+Number(p.monto||0),0);
-  const totalCobrado=cobros.filter(p=>p.estado_escrow==="liberado").reduce((a,p)=>a+Number(p.monto||0),0);
+  const totalPendiente=cobros.filter(p=>p.estado==="pendiente").reduce((a,p)=>a+Number(p.monto||0),0);
+  const totalCobrado=cobros.filter(p=>p.estado==="liberado").reduce((a,p)=>a+Number(p.monto||0),0);
   const cargar=useCallback(async()=>{
     setLoading(true);
     try{
@@ -995,22 +995,19 @@ function PagosTab({session}){
         ):(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {cobros.slice(0,10).map(p=>{
-              const info=ESCROW_INFO[p.estado_escrow]||ESCROW_INFO.pendiente;
-              const horasRestantes=p.estado_escrow==="retenido"&&p.clase_finalizada_at
-                ?Math.max(0,72-Math.floor((Date.now()-new Date(p.clase_finalizada_at).getTime())/3600000))
-                :null;
+              const info=ESCROW_INFO[p.estado]||ESCROW_INFO.pendiente;
+              const alumno=(p.descripcion||"").split("alumno:")[1]?.trim()||p.descripcion||"—";
               return(
                 <div key={p.id} style={{background:info.bg,border:`1px solid ${info.color}30`,borderRadius:10,padding:"11px 13px",display:"flex",alignItems:"center",gap:12}}>
                   <div style={{flexShrink:0,display:"flex"}}><info.Icon size={18} color={info.color} strokeWidth={1.8}/></div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8}}>
-                      <span style={{fontSize:12,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.alumno_email}</span>
+                      <span style={{fontSize:12,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{alumno}</span>
                       <span style={{fontWeight:700,color:C.text,fontSize:14,flexShrink:0}}>${Number(p.monto||0).toLocaleString("es-AR")}</span>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
                       <span style={{fontSize:11,fontWeight:600,color:info.color,background:info.bg,border:`1px solid ${info.color}40`,borderRadius:20,padding:"1px 8px"}}>{info.label}</span>
-                      {horasRestantes!==null&&<span style={{fontSize:11,color:C.muted}}>{horasRestantes}hs para liberar</span>}
-                      {p.estado_escrow==="liberado"&&p.liberado_at&&<span style={{fontSize:11,color:C.muted}}>el {new Date(p.liberado_at).toLocaleDateString("es-AR",{day:"numeric",month:"short"})}</span>}
+                      {p.estado==="liberado"&&p.created_at&&<span style={{fontSize:11,color:C.muted}}>el {new Date(p.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short"})}</span>}
                     </div>
                   </div>
                 </div>

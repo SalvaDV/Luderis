@@ -945,9 +945,12 @@ export const getVerificacionesPendientes = (token: Token) =>
 export const getPagosDocente = (email: string, token: Token) =>
   db(`pagos?docente_email=eq.${encodeURIComponent(email)}&order=created_at.desc`, "GET", null, token).catch(() => []);
 
-// Pagos con info de escrow para el dashboard del docente
-export const getPagosDocenteEscrow = (email: string, token: Token) =>
-  db(`pagos?docente_email=eq.${encodeURIComponent(email)}&estado=eq.approved&select=id,monto,estado_escrow,clase_finalizada_at,liberado_at,alumno_email,publicacion_id,created_at&order=created_at.desc&limit=50`, "GET", null, token).catch(() => []);
+// Cobros del docente para el dashboard de escrow. La verdad vive en el ledger
+// billetera_movimientos (estado pendiente/liberado/reembolsado), NO en
+// pagos.estado_escrow — ese campo es del modelo MP-Connect (pagar hacia afuera)
+// que el flujo de escrow interno no popula.
+export const getCobrosDocente = (userId: Id, token: Token) =>
+  db(`billetera_movimientos?usuario_id=eq.${userId}&tipo=eq.cobro_clase&order=created_at.desc&limit=50&select=id,monto,estado,created_at,publicacion_id,descripcion`, "GET", null, token).catch(() => []);
 
 // Liquidaciones del docente
 export const getLiquidaciones = (email: string, token: Token) =>
