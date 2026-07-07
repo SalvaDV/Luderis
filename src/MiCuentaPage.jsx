@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, Lock, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck, Mail, Plus } from "lucide-react";
+import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck, Mail, Plus } from "lucide-react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import {

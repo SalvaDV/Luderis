@@ -16,6 +16,8 @@
 .env.production.local
 security.env
 *.env
+# Excepción: la plantilla SIN valores sí se versiona (onboarding)
+!.env.example
 
 # Logs
 npm-debug.log*
