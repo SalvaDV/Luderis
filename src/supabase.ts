@@ -508,6 +508,15 @@ export const getUsuarioByEmail = (email: string, token: Token) =>
   db(`usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre,display_name,bio,ubicacion,avatar_url,avatar_color,banner_url,rol,titulo_profesional,anios_experiencia,metodologia,idiomas,franja_horaria,linkedin_url,sitio_web,onboarding_completado,materias_interes,video_presentacion,disponible_ahora,disponible_hasta,verificado`, "GET", null, token)
     .then((r: any) => r?.[0] || null).catch(() => null);
 
+// Nombres de varios usuarios en UNA sola query (evita el N+1 de resolver nombres
+// email por email). Solo columnas no-PII necesarias para mostrar un nombre.
+export const getUsuariosByEmails = (emails: string[], token: Token) => {
+  const uniq = [...new Set((emails || []).filter(Boolean))];
+  if (!uniq.length) return Promise.resolve([]);
+  const filter = uniq.map(e => `email.eq.${encodeURIComponent(e)}`).join(",");
+  return db(`usuarios?or=(${filter})&select=email,nombre,display_name`, "GET", null, token).catch(() => []);
+};
+
 // ── IA helper — llama a la Supabase Edge Function "ai-proxy" ─────────────────
 
 export const callIA = async (system: string, userMsg: string, maxTokens: number = 600, userToken: string = ""): Promise<string> => {

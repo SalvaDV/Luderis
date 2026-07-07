@@ -67,9 +67,12 @@ export default function ChatsPage({session,onOpenChat,onUnreadChange,isMobile=fa
       // Fetch display names for all "otro" emails
       const otroEmails=[...new Set(Object.values(pubMap).flatMap(g=>Object.values(g.chats).map(c=>c.otro)))];
       const nMap={};
-      await Promise.all(otroEmails.map(async email=>{
-        try{const u=await sb.getUsuarioByEmail(email,session.access_token);nMap[email]=u?.nombre||u?.display_name||email.split("@")[0];}catch{nMap[email]=email.split("@")[0];}
-      }));
+      // Una sola query para todos los nombres (antes: una por email — N+1)
+      try{
+        const us=await sb.getUsuariosByEmails(otroEmails,session.access_token);
+        (us||[]).forEach(u=>{if(u?.email)nMap[u.email]=u.nombre||u.display_name||u.email.split("@")[0];});
+      }catch{}
+      otroEmails.forEach(email=>{if(!nMap[email])nMap[email]=email.split("@")[0];});
       setNombresMap(nMap);
       setGrupos(Object.values(pubMap).sort((a,b)=>new Date(b.lastTime)-new Date(a.lastTime)));
     }).finally(()=>setLoading(false));

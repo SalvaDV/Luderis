@@ -36,6 +36,25 @@ describe("construcción de queries (capa de datos)", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  test("getUsuariosByEmails arma or=(email.eq...) y pide solo columnas de nombre (no PII)", async () => {
+    await sb.getUsuariosByEmails(["a@b.com", "c@d.com"], "tok");
+    expect(lastUrl).toContain("/rest/v1/usuarios");
+    expect(lastUrl).toContain("or=(email.eq.a%40b.com,email.eq.c%40d.com)");
+    expect(lastUrl).toContain("select=email,nombre,display_name");
+    expect(lastUrl).not.toContain("bio"); // no arrastra PII
+  });
+
+  test("getUsuariosByEmails deduplica emails repetidos en una sola cláusula", async () => {
+    await sb.getUsuariosByEmails(["a@b.com", "a@b.com"], "tok");
+    expect(lastUrl).toContain("or=(email.eq.a%40b.com)");
+  });
+
+  test("getUsuariosByEmails no llama a la red con lista vacía", async () => {
+    const r = await sb.getUsuariosByEmails([], "tok");
+    expect(r).toEqual([]);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   test("insertReseña hace POST con body JSON y Prefer representation", async () => {
     await sb.insertReseña({ publicacion_id: 1, estrellas: 5 }, "tok");
     expect(lastOpts.method).toBe("POST");
