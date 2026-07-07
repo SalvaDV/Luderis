@@ -194,6 +194,11 @@ end $$;
 -- ── Grants: helpers/cron cerrados; RPCs de usuario abiertos a authenticated ───
 revoke execute on function public._liberar_hold_pago(text) from public, anon, authenticated;
 revoke execute on function public.auto_liberar_inscripciones_vencidas() from public, anon, authenticated;
+-- Revocar el EXECUTE que Postgres concede a PUBLIC por defecto (la anon key es
+-- pública) antes de conceder solo a authenticated.
+revoke execute on function public.confirmar_recepcion_inscripcion(uuid) from public, anon;
+revoke execute on function public.reembolsar_inscripcion(uuid, text) from public, anon;
+revoke execute on function public.cancelar_publicacion_con_reembolso(uuid, text) from public, anon;
 grant execute on function public.confirmar_recepcion_inscripcion(uuid) to authenticated;
 grant execute on function public.reembolsar_inscripcion(uuid, text) to authenticated;
 grant execute on function public.cancelar_publicacion_con_reembolso(uuid, text) to authenticated;
