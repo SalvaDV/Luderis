@@ -9,6 +9,8 @@ import {
 
 const SECRET = "whsec-test";
 const SB = "http://sb.local";
+// Publicación ficticia que identifica una recarga de saldo (no es un curso).
+const RECARGA_SENTINELA = "00000000-0000-0000-0000-000000000001";
 let handler;
 
 beforeAll(async () => {
@@ -144,13 +146,49 @@ describe("mp-webhook — la ruta del dinero", () => {
     expect(mov.body.monto).toBe(900);
   });
 
-  test("recarga de billetera: no acredita al docente por esa vía", async () => {
-    const router = backendPrimeraEntrega({ meta: { tipo: "recarga_billetera" } });
+  test("recarga de billetera (publicacion_id sentinela): no inscribe ni acredita al docente", async () => {
+    const router = backendPrimeraEntrega({
+      meta: { publicacion_id: RECARGA_SENTINELA, docente_email: null, tipo: "recarga_billetera" },
+    });
     globalThis.fetch = router.fetch;
     const res = await reqWebhook("topic=payment&id=777", await signMpWebhook(SECRET, "777"));
     expect(res.status).toBe(200);
     expect(countCalls(router, "POST", "rpc/incrementar_saldo")).toBe(0);
     expect(countCalls(router, "POST", "billetera_movimientos")).toBe(0);
+    expect(countCalls(router, "POST", "/rest/v1/inscripciones")).toBe(0);
+  });
+
+  // Regresión de seguridad: `tipo` sale del external_reference, que se arma con
+  // datos del cliente. Declarar "recarga_billetera" sobre una publicación real
+  // salteaba la validación de precio en mp-checkout y, acá, dejaba al docente
+  // sin cobrar mientras el alumno igual quedaba inscripto.
+  test("tipo=recarga_billetera sobre una publicación REAL no cuenta como recarga", async () => {
+    const router = backendPrimeraEntrega({ meta: { tipo: "recarga_billetera" } });
+    globalThis.fetch = router.fetch;
+    const res = await reqWebhook("topic=payment&id=777", await signMpWebhook(SECRET, "777"));
+    expect(res.status).toBe(200);
+
+    // El docente cobra igual: se crea el hold retenido por el neto
+    const mov = router.calls.find((c) => c.method === "POST" && c.url.includes("billetera_movimientos"));
+    expect(mov.body.estado).toBe("pendiente");
+    expect(mov.body.monto).toBe(900);
+    expect(countCalls(router, "POST", "/rest/v1/inscripciones")).toBe(1);
+  });
+
+  // Regresión de seguridad: con MP Connect el neto ya viajó directo a la cuenta
+  // del docente. Crear el hold como 'pendiente' hacía que la liberación (o el
+  // cron de 7 días) se lo acreditara una SEGUNDA vez al saldo interno.
+  test("split inmediato (MP Connect): asienta 'liberado', no un hold reembolsable", async () => {
+    const router = backendPrimeraEntrega({ meta: { split_inmediato: true } });
+    globalThis.fetch = router.fetch;
+    const res = await reqWebhook("topic=payment&id=777", await signMpWebhook(SECRET, "777"));
+    expect(res.status).toBe(200);
+
+    const mov = router.calls.find((c) => c.method === "POST" && c.url.includes("billetera_movimientos"));
+    expect(mov.body.estado).toBe("liberado");
+    expect(mov.body.monto).toBe(900);
+    // El saldo interno NO se toca: la plata está en la cuenta de MP del docente
+    expect(countCalls(router, "POST", "rpc/incrementar_saldo")).toBe(0);
   });
 
   test("pago no aprobado (pending): registra el pago pero no inscribe ni acredita", async () => {

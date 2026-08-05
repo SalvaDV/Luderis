@@ -62,6 +62,13 @@ const sendEmail = async (to: string, subject: string, html: string) => {
   });
 };
 
+// Enmascara un email para los logs: los logs del proyecto son consultables y no
+// deberían acumular PII de los usuarios.
+const maskEmail = (e: string | null | undefined): string => {
+  const [u, d] = (e ?? "").split("@");
+  return u ? `${u.slice(0, 2)}***@${d ?? "?"}` : "—";
+};
+
 // ── HTML escape para templates de email ──────────────────────────────────────
 // Previene HTML injection en caso de que un docente ponga tags en el título de su clase.
 // (Los clientes de email no ejecutan JS, pero sí renderizan HTML arbitrario)
@@ -78,7 +85,10 @@ const esc = (s: unknown): string =>
 // forjar conociendo solo el email — el token anterior era btoa(email) y era trivialmente
 // falsificable por cualquiera que conociera el email de un usuario.
 const getUnsubKey = async (): Promise<CryptoKey> => {
-  const secret = Deno.env.get("UNSUB_SECRET") || "luderis-unsub-fallback-v2-change-me";
+  // Sin fallback: un secreto por defecto conocido permite forjar tokens y
+  // desuscribir a cualquier usuario. Preferimos romper ruidosamente.
+  const secret = Deno.env.get("UNSUB_SECRET");
+  if (!secret) throw new Error("UNSUB_SECRET no configurado");
   return crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -137,6 +147,34 @@ Deno.serve(async (req) => {
     }
   }
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  // ── Auth del worker ────────────────────────────────────────────────────────
+  // Todo lo de abajo despacha emails y push a los inscriptos, y vacía/borra la
+  // cola alertas_digest_queue. Se deploya con --no-verify-jwt (lo dispara el
+  // cron), así que sin este gate cualquiera en internet podía POSTear y usar el
+  // worker como mecanismo de envío con la marca de Luderis.
+  // Acepta la service role key o la x-cron-key de config (igual que
+  // recordatorio-clases). Fail-closed: sin secreto configurado, no corre.
+  {
+    const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const bearer  = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    let autorizado = !!SERVICE && bearer === SERVICE;
+
+    if (!autorizado) {
+      const cronKey = req.headers.get("x-cron-key") ?? "";
+      if (cronKey) {
+        const cfg = await supa("config?clave=eq.cron_secret_recordatorios&select=valor");
+        const esperado = Array.isArray(cfg) ? cfg[0]?.valor : null;
+        autorizado = !!esperado && cronKey === esperado;
+      }
+    }
+
+    if (!autorizado) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+  }
 
   try {
     // Calcular ventana de mañana (±30 min para cubrir cualquier hora del día siguiente)
@@ -322,7 +360,7 @@ Deno.serve(async (req) => {
               enviados++;
             }
           } catch (e) {
-            console.error(`Error enviando digest a ${email}:`, e);
+            console.error(`Error enviando digest a ${maskEmail(email)}:`, (e as Error)?.message ?? "sin detalle");
           }
         }
       }

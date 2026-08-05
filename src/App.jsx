@@ -27,11 +27,16 @@ import PushPermissionBanner from "./components/PushPermissionBanner";
 import usePushSubscription from "./hooks/usePushSubscription";
 import ChatBotWidget from "./components/ChatBotWidget";
 import FinalizarClaseModal from "./components/FinalizarClaseModal";
-import { MyPostCard, ContraofertaModal, OfertasRecibidasModal } from "./MyPostsPage";
+// MyPostsPage ya NO se importa acá: App solo lo re-exportaba para MiCuentaPage,
+// y ese import estático lo metía entero en el bundle de entrada aunque App no
+// renderice ninguno de esos componentes. MiCuentaPage (que es lazy) los importa
+// directo de ./MyPostsPage.
 
 // ─── LAZY IMPORTS (páginas y modales que no se necesitan en el primer render) ──
 // ExplorePage: prefetch para que esté listo al hacer login, pero fuera del bundle inicial
-const ExplorePage       = React.lazy(() => import(/* webpackPrefetch: true */ './ExplorePage'));
+// El `webpackPrefetch` que había acá era inerte: es una directiva de webpack y
+// el bundler es Vite. El prefetch real se dispara en idle, más abajo.
+const ExplorePage       = React.lazy(() => import('./ExplorePage'));
 const LandingPage       = React.lazy(() => import('./LandingPage'));
 const AuthScreen        = React.lazy(() => import('./AuthScreen'));
 const TerminosPage      = React.lazy(() => import('./TerminosPage'));
@@ -111,8 +116,7 @@ const PATH_TO_SECTION = Object.fromEntries(
 );
 // Named exports for lazy-loaded modules that need these components
 export { FavBtn, OfertarBtn, ShareBtn, DenunciaModal, PostChatBtn,
-         MyPostCard, OfertasRecibidasModal, FinalizarClaseModal,
-         ContraofertaModal };
+         FinalizarClaseModal };
 
 // ── Pantalla de nueva contraseña (recovery flow desde email) ─────────────────
 function ResetPasswordScreen({ accessToken, onSuccess, onCancel }) {
@@ -368,7 +372,8 @@ export default function App(){
     // Al volver con pago aprobado, abrir la publicación para inscribir
     if(!session)return;
     try{
-      const pubs=await sb.getPublicaciones({},session.access_token);
+      // Traía la tabla entera para encontrar UNA publicación por id.
+      const pubs=await sb.getPublicacionesByIds([pubId],session.access_token);
       const pub=pubs.find(p=>p.id===pubId);
       if(pub){
         trackPurchase(pub);

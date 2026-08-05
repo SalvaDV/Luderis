@@ -508,8 +508,10 @@ function OnboardingModal({session,onClose,onPublicar,upgradeMode}){
         setMatchLoading(true);
         const matchTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),15000));
         try{
-          const pubs=await sb.getPublicaciones({},session.access_token).catch(()=>[]);
-          const candidatos=pubs.filter(p=>p.tipo==="oferta"&&p.activo!==false).slice(0,80).map(p=>({
+          // Se pide solo lo que se va a usar: antes bajaba la tabla entera y
+          // recién después cortaba en 80.
+          const pubs=await sb.getPublicaciones({tipo:"oferta",limite:120},session.access_token).catch(()=>[]);
+          const candidatos=pubs.filter(p=>p.activo!==false).slice(0,80).map(p=>({
             id:p.id,titulo:p.titulo,materia:p.materia,precio:p.precio,modalidad:p.modalidad,descripcion:(p.descripcion||"").slice(0,80)
           }));
           const presupGte={gratis:"0",bajo:"5000",medio:"15000",alto:"999999"}[presupuesto]||"0";

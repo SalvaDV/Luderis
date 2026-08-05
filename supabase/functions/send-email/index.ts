@@ -17,6 +17,13 @@ const CORS = {
 };
 
 // ── Helpers de seguridad ───────────────────────────────────────────────────────
+// Enmascara un email para los logs: los logs del proyecto son consultables y no
+// deberían acumular la lista de destinatarios de cada envío.
+const maskEmail = (e: unknown): string => {
+  const [u, d] = String(e ?? "").split("@");
+  return u ? `${u.slice(0, 2)}***@${d ?? "?"}` : "—";
+};
+
 const esc = (s: unknown): string =>
   String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -652,7 +659,7 @@ Deno.serve(async (req) => {
         pushSent += await tryPush(SUPA_URL, SUPA_KEY, email, pushCfg);
       }
       if (pushSent > 0) {
-        console.log(`Push delivered | template=${template} | to=${targets.join(",")} | sent=${pushSent}`);
+        console.log(`Push delivered | template=${template} | to=${targets.map(maskEmail).join(",")} | sent=${pushSent}`);
         return new Response(
           JSON.stringify({ ok: true, channel: "push", sent: pushSent }),
           { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
@@ -692,7 +699,7 @@ Deno.serve(async (req) => {
       throw new Error(result.message ?? `Resend error ${res.status}`);
     }
 
-    console.log(`Email sent | template=${template} | to=${Array.isArray(to)?to.join(","):to} | id=${result.id}`);
+    console.log(`Email sent | template=${template} | to=${(Array.isArray(to)?to:[to]).map(maskEmail).join(",")} | id=${result.id}`);
 
     return new Response(
       JSON.stringify({ ok: true, channel: "email", id: result.id }),

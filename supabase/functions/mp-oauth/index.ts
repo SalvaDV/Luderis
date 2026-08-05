@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
       });
 
       if (!tokenRes.ok) {
-        console.error("MP token error:", await tokenRes.text());
+        // Solo el status: el cuerpo del endpoint de OAuth de MP puede incluir el
+        // access_token en respuestas de error, y los logs quedan consultables.
+        console.error("MP token error, status:", tokenRes.status);
         return Response.redirect(`${APP_URL}?mp_connect=error`, 302);
       }
 

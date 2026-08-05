@@ -381,25 +381,27 @@ export default function PoliticaDevoluciones() {
 
           {/* ── S6 ── */}
           <Seccion id="s6" titulo="6. Formas de devolución">
-            <P>Las devoluciones aprobadas se realizan siempre por el mismo medio de pago utilizado originalmente:</P>
+            <P>
+              Las devoluciones aprobadas se acreditan como <strong>saldo en tu billetera de Luderis</strong>,
+              de forma inmediata al aprobarse. Ese saldo podés:
+            </P>
             <Ul>
+              <Li>Usarlo para pagar cualquier otra clase o curso dentro de Luderis, sin plazo de vencimiento.</Li>
               <Li>
-                <strong>MercadoPago:</strong> el monto se acredita en el saldo de MercadoPago del Alumno.
-                El tiempo de acreditación depende de MercadoPago y puede tardar entre 2 y 15 días hábiles.
-              </Li>
-              <Li>
-                <strong>Stripe:</strong> el monto se devuelve al método de pago original (tarjeta de crédito/débito).
-                El tiempo de acreditación depende del banco emisor y puede tardar entre 5 y 10 días hábiles.
+                Retirarlo a tu cuenta bancaria o de MercadoPago, solicitando el retiro desde
+                <strong> Mi cuenta → Billetera</strong>. Las solicitudes de retiro se procesan dentro de
+                los 10 días hábiles.
               </Li>
             </Ul>
             <P>
-              Luderis no puede acreditar devoluciones en medios distintos al utilizado para el pago original,
-              ni realizar transferencias bancarias directas como forma de reembolso.
+              El monto acreditado es el <strong>total que pagaste</strong>, incluida la comisión de Luderis:
+              no se descuenta nada del reembolso.
             </P>
             <Badge type="warn">
-              Las comisiones de los procesadores de pago (MercadoPago o Stripe) pueden no ser recuperables
-              dependiendo de la política de cada proveedor. En esos casos, la devolución será por el monto
-              neto recibido por Luderis.
+              Si preferís que la devolución vaya al mismo medio de pago que usaste originalmente
+              (tarjeta o cuenta de MercadoPago) en lugar de a tu saldo, escribinos a
+              contacto@luderis.com.ar y lo gestionamos. En ese caso los plazos dependen del procesador
+              de pago y del banco emisor, y pueden ir de 5 a 15 días hábiles.
             </Badge>
           </Seccion>
 

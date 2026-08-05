@@ -207,72 +207,85 @@ REGLAS DE COMPORTAMIENTO
 
 const MAX_TOKENS_CAP = 600; // nunca dejar que el cliente infle esto
 
-// Verifica que el token es un JWT Supabase válido (anon o usuario) sin llamar a getUser
-// (getUser solo funciona con user session tokens, no con el anon key)
-function isValidSupabaseJwt(token: string, projectRef: string): boolean {
+// Resuelve el usuario del token contra GoTrue, que VERIFICA LA FIRMA.
+// Antes se decodificaba el payload con atob() y se confiaba en `role`/`iss`/`exp`:
+// un token armado a mano con esos campos pasaba el check y consumía la API key de
+// Luderis. Hoy lo tapa el verify_jwt del gateway, pero es una sola capa.
+async function getUsuarioDelToken(
+  token: string, supaUrl: string, apiKey: string,
+): Promise<{ id: string; email: string } | null> {
   try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return false;
-    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
-    const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
-    // El token debe referenciar el proyecto Supabase correcto. Las anon keys
-    // legacy traen iss:"supabase" y el ref en el claim "ref"; los JWT de usuario
-    // traen el ref dentro del iss (https://<ref>.supabase.co/auth/v1).
-    const matchesProject =
-      payload.ref === projectRef ||
-      (typeof payload.iss === "string" && payload.iss.includes(projectRef));
-    if (!matchesProject) return false;
-    // Solo usuarios con sesión: la anon key es pública (va en el bundle) y
-    // permitía a cualquiera consumir la API de IA sin registrarse.
-    if (payload.role !== "authenticated") return false;
-    // No expirado
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
-    return true;
-  } catch { return false; }
+    const res = await fetch(`${supaUrl}/auth/v1/user`, {
+      headers: { "Authorization": `Bearer ${token}`, "apikey": apiKey },
+    });
+    if (!res.ok) return null;
+    const u = await res.json();
+    return u?.id ? { id: u.id, email: u.email ?? "" } : null;
+  } catch { return null; }
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    // ── Verificar que viene un JWT Supabase válido (anon key o user JWT) ──
-    const SUPA_URL   = Deno.env.get("SUPABASE_URL") ?? "";
-    // Extraer el project ref del URL: https://xyzxyz.supabase.co → xyzxyz
-    const projectRef = SUPA_URL.replace(/^https?:\/\//, "").split(".")[0];
+    // ── Verificar el JWT del usuario contra GoTrue ────────────────────────
+    const SUPA_URL = Deno.env.get("SUPABASE_URL") ?? "";
+    const SERVICE  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
     const authHeader = req.headers.get("Authorization") ??
                        req.headers.get("apikey") ?? "";
     const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-    if (!jwtToken || !isValidSupabaseJwt(jwtToken, projectRef)) {
+    const usuario = jwtToken ? await getUsuarioDelToken(jwtToken, SUPA_URL, SERVICE) : null;
+    if (!usuario) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401, headers: { ...CORS, "Content-Type": "application/json" },
       });
     }
 
     // ── Rate limit: 20 mensajes / 5 min por usuario ────────────────────────
-    // (fail-open: si el check falla, no bloqueamos el producto)
+    // Fail-open para no tumbar el chat, pero el fallo se loguea: antes lo tragaba
+    // un `catch {}` mudo y nadie se enteraba de que el límite no estaba corriendo.
     try {
-      const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
-      const sub = JSON.parse(atob(pad(jwtToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))).sub ?? "";
-      const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
       const rl = await fetch(`${SUPA_URL}/rest/v1/rpc/ia_rate_check`, {
         method: "POST",
         headers: { "apikey": SERVICE, "Authorization": `Bearer ${SERVICE}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ p_clave: `ludy:${sub}`, p_max: 20, p_ventana_seg: 300 }),
+        body: JSON.stringify({ p_clave: `ludy:${usuario.id}`, p_max: 20, p_ventana_seg: 300 }),
       });
-      if (rl.ok && (await rl.json()) === false) {
+      if (!rl.ok) {
+        console.error("ludy-chat: ia_rate_check falló, status", rl.status, await rl.text());
+      } else if ((await rl.json()) === false) {
         return new Response(JSON.stringify({ error: "Demasiados mensajes seguidos. Esperá unos minutos y volvé a intentar." }), {
           status: 429, headers: { ...CORS, "Content-Type": "application/json" },
         });
       }
-    } catch { /* fail-open */ }
+    } catch (e) {
+      console.error("ludy-chat: ia_rate_check inalcanzable:", (e as Error).message);
+    }
 
     // max_tokens del cliente se ignora — siempre usamos el cap del servidor
-    const { messages } = await req.json();
+    const body = await req.json().catch(() => ({}));
     const max_tokens = MAX_TOKENS_CAP;
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!Array.isArray(body?.messages)) {
+      return new Response(JSON.stringify({ error: "messages requerido" }), {
+        status: 400, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    // Se acota y normaliza la conversación antes de reenviarla (mismo criterio
+    // que ai-proxy). Sin esto el cliente podía mandar miles de mensajes enormes
+    // y quemar tokens de la key de Luderis en un solo request: `max_tokens`
+    // limita la SALIDA, no la entrada.
+    const messages = body.messages
+      .slice(-20)
+      .map((m: { role?: string; content?: string }) => ({
+        role: m?.role === "assistant" ? "assistant" : "user",
+        content: typeof m?.content === "string" ? m.content.slice(0, 4000) : "",
+      }))
+      .filter((m: { content: string }) => m.content.length > 0);
+
+    if (messages.length === 0) {
       return new Response(JSON.stringify({ error: "messages requerido" }), {
         status: 400, headers: { ...CORS, "Content-Type": "application/json" },
       });

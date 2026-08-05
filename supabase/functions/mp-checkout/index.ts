@@ -50,7 +50,9 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { publicacion_id, titulo, descripcion, precio, modo, cantidad = 1, clases_cantidad, alumno_email, alumno_nombre, docente_email, tipo } = body;
+    // `docente_email` del body se ignora deliberadamente: define a quién se le
+    // acredita la plata, así que sale de la BD (ver `autorEmail` más abajo).
+    const { publicacion_id, titulo, descripcion, precio, modo, cantidad = 1, clases_cantidad, alumno_email, alumno_nombre, tipo } = body;
 
     // El alumno_email del body debe coincidir con el JWT (evita pagar en nombre de otro)
     if (alumno_email && alumno_email !== jwtUser.email) {
@@ -74,8 +76,13 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ── Validar precio contra la BD (excepto recargas de billetera) ─────
-    const ES_RECARGA = tipo === "recarga_billetera" ||
-      publicacion_id === "00000000-0000-0000-0000-000000000001";
+    // El sentinela es la ÚNICA fuente de verdad. `tipo` viene del body: si se
+    // usara acá, mandar tipo="recarga_billetera" con el id de un curso real
+    // saltearía toda la validación de precio de abajo.
+    const ES_RECARGA = publicacion_id === "00000000-0000-0000-0000-000000000001";
+
+    // Autor real de la publicación, leído de la BD.
+    let autorEmail: string | null = null;
 
     if (!ES_RECARGA) {
       // Usar la vista publicaciones_con_autor que une con usuarios y expone autor_email
@@ -134,15 +141,17 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
         );
       }
+
+      autorEmail = pub.autor_email;
     }
 
     // ── Buscar conexión MP del docente (para marketplace split) ─────────
     let mpConexion: { mp_user_id: string } | null = null;
-    if (!ES_RECARGA && docente_email) {
+    if (!ES_RECARGA && autorEmail) {
       const { data } = await supabase
         .from("mp_conexiones")
         .select("mp_user_id")
-        .eq("usuario_email", docente_email)
+        .eq("usuario_email", autorEmail)
         .maybeSingle();
       mpConexion = data ?? null;
     }
@@ -165,7 +174,7 @@ Deno.serve(async (req) => {
       external_reference: JSON.stringify({
         publicacion_id,
         alumno_email,
-        docente_email,
+        docente_email: autorEmail,
         modo,
         tipo,
         clases_cantidad: clases_cantidad ?? null,

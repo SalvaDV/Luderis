@@ -37,7 +37,9 @@ const PAGO = {
 };
 
 // Backend del happy path; `sinLiberarOk:false` hace fallar el UPDATE a liberado
-function backend({ claimGana = true, liberarOk = true, conMp = true } = {}) {
+// `holdYaResuelto` simula que el ledger interno (billetera_movimientos) ya
+// liberó o reembolsó ese mp_payment_id — liberar-pago no debe pagar de nuevo.
+function backend({ claimGana = true, liberarOk = true, conMp = true, holdYaResuelto = null } = {}) {
   const r = makeFetchRouter();
   r.on("PATCH", (u, c) => u.includes("/rest/v1/pagos"), (call) => {
     const b = call.body || {};
@@ -52,6 +54,8 @@ function backend({ claimGana = true, liberarOk = true, conMp = true } = {}) {
       conMp ? pgJson({ mp_user_id: 555, mp_email: "doc@mp.com", mp_access_token: "x" }) : pgNoRows())
     .on("GET", "/rest/v1/usuarios", () => pgJson({ id: "u-docente" }))
     .on("GET", "/rest/v1/config", () => pgJson({ valor: "10" }))
+    .on("GET", "/rest/v1/billetera_movimientos", () =>
+      holdYaResuelto ? pgJson({ id: "bm1", estado: holdYaResuelto }) : pgNoRows())
     .on("POST", "api.mercadopago.com/v1/payments", () => pgJson({ id: 9001, status: "approved" }))
     .on("POST", "/rest/v1/billetera_movimientos", () => pgMinimal(201))
     .on("POST", "/rest/v1/notificaciones", () => pgMinimal(201));
@@ -88,7 +92,8 @@ describe("liberar-pago — escrow", () => {
     expect(transfer.body.collector).toEqual({ id: 555 });
 
     // Movimiento de billetera registrado como liberado
-    const mov = router.calls.find((c) => c.url.includes("billetera_movimientos"));
+    const mov = router.calls.find(
+      (c) => c.method === "POST" && c.url.includes("billetera_movimientos"));
     expect(mov.body.estado).toBe("liberado");
     expect(mov.body.monto).toBe(900);
   });
@@ -100,6 +105,32 @@ describe("liberar-pago — escrow", () => {
     expect(res.status).toBe(409);
     expect(countCalls(router, "POST", "api.mercadopago.com")).toBe(0);
     expect(countCalls(router, "POST", "billetera_movimientos")).toBe(0);
+  });
+
+  // Regresión: `pagos.estado_escrow` y el ledger interno son dos máquinas de
+  // estado distintas. El escrow unificado libera por _liberar_hold_pago sin
+  // tocar estado_escrow, así que resolver una disputa a favor del docente
+  // después de que el alumno confirmó le pagaba por segunda vez.
+  test("el hold ya fue liberado en el ledger interno: 409 y CERO transferencias", async () => {
+    const router = backend({ holdYaResuelto: "liberado" });
+    globalThis.fetch = router.fetch;
+    const res = await reqLiberar({ pago_id: "pg1" });
+    expect(res.status).toBe(409);
+    expect(countCalls(router, "POST", "api.mercadopago.com")).toBe(0);
+    expect(countCalls(router, "POST", "billetera_movimientos")).toBe(0);
+
+    // Y el pago vuelve a "retenido": no queda trabado en "procesando"
+    const rollback = router.calls.find(
+      (c) => c.method === "PATCH" && c.body?.estado_escrow === "retenido");
+    expect(rollback).toBeTruthy();
+  });
+
+  test("el hold ya fue reembolsado al alumno: 409 y CERO transferencias", async () => {
+    const router = backend({ holdYaResuelto: "reembolsado" });
+    globalThis.fetch = router.fetch;
+    const res = await reqLiberar({ pago_id: "pg1" });
+    expect(res.status).toBe(409);
+    expect(countCalls(router, "POST", "api.mercadopago.com")).toBe(0);
   });
 
   test("falla al persistir 'liberado' → rollback a 'retenido' para que el cron reintente", async () => {

@@ -41,9 +41,11 @@ Deno.serve(async (req) => {
 
     // ── Crear Payment Intent ──────────────────────────────────────────────────
     if (action === "create_payment_intent") {
+      // `docente_email` del body se ignora: define a quién se le acredita la
+      // plata, así que sale de la BD (ver `autorEmail`).
       const {
         publicacion_id, titulo, precio, moneda = "usd",
-        alumno_email, alumno_nombre, docente_email,
+        alumno_email, alumno_nombre,
       } = body;
 
       if (!publicacion_id || !precio || !alumno_email) {
@@ -70,6 +72,48 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ── Validar precio y autor contra la BD ─────────────────────────────
+      // Sin esto el cliente fija el monto que quiere y el destinatario de la plata.
+      const { data: pub, error: pubErr } = await supaAuth
+        .from("publicaciones_con_autor")
+        .select("precio, autor_email, activo")
+        .eq("id", publicacion_id)
+        .single();
+
+      if (pubErr && pubErr.code !== "PGRST116") {
+        return new Response(
+          JSON.stringify({ error: "Error al validar publicación" }),
+          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      if (!pub) {
+        return new Response(
+          JSON.stringify({ error: "Publicación no encontrada" }),
+          { status: 404, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      if (pub.activo === false) {
+        return new Response(
+          JSON.stringify({ error: "Esta publicación no está activa" }),
+          { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      // El precio se manda en la moneda de la publicación (ver CursoPage), así
+      // que se compara directo contra el de la BD, con tolerancia de 1 unidad.
+      if (Math.abs(parseFloat(precio) - parseFloat(pub.precio)) > 1) {
+        return new Response(
+          JSON.stringify({ error: "El precio no coincide" }),
+          { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      if (pub.autor_email === alumno_email) {
+        return new Response(
+          JSON.stringify({ error: "No podés pagar tu propia publicación" }),
+          { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      const autorEmail = pub.autor_email;
+
       const amount = Math.round(Number(precio) * 100);
 
       // comision_pct siempre desde DB — el cliente no puede manipularla
@@ -86,7 +130,7 @@ Deno.serve(async (req) => {
           titulo:           titulo?.slice(0, 100) || "",
           alumno_email,
           alumno_nombre:    alumno_nombre || "",
-          docente_email:    docente_email || "",
+          docente_email:    autorEmail || "",
           comision_pct:     String(comision_pct),
           comision_amount:  String(comisionAmount),
         },
@@ -111,6 +155,16 @@ Deno.serve(async (req) => {
       if (!payment_intent_id) throw new Error("Falta payment_intent_id");
 
       const pi = await stripe.paymentIntents.retrieve(payment_intent_id);
+
+      // El intent tiene que ser del que pregunta. Sin esto, cualquier usuario
+      // con sesión consulta un payment_intent_id ajeno y se lleva la metadata
+      // completa (alumno_email, docente_email, título) de transacciones de otros.
+      if (pi.metadata?.alumno_email !== jwtUser.email) {
+        return new Response(
+          JSON.stringify({ error: "No autorizado: el pago no pertenece a esta sesión" }),
+          { status: 403, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
 
       return new Response(
         JSON.stringify({

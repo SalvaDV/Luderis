@@ -30,7 +30,7 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
           <img src="/logo.png" alt="Luderis" style={{width:30,height:30,objectFit:"contain",borderRadius:8}}/>
           <span style={{fontSize:19,fontWeight:800,color:C.text,letterSpacing:"-.02em",whiteSpace:"nowrap",fontFamily:FONT_DISPLAY}}>Luderis</span>
         </button>
-        {mobile&&<button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer",padding:2}}>×</button>}
+        {mobile&&<button onClick={onClose} aria-label="Cerrar menú" style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer",padding:2}}>×</button>}
       </div>
 
       {/* + Publicar (arriba, como el diseño) */}

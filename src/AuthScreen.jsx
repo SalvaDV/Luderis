@@ -43,7 +43,11 @@ function AuthScreen({onLogin}){
   const handle=async()=>{
     setErr("");setOk("");if(!email){setErr("Ingresá tu email");return;}
     if(mode!=="forgot"&&!pass){setErr("Ingresá contraseña");return;}
-    if(mode==="register"&&pass.length<6){setErr("La contraseña debe tener al menos 6 caracteres");return;}
+    // El medidor `passStrength` era puramente decorativo: no bloqueaba el envío,
+    // así que se podían registrar cuentas con "123456". Hay dinero en juego
+    // (escrow y retiros), así que se exige largo mínimo y algo de variedad.
+    if(mode==="register"&&pass.length<8){setErr("La contraseña debe tener al menos 8 caracteres");return;}
+    if(mode==="register"&&passStrength(pass)<2){setErr("La contraseña es muy débil. Agregá mayúsculas, números o símbolos.");return;}
     if(mode==="register"&&pass!==pass2){setErr("Las contraseñas no coinciden");return;}
     if(mode==="register"&&!aceptoTerminos){setErr("Debés aceptar los Términos y Condiciones");return;}
     setLoading(true);

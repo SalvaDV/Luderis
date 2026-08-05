@@ -13,9 +13,8 @@ export default function FinalizarClaseModal({post,session,onClose,onFinalizado})
     return()=>{mounted=false;};
   },[post.id,session.access_token]);// eslint-disable-line
   const finalizar=async()=>{setSaving(true);try{
-    const ahora=new Date().toISOString();
     await sb.updatePublicacion(post.id,{finalizado:true},session.access_token);
-    await Promise.all(inscripciones.map(ins=>sb.updateInscripcion(ins.id,{clase_finalizada:true,fecha_finalizacion:ahora},session.access_token)));
+    await sb.finalizarClasePublicacion(post.id,session.access_token);
     await Promise.all(inscripciones.map(ins=>sb.insertNotificacion({
       usuario_id:ins.alumno_id||null,
       alumno_email:ins.alumno_email,
