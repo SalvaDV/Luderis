@@ -20,6 +20,37 @@ atajo de admin solo en dev, `react-router-dom` a 7.18.2, 4 deps muertas fuera.
 Se creó `supabase/functions/stripe-webhook/` (no existía) y el cliente dejó de
 insertar la inscripción.
 
+### Validación de las migraciones (2026-08-04)
+
+**El branching de Supabase requiere plan Pro** y el proyecto está en Free (mismo
+motivo por el que está deshabilitada la protección de contraseñas filtradas). El
+stack local tampoco corre: hay CLI de Supabase pero no Docker.
+
+Se validaron entonces contra producción **dentro de una transacción revertida**
+(`begin; … rollback;`, con la semántica de rollback verificada primero con una
+tabla de prueba). Nada persistió: al terminar, producción sigue con la policy
+vieja `inscripciones update own or owner`, sin las RPCs nuevas y sin la columna
+`monto_liberado`.
+
+Las 4 migraciones aplican sin errores. Resultados funcionales:
+
+| Prueba | Resultado |
+|---|---|
+| Alumno se inscribe por RPC `inscribirse()` | ✅ devuelve id |
+| **C1** — alumno escribe `mp_payment_id` por PATCH | ✅ `permission denied` |
+| **C3** — alumno se declara `pagado_mp` | ✅ `permission denied` |
+| **C2** — docente escribe `alumno_confirmada` de su alumno | ✅ `permission denied` |
+| Alumno confirma lo suyo (flujo legítimo) | ✅ permitido |
+| Docente finaliza por RPC | ✅ `{ok:true, finalizadas:1}` |
+| No-autor intenta finalizar | ✅ `{error:"No autorizado"}` |
+| `perf_rls_e_indices` | ✅ 113 policies reescritas, 0 sin envolver |
+| **A3** — `liberar_pago_clase` llamada dos veces por la misma clase | ✅ 2ª devuelve `ya_liberado`, no acredita |
+| Prorrateo de paquete (hold 900 / 4 clases) | ✅ 225 por clase (antes usaba `clases_totales` como monto) |
+| Hold tras 2 de 4 clases | ✅ queda `pendiente` con 450 liberados (antes se cerraba entero y varaba el resto) |
+| Saldo del docente tras 3 llamadas (una repetida) | ✅ 450 = 2 × 225, sin doble acreditación |
+
+---
+
 **Escrito pero SIN APLICAR** — 4 migraciones en `supabase/migrations/20260804_*`:
 `lockdown_inscripciones` (C1, C2, C3), `fix_liberar_pago_clase` (A3),
 `hardening_policies` (F1, A2, M6, M7, A5, CHECK de estado_escrow),
