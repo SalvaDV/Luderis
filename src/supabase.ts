@@ -476,8 +476,24 @@ export const getNotificaciones = (email: string, token: Token) =>
 export const getTodasNotificaciones = (email: string, token: Token) =>
   db(`notificaciones?alumno_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=60`, "GET", null, token);
 
+// Pasa por la RPC `notificar()`, que valida server-side que exista relación real
+// entre quien notifica y el destinatario. Antes era un INSERT directo con una
+// policy que solo exigía estar logueado: cualquiera podía mandarle a cualquiera
+// un aviso con pinta de oficial ("tu retiro fue procesado") y un link propio.
+// Se conserva la firma para no tocar los 22 call-sites; `usuario_id` se ignora
+// porque la RPC lo resuelve desde el email, que es más confiable.
 export const insertNotificacion = (data: Row, token: Token) =>
-  db("notificaciones", "POST", data, token, "return=minimal");
+  db("rpc/notificar", "POST", {
+    p_email:      data.alumno_email,
+    p_tipo:       data.tipo,
+    p_pub_id:     data.publicacion_id ?? null,
+    p_pub_titulo: data.pub_titulo ?? null,
+    p_accion_url: data.accion_url ?? null,
+  }, token);
+
+// No se expone un INSERT directo a propósito: sería un bypass de la validación
+// de relación. El admin también pasa por `notificar()`, que lo contempla
+// chequeando `usuarios.rol` contra la DB.
 
 export const marcarNotifLeida = (id: Id, token: Token) =>
   db(`notificaciones?id=eq.${id}`, "PATCH", { leida: true }, token);
