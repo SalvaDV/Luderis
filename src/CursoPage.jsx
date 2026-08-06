@@ -5148,6 +5148,11 @@ function InscripcionModal({post,session,onClose,onDone}){
   // ── Selección unificada: qué comprar ──────────────────────────────────────
   // opcion: null | "clase" | "paquete_N" | "prueba"
   const [opcion, setOpcion] = useState(null);
+  // La publicación define si cobra por hora o por clase (precio_tipo). Antes la
+  // UI decía "1 clase" siempre, aunque el precio estuviera publicado por hora:
+  // el alumno creía comprar la clase entera y en realidad pagaba una hora.
+  const unidadLabel  = post.precio_tipo==="hora" ? "hora"  : "clase";
+  const unidadPlural = post.precio_tipo==="hora" ? "horas" : "clases";
 
   // Derivar paquete elegido y precio efectivo desde opcion
   const paqueteElegido = React.useMemo(()=>{
@@ -5186,7 +5191,7 @@ function InscripcionModal({post,session,onClose,onDone}){
       return pp>0?`${mon} $${pp.toLocaleString("es-AR")} (prueba)`:"Gratis (prueba)";
     }
     if(paqueteElegido){
-      return `${mon} $${mpPrecio.toLocaleString("es-AR")} (${paqueteElegido.clases} clases)`;
+      return `${mon} $${mpPrecio.toLocaleString("es-AR")} (${paqueteElegido.clases} ${unidadPlural})`;
     }
     return tienePrecio?`${mon} $${precioBase.toLocaleString("es-AR")}`:"Gratis";
   },[opcion,esPrueba,paqueteElegido,mpPrecio,precioBase,tienePrecio,post.moneda,post.precio_prueba]);
@@ -5234,7 +5239,7 @@ function InscripcionModal({post,session,onClose,onDone}){
           {opcion&&(
             <div style={{background:C.bg,borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{color:C.muted,fontSize:13}}>
-                {esPrueba?"Clase de prueba":paqueteElegido?`${paqueteElegido.nombre||paqueteElegido.clases+" clases"}`:"1 clase"}
+                {esPrueba?`${unidadLabel} de prueba`:paqueteElegido?`${paqueteElegido.nombre||paqueteElegido.clases+" "+unidadPlural}`:`1 ${unidadLabel}`}
               </span>
               <span style={{color:C.accent,fontWeight:800,fontSize:16}}>{precioLabel}</span>
             </div>
@@ -5252,7 +5257,7 @@ function InscripcionModal({post,session,onClose,onDone}){
                 <button onClick={()=>setOpcion("clase")}
                   style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderRadius:10,border:`2px solid ${opcion==="clase"?C.accent:C.border}`,background:opcion==="clase"?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,transition:"all .15s",textAlign:"left"}}>
                   <div>
-                    <div style={{fontSize:13,fontWeight:700,color:opcion==="clase"?C.accent:C.text}}>1 clase</div>
+                    <div style={{fontSize:13,fontWeight:700,color:opcion==="clase"?C.accent:C.text}}>1 {unidadLabel}</div>
                     <div style={{fontSize:11,color:C.muted}}>Precio estándar</div>
                   </div>
                   <div style={{fontWeight:800,fontSize:14,color:opcion==="clase"?C.accent:C.text}}>
@@ -5273,10 +5278,10 @@ function InscripcionModal({post,session,onClose,onDone}){
                       style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderRadius:10,border:`2px solid ${activo?C.success:C.border}`,background:activo?C.success+"12":C.bg,cursor:"pointer",fontFamily:FONT,transition:"all .15s",textAlign:"left"}}>
                       <div>
                         <div style={{fontSize:13,fontWeight:700,color:activo?C.success:C.text}}>
-                          {pq.nombre||`${pq.clases} clases`}
+                          {pq.nombre||`${pq.clases} ${unidadPlural}`}
                           {desc>0&&<span style={{marginLeft:7,fontSize:10,background:C.success+"25",color:C.successText,borderRadius:20,padding:"2px 7px",fontWeight:700}}>-{desc}%</span>}
                         </div>
-                        <div style={{fontSize:11,color:C.muted}}>${porClase.toLocaleString("es-AR")}/clase</div>
+                        <div style={{fontSize:11,color:C.muted}}>${porClase.toLocaleString("es-AR")}/{unidadLabel}</div>
                       </div>
                       <div style={{textAlign:"right"}}>
                         <div style={{fontWeight:800,fontSize:14,color:activo?C.success:C.text}}>{post.moneda||"ARS"} ${total.toLocaleString("es-AR")}</div>
@@ -5351,7 +5356,12 @@ function InscripcionModal({post,session,onClose,onDone}){
                   )}
                 </>
               )}
-              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} clases`:esPrueba?"Clase de prueba":null} tipoPago={paqueteElegido?"paquete_clase":esPrueba?"prueba":"clase"} clasesQty={paqueteElegido?paqueteElegido.clases:null}/>}
+              {/* Toda compra viaja como paquete, incluida la de 1 unidad: así la
+                  inscripción queda con clases_totales/clases_restantes y el
+                  escrow puede prorratear y descontar por clase confirmada.
+                  Antes "1 clase" no mandaba clases_cantidad, así que la
+                  inscripción no tenía contador y el acceso quedaba sin límite. */}
+              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} ${unidadPlural}`:esPrueba?`${unidadLabel} de prueba`:null} tipoPago={esPrueba?"prueba":"paquete_clase"} clasesQty={esPrueba?null:(paqueteElegido?paqueteElegido.clases:1)}/>}
               {metodo==="stripe"&&<StripeCheckoutBtn post={post} session={session} onDone={onDone} onClose={onClose}/>}
               {/* Opción temporal: inscribirse y coordinar el pago directamente con el docente */}
               {!metodo&&(tienePrecio||esPrueba)&&(

@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       // Usar la vista publicaciones_con_autor que une con usuarios y expone autor_email
       const { data: pub, error: pubErr } = await supabase
         .from("publicaciones_con_autor")
-        .select("precio, autor_email, activo")
+        .select("precio, autor_email, activo, paquetes")
         .eq("id", publicacion_id)
         .single();
 
@@ -122,11 +122,44 @@ Deno.serve(async (req) => {
       // Para paquetes: precio enviado es el total del paquete (ya calculado en frontend)
       const precioReal = parseFloat(pub.precio);
       const esPaquete = tipo === "paquete_clase" && clases_cantidad;
-      // Paquetes: validar que precio/clase esté dentro de rango razonable del precio base
       const precioCliente = esPaquete
         ? parseFloat(precio) // precio total del paquete ya calculado
         : parseFloat(precio) * Number(cantidad);
-      const precioEsperado = esPaquete ? precioReal * Number(clases_cantidad) : precioReal * Number(cantidad);
+
+      // El esperado de un paquete sale de la definición del propio anuncio, no
+      // de precio × unidades: los paquetes pueden tener descuento (o un
+      // precio_total fijo) y la fórmula vieja los rechazaba a todos. Con el
+      // cobro por unidades, la compra de 1 unidad también viaja como paquete y
+      // cae en el fallback de abajo.
+      let precioEsperado: number;
+      if (esPaquete) {
+        const unidades = Number(clases_cantidad);
+        let paqDef: { clases?: number; descuento?: number; precio_total?: number } | null = null;
+        try {
+          const lista = JSON.parse(pub.paquetes ?? "[]");
+          paqDef = Array.isArray(lista)
+            ? lista.find((p) => Number(p?.clases) === unidades) ?? null
+            : null;
+        } catch { /* sin paquetes definidos */ }
+
+        if (paqDef) {
+          const total = Number(paqDef.precio_total) || 0;
+          const desc  = Number(paqDef.descuento) || 0;
+          precioEsperado = total > 0
+            ? total
+            : Math.round(precioReal * unidades * (1 - desc / 100));
+        } else if (unidades === 1) {
+          precioEsperado = precioReal;            // compra de una sola unidad
+        } else {
+          return new Response(
+            JSON.stringify({ error: "El paquete elegido no existe en esta publicación" }),
+            { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        precioEsperado = precioReal * Number(cantidad);
+      }
+
       if (Math.abs(precioCliente - precioEsperado) > 1) {
         return new Response(
           JSON.stringify({ error: "El precio no coincide", precio_real: precioReal }),
