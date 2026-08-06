@@ -702,6 +702,11 @@ function ClasesTab({session,misPubs}){
   const [clases,setClases]=useState([]);
   const [loading,setLoading]=useState(true);
   const [confirmando,setConfirmando]=useState(null);
+  // Objeción de horas (lado alumno) / aceptación (lado docente)
+  const [objAbierta,setObjAbierta]=useState({});
+  const [objHoras,setObjHoras]=useState({});
+  const [objMotivo,setObjMotivo]=useState({});
+  const [objetando,setObjetando]=useState(null);
   const [liberando,setLiberando]=useState(null);
   const [liberados,setLiberados]=useState({});// claseId → true
   const [saving,setSaving]=useState(false);
@@ -721,10 +726,37 @@ function ClasesTab({session,misPubs}){
   const confirmar=async(clase)=>{
     setConfirmando(clase.id);
     try{
-      await sb.confirmarClase(clase.id,miEmail,session.access_token);
+      const r=await sb.confirmarClase(clase.id,miEmail,session.access_token);
+      if(r?.error){toast(r.error,"error");return;}
       await cargar();
-      toast("Clase confirmada","success");
+      toast(r?.monto_liberado>0?"Horas confirmadas. Se liberó el pago al docente.":"Clase confirmada","success");
     }catch(e){toast("Error: "+e.message,"error");}finally{setConfirmando(null);}
+  };
+
+  // El alumno dice cuántas horas fueron en realidad: congela el cobro hasta acordar.
+  const objetar=async(clase)=>{
+    const hs=Number(objHoras[clase.id]);
+    if(!(hs>=0)){toast("Poné cuántas horas fueron","error");return;}
+    if(hs>(clase.duracion_min||0)/60){toast("No podés declarar más horas que el docente","error");return;}
+    setObjetando(clase.id);
+    try{
+      const r=await sb.objetarHorasClase(clase.id,hs,objMotivo[clase.id]||null,session.access_token);
+      if(r?.error){toast(r.error,"error");return;}
+      setObjAbierta(prev=>({...prev,[clase.id]:false}));
+      await cargar();
+      toast("Objeción enviada. El pago queda frenado hasta que se acuerden las horas.","success",4500);
+    }catch(e){toast("Error: "+e.message,"error");}finally{setObjetando(null);}
+  };
+
+  // El docente acepta el número del alumno → se liquida por esas horas.
+  const aceptarObjecion=async(clase)=>{
+    setObjetando(clase.id);
+    try{
+      const r=await sb.aceptarObjecionClase(clase.id,session.access_token);
+      if(r?.error){toast(r.error,"error");return;}
+      await cargar();
+      toast("Aceptaste las horas del alumno. Se liberó el pago correspondiente.","success",4500);
+    }catch(e){toast("Error: "+e.message,"error");}finally{setObjetando(null);}
   };
 
   // registrar(): eliminada junto con el formulario manual. El alta de clases
@@ -767,6 +799,8 @@ function ClasesTab({session,misPubs}){
             const contraparte=soyDocente?c.alumno_email:c.docente_email;
             const yaConfirme=soyDocente?c.confirmado_docente:c.confirmado_alumno;
             const ambasConfirmaron=c.confirmado_docente&&c.confirmado_alumno;
+            // Objeción abierta: el cobro está congelado hasta que haya acuerdo.
+            const objetada=!!c.objetada_at;
             return(
               <div key={c.id} style={{background:C.surface,border:`1px solid ${ambasConfirmaron?C.success+"44":C.border}`,borderLeft:`3px solid ${ambasConfirmaron?C.success:accentFor("cursos").solid}`,borderRadius:14,padding:16,boxShadow:C.shadow}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
@@ -777,20 +811,76 @@ function ClasesTab({session,misPubs}){
                     {c.publicacion_id&&<div style={{fontSize:12,color:C.accent,marginBottom:4,display:"flex",alignItems:"center",gap:3}}><Bookmark size={11} strokeWidth={2}/>Publicación vinculada</div>}
                     <div style={{fontSize:12,color:C.muted,display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
                       <Clock size={10} strokeWidth={2}/>{new Date(c.fecha_clase).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}
-                      {c.duracion_min&&<span>· {c.duracion_min} min</span>}
+                      {c.duracion_min>0&&<span>· <strong style={{color:C.text}}>{(c.duracion_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h</strong> declaradas</span>}
                     </div>
+                    {objetada&&(
+                      <div style={{marginTop:6,fontSize:12,color:C.warn,display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                        <AlertTriangle size={11} strokeWidth={2}/>
+                        El alumno dice que fueron <strong>{(c.duracion_objetada_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h</strong>
+                        {c.objetada_motivo&&<span style={{color:C.muted,fontStyle:"italic"}}>— “{c.objetada_motivo}”</span>}
+                      </div>
+                    )}
                     {c.notas&&<div style={{fontSize:12,color:C.muted,marginTop:4,fontStyle:"italic"}}>{c.notas}</div>}
+                    {/* Formulario de objeción (alumno) */}
+                    {objAbierta[c.id]&&!objetada&&(
+                      <div style={{marginTop:10,padding:12,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10}}>
+                        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>¿Cuántas horas te dio?</div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                          <input type="number" min="0" step="0.5" inputMode="decimal" aria-label="Horas reales"
+                            max={(c.duracion_min||0)/60}
+                            value={objHoras[c.id]??""} placeholder="0"
+                            onChange={e=>setObjHoras(p=>({...p,[c.id]:e.target.value}))}
+                            style={{width:80,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",color:C.text,fontSize:13,fontFamily:FONT,outline:"none",textAlign:"center"}}/>
+                          <input type="text" aria-label="Motivo (opcional)" placeholder="Motivo (opcional)"
+                            value={objMotivo[c.id]??""}
+                            onChange={e=>setObjMotivo(p=>({...p,[c.id]:e.target.value}))}
+                            style={{flex:1,minWidth:140,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",color:C.text,fontSize:13,fontFamily:FONT,outline:"none"}}/>
+                        </div>
+                        <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                          <button onClick={()=>objetar(c)} disabled={objetando===c.id}
+                            style={{background:C.warn,border:"none",borderRadius:20,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,opacity:objetando===c.id?.6:1}}>
+                            {objetando===c.id?"Enviando…":"Enviar objeción"}
+                          </button>
+                          <button onClick={()=>setObjAbierta(p=>({...p,[c.id]:false}))}
+                            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>
+                            Cancelar
+                          </button>
+                        </div>
+                        <div style={{fontSize:11,color:C.muted,marginTop:8,lineHeight:1.5}}>
+                          El pago queda frenado hasta que el docente acepte tus horas o lo resuelva un admin.
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
-                    {ambasConfirmaron?(
+                    {objetada?(
+                      <span style={{fontSize:11,background:C.warn+"18",color:C.warn,border:`1px solid ${C.warn}44`,borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><AlertTriangle size={10} strokeWidth={2}/>Horas en disputa</span>
+                    ):ambasConfirmaron?(
                       <span style={{fontSize:11,background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"3px 10px",fontWeight:700}}>✓ Confirmada</span>
                     ):(
                       <span style={{fontSize:11,background:"#F59E0B12",color:C.warn,border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2}/>Pendiente confirmación</span>
                     )}
-                    {!yaConfirme&&!ambasConfirmaron&&(
+                    {/* Objetada: el docente puede aceptar el número del alumno */}
+                    {objetada&&soyDocente&&(
+                      <button onClick={()=>aceptarObjecion(c)} disabled={objetando===c.id}
+                        style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:objetando===c.id?0.5:1}}>
+                        {objetando===c.id?"...":`Aceptar ${(c.duracion_objetada_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h`}
+                      </button>
+                    )}
+                    {objetada&&!soyDocente&&(
+                      <span style={{fontSize:11,color:C.muted,textAlign:"right",maxWidth:170}}>Esperando que el docente acepte tus horas</span>
+                    )}
+                    {!objetada&&!yaConfirme&&!ambasConfirmaron&&(
                       <button onClick={()=>confirmar(c)} disabled={confirmando===c.id}
                         style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:confirmando===c.id?0.5:1}}>
-                        {confirmando===c.id?"...":"✓ Confirmar que se realizó"}
+                        {confirmando===c.id?"...":soyDocente?"✓ Confirmar que se realizó":`✓ Aprobar ${(c.duracion_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h`}
+                      </button>
+                    )}
+                    {/* Sólo el alumno objeta las horas declaradas */}
+                    {!objetada&&!yaConfirme&&!ambasConfirmaron&&!soyDocente&&!objAbierta[c.id]&&(
+                      <button onClick={()=>setObjAbierta(p=>({...p,[c.id]:true}))}
+                        style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT}}>
+                        Fueron menos horas
                       </button>
                     )}
                     {ambasConfirmaron&&(
