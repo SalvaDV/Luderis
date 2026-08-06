@@ -5153,6 +5153,11 @@ function InscripcionModal({post,session,onClose,onDone}){
   // el alumno creía comprar la clase entera y en realidad pagaba una hora.
   const unidadLabel  = post.precio_tipo==="hora" ? "hora"  : "clase";
   const unidadPlural = post.precio_tipo==="hora" ? "horas" : "clases";
+  // Cuántas unidades compra el alumno cuando no elige un paquete armado. Antes
+  // la única opción era 1: si el docente no había definido paquetes, se pagaba
+  // una sola hora y el resto quedaba sin cobrar.
+  const [unidades, setUnidades] = useState(1);
+  const MAX_UNIDADES = 40;
 
   // Derivar paquete elegido y precio efectivo desde opcion
   const paqueteElegido = React.useMemo(()=>{
@@ -5176,8 +5181,8 @@ function InscripcionModal({post,session,onClose,onDone}){
       if(desc>0)return Math.round(precioBase*(paqueteElegido.clases||1)*(1-desc/100));
       return precioBase*(paqueteElegido.clases||1);
     }
-    return precioBase;
-  },[esPrueba,paqueteElegido,precioBase,post.precio_prueba]);
+    return precioBase*unidades;
+  },[esPrueba,paqueteElegido,precioBase,post.precio_prueba,unidades]);
 
   const mpCantidad = 1; // siempre 1 — el precio ya incluye todo
 
@@ -5193,8 +5198,8 @@ function InscripcionModal({post,session,onClose,onDone}){
     if(paqueteElegido){
       return `${mon} $${mpPrecio.toLocaleString("es-AR")} (${paqueteElegido.clases} ${unidadPlural})`;
     }
-    return tienePrecio?`${mon} $${precioBase.toLocaleString("es-AR")}`:"Gratis";
-  },[opcion,esPrueba,paqueteElegido,mpPrecio,precioBase,tienePrecio,post.moneda,post.precio_prueba]);
+    return tienePrecio?`${mon} $${mpPrecio.toLocaleString("es-AR")} (${unidades} ${unidades===1?unidadLabel:unidadPlural})`:"Gratis";
+  },[opcion,esPrueba,paqueteElegido,mpPrecio,precioBase,tienePrecio,post.moneda,post.precio_prueba,unidades,unidadLabel,unidadPlural]);
 
   // Ir a pago solo si hay precio; si es gratis inscribir directo
   const continuarAlPago = () => {
@@ -5253,17 +5258,36 @@ function InscripcionModal({post,session,onClose,onDone}){
             <>
               <div style={{display:"flex",flexDirection:"column",gap:7}}>
 
-                {/* 1 clase */}
-                <button onClick={()=>setOpcion("clase")}
-                  style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderRadius:10,border:`2px solid ${opcion==="clase"?C.accent:C.border}`,background:opcion==="clase"?C.accentDim:C.bg,cursor:"pointer",fontFamily:FONT,transition:"all .15s",textAlign:"left"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:opcion==="clase"?C.accent:C.text}}>1 {unidadLabel}</div>
-                    <div style={{fontSize:11,color:C.muted}}>Precio estándar</div>
-                  </div>
-                  <div style={{fontWeight:800,fontSize:14,color:opcion==="clase"?C.accent:C.text}}>
-                    {tienePrecio?`${post.moneda||"ARS"} $${precioBase.toLocaleString("es-AR")}`:"Gratis"}
-                  </div>
-                </button>
+                {/* Cantidad de unidades sueltas (sin paquete armado) */}
+                <div
+                  style={{padding:"12px 14px",borderRadius:10,border:`2px solid ${opcion==="clase"?C.accent:C.border}`,background:opcion==="clase"?C.accentDim:C.bg,fontFamily:FONT,transition:"all .15s"}}>
+                  <button onClick={()=>setOpcion("clase")}
+                    style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:FONT,textAlign:"left"}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:opcion==="clase"?C.accent:C.text}}>
+                        {unidades} {unidades===1?unidadLabel:unidadPlural}
+                      </div>
+                      <div style={{fontSize:11,color:C.muted}}>
+                        {tienePrecio?`$${precioBase.toLocaleString("es-AR")} por ${unidadLabel}`:"Gratis"}
+                      </div>
+                    </div>
+                    <div style={{fontWeight:800,fontSize:14,color:opcion==="clase"?C.accent:C.text}}>
+                      {tienePrecio?`${post.moneda||"ARS"} $${(precioBase*unidades).toLocaleString("es-AR")}`:"Gratis"}
+                    </div>
+                  </button>
+                  {tienePrecio&&opcion==="clase"&&(
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10}}>
+                      <span style={{fontSize:11,color:C.muted,flex:1}}>¿Cuántas {unidadPlural}?</span>
+                      <button onClick={()=>setUnidades(u=>Math.max(1,u-1))} disabled={unidades<=1}
+                        aria-label={`Quitar una ${unidadLabel}`}
+                        style={{width:32,height:32,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:16,fontWeight:700,cursor:unidades<=1?"not-allowed":"pointer",opacity:unidades<=1?.4:1,fontFamily:FONT}}>−</button>
+                      <span style={{minWidth:28,textAlign:"center",fontSize:15,fontWeight:800,color:C.text}}>{unidades}</span>
+                      <button onClick={()=>setUnidades(u=>Math.min(MAX_UNIDADES,u+1))} disabled={unidades>=MAX_UNIDADES}
+                        aria-label={`Agregar una ${unidadLabel}`}
+                        style={{width:32,height:32,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,color:C.text,fontSize:16,fontWeight:700,cursor:unidades>=MAX_UNIDADES?"not-allowed":"pointer",opacity:unidades>=MAX_UNIDADES?.4:1,fontFamily:FONT}}>+</button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Paquetes */}
                 {paquetesDisp.map((pq,i)=>{
@@ -5361,27 +5385,13 @@ function InscripcionModal({post,session,onClose,onDone}){
                   escrow puede prorratear y descontar por clase confirmada.
                   Antes "1 clase" no mandaba clases_cantidad, así que la
                   inscripción no tenía contador y el acceso quedaba sin límite. */}
-              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} ${unidadPlural}`:esPrueba?`${unidadLabel} de prueba`:null} tipoPago={esPrueba?"prueba":"paquete_clase"} clasesQty={esPrueba?null:(paqueteElegido?paqueteElegido.clases:1)}/>}
+              {metodo==="mp"&&<MPCheckoutBtn post={post} session={session} onInscripcionOk={()=>{onClose();onDone();}} precioOverride={mpPrecio} cantidadOverride={mpCantidad} paqueteNombre={paqueteElegido?paqueteElegido.nombre||`${paqueteElegido.clases} ${unidadPlural}`:esPrueba?`${unidadLabel} de prueba`:null} tipoPago={esPrueba?"prueba":"paquete_clase"} clasesQty={esPrueba?null:(paqueteElegido?paqueteElegido.clases:unidades)}/>}
               {metodo==="stripe"&&<StripeCheckoutBtn post={post} session={session} onDone={onDone} onClose={onClose}/>}
-              {/* Opción temporal: inscribirse y coordinar el pago directamente con el docente */}
-              {!metodo&&(tienePrecio||esPrueba)&&(
-                <div style={{marginTop:4}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,margin:"6px 0"}}>
-                    <div style={{flex:1,height:"1px",background:C.border}}/>
-                    <span style={{fontSize:11,color:C.muted}}>o también</span>
-                    <div style={{flex:1,height:"1px",background:C.border}}/>
-                  </div>
-                  <button onClick={()=>inscribirDirecto("sin_pago")} disabled={loadingInsc}
-                    style={{width:"100%",background:"transparent",border:`1px solid ${C.border}`,borderRadius:12,color:C.muted,padding:"11px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"border-color .15s"}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-                    📋 Inscribirme y coordinar el pago con el docente
-                  </button>
-                  <div style={{fontSize:10,color:C.muted,textAlign:"center",marginTop:5}}>
-                    El docente sabrá que estás interesado y acordarán el pago por chat
-                  </div>
-                </div>
-              )}
+              {/* Se quitó "Inscribirme y coordinar el pago con el docente": era un
+                  camino de inscripción SIN pago, y en la práctica empujaba a
+                  arreglar por fuera de la plataforma (puenteo). La negociación
+                  del precio se hace con ofertas y contraofertas dentro de la app;
+                  la inscripción siempre pasa por el pago. */}
               {loadingInsc&&<div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center",padding:"8px",color:C.muted,fontSize:13}}><Spinner small/>Procesando…</div>}
               {errInsc&&<div style={{color:C.danger,fontSize:12,padding:"8px 12px",background:C.danger+"10",borderRadius:8,textAlign:"center"}}>{errInsc}</div>}
             </>
