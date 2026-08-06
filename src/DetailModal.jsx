@@ -235,7 +235,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                     post.fecha_inicio&&{label:"Inicio",val:fmt(post.fecha_inicio),Icon:Calendar},
                     calcDuracion(post.fecha_inicio,post.fecha_fin)&&{label:"Duración",val:calcDuracion(post.fecha_inicio,post.fecha_fin),Icon:Timer},
                     post.nivel&&{label:"Nivel",val:post.nivel,Icon:BarChart2},
-                    post.max_alumnos&&{label:"Cupo máx.",val:`${post.max_alumnos} alumnos`,Icon:Users},
+                    post.modo!=="particular"&&post.max_alumnos&&{label:"Cupo máx.",val:`${post.max_alumnos} alumnos`,Icon:Users},
                     post.ubicacion&&post.modalidad!=="virtual"&&{label:"Zona",val:post.ubicacion,Icon:MapPin},
                     post.requisitos&&{label:"Requisitos",val:post.requisitos,Icon:Clipboard},
                     post.idioma&&{label:"Idioma",val:post.idioma,Icon:Globe},

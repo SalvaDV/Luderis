@@ -261,7 +261,10 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       data.nivel=nivel||null;
       data.modalidad=modalidadForm||null;
       if(requisitos)data.requisitos=requisitos;
-      if(maxAlumnos)data.max_alumnos=parseInt(maxAlumnos);
+      // El cupo solo existe donde hay grupo. Una clase particular es 1 a 1:
+      // si dos alumnos compran la misma, son dos clases separadas.
+      if(maxAlumnos&&modo!=="particular")data.max_alumnos=parseInt(maxAlumnos);
+      if(modo==="particular")data.max_alumnos=null;
       if(idioma)data.idioma=idioma;
       // La frecuencia describe el cronograma de un curso (empieza tal día, dura
       // N semanas, se cursa X veces por semana). En una clase particular el
@@ -284,7 +287,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
           return{...pq,precio_total:total};
         });
         data.paquetes=JSON.stringify(paquetesResueltos);
-      }if(modo==="particular"){data.precio_tipo=precioTipo;if(sinc==="recurrente"&&clasesSinc.length){data.sinc="sinc";data.clases_sinc=JSON.stringify(clasesSinc);}}else{data.precio_tipo=null;data.sinc=sinc;data.duracion_curso=modo==="curso"?"curso":null;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
+      }if(modo==="particular"){data.precio_tipo=precioTipo;if(sinc==="recurrente"&&clasesSinc.length){data.sinc="sinc";data.clases_sinc=JSON.stringify(clasesSinc);}}else{data.precio_tipo=null;data.sinc=sinc;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
       let savedPub=null;
       if(editing){
         await sb.updatePublicacion(postToEdit.id,data,session.access_token);
