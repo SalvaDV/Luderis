@@ -713,8 +713,12 @@ export const deleteForoPost = (id: Id, token: Token) =>
 // Reemplaza la carga a mano (email del alumno en texto libre + fecha arbitraria),
 // que era la base de un circuito que libera plata y descuenta unidades compradas.
 // El docente declara cuántas horas dio; el alumno las aprueba u objeta.
-export const registrarClaseDictada = (pubId: Id, fecha: string, token: Token, horas: number = 1) =>
-  db('rpc/registrar_clase_dictada', 'POST', { p_pub_id: pubId, p_fecha: fecha, p_horas: horas }, token);
+// `evidenciaUrl`: link a la grabación de la clase (se borra a las 72 hs o al aprobarse).
+export const registrarClaseDictada = (pubId: Id, fecha: string, token: Token, horas: number = 1, evidenciaUrl: string | null = null) =>
+  db('rpc/registrar_clase_dictada', 'POST', { p_pub_id: pubId, p_fecha: fecha, p_horas: horas, p_evidencia_url: evidenciaUrl }, token);
+// El admin fija las horas reales de una disputa (entre 0 y lo declarado) y liquida.
+export const resolverDisputaHoras = (disputaId: Id, horas: number, resolucion: string | null, token: Token) =>
+  rpc('resolver_disputa_horas', { p_disputa_id: disputaId, p_horas: horas, p_resolucion: resolucion }, token);
 export const getClasesRealizadas = (email: string, token: Token) =>
   db(`clases_realizadas?or=(docente_email.eq.${encodeURIComponent(email)},alumno_email.eq.${encodeURIComponent(email)})&order=fecha_clase.desc`, 'GET', null, token);
 export const confirmarClase = (claseId: Id, userEmail: string, token: Token) =>

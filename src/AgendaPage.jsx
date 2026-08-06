@@ -188,6 +188,8 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   const [registrando,setRegistrando]=useState(null);
   // Horas declaradas por clase antes de registrarla (el alumno después aprueba u objeta).
   const [horasPorClase,setHorasPorClase]=useState({});
+  // Link a la grabación de la clase (evidencia; se borra a las 72 hs o al aprobarse).
+  const [evidenciaPorClase,setEvidenciaPorClase]=useState({});
   const pendientesRegistro=[];
   for(let d=-14;d<=0;d++){
     const fecha=new Date(now.getFullYear(),now.getMonth(),now.getDate()+d);
@@ -215,9 +217,11 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
     const key=`${pubId}_${iso(fecha)}`;
     const hs=Number(horas);
     if(!hs||hs<=0){toast("Poné cuántas horas diste","error");return;}
+    const evid=(evidenciaPorClase[key]||"").trim();
+    if(evid&&!/^https?:\/\//i.test(evid)){toast("El link de la grabación tiene que empezar con http(s)://","error");return;}
     setRegistrando(key);
     try{
-      const r=await sb.registrarClaseDictada(pubId,iso(fecha),session.access_token,hs);
+      const r=await sb.registrarClaseDictada(pubId,iso(fecha),session.access_token,hs,evid||null);
       if(r?.error){toast(r.error,"error");return;}
       setRegistradas(prev=>({...prev,[key]:true}));
       toast(r.registradas>0
@@ -261,7 +265,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                 <Check size={17} strokeWidth={2.2} color={C.accent}/>Confirmá las clases que diste
               </div>
               <div style={{fontSize:12,color:C.muted,marginBottom:12}}>
-                Poné cuántas horas diste. El alumno las aprueba u objeta; si no responde en 72 hs se aprueban solas y se libera tu pago.
+                Poné cuántas horas diste y, si la grabaste, el link a la grabación (respalda tus horas si hay diferencias; se borra a las 72 hs o al aprobarse). El alumno aprueba u objeta; si no responde en 72 hs se aprueban solas y se libera tu pago.
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {pendientesRegistro.filter(c=>!registradas[`${c.post.id}_${iso(c.fecha)}`]).slice(0,8).map((c,i)=>{
@@ -277,12 +281,16 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                           {c.clase?.hora_inicio&&` · ${c.clase.hora_inicio}${c.clase.hora_fin?`–${c.clase.hora_fin}`:""}`}
                         </div>
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0,flexWrap:"wrap"}}>
                         <label htmlFor={`horas-${key}`} style={{fontSize:11,color:C.muted,fontWeight:600}}>Horas</label>
                         <input id={`horas-${key}`} type="number" min="0.5" step="0.5" inputMode="decimal"
                           value={horasPorClase[key]??horasDelSlot(c.clase)}
                           onChange={e=>setHorasPorClase(prev=>({...prev,[key]:e.target.value}))}
                           style={{width:62,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 8px",color:C.text,fontSize:13,fontFamily:FONT,outline:"none",textAlign:"center"}}/>
+                        <input type="url" aria-label="Link a la grabación (opcional)" placeholder="Link grabación (opcional)"
+                          value={evidenciaPorClase[key]??""}
+                          onChange={e=>setEvidenciaPorClase(prev=>({...prev,[key]:e.target.value}))}
+                          style={{width:170,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 8px",color:C.text,fontSize:12,fontFamily:FONT,outline:"none"}}/>
                         <button onClick={()=>marcarDictada(c.post.id,c.fecha,horasPorClase[key]??horasDelSlot(c.clase))} disabled={cargando}
                           style={{background:cargando?C.border:LUD.grad,border:"none",borderRadius:20,color:cargando?C.muted:"#fff",padding:"8px 16px",fontWeight:700,fontSize:12,cursor:cargando?"default":"pointer",fontFamily:FONT}}>
                           {cargando?"Registrando…":"La di"}

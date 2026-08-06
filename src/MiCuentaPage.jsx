@@ -813,6 +813,13 @@ function ClasesTab({session,misPubs}){
                       <Clock size={10} strokeWidth={2}/>{new Date(c.fecha_clase).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}
                       {c.duracion_min>0&&<span>· <strong style={{color:C.text}}>{(c.duracion_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h</strong> declaradas</span>}
                     </div>
+                    {safeUrl(c.evidencia_url)&&(
+                      <a href={safeUrl(c.evidencia_url)} target="_blank" rel="noopener noreferrer"
+                        style={{fontSize:12,color:C.accent,marginTop:4,display:"inline-flex",alignItems:"center",gap:4}}>
+                        <ExternalLink size={11} strokeWidth={2}/>Ver grabación de la clase
+                        <span style={{color:C.muted,fontWeight:400}}>· se borra a las 72 hs o al aprobarse</span>
+                      </a>
+                    )}
                     {objetada&&(
                       <div style={{marginTop:6,fontSize:12,color:C.warn,display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
                         <AlertTriangle size={11} strokeWidth={2}/>
@@ -868,7 +875,7 @@ function ClasesTab({session,misPubs}){
                       </button>
                     )}
                     {objetada&&!soyDocente&&(
-                      <span style={{fontSize:11,color:C.muted,textAlign:"right",maxWidth:170}}>Esperando que el docente acepte tus horas</span>
+                      <span style={{fontSize:11,color:C.muted,textAlign:"right",maxWidth:180}}>Abrimos un ticket: el docente puede aceptar tus horas o lo resuelve el equipo de Luderis</span>
                     )}
                     {!objetada&&!yaConfirme&&!ambasConfirmaron&&(
                       <button onClick={()=>confirmar(c)} disabled={confirmando===c.id}
