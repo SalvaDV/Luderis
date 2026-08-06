@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- ⚠️  NO APLICAR TAL CUAL — ROMPE LA APP DESPLEGADA
+-- ⚠️  PENDIENTE — la policy de abajo ROMPE LA APP si se aplica tal cual
 --
 -- Estas dos policies cierran agujeros reales (F1 y A2 de la auditoría 2026-08),
 -- pero los flujos actuales dependen justamente de lo que abren. Aplicarlas sin
@@ -10,34 +10,10 @@
 -- migración "aplica sin errores": aplicar limpio no es lo mismo que no romper.
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- ── F1 · notificaciones: cualquiera puede notificar a cualquiera ───────────
--- Hoy: `with check (auth.role() = 'authenticated')`. El panel de admin la usa
--- para avisos oficiales ("tu retiro fue procesado"), así que cualquier cuenta
--- con sesión puede suplantar esos mensajes hacia cualquier destinatario.
---
--- POR QUÉ NO SE PUEDE APLICAR YA: la app inserta notificaciones para TERCEROS
--- desde el cliente en al menos 8 lugares, todos legítimos:
---   ChatModal.jsx:175 (avisar al otro del chat)
---   OfertarBtn.jsx:43 (avisar al autor de una oferta)
---   PreguntasSection.jsx:80,111 (pregunta y respuesta)
---   CursoPage.jsx:286 (nuevo ayudante), :575 (chat grupal)
---   FinalizarClaseModal.jsx:18 (avisar a los inscriptos)
---   AdminPage.jsx:2562 (aviso del admin)
---
--- CAMBIO DE CÓDIGO NECESARIO: una RPC `notificar(p_email, p_tipo, p_pub_id,
--- p_titulo)` SECURITY DEFINER que valide que existe relación real entre el
--- caller y el destinatario — el mismo criterio que ya usa send-push tras la
--- auditoría (chat compartido, inscripción, u oferta). Después migrar los 8
--- call-sites y recién ahí aplicar esto.
-
--- drop policy if exists "notificaciones insert authenticated" on public.notificaciones;
--- create policy "notificaciones insert propia" on public.notificaciones
---   for insert to authenticated
---   with check (usuario_id = (select auth.uid()) or alumno_email = (select auth.email()));
--- create policy "notificaciones insert admin" on public.notificaciones
---   for insert to authenticated
---   with check (exists (select 1 from public.usuarios u
---                        where u.id = (select auth.uid()) and u.rol = 'admin'));
+-- ── F1 · notificaciones — ✅ RESUELTO 2026-08-06 ───────────────────────────
+-- Se implementó la RPC `notificar()` (20260806_notificar_rpc.sql) y se
+-- restringió la policy (20260806_notificaciones_policy_insert.sql). Ambas
+-- aplicadas en producción.
 
 -- ── A2 · alertas_digest_queue: INSERT con `with check (true)` ──────────────
 -- Hoy cualquier autenticado inserta filas de digest con el email de otro y
