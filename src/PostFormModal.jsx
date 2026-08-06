@@ -263,8 +263,12 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       if(requisitos)data.requisitos=requisitos;
       if(maxAlumnos)data.max_alumnos=parseInt(maxAlumnos);
       if(idioma)data.idioma=idioma;
+      // La frecuencia describe el cronograma de un curso (empieza tal día, dura
+      // N semanas, se cursa X veces por semana). En una clase particular el
+      // cronograma se acuerda por chat entre las partes, así que no va en el
+      // aviso: ahí solo generaba una expectativa que no era parte del trato.
       if(tipo==="oferta"&&modo!=="particular"&&frecuencia)data.frecuencia=frecuencia;
-      if(tipo==="oferta"&&modo==="particular")data.frecuencia=frecuencia||null;// opcional en particulares
+      if(tipo==="oferta"&&modo==="particular")data.frecuencia=null;
       // El certificado se emite "al completar": eso solo existe en un curso.
       // Una clase particular no tiene punto de finalización que certificar.
       data.otorga_certificado=modo==="particular"?false:otorgaCertificado;

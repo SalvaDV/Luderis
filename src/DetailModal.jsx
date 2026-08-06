@@ -239,7 +239,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                     post.ubicacion&&post.modalidad!=="virtual"&&{label:"Zona",val:post.ubicacion,Icon:MapPin},
                     post.requisitos&&{label:"Requisitos",val:post.requisitos,Icon:Clipboard},
                     post.idioma&&{label:"Idioma",val:post.idioma,Icon:Globe},
-                    post.frecuencia&&{label:"Frecuencia",val:post.frecuencia,Icon:RefreshCw},
+                    post.modo!=="particular"&&post.frecuencia&&{label:"Frecuencia",val:post.frecuencia,Icon:RefreshCw},
                     post.modo!=="particular"&&post.otorga_certificado&&{label:"Certificado",val:"Incluido al completar",Icon:GraduationCap},
                   ].filter(Boolean).map(({label,val,Icon:ChipIcon})=>(
                     // Chip informativo: el hover solo cambia el color del borde (decorativo, no interactivo)
@@ -293,7 +293,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                   {post.modo==="particular"&&post.precio_tipo&&<span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo}</span>}
                 </div>
               ):(
-                <div style={{fontSize:16,fontWeight:700,color:C.successText,marginBottom:16}}>Gratis</div>
+                <div style={{fontSize:16,fontWeight:700,color:post.tipo==="busqueda"?C.muted:C.successText,marginBottom:16}}>{post.tipo==="busqueda"?"A convenir":"Gratis"}</div>
               )}
 
               {/* Valoración compacta */}
@@ -415,7 +415,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           </div>
         )}
         <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12}}>
-          {post.precio?<div style={{flex:1}}><span style={{...tx("price"),color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>{post.modo==="particular"&&post.precio_tipo&&<span style={{...tx("micro"),color:C.faint||C.muted,fontWeight:500}}> /{post.precio_tipo}</span>}</div>:<div style={{flex:1,...tx("bodyStrong"),color:C.successText}}>Gratis</div>}
+          {post.precio?<div style={{flex:1}}><span style={{...tx("price"),color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>{post.modo==="particular"&&post.precio_tipo&&<span style={{...tx("micro"),color:C.faint||C.muted,fontWeight:500}}> /{post.precio_tipo}</span>}</div>:<div style={{flex:1,...tx("bodyStrong"),color:post.tipo==="busqueda"?C.muted:C.successText}}>{post.tipo==="busqueda"?"A convenir":"Gratis"}</div>}
           <div style={{display:"flex",gap:8}}>
             {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
             {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}

@@ -142,7 +142,7 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
           <div style={{textAlign:"right",flexShrink:0,whiteSpace:"nowrap"}}>
             {post.precio
               ?<><span style={{...tx("price"),color:C.text}}>{fmtPrice(post.precio,post.moneda)}</span>{post.precio_tipo&&post.modo!=="curso"&&<span style={{...tx("micro"),color:C.faint,fontWeight:500}}> /{post.precio_tipo}</span>}</>
-              :<span style={{...tx("bodyStrong"),color:C.successText}}>Gratis</span>}
+              :<span style={{...tx("bodyStrong"),color:post.tipo==="busqueda"?C.muted:C.successText}}>{post.tipo==="busqueda"?"A convenir":"Gratis"}</span>}
           </div>
         </div>
         {/* Fila 2: acciones */}
