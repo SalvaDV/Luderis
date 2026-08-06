@@ -240,7 +240,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
                     post.requisitos&&{label:"Requisitos",val:post.requisitos,Icon:Clipboard},
                     post.idioma&&{label:"Idioma",val:post.idioma,Icon:Globe},
                     post.frecuencia&&{label:"Frecuencia",val:post.frecuencia,Icon:RefreshCw},
-                    post.otorga_certificado&&{label:"Certificado",val:"Incluido al completar",Icon:GraduationCap},
+                    post.modo!=="particular"&&post.otorga_certificado&&{label:"Certificado",val:"Incluido al completar",Icon:GraduationCap},
                   ].filter(Boolean).map(({label,val,Icon:ChipIcon})=>(
                     // Chip informativo: el hover solo cambia el color del borde (decorativo, no interactivo)
                     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
@@ -290,7 +290,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {post.precio?(
                 <div style={{marginBottom:16}}>
                   <span style={{...tx("price"),fontSize:24,color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>
-                  <span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo||"hora"}</span>
+                  {post.modo==="particular"&&post.precio_tipo&&<span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo}</span>}
                 </div>
               ):(
                 <div style={{fontSize:16,fontWeight:700,color:C.successText,marginBottom:16}}>Gratis</div>
@@ -385,7 +385,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               <div style={{marginTop:8,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:6}}>
                 {[
                   {Icon:Check,txt:"Pago seguro",color:C.successText},
-                  post.tipo==="oferta"&&{Icon:Lock,txt:"Pago acordado directamente",color:C.muted},
+                  post.tipo==="oferta"&&{Icon:Lock,txt:"El pago queda retenido hasta que confirmes la clase",color:C.muted},
                   post.tipo==="busqueda"&&{Icon:Inbox,txt:"Recibís ofertas de docentes",color:C.muted},
                 ].filter(Boolean).map(({Icon:InfoIcon,txt,color})=>(
                   <div key={txt} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
@@ -415,7 +415,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
           </div>
         )}
         <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12}}>
-          {post.precio?<div style={{flex:1}}><span style={{...tx("price"),color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span><span style={{...tx("micro"),color:C.faint||C.muted,fontWeight:500}}> /{post.precio_tipo||"hora"}</span></div>:<div style={{flex:1,...tx("bodyStrong"),color:C.successText}}>Gratis</div>}
+          {post.precio?<div style={{flex:1}}><span style={{...tx("price"),color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>{post.modo==="particular"&&post.precio_tipo&&<span style={{...tx("micro"),color:C.faint||C.muted,fontWeight:500}}> /{post.precio_tipo}</span>}</div>:<div style={{flex:1,...tx("bodyStrong"),color:C.successText}}>Gratis</div>}
           <div style={{display:"flex",gap:8}}>
             {!esMio&&puedeChat&&<button onClick={()=>{trackChatStart(post);onClose();onChat(post);}} style={{background:LUD.grad,color:"#fff",border:"none",borderRadius:20,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT}}>Chatear</button>}
             {post.tipo==="oferta"&&!esMio&&!esAyudante&&!inscripcion&&!post.finalizado&&!post.inscripciones_cerradas&&<InscribirseBtn post={post} session={session} onDone={()=>{onClose();onOpenCurso(post);}}/>}

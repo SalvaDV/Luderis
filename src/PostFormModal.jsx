@@ -265,11 +265,13 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       if(idioma)data.idioma=idioma;
       if(tipo==="oferta"&&modo!=="particular"&&frecuencia)data.frecuencia=frecuencia;
       if(tipo==="oferta"&&modo==="particular")data.frecuencia=frecuencia||null;// opcional en particulares
-      data.otorga_certificado=otorgaCertificado;
-      if(otorgaCertificado&&modo==="curso")data.aprobacion_pct=Math.min(100,Math.max(1,parseInt(aprobacionPct)||80));
+      // El certificado se emite "al completar": eso solo existe en un curso.
+      // Una clase particular no tiene punto de finalización que certificar.
+      data.otorga_certificado=modo==="particular"?false:otorgaCertificado;
+      if(data.otorga_certificado&&modo!=="particular")data.aprobacion_pct=Math.min(100,Math.max(1,parseInt(aprobacionPct)||80));
       // estado_validacion se maneja localmente (columna pendiente de crear en DB)
       const _estadoLocal=activoInicial===false?"pendiente":undefined;
-      if(tipo==="oferta"){data.precio=parseFloat(precio)||null;data.moneda=moneda||"ARS";data.tiene_prueba=tienePrueba;data.precio_prueba=tienePrueba?(parseFloat(precioPrueba)||null):null;if(paquetes.length){
+      if(tipo==="oferta"){data.precio=parseFloat(precio)||null;data.moneda=moneda||"ARS";data.tiene_prueba=tienePrueba;data.precio_prueba=tienePrueba?(parseFloat(precioPrueba)||null):null;if(paquetes.length&&modo==="particular"){
         const precioNum=parseFloat(precio)||0;
         const paquetesResueltos=paquetes.map(pq=>{
           const pt=parseFloat(pq.precio_total)||0;
@@ -278,7 +280,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
           return{...pq,precio_total:total};
         });
         data.paquetes=JSON.stringify(paquetesResueltos);
-      }if(modo==="particular"){data.precio_tipo=precioTipo;if(sinc==="recurrente"&&clasesSinc.length){data.sinc="sinc";data.clases_sinc=JSON.stringify(clasesSinc);}}else{data.sinc=sinc;data.duracion_curso=modo==="curso"?"curso":null;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
+      }if(modo==="particular"){data.precio_tipo=precioTipo;if(sinc==="recurrente"&&clasesSinc.length){data.sinc="sinc";data.clases_sinc=JSON.stringify(clasesSinc);}}else{data.precio_tipo=null;data.sinc=sinc;data.duracion_curso=modo==="curso"?"curso":null;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
       let savedPub=null;
       if(editing){
         await sb.updatePublicacion(postToEdit.id,data,session.access_token);
