@@ -32,7 +32,13 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const COMISION = 0.10;
+// Enmascara un email para los logs: los logs de Supabase son consultables por
+// cualquiera con acceso al proyecto y no deberían acumular PII de docentes.
+const maskEmail = (e: string | null | undefined): string => {
+  if (!e) return "—";
+  const [u, d] = e.split("@");
+  return `${u.slice(0, 2)}***@${d ?? "?"}`;
+};
 
 // ── Helpers de fecha ────────────────────────────────────────────────────────────
 function periodoAnterior(): string {
@@ -224,8 +230,12 @@ async function generarPDF(params: {
   // ── Totales ─────────────────────────────────────────────────────────────────
   const montosBrutos = pagos.map(p => Number(p.monto));
   const totalBruto   = montosBrutos.reduce((a, b) => a + b, 0);
-  const comision     = Math.round(totalBruto * COMISION);
+  // La comisión sale de lo efectivamente asentado en cada movimiento, no de un
+  // porcentaje fijo: si un admin cambia config.comision_pct, el PDF tiene que
+  // reflejar lo que realmente se cobró en cada venta.
+  const comision     = Math.round(pagos.reduce((a, p) => a + Number(p.comision_luderis ?? 0), 0));
   const totalNeto    = totalBruto - comision;
+  const comisionPctLabel = totalBruto > 0 ? (comision / totalBruto) * 100 : 0;
 
   const totW = 250;
   const totX = width - MR - totW;
@@ -243,7 +253,7 @@ async function generarPDF(params: {
 
   drawTotal("Cantidad de clases:", `${pagos.length}`);
   drawTotal("Monto bruto total:", fmtARS(totalBruto));
-  drawTotal(`Comisión Luderis (${COMISION * 100}%):`, `- ${fmtARS(comision)}`, false, GRY);
+  drawTotal(`Comisión Luderis (${comisionPctLabel.toFixed(1)}%):`, `- ${fmtARS(comision)}`, false, GRY);
 
   // Línea antes del neto
   page.drawLine({ start: { x: totX, y: y + 4 }, end: { x: width - MR, y: y + 4 }, thickness: 0.5, color: BRD });
@@ -316,23 +326,56 @@ Deno.serve(async (req) => {
     const periodo = periodoParam ?? periodoAnterior();
     const { start, end } = periodoToRange(periodo);
 
-    console.log(`generar-liquidacion: periodo=${periodo} start=${start} end=${end} docente=${docenteParam ?? "todos"}`);
+    console.log(`generar-liquidacion: periodo=${periodo} start=${start} end=${end} docente=${docenteParam ? maskEmail(docenteParam) : "todos"}`);
 
-    // ── Consultar pagos liberados del período ──────────────────────────────
+    // ── Consultar cobros liberados del período ─────────────────────────────
+    // La fuente de verdad es el ledger interno (billetera_movimientos), NO
+    // pagos.estado_escrow: esa columna pertenece al flujo viejo de MP-Connect y
+    // el escrow unificado no la popula, así que la liquidación fiscal salía
+    // desfasada de lo efectivamente cobrado.
     let query = supabase
-      .from("pagos")
-      .select("id, monto, docente_email, alumno_email, publicacion_id, liberado_at")
-      .eq("estado_escrow", "liberado")
+      .from("billetera_movimientos")
+      .select("id, monto, comision_luderis, publicacion_id, mp_payment_id, liberado_at, usuario_id")
+      .eq("tipo", "cobro_clase")
+      .eq("estado", "liberado")
       .gte("liberado_at", start)
       .lt("liberado_at", end);
 
-    if (docenteParam) {
-      query = query.eq("docente_email", docenteParam);
-    }
+    const { data: movsRaw, error: movsErr } = await query;
+    if (movsErr) throw movsErr;
 
-    const { data: pagosRaw, error: pagosErr } = await query;
-    if (pagosErr) throw pagosErr;
-    if (!pagosRaw || pagosRaw.length === 0) {
+    // El ledger identifica al docente por usuario_id; la liquidación agrupa por
+    // email, así que se resuelve en una sola consulta (no una por movimiento).
+    const docenteIds = [...new Set((movsRaw ?? []).map(m => m.usuario_id).filter(Boolean))];
+    const { data: docentesRows } = docenteIds.length
+      ? await supabase.from("usuarios").select("id, email").in("id", docenteIds)
+      : { data: [] as Array<{ id: string; email: string }> };
+    const emailPorId: Record<string, string> = {};
+    for (const u of docentesRows ?? []) emailPorId[u.id] = u.email;
+
+    // alumno_email vive en `pagos`, referenciado por mp_payment_id.
+    const payIds = [...new Set((movsRaw ?? []).map(m => m.mp_payment_id).filter(Boolean))];
+    const { data: pagosRows } = payIds.length
+      ? await supabase.from("pagos").select("mp_payment_id, alumno_email").in("mp_payment_id", payIds)
+      : { data: [] as Array<{ mp_payment_id: string; alumno_email: string }> };
+    const alumnoPorPago: Record<string, string> = {};
+    for (const p of pagosRows ?? []) alumnoPorPago[p.mp_payment_id] = p.alumno_email;
+
+    // Se normaliza a la forma que espera el PDF. `monto` en el ledger es el NETO
+    // del docente, así que el bruto se reconstruye sumando la comisión asentada.
+    const pagosRaw = (movsRaw ?? [])
+      .map(m => ({
+        id:               m.id,
+        monto:            Number(m.monto ?? 0) + Number(m.comision_luderis ?? 0),
+        comision_luderis: Number(m.comision_luderis ?? 0),
+        docente_email:    emailPorId[m.usuario_id as string] ?? null,
+        alumno_email:     alumnoPorPago[m.mp_payment_id as string] ?? "—",
+        publicacion_id:   m.publicacion_id,
+        liberado_at:      m.liberado_at,
+      }))
+      .filter(p => p.docente_email && (!docenteParam || p.docente_email === docenteParam));
+
+    if (pagosRaw.length === 0) {
       return new Response(
         JSON.stringify({ ok: true, mensaje: "No hay pagos liberados para este período", periodo }),
         { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
@@ -421,7 +464,7 @@ Deno.serve(async (req) => {
 
         // ── Calcular totales ────────────────────────────────────────────
         const montoBruto  = pagosDocente.reduce((s, p) => s + Number(p.monto), 0);
-        const comision    = Math.round(montoBruto * COMISION * 100) / 100;
+        const comision    = Math.round(pagosDocente.reduce((s, p) => s + Number(p.comision_luderis ?? 0), 0) * 100) / 100;
         const montoNeto   = montoBruto - comision;
 
         // ── Upsert en liquidaciones ─────────────────────────────────────
@@ -467,10 +510,10 @@ Deno.serve(async (req) => {
         }
 
         resultados.push({ docente_email: docenteEmail, ok: true, pdf_url: pdfStorageUrl });
-        console.log(`generar-liquidacion: OK docente=${docenteEmail} bruto=${montoBruto} neto=${montoNeto}`);
+        console.log(`generar-liquidacion: OK docente=${maskEmail(docenteEmail)} clases=${pagosDocente.length}`);
 
       } catch (docErr) {
-        console.error(`generar-liquidacion: ERROR docente=${docenteEmail}`, docErr);
+        console.error(`generar-liquidacion: ERROR docente=${maskEmail(docenteEmail)}`, (docErr as Error)?.message ?? "sin detalle");
         resultados.push({ docente_email: docenteEmail, ok: false, error: (docErr as Error).message });
       }
     }

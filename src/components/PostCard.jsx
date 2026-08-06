@@ -44,7 +44,18 @@ export default function PostCard({post,session,onOpenChat,onOpenDetail,onOpenPer
   const dispHardLight=(C.teal||"#0F9C82");
 
   return(
+    // role/tabIndex/onKeyDown van a mano: jsx-a11y no inspecciona componentes
+    // custom como motion.div, así que la card quedaba fuera del alcance del
+    // teclado sin que el linter lo marcara — y es el flujo principal de la app.
     <motion.div onClick={()=>onOpenDetail(post)}
+      role="button" tabIndex={0}
+      aria-label={`Ver detalle de ${post.titulo||"la publicación"}`}
+      onKeyDown={e=>{
+        // Solo si el foco está en la card: los controles anidados (favorito,
+        // compartir, chat) manejan su propio Enter/Espacio.
+        if(e.target!==e.currentTarget)return;
+        if(e.key==="Enter"||e.key===" "){e.preventDefault();onOpenDetail(post);}
+      }}
       whileHover={{y:-3,boxShadow:C.shadowHover}}
       whileTap={{scale:0.985,y:-1}}
       transition={{type:"spring",stiffness:340,damping:26}}

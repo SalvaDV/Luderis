@@ -1,0 +1,23 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2022": true, "node": true },
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "ecmaFeatures": { "jsx": true }
+  },
+  "settings": { "react": { "version": "18" } },
+  "plugins": ["jsx-a11y", "react-hooks"],
+  "extends": ["plugin:jsx-a11y/recommended"],
+  "ignorePatterns": [
+    "build/",
+    "node_modules/",
+    "redesign-prototipo/",
+    "public/landing/",
+    "supabase/functions/",
+    "src/database.types.ts"
+  ],
+  "rules": {
+    "jsx-a11y/no-autofocus": "off"
+  }
+}

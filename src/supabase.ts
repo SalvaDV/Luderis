@@ -377,8 +377,18 @@ export const getInscripciones = (pubId: Id, token: Token) =>
 export const getMisInscripciones = (email: string, token: Token) =>
   db(`inscripciones?alumno_email=eq.${encodeURIComponent(email)}&estado=neq.cancelada&order=created_at.desc`, "GET", null, token);
 
-export const insertInscripcion = (data: Row, token: Token) =>
-  db("inscripciones", "POST", data, token, "return=representation");
+// Inscribirse pasa por RPC: el cliente perdió el INSERT directo sobre
+// `inscripciones` porque le permitía fijar a mano los campos de pago
+// (pagado_mp, mp_payment_id, clases_totales). La RPC decide qué se setea.
+// Los campos de pago los escribe el webhook con service_role.
+export const inscribirse = (pubId: Id, esPrueba = false, token?: Token) =>
+  db("rpc/inscribirse", "POST", { p_pub_id: pubId, p_es_prueba: esPrueba }, token);
+
+// El docente marca finalizadas las clases de su publicación. Antes era un PATCH
+// por inscripción, que —al ser el grant por tabla— también le dejaba escribir
+// alumno_confirmada y así cobrar sin que el alumno confirmara nada.
+export const finalizarClasePublicacion = (pubId: Id, token: Token) =>
+  db("rpc/finalizar_clase_publicacion", "POST", { p_pub_id: pubId }, token);
 
 export const deleteInscripcion = (id: Id, token: Token) =>
   db(`inscripciones?id=eq.${id}`, "DELETE", null, token);
@@ -705,8 +715,10 @@ export const cancelarPublicacionConReembolso = (pubId: Id, motivo: string, token
 
 export const getPublicacionesByIds = (ids: Id[], token: Token) => {
   if (!ids || !ids.length) return Promise.resolve([]);
-  const filter = ids.map(id => `id.eq.${id}`).join(",");
-  return db(`publicaciones_con_autor?or=(${filter})&select=*`, "GET", null, token).catch(() => []);
+  // `id=in.(...)` en vez de `or=(id.eq...)`: mismo resultado, una sola condición
+  // de igualdad que el planner resuelve por índice.
+  const lista = ids.map(id => encodeURIComponent(String(id))).join(",");
+  return db(`publicaciones_con_autor?id=in.(${lista})&select=*`, "GET", null, token).catch(() => []);
 };
 
 // ── Skills ────────────────────────────────────────────────────────────────────

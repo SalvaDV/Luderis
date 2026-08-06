@@ -87,6 +87,35 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 1b. Chequeo cruzado con el ledger unificado (billetera_movimientos).
+    //     `pagos.estado_escrow` y el ledger son dos máquinas de estado distintas:
+    //     el escrow interno libera vía _liberar_hold_pago (confirmación del alumno
+    //     o cron de 7 días) y NO toca estado_escrow. Sin este chequeo, resolver una
+    //     disputa a favor del docente después de que el alumno ya confirmó
+    //     transfiere la plata por MP e inserta un movimiento nuevo: cobra dos veces.
+    if (pago.mp_payment_id) {
+      const { data: yaResuelto } = await supabase
+        .from("billetera_movimientos")
+        .select("id, estado")
+        .eq("mp_payment_id", pago.mp_payment_id)
+        .neq("estado", "pendiente")
+        .limit(1)
+        .maybeSingle();
+
+      if (yaResuelto) {
+        // Devolver el pago a "retenido" para no dejarlo trabado en "procesando".
+        await supabase.from("pagos")
+          .update({ estado_escrow: "retenido" })
+          .eq("id", pago_id).eq("estado_escrow", "procesando");
+        return new Response(
+          JSON.stringify({
+            error: `El pago ya fue ${yaResuelto.estado} en el ledger interno. No se libera de nuevo.`,
+          }),
+          { status: 409, headers: CORS }
+        );
+      }
+    }
+
     // 2. Buscar conexión MP y usuario_id del docente
     const [{ data: mpConn }, { data: docenteUser }] = await Promise.all([
       supabase
@@ -150,14 +179,15 @@ Deno.serve(async (req) => {
         metodo = "mp_transfer";
       } else {
         // Si falla la transferencia automática, loguear y continuar como "liberado_manual"
-        console.error("MP transfer failed:", JSON.stringify(mpData));
+        // Solo status/código: el cuerpo de MP trae datos del pagador.
+        console.error("MP transfer failed:", mpRes.status, mpData?.error ?? mpData?.status ?? "sin detalle");
         metodo = "liberado_manual_mp_error";
       }
     } else {
       // 3b. Docente no tiene MP conectado → marcar como liberado pendiente
       // El admin deberá contactar al docente para que conecte su cuenta
       metodo = "pendiente_mp_desconectado";
-      console.warn(`Docente ${pago.docente_email} no tiene MP conectado. Pago ${pago_id} liberado sin transferencia.`);
+      console.warn(`Pago ${pago_id}: docente sin MP conectado, liberado sin transferencia.`);
     }
 
     // 4. Actualizar estado en BD

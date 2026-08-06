@@ -22,12 +22,15 @@ jobs:
         run: npm ci
 
       - name: Lint a11y (gate)
-        # Falla solo si reaparecen warnings de accesibilidad (red de seguridad a11y).
-        # No bloquea por otros warnings preexistentes (no-unused-vars, etc.).
-        run: |
-          A11Y=$(npx eslint src --ext .js,.jsx -f compact | grep -c "jsx-a11y" || true)
-          echo "Warnings jsx-a11y: $A11Y"
-          test "$A11Y" -eq 0
+        # Falla si aparece cualquier problema de accesibilidad (red de seguridad a11y).
+        #
+        # La versión anterior contaba coincidencias de texto:
+        #   A11Y=$(npx eslint ... | grep -c "jsx-a11y" || true); test "$A11Y" -eq 0
+        # Como no existía ningún archivo de configuración de ESLint, el comando
+        # abortaba con "couldn't find a configuration file" ANTES de evaluar una
+        # sola regla, el grep contaba 0 y el gate pasaba en verde. Nunca corrió.
+        # Ahora se confía en el exit code de eslint, que no se puede falsear así.
+        run: npx eslint src --ext .js,.jsx --max-warnings 0
 
       - name: Test
         run: npm run test:ci

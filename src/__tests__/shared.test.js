@@ -130,6 +130,33 @@ describe("moderarMensaje", () => {
     const r = moderarMensaje("hablemos por whatsapp");
     expect(r.block).toBe(true);
   });
+  // Regresión: el anti-puenteo dependía de ASCII literal, así que se esquivaba
+  // con caracteres invisibles, homoglifos fullwidth o escribiendo la arroba.
+  // Es el mecanismo central contra la evasión de comisión.
+  describe("bypasses de puenteo (unicode y escrituras alternativas)", () => {
+    test.each([
+      ["arroba y punto escritos", "escribime a juan arroba gmail punto com"],
+      ["arroba entre corchetes", "mi mail es juan[at]gmail.com"],
+      ["espacio de ancho cero antes de la arroba", "juan​@gmail.com"],
+      ["arroba fullwidth", "juan＠gmail.com"],
+      ["dígitos fullwidth", "mi cel １１ ５６７８ １２３４"],
+      ["insta como alias de instagram", "segui mi insta @juanp"],
+      ["acortador t.co", "mirá t.co/xyz123"],
+      ["acortador cutt.ly", "mirá cutt.ly/xyz123"],
+      ["acortador is.gd", "mirá is.gd/xyz123"],
+    ])("bloquea: %s", (_caso, texto) => {
+      expect(moderarMensaje(texto).block).toBe(true);
+    });
+
+    test("no rompe palabras que contienen 'at' o 'punto'", () => {
+      // "whatsapp" contiene "at" y debe seguir detectándose como red social,
+      // no convertirse en "wh@sapp".
+      expect(moderarMensaje("hablemos por whatsapp").block).toBe(true);
+      // Un texto legítimo con esas letras no debe bloquearse.
+      expect(moderarMensaje("el sábado a las 10 vemos matemática").block).toBe(false);
+    });
+  });
+
   test("advierte (sin bloquear) ante lenguaje ofensivo", () => {
     const r = moderarMensaje("sos un boludo");
     expect(r.ok).toBe(false);

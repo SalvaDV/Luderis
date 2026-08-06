@@ -295,7 +295,12 @@ export default function AdminPage({ session, onClose, onChatUser }) {
   const [pendingEscrowCount, setPendingEscrowCount] = useState(0);
   const [pendingRetirosCount, setPendingRetirosCount] = useState(0);
   const userEmailLc = (session?.user?.email || "").toLowerCase();
-  const isFallbackAdmin = !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
+  // El atajo por env var solo vale en desarrollo. REACT_APP_ADMIN_EMAIL viaja en
+  // el bundle, así que en producción era el único camino que saltaba la
+  // verificación de `usuarios.rol` contra la DB que sí se aplica al resto.
+  // (Las escrituras están protegidas por RLS igual, pero no hay razón para
+  // conservar un bypass del gate de lectura.)
+  const isFallbackAdmin = import.meta.env.DEV && !!FALLBACK_ADMIN && userEmailLc === FALLBACK_ADMIN;
   const [isAdmin, setIsAdmin] = React.useState(isFallbackAdmin);
   const [checkingAdmin, setCheckingAdmin] = React.useState(!isFallbackAdmin);
 

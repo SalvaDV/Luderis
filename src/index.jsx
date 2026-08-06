@@ -108,3 +108,12 @@ root.render(
 
 // Cargar Sentry cuando el navegador esté idle (fuera del path crítico).
 scheduleSentry();
+
+// Prefetch de ExplorePage: es la primera pantalla después del login, así que
+// conviene tenerla en caché antes de que se pida. En idle, para no competir con
+// el primer render. (Reemplaza al comentario `webpackPrefetch` que había en
+// App.jsx, inerte porque el bundler es Vite y no webpack.)
+{
+  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 2000));
+  idle(() => { import('./ExplorePage').catch(() => {}); });
+}

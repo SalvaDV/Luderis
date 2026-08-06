@@ -346,6 +346,15 @@ export default function PrivacidadPage() {
               <TerceroCard emoji="🤖" nombre="Anthropic (Claude API)"
                 uso="Búsqueda inteligente y verificación de docentes. Solo procesa el texto de búsqueda, sin datos personales identificables."
                 url="https://www.anthropic.com/privacy" />
+              <TerceroCard emoji="💳" nombre="Stripe"
+                uso="Procesamiento de pagos con tarjeta en dólares y euros. Maneja los datos de la tarjeta de forma independiente: Luderis nunca los recibe ni los almacena."
+                url="https://stripe.com/privacy" />
+              <TerceroCard emoji="📍" nombre="OpenStreetMap (Nominatim)"
+                uso="Si activás la búsqueda por cercanía, se envían tus coordenadas de geolocalización para traducirlas a un nombre de ciudad o barrio. Solo ocurre cuando pedís esa función y le das permiso al navegador."
+                url="https://osmfoundation.org/wiki/Privacy_Policy" />
+              <TerceroCard emoji="🌐" nombre="MyMemory (traducción)"
+                uso="Traducción de contenidos de clases a pedido. Se envía únicamente el texto que elegís traducir."
+                url="https://mymemory.translated.net/doc/privacy.php" />
             </div>
             <P>
               Luderis puede divulgar datos personales si es requerido por orden judicial, autoridad

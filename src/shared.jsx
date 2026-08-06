@@ -8,10 +8,15 @@ import * as sb from "./supabase";
 // y se agregan las nuevas del sistema refinado (surfaceAlt, borderStrong, hairline,
 // textSoft, faint, teal, shadow, shadowHover, overlay).
 export const THEMES={
-  dark:{bg:"#0A1220",surface:"#111C2E",surfaceAlt:"#0E1727",card:"#15223A",border:"#203049",borderStrong:"#2A3A52",hairline:"#1A2740",accent:"#2EC4A0",primary:"#4C95F0",teal:"#28C2A4",accentDim:"#2EC4A015",text:"#E9EFF8",textSoft:"#B4C2D6",muted:"#8597B0",faint:"#5E708C",success:"#2EC4A0",successText:"#2EC4A0",danger:"#E05C5C",sidebar:"#0A1220",info:"#4C95F0",purple:"#9B82F2",warn:"#E0955C",sidebarBorder:"#203049",shadow:"0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35)",shadowHover:"0 2px 6px rgba(0,0,0,.4), 0 16px 36px rgba(0,0,0,.5)",overlay:"rgba(2,6,14,.6)"},
+  dark:{bg:"#0A1220",surface:"#111C2E",surfaceAlt:"#0E1727",card:"#15223A",border:"#203049",borderStrong:"#2A3A52",hairline:"#1A2740",accent:"#2EC4A0",primary:"#4C95F0",teal:"#28C2A4",accentDim:"#2EC4A015",text:"#E9EFF8",textSoft:"#B4C2D6",muted:"#8597B0",faint:"#7C8DA8",success:"#2EC4A0",successText:"#2EC4A0",danger:"#E05C5C",sidebar:"#0A1220",info:"#4C95F0",purple:"#9B82F2",warn:"#E0955C",sidebarBorder:"#203049",shadow:"0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35)",shadowHover:"0 2px 6px rgba(0,0,0,.4), 0 16px 36px rgba(0,0,0,.5)",overlay:"rgba(2,6,14,.6)"},
+  // faint: se usa para texto chico (11-13px: timestamps, sufijos de precio), que
+  // NO califica como "texto grande", así que necesita 4.5:1. Los valores previos
+  // (#8593A7 claro / #5E708C oscuro) daban 2.90:1 y 3.72:1 — fallaban AA en ambos
+  // temas. Los actuales dan ≥4.5:1 contra `bg` y contra `surface`, y siguen
+  // quedando por detrás de `muted` para conservar la jerarquía visual.
   // successText: variante de `success` con contraste AA para TEXTO en tema claro.
   // El teal de marca (success #2EC4A0) se conserva para fondos/acentos.
-  light:{bg:"#F4F7FB",surface:"#FFFFFF",surfaceAlt:"#FAFBFD",card:"#FFFFFF",border:"#E7ECF3",borderStrong:"#D4DDE9",hairline:"#EEF2F7",accent:"#1A6ED8",primary:"#1A6ED8",teal:"#0F9C82",accentDim:"#1A6ED810",text:"#0F1B2E",textSoft:"#39495F",muted:"#5A6A82",faint:"#8593A7",success:"#2EC4A0",successText:"#147D63",danger:"#C53030",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#B45309",sidebarBorder:"#E7ECF3",shadow:"0 1px 2px rgba(16,27,46,.04), 0 4px 16px rgba(16,27,46,.05)",shadowHover:"0 2px 4px rgba(16,27,46,.05), 0 12px 28px rgba(16,27,46,.10)",overlay:"rgba(10,18,32,.45)"},
+  light:{bg:"#F4F7FB",surface:"#FFFFFF",surfaceAlt:"#FAFBFD",card:"#FFFFFF",border:"#E7ECF3",borderStrong:"#D4DDE9",hairline:"#EEF2F7",accent:"#1A6ED8",primary:"#1A6ED8",teal:"#0F9C82",accentDim:"#1A6ED810",text:"#0F1B2E",textSoft:"#39495F",muted:"#5A6A82",faint:"#647289",success:"#2EC4A0",successText:"#147D63",danger:"#C53030",sidebar:"#FFFFFF",info:"#1A6ED8",purple:"#7B5CF0",warn:"#B45309",sidebarBorder:"#E7ECF3",shadow:"0 1px 2px rgba(16,27,46,.04), 0 4px 16px rgba(16,27,46,.05)",shadowHover:"0 2px 4px rgba(16,27,46,.05), 0 12px 28px rgba(16,27,46,.10)",overlay:"rgba(10,18,32,.45)"},
 };
 export let _themeKey=()=>{try{return localStorage.getItem("cl_theme")||"light";}catch{return "light";}};
 export const C={...THEMES[_themeKey()]};
@@ -109,9 +114,10 @@ export function ToastContainer(){
   return(
     <div aria-live="polite" aria-atomic="false" style={{position:"fixed",bottom:"max(80px,env(safe-area-inset-bottom,0px) + 72px)",right:16,zIndex:9000,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
       {items.map(item=>(
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-        <div key={item.id}
-          role="alert" tabIndex={0}
+        // El toast es un alert que además se puede descartar haciéndole clic o
+        // con Enter/Espacio/Escape, así que necesita ser enfocable.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex
+        <div key={item.id} role="alert" tabIndex={0}
           onClick={()=>dismiss(item.id)}
           onKeyDown={e=>{if(e.key==="Enter"||e.key===" "||e.key==="Escape"){e.preventDefault();dismiss(item.id);}}}
           style={{background:C.surface,border:`1px solid ${colors[item.type]||colors.info}40`,borderLeft:`3px solid ${colors[item.type]||colors.info}`,borderRadius:12,padding:"11px 14px",fontSize:13,color:C.text,fontFamily:FONT,boxShadow:"0 8px 28px rgba(0,0,0,.18)",animation:"fadeUp .2s ease",maxWidth:300,fontWeight:500,display:"flex",alignItems:"center",gap:9,pointerEvents:"auto",cursor:"pointer",transition:"opacity .15s"}}
@@ -243,10 +249,28 @@ export const safeDisplayName=(nombre,email)=>{
   if(email)return maskEmail(email);
   return"Usuario";
 };
-export const CONTACT_REGEX=/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(\+?[\d\s\-().]{8,15}\d)|(instagram|ig|wa|whatsapp|telegram|tg|signal|facebook|fb|twitter|tiktok|snapchat|discord)\s*[:=@/]?\s*[\w.]+)/gi;
+// Normaliza el texto ANTES de buscar datos de contacto. Sin esto los patrones
+// dependen de ASCII literal y se esquivan trivialmente: "juan＠gmail.com" con
+// arroba fullwidth, un espacio de ancho cero antes de la arroba, dígitos
+// fullwidth ("１１ ５６７８"), o escrituras como "arroba" / "[at]" / "punto".
+// NFKC colapsa las variantes fullwidth a ASCII; después se quitan los
+// caracteres invisibles y se traducen las formas escritas.
+export const normalizarParaDeteccion=(text)=>{
+  if(!text)return"";
+  return String(text)
+    .normalize("NFKC")
+    // separadores de ancho cero y marcas de formato (categoría Cf)
+    .replace(/[​-‏⁠﻿­]/g,"")
+    // Delimitados sí o sí por espacio o corchete: sin esto, el "at" de
+    // "whatsapp" se convertía en arroba y rompía la detección de redes.
+    .replace(/(?:\s+|\[|\()(?:arroba|at)(?:\s+|\]|\))/gi,"@")
+    .replace(/(?:\s+|\[|\()(?:punto|dot)(?:\s+|\]|\))/gi,".");
+};
+
+export const CONTACT_REGEX=/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(\+?[\d\s\-().]{8,15}\d)|(instagram|insta|ig|wa|whatsapp|telegram|tg|signal|facebook|fb|twitter|tiktok|snapchat|discord)\s*[:=@/]?\s*[\w.]+)/gi;
 export const sanitizeContactInfo=(text)=>{
   if(!text)return text;
-  return text.replace(CONTACT_REGEX,(match)=>{
+  return normalizarParaDeteccion(text).replace(CONTACT_REGEX,(match)=>{
     if(/\d/.test(match)&&match.replace(/\D/g,"").length>=7)return"[📵 dato de contacto oculto]";
     if(match.includes("@"))return"[📧 email oculto]";
     return"[📵 contacto externo oculto]";
@@ -257,8 +281,9 @@ export const sanitizeContactInfo=(text)=>{
 const BYPASS_PATTERNS=[
   /\b\+?(?:\d[\s\-.]?){8,15}\d\b/,// teléfonos: ≥9 dígitos con separadores estándar (no falsea horarios)
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,// emails
-  /\b(instagram|ig|whatsapp|wa\.me|telegram|tg|facebook|fb\.com|twitter|x\.com|tiktok|snapchat|discord)\b/i,// redes
-  /\bbit\.ly\b|\btinyurl\b|\bwa\.me\/\b/i,// links cortos y wa.me
+  /\b(instagram|insta|ig|whatsapp|wa\.me|telegram|tg|facebook|fb\.com|twitter|x\.com|tiktok|snapchat|discord)\b/i,// redes
+  // Acortadores: la lista corta dejaba pasar los más usados hoy.
+  /\b(bit\.ly|tinyurl|wa\.me\/|t\.co\/|cutt\.ly|is\.gd|rebrand\.ly|shorturl\.at|tiny\.cc|rb\.gy|acortar\.link)\b/i,
 ];
 const OFENSIVO_BLOQUEAR=[
   /\bputa\s*madre\b|\bhijo\s*de\s*puta\b|\bconcha\s*(de\s*tu)?\s*madre\b/i,
@@ -271,7 +296,9 @@ const OFENSIVO_ADVERTIR=[
 // Retorna {ok:boolean, block:boolean, advertencia:string|null}
 export const moderarMensaje=(texto)=>{
   if(!texto)return{ok:true,block:false,advertencia:null};
-  const t=texto.trim();
+  // Se modera sobre el texto normalizado (ver normalizarParaDeteccion): si no,
+  // alcanza un carácter invisible o una arroba fullwidth para pasar de largo.
+  const t=normalizarParaDeteccion(texto).trim();
   for(const p of OFENSIVO_BLOQUEAR){if(p.test(t))return{ok:false,block:true,advertencia:"Tu mensaje contiene lenguaje amenazante o muy agresivo y no puede enviarse."};}
   for(const p of BYPASS_PATTERNS){if(p.test(t))return{ok:false,block:true,advertencia:"No podés compartir datos de contacto en el chat. Realizá todos los pagos y acuerdos a través de Luderis para estar protegido."};}
   for(const p of OFENSIVO_ADVERTIR){if(p.test(t))return{ok:false,block:false,advertencia:"Tu mensaje contiene lenguaje ofensivo. Por favor mantené un trato respetuoso."};}
@@ -357,11 +384,17 @@ export const Avatar=({letra,size=38,img,radius,color})=>{
 
 export const Tag=({tipo,modo})=>{const T=tipo==="busqueda"?TIPO_PUB.pedido:modo==="particular"?TIPO_PUB.particular:TIPO_PUB.curso;const Icon=tipo==="busqueda"?Megaphone:modo==="particular"?User:GraduationCap;return(<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:T.dim,color:T.accent,border:`1px solid ${T.border}`,fontFamily:FONT,letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}><Icon size={10} strokeWidth={2.5}/> {T.label}</span>);};
 
+// Los colores salen de los tokens `C` (reactivos al tema): antes eran hex fijos,
+// así que el badge no cambiaba en modo oscuro y "● Activa" quedaba en 2.05:1 de
+// contraste — muy por debajo del 4.5:1 de WCAG AA, siendo el estado más común.
+// Para texto se usan las variantes de contraste (successText/warn), no el color
+// de marca, que se reserva para el fondo y el borde.
 export const StatusBadge=({activo,finalizado,pendiente})=>{
-  if(finalizado)return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#4A5568",color:"#E2E8F0",letterSpacing:.2}}>Finalizado</span>;
-  if(pendiente)return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#F59E0B15",color:"#B45309",border:"1px solid #F59E0B40",letterSpacing:.2,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2.5}/>Pendiente</span>;
-  if(activo)return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#2EC4A015",color:"#2EC4A0",border:"1px solid #2EC4A040",letterSpacing:.2}}>● Activa</span>;
-  return<span style={{fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"#71809615",color:"#718096",border:"1px solid #71809640",letterSpacing:.2}}>Pausada</span>;
+  const base={fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:20,letterSpacing:.2};
+  if(finalizado)return<span style={{...base,background:C.surfaceAlt,color:C.textSoft,border:`1px solid ${C.borderStrong}`}}>Finalizado</span>;
+  if(pendiente)return<span style={{...base,background:`${C.warn}15`,color:C.warn,border:`1px solid ${C.warn}40`,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2.5}/>Pendiente</span>;
+  if(activo)return<span style={{...base,background:`${C.success}15`,color:C.successText,border:`1px solid ${C.success}40`}}>● Activa</span>;
+  return<span style={{...base,background:C.surfaceAlt,color:C.muted,border:`1px solid ${C.border}`}}>Pausada</span>;
 };
 
 export const VerifiedBadge=()=>(<span style={{fontSize:12,fontWeight:700,padding:"3px 9px",borderRadius:20,background:"linear-gradient(135deg,#1A6ED812,#2EC4A012)",color:C.info,border:`1px solid ${C.info}40`,fontFamily:FONT,display:"inline-flex",alignItems:"center",gap:3}}><span style={{fontSize:11}}>✓</span> Verificado</span>);

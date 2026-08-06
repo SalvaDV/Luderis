@@ -7,18 +7,22 @@ const corsHeaders = {
 
 const MAX_TOKENS_CAP = 1000; // el cliente no puede inflar esto
 
-// Verifica JWT Supabase (anon key o user session) — igual que ludy-chat
-function isValidSupabaseJwt(token: string, projectRef: string): boolean {
+// Resuelve el usuario del token contra GoTrue, que VERIFICA LA FIRMA.
+// Antes acá se decodificaba el payload con atob() y se confiaba en `role`/`iss`/
+// `exp`: un token armado a mano con esos campos pasaba el check. Hoy lo tapa el
+// verify_jwt del gateway, pero eso es una sola capa y estas funciones están
+// pensadas para deployarse con --no-verify-jwt.
+async function getUsuarioDelToken(
+  token: string, supaUrl: string, apiKey: string,
+): Promise<{ id: string; email: string } | null> {
   try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return false;
-    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
-    const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))));
-    if (payload.role !== "authenticated") return false;
-    if (!payload.iss || !payload.iss.includes(projectRef)) return false;
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
-    return true;
-  } catch { return false; }
+    const res = await fetch(`${supaUrl}/auth/v1/user`, {
+      headers: { "Authorization": `Bearer ${token}`, "apikey": apiKey },
+    });
+    if (!res.ok) return null;
+    const u = await res.json();
+    return u?.id ? { id: u.id, email: u.email ?? "" } : null;
+  } catch { return null; }
 }
 
 Deno.serve(async (req) => {
@@ -28,33 +32,37 @@ Deno.serve(async (req) => {
 
   // ── Verificar JWT Supabase ────────────────────────────────────────────────
   const SUPA_URL   = Deno.env.get("SUPABASE_URL") ?? "";
-  const projectRef = SUPA_URL.replace(/^https?:\/\//, "").split(".")[0];
+  const SERVICE    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const authHeader = req.headers.get("Authorization") ?? req.headers.get("apikey") ?? "";
   const jwtToken   = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-  if (!jwtToken || !isValidSupabaseJwt(jwtToken, projectRef)) {
+  const usuario = jwtToken ? await getUsuarioDelToken(jwtToken, SUPA_URL, SERVICE) : null;
+  if (!usuario) {
     return new Response(JSON.stringify({ error: "No autorizado" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   // ── Rate limit: 40 req / 5 min por usuario (moderación + asistente + alertas)
-  // (fail-open: si el check falla, no bloqueamos el producto)
+  // Sigue siendo fail-open para no tumbar el producto si el RPC falla, pero el
+  // fallo se loguea: antes lo tragaba un `catch {}` mudo y la tabla llevaba un
+  // mes vacía sin que nadie se enterara de que el límite no estaba corriendo.
   try {
-    const pad = (s: string) => s + "=".repeat((4 - s.length % 4) % 4);
-    const sub = JSON.parse(atob(pad(jwtToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))).sub ?? "";
-    const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const rl = await fetch(`${SUPA_URL}/rest/v1/rpc/ia_rate_check`, {
       method: "POST",
       headers: { "apikey": SERVICE, "Authorization": `Bearer ${SERVICE}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ p_clave: `ai:${sub}`, p_max: 40, p_ventana_seg: 300 }),
+      body: JSON.stringify({ p_clave: `ai:${usuario.id}`, p_max: 40, p_ventana_seg: 300 }),
     });
-    if (rl.ok && (await rl.json()) === false) {
+    if (!rl.ok) {
+      console.error("ai-proxy: ia_rate_check falló, status", rl.status, await rl.text());
+    } else if ((await rl.json()) === false) {
       return new Response(JSON.stringify({ error: "Demasiadas solicitudes de IA. Esperá unos minutos." }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-  } catch { /* fail-open */ }
+  } catch (e) {
+    console.error("ai-proxy: ia_rate_check inalcanzable:", (e as Error).message);
+  }
 
   try {
     const body = await req.json().catch(() => ({}));

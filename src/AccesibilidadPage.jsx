@@ -239,12 +239,12 @@ export default function AccesibilidadPage() {
           <Seccion id="s2" titulo="2. Funciones de accesibilidad">
             <P>Luderis incluye o trabaja en incluir las siguientes características:</P>
             <FeatureGrid items={[
-              { emoji: "⌨️", titulo: "Navegación por teclado", desc: "Toda la plataforma puede operarse sin mouse, usando solo el teclado." },
+              { emoji: "⌨️", titulo: "Navegación por teclado", desc: "Los flujos principales —explorar, publicar, chatear e inscribirse— se operan sin mouse. Seguimos ampliando la cobertura al resto." },
               { emoji: "🔍", titulo: "Zoom hasta 200%", desc: "El contenido se adapta al zoom del navegador sin perdida de funcionalidad." },
               { emoji: "🌗", titulo: "Modo oscuro / claro", desc: "Seleccionable desde Mi cuenta para reducir fatiga visual." },
               { emoji: "📱", titulo: "Diseño responsive", desc: "Funcióna en celulares y tablets con distintos tamaños de pantalla." },
               { emoji: "🏷️", titulo: "Etiquetas ARIA", desc: "Botones e inputs tienen etiquetas descriptivas para lectores de pantalla." },
-              { emoji: "🎨", titulo: "Contraste de color", desc: "Relaciones de contraste de al menos 4.5:1 en texto sobre fondo." },
+              { emoji: "🎨", titulo: "Contraste de color", desc: "Los colores de texto del sistema cumplen 4.5:1 sobre el fondo, en tema claro y oscuro." },
             ]} />
           </Seccion>
 
@@ -279,8 +279,8 @@ export default function AccesibilidadPage() {
             </Ul>
             <P>
               Los elementos interactivos tienen etiquetas <code>aria-label</code> descriptivas.
-              Los iconos decorativos estan marcados como <code>aria-hidden</code> para no generar
-              ruido en la lectura. Los modales atrapan el foco correctamente mientras estan abiertos.
+              Los modales atrapan el foco mientras estan abiertos. Estamos completando el marcado
+              <code>aria-hidden</code> de los iconos decorativos para que no generen ruido en la lectura.
             </P>
             <Badge type="neutral">
               Si tu lector de pantalla tiene dificultades con alguna parte de la plataforma,
@@ -298,7 +298,7 @@ export default function AccesibilidadPage() {
                 Relacion de contraste: 14.5:1 (supera el minimo AA de 4.5:1).
               </Li>
               <Li>
-                <strong>Modo oscuro:</strong> texto claro sobre fondo oscuro (#1A1F2E).
+                <strong>Modo oscuro:</strong> texto claro sobre fondo oscuro (#0A1220).
                 Diseñado para reducir la fatiga visual en entornos con poca luz.
               </Li>
             </Ul>

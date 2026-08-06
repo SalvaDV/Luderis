@@ -4344,8 +4344,10 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     }
     setInscLoading(true);
     try{
-      const r=await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:miEmail},session.access_token);
-      setInscripcion(r[0]);
+      const r=await sb.inscribirse(post.id,false,session.access_token);
+      if(r?.error)throw new Error(r.error);
+      const filas=await sb.getInscripcionByPubEmail(post.id,miEmail,session.access_token).catch(()=>[]);
+      setInscripcion(filas?.[0]||null);
       trackInscripcion(post);
       if(!post.precio||post.precio===0)trackPurchase(post,0);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
@@ -5005,12 +5007,18 @@ function StripeCheckoutBtn({post, session, onDone, onClose}){
         redirect:"if_required",
       });
       if(error){ setErrorMsg(error.message); setEstado("form"); return; }
-      await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:session.user.email,metodo_pago:"stripe",stripe_payment_intent:paymentIntentId},session.access_token);
-      sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
-      const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
-      sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
-      sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion",session.access_token).catch(()=>{});
-      toast("¡Pago exitoso! Ya tenés acceso","success",4000);
+      // La inscripción la crea el webhook de Stripe (stripe-webhook), no el
+      // cliente: si se creara acá, alcanzaría con saltear el pago y llamar al
+      // insert para entrar gratis. Esperamos a que aparezca.
+      let inscripto=false;
+      for(let i=0;i<6&&!inscripto;i++){
+        await new Promise(r=>setTimeout(r,i===0?1200:1500));
+        const filas=await sb.getInscripcionByPubEmail(post.id,session.user.email,session.access_token).catch(()=>[]);
+        inscripto=Array.isArray(filas)&&filas.length>0;
+      }
+      toast(inscripto
+        ? "¡Pago exitoso! Ya tenés acceso"
+        : "¡Pago recibido! Tu acceso se habilita en unos segundos","success",4000);
       setEstado("done");
       setTimeout(()=>{onClose();onDone();},800);
     }catch(e){ setErrorMsg(e.message); setEstado("form"); }
@@ -5096,7 +5104,8 @@ function InscripcionModal({post,session,onClose,onDone}){
     setLoadingInsc(true);
     try{
       const esPruebaLocal=metodoElegido==="prueba";
-      await sb.insertInscripcion({publicacion_id:post.id,alumno_id:session.user.id,alumno_email:session.user.email,...(esPruebaLocal?{es_prueba:true}:{})},session.access_token);
+      const rInsc=await sb.inscribirse(post.id,esPruebaLocal,session.access_token);
+      if(rInsc?.error)throw new Error(rInsc.error);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
       sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
@@ -5445,7 +5454,9 @@ function RelacionadasSection({post,session,onOpenDetail2}){
   const [relacionadas,setRelacionadas]=useState([]);
   const [reseñasRel,setReseñasRel]=useState({});
   useEffect(()=>{
-    sb.getPublicaciones({},session.access_token).then(todas=>{
+    // Se acota del lado del servidor: antes bajaba la tabla `publicaciones`
+    // ENTERA para terminar mostrando 6 tarjetas.
+    sb.getPublicaciones({tipo:post.tipo,limite:120},session.access_token).then(todas=>{
       const activas=todas.filter(p=>p.activo!==false&&!p.finalizado&&p.id!==post.id);
       // Ordenar por relevancia: misma materia primero, luego mismo tipo, luego recientes
       const scored=activas.map(p=>{

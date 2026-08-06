@@ -151,8 +151,23 @@ serve(async (req) => {
         .from("usuarios").select("id")
         .eq("email", meta.alumno_email).single();
 
+      // Recarga de billetera: el sentinela es la ÚNICA fuente de verdad. `tipo`
+      // sale del external_reference, que se arma con datos del cliente — usarlo
+      // acá permitiría comprar un curso real declarándolo "recarga".
+      const ES_RECARGA = meta.publicacion_id === "00000000-0000-0000-0000-000000000001";
+
+      // Paquetes de clases: fondos RETENIDOS hasta confirmación de cada clase
+      const ES_PAQUETE = tipo === "paquete_clase";
+
+      // Con MP Connect el neto ya viajó directo a la cuenta de MP del docente en
+      // el momento del pago (marketplace_fee + collector, ver mp-checkout).
+      // Luderis nunca lo retuvo, así que NO hay hold que liberar después: si se
+      // creara como 'pendiente', la liberación lo acreditaría una segunda vez.
+      const SPLIT_INMEDIATO = meta.split_inmediato === true;
+
       // ── 2. Inscribir al alumno (idempotente) ───────────────────────────
-      if (alumno?.id) {
+      // Las recargas no inscriben a nada: solo suman saldo.
+      if (alumno?.id && !ES_RECARGA) {
         const inscData: Record<string, unknown> = {
           publicacion_id: meta.publicacion_id,
           alumno_id:      alumno.id,
@@ -169,17 +184,13 @@ serve(async (req) => {
         }
         const { error: inscErr } = await supabase.from("inscripciones").insert(inscData);
         if (inscErr && !inscErr.message?.includes("uq_inscripcion") && !inscErr.code?.includes("23505")) {
-          console.error("Error inscripción:", inscErr);
+          // Solo el código: el objeto de error de PostgREST puede incluir la fila
+          // completa (email del alumno, montos) en los logs.
+          console.error("Error inscripción, code:", inscErr.code ?? "desconocido");
         }
       }
 
       // ── 3. Acreditar al docente ────────────────────────────────────────
-      const ES_RECARGA = tipo === "recarga_billetera" ||
-        meta.publicacion_id === "00000000-0000-0000-0000-000000000001";
-
-      // Paquetes de clases: fondos RETENIDOS hasta confirmación de cada clase
-      const ES_PAQUETE = tipo === "paquete_clase";
-
       if (!ES_RECARGA && meta.docente_email && monto > 0) {
         const { data: docente } = await supabase
           .from("usuarios").select("id")
@@ -199,8 +210,15 @@ serve(async (req) => {
             usuario_id:       docente.id,
             tipo:             "cobro_clase",
             monto:            montoNeto,
-            estado:           "pendiente",          // ← retenido por Luderis
-            descripcion:      ES_PAQUETE
+            // Con split inmediato la plata ya está en la cuenta de MP del docente:
+            // se asienta 'liberado' para dejar registro de la venta sin volver a
+            // acreditar saldo interno (solo _liberar_hold_pago acredita, y solo
+            // toca filas 'pendiente'). Tampoco es reembolsable desde acá: Luderis
+            // no tiene ese dinero.
+            estado:           SPLIT_INMEDIATO ? "liberado" : "pendiente",
+            descripcion:      SPLIT_INMEDIATO
+              ? `Cobro directo a tu Mercado Pago — alumno: ${meta.alumno_email}`
+              : ES_PAQUETE
               ? `Paquete ${meta.clases_cantidad ?? "N"} clases — alumno: ${meta.alumno_email}`
               : `Pago retenido — alumno: ${meta.alumno_email}`,
             publicacion_id:   meta.publicacion_id,
