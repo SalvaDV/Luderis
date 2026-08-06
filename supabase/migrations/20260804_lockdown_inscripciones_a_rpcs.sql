@@ -25,28 +25,15 @@
 -- columnas: ahora entra por RPC, que decide qué campos se setean.
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- ── 1. Cortar la escritura directa del cliente ──────────────────────────────
-revoke insert, update, delete on public.inscripciones from anon, authenticated;
 
--- Lo único que el alumno escribe por PATCH directo es su propia confirmación de
--- recepción y la marca de "ya valoré". Todo lo demás pasa por RPC.
-grant update (alumno_confirmada, valorado) on public.inscripciones to authenticated;
-grant delete on public.inscripciones to authenticated;  -- desinscribirse (policy: solo la propia)
-
--- ── 2. Policies de UPDATE: solo el alumno, y con `with check` explícito ─────
--- La policy vieja daba UPDATE también al autor de la publicación (C2) y no
--- declaraba `with check`, así que la fila podía mutar a cualquier cosa que
--- siguiera cumpliendo el `using`.
-drop policy if exists "inscripciones update own or owner" on public.inscripciones;
-drop policy if exists "inscripciones_alumno_update_confirmacion" on public.inscripciones;
-
-create policy "inscripciones update alumno" on public.inscripciones
-  for update to authenticated
-  using  (alumno_id = auth.uid())
-  with check (alumno_id = auth.uid());
+-- ═══════════════════════════════════════════════════════════════════════════
+-- PASO A de 2 — SOLO ADITIVO, se aplica ANTES del deploy del código.
+-- Crea las RPCs y endurece reembolsar_inscripcion. No revoca nada, así que el
+-- frontend viejo (que escribe directo sobre `inscripciones`) sigue andando.
+-- El paso B, con los revokes, va DESPUÉS de que el deploy esté vivo.
+-- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── 3. INSERT vía RPC ───────────────────────────────────────────────────────
-drop policy if exists "inscripciones insert own" on public.inscripciones;
 
 -- Inscribe al usuario de la sesión. Setea SOLO los campos que el alumno puede
 -- decidir: nunca pagado_mp, mp_payment_id, clases_totales ni precio_por_clase
