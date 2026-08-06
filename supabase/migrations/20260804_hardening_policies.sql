@@ -2,47 +2,28 @@
 -- Hardening de policies y grants (auditoría 2026-08-04)
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- ── 1. notificaciones: cualquiera podía notificar a cualquiera ─────────────
--- La policy de INSERT solo exigía `auth.role() = 'authenticated'`. El panel de
--- admin la usa para avisos oficiales ("tu retiro fue procesado"), así que
--- cualquier usuario con sesión podía suplantar esos mensajes hacia cualquier
--- destinatario — phishing con la marca de la plataforma. La UI de admin era
--- apariencia de control; el control real es esta policy.
-drop policy if exists "notificaciones insert authenticated" on public.notificaciones;
-
--- Un usuario normal solo puede notificarse a sí mismo.
-create policy "notificaciones insert propia" on public.notificaciones
-  for insert to authenticated
-  with check (
-    usuario_id = (select auth.uid())
-    or alumno_email = (select auth.email())
-  );
-
--- El admin sí puede notificar a terceros (rol leído de la DB, no del cliente).
-create policy "notificaciones insert admin" on public.notificaciones
-  for insert to authenticated
-  with check (
-    exists (select 1 from public.usuarios u
-             where u.id = (select auth.uid()) and u.rol = 'admin')
-  );
-
--- ── 2. alertas_digest_queue: INSERT con `with check (true)` ────────────────
--- Cualquier autenticado insertaba filas de digest con el email de otro y texto
--- arbitrario, que smart-worker después despachaba como email de Luderis.
-drop policy if exists "authenticated_insert_digest" on public.alertas_digest_queue;
-create policy "digest insert propio" on public.alertas_digest_queue
-  for insert to authenticated
-  with check (usuario_email = (select auth.email()));
+-- ── NOTA DE ALCANCE ────────────────────────────────────────────────────────
+-- Las policies de `notificaciones` y `alertas_digest_queue` NO están acá: se
+-- movieron a 20260804_pendiente_notificaciones.sql porque romperían la app tal
+-- como está desplegada hoy (ver ese archivo). Esta migración es aplicable sin
+-- ningún cambio de código.
 
 -- ── 3. usuarios: grants por columna ────────────────────────────────────────
 -- El trigger protect_usuario_privileged_cols ya bloquea rol/verificado/bloqueado/
 -- email/tokens de MP, pero el grant cubría TODAS las columnas y dejaba libres
 -- calificaciones_suma, calificaciones_count, advertencias, dias_racha y nivel:
 -- un PATCH bastaba para aparecer con 5 estrellas en el perfil público.
--- Lista blanca de lo que el usuario edita de su propio perfil. Quedan afuera:
--- rol, verificado, bloqueado, activo, email, mp_* (ya cubiertos por el trigger)
--- y además calificaciones_suma, calificaciones_count, advertencias, dias_racha,
--- nivel, que el trigger NO cubría.
+-- Lista blanca de lo que el usuario edita de su propio perfil. El agujero que
+-- cierra es que el grant cubría TODAS las columnas y dejaba libres
+-- calificaciones_suma, calificaciones_count, advertencias, dias_racha y nivel:
+-- un PATCH bastaba para aparecer con 5 estrellas en el perfil público. El
+-- trigger protect_usuario_privileged_cols NO cubre ninguna de esas.
+--
+-- `rol` SÍ va en la lista, aunque suene contradictorio: el onboarding lo manda
+-- en su UPDATE (OnboardingModal.jsx:462) y sin el privilegio de columna Postgres
+-- rechaza el statement entero, incluso cuando el valor no cambia. El control
+-- real sobre `rol` es el trigger, que sigue bloqueando cualquier cambio efectivo.
+-- Igual criterio para email/verificado/bloqueado/mp_*: los cubre el trigger.
 revoke update on public.usuarios from anon, authenticated;
 grant update (
   nombre, display_name, bio, avatar, avatar_url, avatar_color, banner_url,
@@ -51,7 +32,7 @@ grant update (
   linkedin_url, sitio_web, video_presentacion,
   disponible_ahora, disponible_hasta, disponible_mensaje,
   recordatorios_activos, onboarding_completado, referido_por,
-  ultimo_acceso, updated_at
+  rol, ultimo_acceso, updated_at
 ) on public.usuarios to authenticated;
 
 -- ── 4. referidos y anuncios_globales: RLS activa sin policies ──────────────

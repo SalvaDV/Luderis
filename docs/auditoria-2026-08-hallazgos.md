@@ -51,7 +51,56 @@ Las 4 migraciones aplican sin errores. Resultados funcionales:
 
 ---
 
-**Escrito pero SIN APLICAR** — 4 migraciones en `supabase/migrations/20260804_*`:
+### ✅ APLICADO EN PRODUCCIÓN (2026-08-04)
+
+Tres migraciones aplicadas, elegidas por ser las que **no rompen el código
+desplegado hoy** (la rama con los cambios de frontend todavía no está en main):
+
+| Migración | Qué cierra |
+|---|---|
+| `fix_liberar_pago_clase_cas_y_prorrateo` | A3: race condition, prorrateo roto y hold varado |
+| `hardening_policies_grants_y_checks` | M6 (grants por columna en `usuarios`), M7 (referidos y anuncios), A5 (revokes que nunca surtieron efecto), CHECK de `estado_escrow`, `metricas_docente` fuera de anon |
+| `perf_rls_initplan_e_indices_fk` | 113 policies a InitPlan + 20 índices de FK |
+
+Efecto medido en los advisors:
+
+| Advisor | Antes | Después |
+|---|---|---|
+| Performance (total) | 279 | **167** |
+| ├ `auth_rls_initplan` | 113 | **0** |
+| ├ `unindexed_foreign_keys` | 19 | **0** |
+| └ `unused_index` | 24 | 44 (los 20 nuevos, sin tráfico todavía) |
+| Seguridad (total) | 34 | **28** |
+| ├ funciones ejecutables por `anon` | 6 | **1** (`incrementar_vistas`, intencional) |
+| └ `rls_enabled_no_policy` | 4 | **2** (ambas correctas: solo service_role) |
+
+### ⚠️ Corrección importante encontrada al aplicar
+
+Dos policies que había escrito en `hardening_policies` **habrían roto la app**, y
+el test de "la migración aplica sin errores" no lo detectaba. Se movieron a
+`20260804_pendiente_notificaciones.sql`, comentadas y con el motivo:
+
+- **`notificaciones`**: la app inserta notificaciones para terceros desde el
+  cliente en 8 lugares legítimos (chat, ofertas, preguntas, ayudantes, finalizar
+  clase). Necesita una RPC `notificar()` que valide la relación, más migrar esos
+  call-sites.
+- **`alertas_digest_queue`**: `dispararAlertas` (`supabase.ts:1175`) inserta
+  digests para otros usuarios al publicar — la feature usa el agujero como
+  mecanismo. Necesita mover `dispararAlertas` a una edge function, que ya estaba
+  pendiente por performance.
+
+Lección: *aplica limpio* no es lo mismo que *no rompe nada*. Hay que cruzar cada
+revoke contra los call-sites reales del frontend.
+
+**Bug lateral detectado**: `OnboardingModal.jsx:462` manda `modalidad_preferida`
+y `presupuesto` en el update de `usuarios`, y **esas columnas no existen**. El
+`.catch(()=>{})` se lo traga, así que las preferencias del onboarding nunca se
+guardaron.
+
+---
+
+**Escrito pero SIN APLICAR** — `20260804_lockdown_inscripciones.sql` (+ las dos
+policies pendientes de arriba):
 `lockdown_inscripciones` (C1, C2, C3), `fix_liberar_pago_clase` (A3),
 `hardening_policies` (F1, A2, M6, M7, A5, CHECK de estado_escrow),
 `perf_rls_e_indices` (113 InitPlan + 20 índices). **Requieren backup y branch de
