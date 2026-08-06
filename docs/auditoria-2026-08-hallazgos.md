@@ -51,16 +51,40 @@ Las 4 migraciones aplican sin errores. Resultados funcionales:
 
 ---
 
-### ✅ APLICADO EN PRODUCCIÓN (2026-08-04)
+### ✅ APLICADO EN PRODUCCIÓN — REMEDIACIÓN COMPLETA (2026-08-04)
 
-Tres migraciones aplicadas, elegidas por ser las que **no rompen el código
-desplegado hoy** (la rama con los cambios de frontend todavía no está en main):
+Las 5 migraciones están aplicadas y la rama está mergeada a `main` y desplegada.
 
 | Migración | Qué cierra |
 |---|---|
 | `fix_liberar_pago_clase_cas_y_prorrateo` | A3: race condition, prorrateo roto y hold varado |
-| `hardening_policies_grants_y_checks` | M6 (grants por columna en `usuarios`), M7 (referidos y anuncios), A5 (revokes que nunca surtieron efecto), CHECK de `estado_escrow`, `metricas_docente` fuera de anon |
+| `hardening_policies_grants_y_checks` | M6, M7, A5, CHECK de `estado_escrow`, `metricas_docente` fuera de anon |
 | `perf_rls_initplan_e_indices_fk` | 113 policies a InitPlan + 20 índices de FK |
+| `lockdown_inscripciones_a_rpcs` | RPCs `inscribirse` / `finalizar_clase_publicacion` + endurecimiento de `reembolsar_inscripcion` |
+| `lockdown_inscripciones_b_revokes` | **C1, C2 y C3** |
+
+**Secuencia usada para no dejar ventana de rotura.** El lockdown se dividió en
+dos: el paso A es puramente aditivo (crea las RPCs, no revoca nada) y se aplicó
+ANTES del deploy, así que el código viejo siguió andando; el paso B, que revoca
+la escritura directa, se aplicó DESPUÉS de verificar que el deploy estaba vivo
+(el sitio servía el `logo.png` de 10.671 bytes, el comprimido). Entre A y B
+convivieron los dos caminos.
+
+Verificación post-aplicación contra producción (en transacción revertida):
+
+| Prueba | Resultado |
+|---|---|
+| Alumno se inscribe por RPC | ✅ ok |
+| **C3** — INSERT directo con `pagado_mp`/`mp_payment_id` | ✅ `permission denied` |
+| **C1** — alumno reapunta `mp_payment_id` | ✅ `permission denied` |
+| **C2** — docente confirma por el alumno | ✅ 0 filas afectadas, valor sigue en `false` |
+| Alumno confirma lo suyo | ✅ 1 fila, queda en `true` |
+| Docente finaliza por RPC | ✅ `{ok:true, finalizadas:1}` |
+
+**Nota de método**: la primera corrida marcó C2 como fallado. Era el test, no la
+migración: la RLS **filtra filas sin lanzar error**, así que medir por excepción
+da falso negativo. Los grants por columna sí lanzan error; las policies no. Hay
+que verificar por filas afectadas y por el valor final.
 
 Efecto medido en los advisors:
 
@@ -99,8 +123,7 @@ guardaron.
 
 ---
 
-**Escrito pero SIN APLICAR** — `20260804_lockdown_inscripciones.sql` (+ las dos
-policies pendientes de arriba):
+**Sin aplicar (a propósito)** — las dos policies de `20260804_pendiente_notificaciones.sql`:
 `lockdown_inscripciones` (C1, C2, C3), `fix_liberar_pago_clase` (A3),
 `hardening_policies` (F1, A2, M6, M7, A5, CHECK de estado_escrow),
 `perf_rls_e_indices` (113 InitPlan + 20 índices). **Requieren backup y branch de
