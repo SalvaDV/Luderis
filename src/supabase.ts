@@ -707,8 +707,13 @@ export const deleteForoPost = (id: Id, token: Token) =>
 
 // ── Clases realizadas ─────────────────────────────────────────────────────────
 
-export const insertClaseRealizada = (data: Row, token: Token) =>
-  db('clases_realizadas', 'POST', data, token, 'return=representation');
+// Registra una clase dictada a partir de una clase REAL de la agenda: el día
+// tiene que coincidir con un horario programado de la publicación, los alumnos
+// salen de las inscripciones activas y la duración se calcula del horario.
+// Reemplaza la carga a mano (email del alumno en texto libre + fecha arbitraria),
+// que era la base de un circuito que libera plata y descuenta unidades compradas.
+export const registrarClaseDictada = (pubId: Id, fecha: string, token: Token) =>
+  db('rpc/registrar_clase_dictada', 'POST', { p_pub_id: pubId, p_fecha: fecha }, token);
 export const getClasesRealizadas = (email: string, token: Token) =>
   db(`clases_realizadas?or=(docente_email.eq.${encodeURIComponent(email)},alumno_email.eq.${encodeURIComponent(email)})&order=fecha_clase.desc`, 'GET', null, token);
 export const confirmarClase = (claseId: Id, userEmail: string, token: Token) =>

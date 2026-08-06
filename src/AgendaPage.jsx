@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Trophy, Calendar, GraduationCap, BookOpen, Star, Clock, Play, Users, Check } from "lucide-react";
 import * as sb from "./supabase";
-import { C, FONT, FONT_DISPLAY, Avatar, Spinner, LUD, tx, accentFor } from "./shared";
+import { C, FONT, FONT_DISPLAY, Avatar, Spinner, LUD, tx, accentFor, toast } from "./shared";
 
 // Badge compacto que indica si el usuario es docente o alumno en esa publicación
 const RolBadge=({rol})=>rol==="docente"
@@ -181,13 +181,36 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
     return colors[idx<0?0:idx];
   };
 
-  // Detectar clases perdidas (ayer o antes de ayer, que el alumno no marcó asistencia)
-  const clasesPerdidas=[];
-  for(let d=-2;d<0;d++){
+  // Clases YA DICTADAS que el docente todavía no registró (últimos 14 días).
+  // El registro sale de acá y no de una carga a mano: la fecha y la duración las
+  // define el horario programado, y los alumnos salen de las inscripciones.
+  const [registradas,setRegistradas]=useState({});
+  const [registrando,setRegistrando]=useState(null);
+  const pendientesRegistro=[];
+  for(let d=-14;d<=0;d++){
     const fecha=new Date(now.getFullYear(),now.getMonth(),now.getDate()+d);
-    const clases=clasesEnDia(fecha.getDate());
-    clases.forEach(c=>clasesPerdidas.push({...c,fecha}));
+    if(fecha.getMonth()!==mes.getMonth()||fecha.getFullYear()!==mes.getFullYear())continue;
+    clasesEnDia(fecha.getDate()).forEach(c=>{
+      if(c.post._rol!=="docente")return;
+      pendientesRegistro.push({...c,fecha});
+    });
   }
+  pendientesRegistro.sort((a,b)=>b.fecha-a.fecha);
+
+  const iso=(f)=>`${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,"0")}-${String(f.getDate()).padStart(2,"0")}`;
+  const marcarDictada=async(pubId,fecha)=>{
+    const key=`${pubId}_${iso(fecha)}`;
+    setRegistrando(key);
+    try{
+      const r=await sb.registrarClaseDictada(pubId,iso(fecha),session.access_token);
+      if(r?.error){toast(r.error,"error");return;}
+      setRegistradas(prev=>({...prev,[key]:true}));
+      toast(r.registradas>0
+        ?`Clase registrada. Avisamos a ${r.registradas} alumno${r.registradas!==1?"s":""} para que confirmen.`
+        :"Esa clase ya estaba registrada","success",4000);
+    }catch(e){toast("No se pudo registrar: "+e.message,"error");}
+    finally{setRegistrando(null);}
+  };
 
   return(
     <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto",fontFamily:FONT}}>
@@ -213,6 +236,42 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
       {loading?<Spinner/>:(
         <>
           <style>{`@media(max-width:820px){.ld-agenda-grid{grid-template-columns:1fr!important}}`}</style>
+
+          {/* Clases dictadas pendientes de registrar (solo docente).
+              Registrar es lo que arranca la doble confirmación: cuando el alumno
+              confirma, se libera el pago retenido y se descuenta una unidad. */}
+          {pendientesRegistro.filter(c=>!registradas[`${c.post.id}_${iso(c.fecha)}`]).length>0&&(
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:18}}>
+              <div style={{...tx("h3"),color:C.text,marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+                <Check size={17} strokeWidth={2.2} color={C.accent}/>Confirmá las clases que diste
+              </div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>
+                Al registrarla, cada alumno recibe el aviso para confirmarla. Con su confirmación se libera tu pago.
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {pendientesRegistro.filter(c=>!registradas[`${c.post.id}_${iso(c.fecha)}`]).slice(0,8).map((c,i)=>{
+                  const key=`${c.post.id}_${iso(c.fecha)}`;
+                  const cargando=registrando===key;
+                  return(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.post.titulo}</div>
+                        <div style={{fontSize:11,color:C.muted,display:"flex",alignItems:"center",gap:5,marginTop:2}}>
+                          <Clock size={11} strokeWidth={2}/>
+                          {c.fecha.toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"})}
+                          {c.clase?.hora_inicio&&` · ${c.clase.hora_inicio}${c.clase.hora_fin?`–${c.clase.hora_fin}`:""}`}
+                        </div>
+                      </div>
+                      <button onClick={()=>marcarDictada(c.post.id,c.fecha)} disabled={cargando}
+                        style={{background:cargando?C.border:LUD.grad,border:"none",borderRadius:20,color:cargando?C.muted:"#fff",padding:"8px 16px",fontWeight:700,fontSize:12,cursor:cargando?"default":"pointer",fontFamily:FONT,flexShrink:0}}>
+                        {cargando?"Registrando…":"La di"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="ld-agenda-grid" style={{display:"grid",gridTemplateColumns:"minmax(0,1.6fr) minmax(0,1fr)",gap:18,marginBottom:18,alignItems:"start"}}>
           {/* Calendario */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"18px 20px"}}>

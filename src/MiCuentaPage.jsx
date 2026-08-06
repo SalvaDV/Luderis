@@ -704,12 +704,6 @@ function ClasesTab({session,misPubs}){
   const [confirmando,setConfirmando]=useState(null);
   const [liberando,setLiberando]=useState(null);
   const [liberados,setLiberados]=useState({});// claseId → true
-  const [showRegistrar,setShowRegistrar]=useState(false);
-  const [regPubId,setRegPubId]=useState("");
-  const [regAlumnoEmail,setRegAlumnoEmail]=useState("");
-  const [regFecha,setRegFecha]=useState("");
-  const [regDuracion,setRegDuracion]=useState("");
-  const [regNotas,setRegNotas]=useState("");
   const [saving,setSaving]=useState(false);
 
   const misOfertas=(misPubs||[]).filter(p=>p.tipo==="oferta");
@@ -733,25 +727,8 @@ function ClasesTab({session,misPubs}){
     }catch(e){toast("Error: "+e.message,"error");}finally{setConfirmando(null);}
   };
 
-  const registrar=async()=>{
-    if(!regAlumnoEmail.trim()||!regFecha){toast("Completá alumno y fecha","error");return;}
-    setSaving(true);
-    try{
-      const soyDocente=misOfertas.length>0;
-      const data={
-        docente_email:soyDocente?miEmail:regAlumnoEmail.trim(),
-        alumno_email:soyDocente?regAlumnoEmail.trim():miEmail,
-        fecha_clase:regFecha,
-        duracion_min:regDuracion?parseInt(regDuracion):null,
-        notas:regNotas.trim()||null,
-      };
-      if(regPubId)data.publicacion_id=regPubId;
-      await sb.insertClaseRealizada(data,session.access_token);
-      setShowRegistrar(false);setRegAlumnoEmail("");setRegFecha("");setRegDuracion("");setRegNotas("");setRegPubId("");
-      await cargar();
-      toast("Clase registrada","success");
-    }catch(e){toast("Error: "+e.message,"error");}finally{setSaving(false);}
-  };
+  // registrar(): eliminada junto con el formulario manual. El alta de clases
+  // vive en la agenda (sb.registrarClaseDictada), sobre el horario programado.
 
   const liberarPago=async(clase)=>{
     setLiberando(clase.id);
@@ -767,40 +744,15 @@ function ClasesTab({session,misPubs}){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-        <div style={{...tx("body"),color:C.muted}}>Registrá y confirmá clases realizadas para habilitar reseñas verificadas.</div>
-        {misOfertas.length>0&&(
-          showRegistrar
-            ?<button onClick={()=>setShowRegistrar(false)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            :<button onClick={()=>setShowRegistrar(true)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid}}><span style={{fontSize:16,lineHeight:1}}>+</span>Registrar clase</button>
-        )}
+        <div style={{...tx("body"),color:C.muted}}>Las clases se registran desde <strong>Mi agenda</strong>, sobre el horario programado. Acá confirmás las que ya están registradas.</div>
+        {/* El alta de clases se hace desde la agenda, sobre una clase realmente
+            programada. Antes había acá un formulario donde el docente escribía
+            el email del alumno, la fecha y la duración a mano: como confirmar
+            una clase libera el pago y descuenta una unidad comprada, ese dato
+            no puede ser de carga libre. */}
       </div>
 
-      {showRegistrar&&(
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:18,boxShadow:C.shadow}}>
-          <div style={{...tx("cardTitle"),color:C.text,marginBottom:12}}>Registrar clase dada</div>
-          {misOfertas.length>0&&(
-            <div style={{marginBottom:8}}>
-              <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Publicación (opcional)</div>
-              <select value={regPubId} onChange={e=>setRegPubId(e.target.value)} aria-label="Publicación" style={{...iS,marginBottom:8}}>
-                <option value="">— Sin publicación específica —</option>
-                {misOfertas.map(p=><option key={p.id} value={p.id}>{p.titulo}</option>)}
-              </select>
-            </div>
-          )}
-          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Email del alumno *</div>
-          <input value={regAlumnoEmail} onChange={e=>setRegAlumnoEmail(e.target.value)} aria-label="Email del alumno" placeholder="alumno@email.com" style={iS}/>
-          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Fecha de la clase *</div>
-          <input type="date" value={regFecha} onChange={e=>setRegFecha(e.target.value)} aria-label="Fecha de la clase" style={iS}/>
-          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Duración (min) — opcional</div>
-          <input type="number" value={regDuracion} onChange={e=>setRegDuracion(e.target.value)} aria-label="Duración en minutos" placeholder="60" style={iS}/>
-          <div style={{fontSize:12,color:C.muted,fontWeight:600,display:"block",marginBottom:4}}>Notas (opcional)</div>
-          <textarea value={regNotas} onChange={e=>setRegNotas(e.target.value)} aria-label="Notas de la clase" placeholder="Temas vistos, observaciones..." rows={2} style={{...iS,resize:"vertical"}}/>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={registrar} disabled={saving} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 20px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:FONT,fontSize:13.5,fontWeight:650,color:"#fff",background:accentFor("cursos").solid,opacity:saving?0.6:1}}>{saving?"Guardando...":"Registrar"}</button>
-            <button onClick={()=>setShowRegistrar(false)} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:22,border:`1.5px solid ${C.borderStrong||C.border}`,background:"transparent",color:C.textSoft||C.text,fontFamily:FONT,fontSize:13.5,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-          </div>
-        </div>
-      )}
+      {/* Formulario manual eliminado: ver comentario de arriba. */}
 
       {loading?<Spinner/>:clases.length===0?(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"48px 24px",textAlign:"center",boxShadow:C.shadow}}>
