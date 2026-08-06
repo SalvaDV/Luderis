@@ -5158,6 +5158,10 @@ function InscripcionModal({post,session,onClose,onDone}){
   // una sola hora y el resto quedaba sin cobrar.
   const [unidades, setUnidades] = useState(1);
   const MAX_UNIDADES = 40;
+  // Una publicación que cobra por hora/clase necesita que el alumno elija
+  // CUÁNTAS compra. Los cursos no setean precio_tipo: ahí se paga una vez.
+  const cobraPorUnidad = !!post.precio&&parseFloat(post.precio)>0
+    &&(post.precio_tipo==="hora"||post.precio_tipo==="clase");
 
   // Derivar paquete elegido y precio efectivo desde opcion
   const paqueteElegido = React.useMemo(()=>{
@@ -5215,15 +5219,24 @@ function InscripcionModal({post,session,onClose,onDone}){
     }
   };
 
-  // Si no hay paquetes ni prueba, skip paso 1 y auto-seleccionar MP para ARS
+  // Skip del paso 1 solo cuando NO hay nada que elegir. Si la publicación cobra
+  // por hora/clase, el paso 1 es donde se elige la cantidad: saltearlo dejaba al
+  // alumno pagando una sola unidad sin poder cambiarla, aunque el aviso dijera
+  // "$120 /hora".
   React.useEffect(()=>{
-    if(paquetesDisp.length===0&&!post.tiene_prueba){
+    if(paquetesDisp.length===0&&!post.tiene_prueba&&!cobraPorUnidad){
       setOpcion("clase");
       const tieneStripe=post.moneda==="USD"||post.moneda==="EUR";
       if(!tieneStripe) setMetodo("mp");
       setPaso(2);
     }
-  },[paquetesDisp,post.tiene_prueba,post.moneda]);
+  },[paquetesDisp,post.tiene_prueba,post.moneda,cobraPorUnidad]);
+
+  // Con cobro por unidad, la opción base viene preseleccionada para que el
+  // selector de cantidad esté visible de entrada (sin un click extra).
+  React.useEffect(()=>{
+    if(cobraPorUnidad&&!opcion) setOpcion("clase");
+  },[cobraPorUnidad,opcion]);
 
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",fontFamily:FONT}}>
@@ -5244,7 +5257,7 @@ function InscripcionModal({post,session,onClose,onDone}){
           {opcion&&(
             <div style={{background:C.bg,borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{color:C.muted,fontSize:13}}>
-                {esPrueba?`${unidadLabel} de prueba`:paqueteElegido?`${paqueteElegido.nombre||paqueteElegido.clases+" "+unidadPlural}`:`1 ${unidadLabel}`}
+                {esPrueba?`${unidadLabel} de prueba`:paqueteElegido?`${paqueteElegido.nombre||paqueteElegido.clases+" "+unidadPlural}`:`${unidades} ${unidades===1?unidadLabel:unidadPlural}`}
               </span>
               <span style={{color:C.accent,fontWeight:800,fontSize:16}}>{precioLabel}</span>
             </div>
