@@ -1835,7 +1835,10 @@ function EscrowTab({ session }) {
   const cargar = useCallback(() => {
     setLoading(true);
     Promise.all([
-      adminDb("pagos?estado_escrow=in.(retenido,en_disputa)&select=id,monto,docente_email,alumno_email,estado_escrow,clase_finalizada_at,liberado_at,publicacion_id,created_at&order=clase_finalizada_at.asc&limit=100", "GET", null, session.access_token),
+      // Lee el ledger REAL (billetera_movimientos vía admin_escrow_retenido).
+      // Antes consultaba pagos.estado_escrow, columna del modelo viejo que el
+      // escrow vigente no popula: el tablero salía vacío habiendo plata retenida.
+      adminDb("admin_escrow_retenido?select=*&order=created_at.asc&limit=100", "GET", null, session.access_token),
       adminDb("disputas?estado=eq.abierta&select=*,clases_realizadas(evidencia_url,fecha_clase,duracion_min,duracion_objetada_min)&order=created_at.desc&limit=50", "GET", null, session.access_token),
     ]).then(([p, d]) => {
       setPagosRetenidos(p || []);
@@ -1846,11 +1849,17 @@ function EscrowTab({ session }) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const liberar = async (pago_id) => {
-    setLiberando(pago_id);
+  // Libera una clase puntual sin esperar el reloj de 72 hs. Va por RPC contra el
+  // ledger vigente; `liberar_pago_manual` operaba sobre pagos.estado_escrow, que
+  // el escrow actual no usa.
+  const liberar = async (clase_id) => {
+    setLiberando(clase_id);
     try {
-      const r = await adminAction("liberar_pago_manual", { pago_id }, session.access_token);
-      toast(`✓ Liberado — ${r.metodo} — neto $${Number(r.monto_neto||0).toLocaleString("es-AR")}`, "success");
+      const r = await sb.db("rpc/admin_liquidar_clase", "POST",
+        { p_clase_id: clase_id, p_motivo: "Liberado manualmente desde el panel" },
+        session.access_token);
+      if (r?.error) { toast(r.error, "error"); return; }
+      toast(`✓ Liberado — $${Number(r.monto_liberado||0).toLocaleString("es-AR")}`, "success");
       cargar();
     } catch(e) { toast("Error: " + e.message, "error"); }
     finally { setLiberando(null); }
@@ -1890,7 +1899,7 @@ function EscrowTab({ session }) {
     return h >= 72 ? `⚠️ ${h}h (vencido)` : `${h}h / 72h`;
   };
 
-  const totalRetenido = pagosRetenidos.reduce((a, p) => a + Number(p.monto || 0), 0);
+  const totalRetenido = pagosRetenidos.reduce((a, p) => a + Number(p.pendiente_de_liberar || 0), 0);
 
   if (loading) return <div style={{ padding: 40 }}><Spinner /></div>;
 
@@ -1899,8 +1908,8 @@ function EscrowTab({ session }) {
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
-        <StatBox icon="📦" label="Pagos retenidos" value={pagosRetenidos.filter(p => p.estado_escrow === "retenido").length} color={C.warn} sub="Esperando 72hs" />
-        <StatBox icon="⚠️" label="En disputa" value={pagosRetenidos.filter(p => p.estado_escrow === "en_disputa").length} color={C.danger} sub="Requieren intervención" />
+        <StatBox icon="📦" label="Pagos retenidos" value={pagosRetenidos.filter(p => !p.disputas_abiertas).length} color={C.warn} sub="Esperando 72 hs" />
+        <StatBox icon="⚠️" label="En disputa" value={pagosRetenidos.filter(p => p.disputas_abiertas > 0).length} color={C.danger} sub="Requieren intervención" />
         <StatBox icon="💰" label="Monto retenido total" value={`$${totalRetenido.toLocaleString("es-AR")}`} color={C.accent} sub="Suma de todos los retenidos" />
         <StatBox icon="🚨" label="Disputas abiertas" value={disputas.length} color={C.danger} sub="Sin resolver" />
       </div>
@@ -1922,24 +1931,27 @@ function EscrowTab({ session }) {
               </thead>
               <tbody>
                 {pagosRetenidos.map(p => (
-                  <tr key={p.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <tr key={p.movimiento_id} style={{ borderBottom: `1px solid ${C.border}` }}>
                     <td style={{ padding: "8px 12px" }}>{p.docente_email?.split("@")[0]}</td>
                     <td style={{ padding: "8px 12px" }}>{p.alumno_email?.split("@")[0]}</td>
-                    <td style={{ padding: "8px 12px", fontWeight: 700, color: C.accent }}>${Number(p.monto || 0).toLocaleString("es-AR")}</td>
+                    <td style={{ padding: "8px 12px", fontWeight: 700, color: C.accent }}>${Number(p.pendiente_de_liberar || 0).toLocaleString("es-AR")}</td>
                     <td style={{ padding: "8px 12px" }}>
-                      <Badge color={p.estado_escrow === "en_disputa" ? C.danger : C.warn}>{p.estado_escrow}</Badge>
+                      <Badge color={p.disputas_abiertas > 0 ? C.danger : p.objetada_at ? C.warn : C.muted}>
+                        {p.disputas_abiertas > 0 ? "en disputa" : p.objetada_at ? "objetada" : p.confirmado_docente ? "esperando alumno" : "sin declarar"}
+                      </Badge>
                     </td>
-                    <td style={{ padding: "8px 12px", color: C.muted }}>{horasRetenido(p.clase_finalizada_at)}</td>
+                    <td style={{ padding: "8px 12px", color: C.muted }}>{horasRetenido(p.created_at)}</td>
                     <td style={{ padding: "8px 12px" }}>
-                      {p.estado_escrow === "retenido" && (
+                      {p.clase_realizada_id && !p.disputas_abiertas ? (
                         <button
-                          onClick={() => liberar(p.id)}
-                          disabled={liberando === p.id}
-                          style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT, opacity: liberando === p.id ? .6 : 1 }}
-                        >{liberando === p.id ? "…" : "Liberar ahora"}</button>
-                      )}
-                      {p.estado_escrow === "en_disputa" && (
+                          onClick={() => liberar(p.clase_realizada_id)}
+                          disabled={liberando === p.clase_realizada_id}
+                          style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT, opacity: liberando === p.clase_realizada_id ? .6 : 1 }}
+                        >{liberando === p.clase_realizada_id ? "…" : "Liberar ahora"}</button>
+                      ) : p.disputas_abiertas > 0 ? (
                         <span style={{ fontSize: 11, color: C.muted }}>Ver disputas ↓</span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: C.muted }}>El docente aún no declaró horas</span>
                       )}
                     </td>
                   </tr>
