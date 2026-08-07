@@ -1202,7 +1202,7 @@ function BilleteraTab({session}){
 
   const ESTADO_RETIRO={pendiente:{label:"Pendiente",color:"#F59E0B"},procesado:{label:"Acreditado",color:"#10B981"},rechazado:{label:"Rechazado",color:"#EF4444"}};
   const TIPO_ICONS={recarga:ArrowUp,pago:ArrowDown,reembolso:RefreshCw,bono:Gift};
-  const TIPO_LABELS={recarga:"Recarga",pago:"Pago de clase",reembolso:"Reembolso",bono:"Bono"};
+  const TIPO_LABELS={recarga:"Recarga",pago:"Pago de clase",reembolso:"Reembolso",bono:"Bono",cobro_clase:"Cobro de clase",ingreso:"Ingreso",retiro:"Retiro"};
   const fmtMonto=(n)=>`$${Math.abs(n||0).toLocaleString("es-AR",{maximumFractionDigits:0})}`;
   const totalCargado=movimientos.filter(m=>m.tipo==="recarga"||m.tipo==="bono"||m.tipo==="reembolso").reduce((a,m)=>a+Math.abs(m.monto||0),0);
   const totalGastado=movimientos.filter(m=>m.tipo==="pago").reduce((a,m)=>a+Math.abs(m.monto||0),0);
@@ -1304,18 +1304,29 @@ function BilleteraTab({session}){
         {loading?<Spinner small/>:movimientos.length===0
           ?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"12px 0"}}>Sin movimientos aún.</div>
           :movimientos.slice(0,20).map((m,i,arr)=>{
-            const esIngreso=m.tipo==="recarga"||m.tipo==="reembolso"||m.tipo==="bono";
+            // cobro_clase/ingreso son lo que GANA el docente: iban en rojo con
+            // signo menos, como si le hubieran descontado.
+            const esIngreso=m.tipo==="recarga"||m.tipo==="reembolso"||m.tipo==="bono"
+                          ||m.tipo==="cobro_clase"||m.tipo==="ingreso";
+            // Un cobro pendiente todavía no es plata disponible: se muestra
+            // retenido, para no hacerle creer al docente que ya puede retirarlo.
+            const retenido=m.estado==="pendiente";
+            const colorMonto=retenido?C.warn:(esIngreso?C.success:C.danger);
             return(
               <div key={m.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
                 <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                  {(()=>{const TIcon=TIPO_ICONS[m.tipo]||CreditCard;return<div style={{display:"flex",alignItems:"center",justifyContent:"center",width:32,height:32,borderRadius:8,background:esIngreso?C.success+"18":C.danger+"12",flexShrink:0}}><TIcon size={16} color={esIngreso?C.success:C.danger} strokeWidth={2}/></div>;})()}
+                  {(()=>{const TIcon=TIPO_ICONS[m.tipo]||CreditCard;return<div style={{display:"flex",alignItems:"center",justifyContent:"center",width:32,height:32,borderRadius:8,background:colorMonto+"18",flexShrink:0}}><TIcon size={16} color={colorMonto} strokeWidth={2}/></div>;})()}
                   <div>
-                    <div style={{fontSize:13,color:C.text,fontWeight:500}}>{TIPO_LABELS[m.tipo]||m.tipo}{m.descripcion?` — ${m.descripcion}`:""}</div>
+                    <div style={{fontSize:13,color:C.text,fontWeight:500}}>
+                      {TIPO_LABELS[m.tipo]||m.tipo}{m.descripcion?` — ${m.descripcion}`:""}
+                      {retenido&&<span style={{marginLeft:6,fontSize:10,fontWeight:700,color:C.warn,background:C.warn+"1A",border:`1px solid ${C.warn}40`,borderRadius:20,padding:"1px 7px",whiteSpace:"nowrap"}}>Retenido</span>}
+                    </div>
                     <div style={{fontSize:11,color:C.muted}}>{new Date(m.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"})}</div>
                   </div>
                 </div>
-                <div style={{fontWeight:700,fontSize:14,color:esIngreso?C.success:C.danger}}>
+                <div style={{fontWeight:700,fontSize:14,color:colorMonto,textAlign:"right",flexShrink:0}}>
                   {esIngreso?"+":"-"}${Math.abs(m.monto||0).toLocaleString("es-AR")}
+                  {retenido&&<div style={{fontSize:10,fontWeight:500,color:C.muted}}>aún no disponible</div>}
                 </div>
               </div>
             );

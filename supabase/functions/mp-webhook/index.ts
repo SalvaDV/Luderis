@@ -172,6 +172,7 @@ serve(async (req) => {
       if (alumno?.id && !ES_RECARGA) {
         const unidades = meta.clases_cantidad ? parseInt(meta.clases_cantidad) : 0;
 
+        let unidadPlural = "clases";
         // Cuánto dura una unidad. Una publicación que cobra "por clase" puede
         // tener clases de 90 o 120 min: asumir 60 le comía horas pagas al alumno.
         if (unidades > 0) {
@@ -182,6 +183,10 @@ serve(async (req) => {
             ? 60
             : (Number(pub?.duracion_clase_min) > 0 ? Number(pub.duracion_clase_min) : 60);
           minutosComprados = unidades * durUnidad;
+          // La descripción del movimiento decía "clases" siempre: una
+          // publicación por hora le mostraba al docente "Paquete 3 clases"
+          // cuando había vendido 3 horas.
+          if (pub?.precio_tipo === "hora") unidadPlural = "horas";
         }
 
         const inscData: Record<string, unknown> = {
@@ -257,7 +262,7 @@ serve(async (req) => {
             descripcion:      SPLIT_INMEDIATO
               ? `Cobro directo a tu Mercado Pago — alumno: ${meta.alumno_email}`
               : ES_PAQUETE
-              ? `Paquete ${meta.clases_cantidad ?? "N"} clases — alumno: ${meta.alumno_email}`
+              ? `Paquete ${meta.clases_cantidad ?? "N"} ${unidadPlural} — alumno: ${meta.alumno_email}`
               : `Pago retenido — alumno: ${meta.alumno_email}`,
             publicacion_id:   meta.publicacion_id,
             mp_payment_id:    mpPayId,
