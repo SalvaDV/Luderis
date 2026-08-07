@@ -90,7 +90,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
     <div ref={trapRef} role="dialog" aria-modal="true" aria-label={post?.titulo||"Detalle de publicación"} tabIndex={-1} style={{position:"fixed",inset:0,zIndex:Z.overlayDetail,background:C.bg,display:"flex",flexDirection:"column",fontFamily:FONT,overflowY:"auto",WebkitOverflowScrolling:"touch",animation:"fadeIn .18s ease",outline:"none"}}>
       <style>{`
         @media(max-width:600px){
-          .dm-topbar{padding:0 14px!important}
+          .dm-topbar{padding-left:14px!important;padding-right:14px!important}
           .dm-banner{padding:0 16px!important;height:110px!important}
           .dm-banner-emoji{font-size:44px!important}
           .dm-body-pad{padding:0 12px!important}
@@ -101,21 +101,23 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
 
       {/* ── Barra superior ── */}
       {(()=>{const T=getPubTipo(post);
-      // Alto 72 para que respire (antes 64 con un botón de 36 quedaba apretada).
-      // Hairline abajo en vez del borde de 2px de acento, que la hacía leer como
-      // una franja; el acento pasa a una línea fina arriba, que identifica el
+      // El alto lo define el padding (20px arriba y abajo) en vez de un height
+      // fijo: con height:72 el bloque de texto (~38px) dejaba solo 15px de aire
+      // a cada lado y se leía apretado. Ahora son ~20px reales.
+      // Hairline abajo en vez del borde grueso de acento, que la hacía leer como
+      // una franja; el acento queda como línea fina arriba, que identifica el
       // tipo de publicación sin pesar.
       return(
-      <div className="dm-topbar" style={{position:"sticky",top:0,zIndex:10,background:C.surface,borderTop:`3px solid ${T.accent}`,borderBottom:`1px solid ${C.border}`,padding:"0 28px",height:72,display:"flex",alignItems:"center",gap:14,boxShadow:"0 1px 12px rgba(16,27,46,.05)"}}>
+      <div className="dm-topbar" style={{position:"sticky",top:0,zIndex:10,background:C.surface,borderTop:`2px solid ${T.accent}`,borderBottom:`1px solid ${C.border}`,padding:"20px 28px",display:"flex",alignItems:"center",gap:16,boxShadow:"0 1px 12px rgba(16,27,46,.05)"}}>
         <button onClick={onClose} aria-label="Volver"
-          style={{width:40,height:40,borderRadius:"50%",background:T.dim,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,flexShrink:0,transition:"background .15s, transform .15s"}}
+          style={{width:42,height:42,borderRadius:"50%",background:T.dim,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,flexShrink:0,transition:"background .15s, transform .15s"}}
           onMouseEnter={e=>{e.currentTarget.style.background=T.border;e.currentTarget.style.transform="translateX(-2px)";}}
           onMouseLeave={e=>{e.currentTarget.style.background=T.dim;e.currentTarget.style.transform="none";}}>
           <ArrowLeft size={19} strokeWidth={2.2}/>
         </button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{...tx("cardTitle"),color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
-          <div style={{...tx("micro"),color:C.muted,display:"flex",alignItems:"center",gap:5,marginTop:1}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>· <Megaphone size={11} strokeWidth={2}/>Pedido</span>}</div>
+          <div style={{...tx("micro"),color:C.muted,display:"flex",alignItems:"center",gap:5,marginTop:3}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>· <Megaphone size={11} strokeWidth={2}/>Pedido</span>}</div>
         </div>
         <div style={{display:"flex",gap:8,flexShrink:0}}>
           <ShareBtn post={post} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"6px 12px",fontSize:12}}/>
