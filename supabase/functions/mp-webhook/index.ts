@@ -165,9 +165,25 @@ serve(async (req) => {
       // creara como 'pendiente', la liberación lo acreditaría una segunda vez.
       const SPLIT_INMEDIATO = meta.split_inmediato === true;
 
-      // ── 2. Inscribir al alumno (idempotente) ───────────────────────────
+      // ── 2. Inscribir al alumno / sumar horas a su cartera ──────────────
       // Las recargas no inscriben a nada: solo suman saldo.
+      let inscripcionId: string | null = null;
+      let minutosComprados = 0;
       if (alumno?.id && !ES_RECARGA) {
+        const unidades = meta.clases_cantidad ? parseInt(meta.clases_cantidad) : 0;
+
+        // Cuánto dura una unidad. Una publicación que cobra "por clase" puede
+        // tener clases de 90 o 120 min: asumir 60 le comía horas pagas al alumno.
+        if (unidades > 0) {
+          const { data: pub } = await supabase
+            .from("publicaciones").select("precio_tipo,duracion_clase_min")
+            .eq("id", meta.publicacion_id).maybeSingle();
+          const durUnidad = pub?.precio_tipo === "hora"
+            ? 60
+            : (Number(pub?.duracion_clase_min) > 0 ? Number(pub.duracion_clase_min) : 60);
+          minutosComprados = unidades * durUnidad;
+        }
+
         const inscData: Record<string, unknown> = {
           publicacion_id: meta.publicacion_id,
           alumno_id:      alumno.id,
@@ -176,14 +192,36 @@ serve(async (req) => {
           mp_payment_id:  mpPayId,
           es_prueba:      tipo === "prueba",
         };
-        // Para paquetes: guardar cantidad de clases
-        if (meta.clases_cantidad) {
-          inscData.clases_totales   = parseInt(meta.clases_cantidad);
-          inscData.clases_restantes = parseInt(meta.clases_cantidad);
-          inscData.precio_por_clase = monto / parseInt(meta.clases_cantidad);
+        if (unidades > 0) {
+          inscData.clases_totales   = unidades;
+          inscData.clases_restantes = unidades;
+          inscData.minutos_totales  = minutosComprados;
+          inscData.precio_por_clase = monto / unidades;
         }
-        const { error: inscErr } = await supabase.from("inscripciones").insert(inscData);
-        if (inscErr && !inscErr.message?.includes("uq_inscripcion") && !inscErr.code?.includes("23505")) {
+
+        const { data: inscNueva, error: inscErr } = await supabase
+          .from("inscripciones").insert(inscData).select("id").maybeSingle();
+
+        if (!inscErr) {
+          inscripcionId = inscNueva?.id ?? null;
+        } else if (inscErr.code === "23505" || inscErr.message?.includes("uq_inscripcion")) {
+          // Ya estaba inscripto: ES UNA RECOMPRA. Antes el error se descartaba
+          // en silencio y el alumno pagaba sin recibir una sola hora más. Ahora
+          // se le suman a la cartera que ya tiene.
+          const { data: sumaId, error: sumaErr } = await supabase
+            .rpc("sumar_horas_inscripcion", {
+              p_pub_id:    meta.publicacion_id,
+              p_alumno_id: alumno.id,
+              p_minutos:   minutosComprados,
+              p_unidades:  unidades,
+            });
+          if (sumaErr) {
+            // Que no vuelva a fallar en silencio: acá hay plata cobrada.
+            console.error("Recompra: no se pudieron sumar las horas, code:", sumaErr.code ?? "desconocido");
+          } else {
+            inscripcionId = (sumaId as string) ?? null;
+          }
+        } else {
           // Solo el código: el objeto de error de PostgREST puede incluir la fila
           // completa (email del alumno, montos) en los logs.
           console.error("Error inscripción, code:", inscErr.code ?? "desconocido");
@@ -224,6 +262,14 @@ serve(async (req) => {
             publicacion_id:   meta.publicacion_id,
             mp_payment_id:    mpPayId,
             comision_luderis: comision,
+            // El hold pertenece a la cartera del alumno, no a un pago suelto:
+            // así se consume FIFO aunque haya varias compras, y lo que no se
+            // use vuelve como crédito al alumno a los 30 días.
+            inscripcion_id:   inscripcionId,
+            minutos:          minutosComprados > 0 ? minutosComprados : null,
+            expira_at:        (!SPLIT_INMEDIATO && minutosComprados > 0)
+              ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+              : null,
           });
         }
       }

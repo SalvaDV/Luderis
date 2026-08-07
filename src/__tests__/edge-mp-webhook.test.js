@@ -42,7 +42,7 @@ const pagoMp = (over = {}) => ({
 });
 
 // Backend simulado con la primera entrega exitosa (claim CAS gana)
-function backendPrimeraEntrega({ claimGana = true, meta, pago } = {}) {
+function backendPrimeraEntrega({ claimGana = true, meta, pago, inscripcionDuplicada = false, pub } = {}) {
   const r = makeFetchRouter();
   r.on("GET", "api.mercadopago.com/v1/payments/777", () => pgJson(pagoMp({ meta, pago })))
     .on("POST", "/rest/v1/pagos", () => pgMinimal(201))                       // upsert registro
@@ -53,7 +53,17 @@ function backendPrimeraEntrega({ claimGana = true, meta, pago } = {}) {
       () => pgJson({ id: "u-alumno" }))
     .on("GET", (u) => u.includes("/rest/v1/usuarios") && u.includes("docente%40test.com"),
       () => pgJson({ id: "u-docente" }))
-    .on("POST", "/rest/v1/inscripciones", () => pgMinimal(201))
+    // Duración de la unidad comprada: una publicación "por clase" puede tener
+    // clases de 90 min y asumir 60 le comería horas pagas al alumno.
+    .on("GET", "/rest/v1/publicaciones",
+      () => pgJson(pub ?? { precio_tipo: "hora", duracion_clase_min: null }))
+    .on("POST", "/rest/v1/inscripciones",
+      () => (inscripcionDuplicada
+        // 23505: ya estaba inscripto → es una RECOMPRA de horas
+        ? new Response(JSON.stringify({ code: "23505", message: "uq_inscripcion_publicacion_alumno" }),
+            { status: 409, headers: { "Content-Type": "application/json" } })
+        : pgJson({ id: "insc-1" })))
+    .on("POST", "/rest/v1/rpc/sumar_horas_inscripcion", () => pgJson("insc-1"))
     .on("POST", "/rest/v1/rpc/incrementar_saldo", () => new Response(null, { status: 204 }))
     .on("POST", "/rest/v1/billetera_movimientos", () => pgMinimal(201))
     .on("POST", "/rest/v1/notificaciones", () => pgMinimal(201));
@@ -144,6 +154,48 @@ describe("mp-webhook — la ruta del dinero", () => {
     const mov = router.calls.find((c) => c.url.includes("billetera_movimientos"));
     expect(mov.body.estado).toBe("pendiente");
     expect(mov.body.monto).toBe(900);
+    // El hold pertenece a la cartera y vence: así se consume FIFO y lo no usado
+    // vuelve como crédito al alumno.
+    expect(mov.body.inscripcion_id).toBe("insc-1");
+    expect(mov.body.minutos).toBe(240);               // 4 unidades × 60 min (precio por hora)
+    expect(mov.body.expira_at).toBeTruthy();
+  });
+
+  test("recompra: el alumno ya inscripto SUMA horas a su cartera (antes pagaba y no recibía nada)", async () => {
+    // Regresión: UNIQUE (publicacion_id, alumno_id) hacía fallar el INSERT con
+    // 23505, el webhook se comía el error como "idempotente" y clases_totales no
+    // subía — pero el cobro sí ocurría y el hold quedaba huérfano.
+    const router = backendPrimeraEntrega({
+      meta: { tipo: "paquete_clase", clases_cantidad: "2" },
+      inscripcionDuplicada: true,
+    });
+    globalThis.fetch = router.fetch;
+    const res = await reqWebhook("topic=payment&id=777", await signMpWebhook(SECRET, "777"));
+    expect(res.status).toBe(200);
+
+    // Se suman las horas a la inscripción existente
+    const suma = router.calls.find((c) => c.url.includes("rpc/sumar_horas_inscripcion"));
+    expect(suma).toBeTruthy();
+    expect(suma.body.p_unidades).toBe(2);
+    expect(suma.body.p_minutos).toBe(120);
+
+    // Y el hold nuevo queda atado a esa misma cartera (si no, nadie lo liquida)
+    const mov = router.calls.find((c) => c.url.includes("billetera_movimientos"));
+    expect(mov.body.inscripcion_id).toBe("insc-1");
+    expect(mov.body.estado).toBe("pendiente");
+  });
+
+  test("publicación que cobra POR CLASE de 90 min: compra 2 → 180 min, no 120", async () => {
+    // Asumir 60 min por unidad le comía media hora paga por clase al alumno.
+    const router = backendPrimeraEntrega({
+      meta: { tipo: "paquete_clase", clases_cantidad: "2" },
+      pub: { precio_tipo: "clase", duracion_clase_min: 90 },
+    });
+    globalThis.fetch = router.fetch;
+    await reqWebhook("topic=payment&id=777", await signMpWebhook(SECRET, "777"));
+
+    const insc = router.calls.find((c) => c.url.includes("/rest/v1/inscripciones"));
+    expect(insc.body.minutos_totales).toBe(180);
   });
 
   test("recarga de billetera (publicacion_id sentinela): no inscribe ni acredita al docente", async () => {
