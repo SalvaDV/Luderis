@@ -1,14 +1,30 @@
 {
   "root": true,
-  "env": { "browser": true, "es2022": true, "node": true },
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "ecmaFeatures": { "jsx": true }
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
-  "settings": { "react": { "version": "18" } },
-  "plugins": ["jsx-a11y", "react-hooks"],
-  "extends": ["plugin:jsx-a11y/recommended"],
+  "settings": {
+    "react": {
+      "version": "18"
+    }
+  },
+  "plugins": [
+    "jsx-a11y",
+    "react-hooks",
+    "react"
+  ],
+  "extends": [
+    "plugin:jsx-a11y/recommended"
+  ],
   "ignorePatterns": [
     "build/",
     "node_modules/",
@@ -18,6 +34,30 @@
     "src/database.types.ts"
   ],
   "rules": {
-    "jsx-a11y/no-autofocus": "off"
-  }
+    "jsx-a11y/no-autofocus": "off",
+    "no-undef": "error",
+    "react/jsx-no-undef": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/__tests__/**/*.js",
+        "src/**/*.test.js"
+      ],
+      "env": {
+        "node": true
+      },
+      "globals": {
+        "describe": "readonly",
+        "test": "readonly",
+        "it": "readonly",
+        "expect": "readonly",
+        "beforeAll": "readonly",
+        "afterAll": "readonly",
+        "beforeEach": "readonly",
+        "afterEach": "readonly",
+        "vi": "readonly"
+      }
+    }
+  ]
 }
