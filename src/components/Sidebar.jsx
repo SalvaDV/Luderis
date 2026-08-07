@@ -4,11 +4,13 @@ import * as sb from "../supabase";
 import {
   C, FONT, FONT_DISPLAY, LUD, accentFor,
   _avatarCache,
-  setLang, t,
+  setLang, t, useLang,
   Avatar,
 } from "../shared";
 
 export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,totalNotifsUnread,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin,juegosBadge,onOpenAdmin,onOpenNotifPanel}){
+  // Se suscribe al idioma: al cambiarlo, este árbol se vuelve a renderizar solo.
+  const langActual=useLang();
   const nombre=sb.getDisplayName(session.user.email);
   const nav=[
     {id:"explore",Icon:Search,label:t("explore")},
@@ -103,28 +105,29 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
         {/* Oscuro / Salir */}
         <div style={{display:"flex",gap:8}}>
           <button onClick={onToggleTheme}
-            style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"8px",cursor:"pointer",fontSize:12.5,fontWeight:600,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all .14s"}}
+            style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"8px",cursor:"pointer",fontSize:12.5,fontWeight:600,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,whiteSpace:"nowrap",transition:"all .14s"}}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderStrong||C.accent;e.currentTarget.style.background=C.surfaceAlt||C.bg;}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background="transparent";}}>
             {theme==="light"?<><Moon size={15} strokeWidth={2}/> Oscuro</>:<><Sun size={15} strokeWidth={2}/> Claro</>}
           </button>
           <button onClick={onLogout}
-            style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"8px",cursor:"pointer",fontSize:12.5,fontWeight:600,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all .14s"}}
+            style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,padding:"8px",cursor:"pointer",fontSize:12.5,fontWeight:600,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center",gap:6,whiteSpace:"nowrap",transition:"all .14s"}}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.danger;e.currentTarget.style.color=C.danger;}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-            <LogOut size={15} strokeWidth={2}/> {t("logout")}
+            <LogOut size={15} strokeWidth={2}/> {t("logoutShort")}
           </button>
         </div>
         {/* Idioma (compacto) */}
         <div style={{display:"flex",gap:6}}>
           {[["es",t("langEs")],["en",t("langEn")]].map(([key,label])=>(
             <button key={key}
-              onClick={()=>{setLang(key);if(onForceRender)onForceRender();else{onToggleTheme();setTimeout(onToggleTheme,10);}}}
-              style={{flex:1,background:(localStorage.getItem("cl_lang")||"es")===key?accN.soft:"transparent",
-                border:`1px solid ${(localStorage.getItem("cl_lang")||"es")===key?accN.solid:C.border}`,
-                borderRadius:8,color:(localStorage.getItem("cl_lang")||"es")===key?accN.text:C.muted,
+              onClick={()=>{setLang(key);if(onForceRender)onForceRender();}}
+              aria-pressed={langActual===key}
+              style={{flex:1,background:langActual===key?accN.soft:"transparent",
+                border:`1px solid ${langActual===key?accN.solid:C.border}`,
+                borderRadius:8,color:langActual===key?accN.text:C.muted,
                 padding:"5px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,
-                display:"flex",alignItems:"center",justifyContent:"center",gap:4,transition:"all .14s"}}>
+                display:"flex",alignItems:"center",justifyContent:"center",gap:4,whiteSpace:"nowrap",transition:"all .14s"}}>
               {label}
             </button>
           ))}

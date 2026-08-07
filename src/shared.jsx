@@ -192,7 +192,28 @@ export const calcDuracion=(ini,fin)=>{if(!ini||!fin)return null;const d=Math.rou
 // ─── IDIOMA ───────────────────────────────────────────────────────────────────
 let _langKey=()=>{try{return localStorage.getItem("cl_lang")||"es";}catch{return "es";}};
 let _LANG=_langKey();
-export const setLang=(l)=>{_LANG=l;try{localStorage.setItem("cl_lang",l);}catch{}};
+export const getLang=()=>_LANG;
+// Cambiar idioma avisa por evento, igual que el tema. Antes solo escribía en
+// localStorage y el llamador forzaba el re-render toggleando el tema dos veces
+// (`onToggleTheme(); setTimeout(onToggleTheme,10)`), lo que hacía parpadear la
+// interfaz y solo repintaba el árbol que colgara de quien lo hubiera hecho.
+export const setLang=(l)=>{
+  if(l===_LANG)return;
+  _LANG=l;
+  try{localStorage.setItem("cl_lang",l);}catch{}
+  try{document.documentElement.lang=l;}catch{}
+  try{window.dispatchEvent(new Event("lang-changed"));}catch{}
+};
+// Suscribe un componente al idioma actual: se vuelve a renderizar al cambiarlo.
+export function useLang(){
+  const [lang,setL]=useState(_LANG);
+  useEffect(()=>{
+    const h=()=>setL(_LANG);
+    window.addEventListener("lang-changed",h);
+    return()=>window.removeEventListener("lang-changed",h);
+  },[]);
+  return lang;
+}
 export const STRINGS={
   es:{
     explore:"Inicio",agenda:"Mi agenda",chats:"Mis chats",favorites:"Favoritos",
@@ -207,7 +228,7 @@ export const STRINGS={
     publish:"Publicaciones",stats:"Estadísticas",activity:"Actividad",
     credentials:"Credenciales",reviews:"Reseñas",
     viewPost:"Ver publicación →",editProfile:"Editar perfil",
-    logout:"Cerrar sesión",theme:"Tema",dark:"Oscuro",light:"Claro",
+    logout:"Cerrar sesión",logoutShort:"Salir",theme:"Tema",dark:"Oscuro",light:"Claro",
     lang:"Idioma",langEs:"🇦🇷 Español",langEn:"🇺🇸 English",
     newPublication:"+ Nueva publicación",
     chatSupport:"Soporte Luderis",respondsNow:"Responde al instante",
@@ -227,7 +248,7 @@ export const STRINGS={
     publish:"Publications",stats:"Statistics",activity:"Activity",
     credentials:"Credentials",reviews:"Reviews",
     viewPost:"View publication →",editProfile:"Edit profile",
-    logout:"Sign out",theme:"Theme",dark:"Dark",light:"Light",
+    logout:"Sign out",logoutShort:"Sign out",theme:"Theme",dark:"Dark",light:"Light",
     lang:"Language",langEs:"🇦🇷 Spanish",langEn:"🇺🇸 English",
     newPublication:"+ New publication",
     chatSupport:"Luderis Support",respondsNow:"Responds instantly",
