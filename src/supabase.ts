@@ -1003,7 +1003,7 @@ export const getPagosDocente = (email: string, token: Token) =>
 // pagos.estado_escrow — ese campo es del modelo MP-Connect (pagar hacia afuera)
 // que el flujo de escrow interno no popula.
 export const getCobrosDocente = (userId: Id, token: Token) =>
-  db(`billetera_movimientos?usuario_id=eq.${userId}&tipo=eq.cobro_clase&order=created_at.desc&limit=50&select=id,monto,estado,created_at,publicacion_id,descripcion`, "GET", null, token).catch(() => []);
+  db(`billetera_movimientos?usuario_id=eq.${userId}&tipo=eq.cobro_clase&order=created_at.desc&limit=50&select=id,monto,monto_liberado,estado,created_at,publicacion_id,descripcion`, "GET", null, token).catch(() => []);
 
 // Liquidaciones del docente
 export const getLiquidaciones = (email: string, token: Token) =>

@@ -941,8 +941,15 @@ function PagosTab({session}){
     reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#6B728018",Icon:RefreshCw,desc:"Devuelto al alumno"},
   };
 
-  const totalPendiente=cobros.filter(p=>p.estado==="pendiente").reduce((a,p)=>a+Number(p.monto||0),0);
+  // De un hold pendiente solo falta cobrar lo que todavía NO se liberó. Antes se
+  // sumaba el hold entero, así que lo ya cobrado se contaba dos veces: una en
+  // "Por recibir" y otra en "Ya cobrado".
+  const totalPendiente=cobros.filter(p=>p.estado==="pendiente")
+    .reduce((a,p)=>a+Math.max(Number(p.monto||0)-Number(p.monto_liberado||0),0),0);
   const totalCobrado=cobros.filter(p=>p.estado==="liberado").reduce((a,p)=>a+Number(p.monto||0),0);
+  // Con montos chicos, redondear a entero es engañoso: $2,70 se mostraba como
+  // "$3", que se lee como el bruto sin comisión. Se muestran centavos si los hay.
+  const fmtPeso=(n)=>`$${Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:Number.isInteger(Number(n))?0:2,maximumFractionDigits:2})}`;
   const cargar=useCallback(async()=>{
     setLoading(true);
     try{
@@ -1035,8 +1042,8 @@ function PagosTab({session}){
         <div style={{...tx("cardTitle"),color:C.text,marginBottom:14,display:"flex",alignItems:"center",gap:6}}><Banknote size={16} strokeWidth={1.9}/>Mis cobros</div>
         {/* Resumen */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:16}}>
-          <StatCard icon={Clock} label="Por recibir" value={`$${totalPendiente.toLocaleString("es-AR",{maximumFractionDigits:0})}`} accentKey="pedidos"/>
-          <StatCard icon={CheckCircle2} label="Ya cobrado" value={`$${totalCobrado.toLocaleString("es-AR",{maximumFractionDigits:0})}`} accentKey="clases"/>
+          <StatCard icon={Clock} label="Por recibir" value={fmtPeso(totalPendiente)} accentKey="pedidos"/>
+          <StatCard icon={CheckCircle2} label="Ya cobrado" value={fmtPeso(totalCobrado)} accentKey="clases"/>
         </div>
 
         {/* Lista de cobros */}
@@ -1203,7 +1210,7 @@ function BilleteraTab({session}){
   const ESTADO_RETIRO={pendiente:{label:"Pendiente",color:"#F59E0B"},procesado:{label:"Acreditado",color:"#10B981"},rechazado:{label:"Rechazado",color:"#EF4444"}};
   const TIPO_ICONS={recarga:ArrowUp,pago:ArrowDown,reembolso:RefreshCw,bono:Gift};
   const TIPO_LABELS={recarga:"Recarga",pago:"Pago de clase",reembolso:"Reembolso",bono:"Bono",cobro_clase:"Cobro de clase",ingreso:"Ingreso",retiro:"Retiro"};
-  const fmtMonto=(n)=>`$${Math.abs(n||0).toLocaleString("es-AR",{maximumFractionDigits:0})}`;
+  const fmtMonto=(n)=>{const v=Math.abs(n||0);return `$${v.toLocaleString("es-AR",{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2})}`;};
   const totalCargado=movimientos.filter(m=>m.tipo==="recarga"||m.tipo==="bono"||m.tipo==="reembolso").reduce((a,m)=>a+Math.abs(m.monto||0),0);
   const totalGastado=movimientos.filter(m=>m.tipo==="pago").reduce((a,m)=>a+Math.abs(m.monto||0),0);
 
