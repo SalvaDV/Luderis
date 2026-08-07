@@ -3,7 +3,14 @@
 > Orden recomendado por relación valor/riesgo. Cada fase es una sesión dedicada
 > con QA visual. NO hacer todo de un saque.
 
-## Estado base
+> ⚠️ **Estado al 2026-08-06.** Este plan quedó parcialmente desactualizado por la
+> remediación de la auditoría. Lo hecho: F1 al ~60% (hay router pero conviven
+> deep-links ad-hoc), **F2 completa** (cero globals `window.__`, todo por
+> Context), **F6 completa** (ya es Vite 8 + Vitest, no CRA). Sin avance: F3
+> (descomponer archivos: `CursoPage` creció a ~5.600 líneas) y F4 (TypeScript:
+> 2 de 59 archivos). Ver `docs/auditoria-2026-08-hallazgos.md`.
+
+## Estado base (al escribirse el plan; ver nota de arriba)
 - React 18 + Create React App (CRA, deprecado) + Supabase (fetch manual) + Vercel.
 - Navegación por estado/`sessionStorage` (sin router).
 - Archivos gigantes: `CursoPage` (5.242), `AdminPage` (2.681), `MiCuentaPage` (2.478),

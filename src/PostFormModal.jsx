@@ -278,7 +278,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
       if(data.otorga_certificado&&modo!=="particular")data.aprobacion_pct=Math.min(100,Math.max(1,parseInt(aprobacionPct)||80));
       // estado_validacion se maneja localmente (columna pendiente de crear en DB)
       const _estadoLocal=activoInicial===false?"pendiente":undefined;
-      if(tipo==="oferta"){data.precio=parseFloat(precio)||null;data.moneda=moneda||"ARS";data.tiene_prueba=tienePrueba;data.precio_prueba=tienePrueba?(parseFloat(precioPrueba)||null):null;if(paquetes.length&&modo==="particular"){
+      if(tipo==="oferta"){data.precio=parseFloat(precio)||null;data.moneda=moneda||"ARS";const pruebaAplica=modo!=="particular";data.tiene_prueba=pruebaAplica&&tienePrueba;data.precio_prueba=data.tiene_prueba?(parseFloat(precioPrueba)||null):null;if(paquetes.length&&modo==="particular"){
         const precioNum=parseFloat(precio)||0;
         const paquetesResueltos=paquetes.map(pq=>{
           const pt=parseFloat(pq.precio_total)||0;
@@ -676,7 +676,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             )}
 
             {/* Clase de prueba */}
-            {modo==="particular"&&precio&&(
+            {modo!=="particular"&&precio&&(
               <div style={{background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:12,padding:"12px 14px"}}>
                 <div role="checkbox" aria-checked={tienePrueba} tabIndex={0} aria-label="Ofrecer clase de prueba" style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setTienePrueba(v=>!v)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setTienePrueba(v=>!v);}}}>
                   <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${tienePrueba?C.accent:"#CBD5E0"}`,background:tienePrueba?"linear-gradient(135deg,#1A6ED8,#2EC4A0)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -699,7 +699,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
             )}
 
             {/* Paquetes */}
-            {modo==="particular"&&precio&&(
+            {modo!=="particular"&&precio&&(
               <div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <Label style={{margin:0}}>Paquetes de clases <span style={{fontSize:10,color:C.muted,fontWeight:400}}>— precios especiales por cantidad</span></Label>

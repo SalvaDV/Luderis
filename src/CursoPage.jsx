@@ -5333,7 +5333,7 @@ function InscripcionModal({post,session,onClose,onDone}){
                 })}
 
                 {/* Clase de prueba */}
-                {post.tiene_prueba&&(
+                {post.tiene_prueba&&post.modo!=="particular"&&(
                   <button onClick={()=>setOpcion("prueba")}
                     style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderRadius:10,border:`2px solid ${opcion==="prueba"?"#2EC4A0":C.border}`,background:opcion==="prueba"?"#2EC4A012":C.bg,cursor:"pointer",fontFamily:FONT,transition:"all .15s",textAlign:"left"}}>
                     <div>

@@ -2,11 +2,12 @@
 
 Estos ítems no los puedo hacer yo desde el código — necesitan tu acción.
 
-## 1. Mergear y deployar el trabajo de la auditoría
-- Branch: `fix/auditoria-tandas-1-2` (17 commits, build OK, 56 tests verdes).
-- Mergealo a `main` para deployar el frontend (Vercel).
-- ⚠️ Las migraciones de seguridad (RLS de pagos/categorías/billetera, bucket avatars)
-  **ya están aplicadas en producción** vía MCP — el merge solo lleva el frontend.
+> ⚠️ **Obsoleto (2026-08-06).** Este archivo describe una tanda anterior. El
+> branch que menciona ya está mergeado y desplegado. Lo vigente está en
+> `docs/handoff-2026-08-06.md`.
+
+## 1. ~~Mergear y deployar el trabajo de la auditoría~~ — HECHO
+- El branch `fix/auditoria-tandas-1-2` ya está en `main` y desplegado.
 
 ## 2. Pase visual (QA manual)
 - `npm start` y recorré: login → onboarding → explorar → detalle → chat → mi cuenta.

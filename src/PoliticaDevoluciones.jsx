@@ -390,7 +390,7 @@ export default function PoliticaDevoluciones() {
               <Li>
                 Retirarlo a tu cuenta bancaria o de MercadoPago, solicitando el retiro desde
                 <strong> Mi cuenta → Billetera</strong>. Las solicitudes de retiro se procesan dentro de
-                los 10 días hábiles.
+                las 24 a 48 horas hábiles.
               </Li>
             </Ul>
             <P>
@@ -447,14 +447,31 @@ export default function PoliticaDevoluciones() {
           {/* ── S9 ── */}
           <Seccion id="s9" titulo="9. Disputas y mediación">
             <P>
-              En caso de desacuerdo entre un Alumno y un Docente, Luderis puede actuar como
-              mediador para facilitar una solución. El proceso de mediación es:
+              El desacuerdo más frecuente es sobre <strong>cuántas horas se dictaron</strong>, y
+              para eso la plataforma tiene un mecanismo propio:
             </P>
             <Ul>
-              <Li>Voluntario para ambas partes, aunque Luderis puede requerirlo como condición para procesar una devolución.</Li>
-              <Li>Confidencial: las comunicaciones durante la mediación no serán divulgadas a terceros.</Li>
-              <Li>No vinculante: si no se llega a un acuerdo, Luderis tomará una decisión en base a las evidencias disponibles.</Li>
+              <Li>El Docente declara las horas dictadas de cada clase.</Li>
+              <Li>
+                El Alumno las aprueba u <strong>objeta indicando cuántas horas reconoce</strong>.
+                Mientras haya una objeción abierta, el pago correspondiente no se libera.
+              </Li>
+              <Li>
+                Si el Docente acepta la objeción, se liquida por las horas que el Alumno reconoció.
+                Si no la acepta, queda abierto un reclamo que <strong>resuelve el equipo de
+                Luderis</strong>, y su decisión determina las horas que se liquidan.
+              </Li>
+              <Li>
+                Como respaldo, el Docente puede adjuntar la grabación de la clase. Esa evidencia se
+                conserva un máximo de <strong>72 horas</strong> y luego se elimina.
+              </Li>
             </Ul>
+            <P>
+              Para desacuerdos que no sean sobre horas dictadas, Luderis puede actuar como mediador
+              a pedido de cualquiera de las partes, escribiendo a contacto@luderis.com.ar. Esa
+              mediación es voluntaria y no vinculante: si no hay acuerdo, Luderis decide en base a
+              las evidencias disponibles.
+            </P>
             <P>
               La decisión final de Luderis sobre una devolución es definitiva dentro del ámbito de
               la plataforma. Los Usuarios conservan siempre el derecho de recurrir a las instancias
