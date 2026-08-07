@@ -82,6 +82,39 @@ se puede, con Mercado Pago en modo sandbox.
 
 ---
 
+## 🔴 Cuenta de Mercado Pago — separar la personal de la plataforma
+
+Hoy el `MP_ACCESS_TOKEN` de Luderis es la **cuenta personal de Salvador**
+(confirmado 2026-08-07: la venta de prueba aparece en su panel de MP). Eso
+significa que la plata de todos los docentes, mientras está "retenida en
+Luderis", está en realidad en una cuenta personal.
+
+Por qué conviene cambiarlo:
+- **Fiscal**: entra como ingreso al CUIT personal plata que en su mayoría es de
+  terceros. El ingreso propio es solo la comisión.
+- **Legal**: los Términos y la política de devoluciones dicen que Luderis retiene
+  el pago. Sin cuenta separada no hay segregación de fondos de terceros.
+- **Riesgo**: si MP limita la cuenta personal, se congela la plata de toda la
+  plataforma.
+
+Qué hacer:
+- [ ] Crear una cuenta de MP para Luderis (idealmente con CUIT propio).
+- [ ] Cambiar `MP_ACCESS_TOKEN` en los secrets de Supabase.
+- [ ] ⚠️ Antes de cambiarlo: liberar o resolver todo lo que esté pendiente, porque
+      `liberar-pago` transfiere desde la cuenta del token vigente y los pagos
+      viejos quedan asociados a la cuenta anterior.
+- [ ] Cuando MP apruebe Connect, el modelo cambia: la plata del docente va directo
+      a su cuenta con split automático y Luderis deja de tocarla.
+
+### Pago huérfano de mayo
+
+`mp_payment_id 159789500111` ($1, del 22/05): está aprobado, creó la inscripción,
+pero **no generó movimiento de billetera ni acreditó saldo**. Es anterior al
+escrow interno (6/7), así que es del modelo viejo. Decidir si se regulariza a
+mano o se deja documentado como dato histórico.
+
+---
+
 ## 🟡 Configuración — cosas que no son código
 
 - [ ] **`UNSUB_SECRET`** tiene que existir en los secrets de Supabase. Le saqué
