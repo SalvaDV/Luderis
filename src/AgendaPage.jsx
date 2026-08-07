@@ -194,6 +194,9 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   const [manFecha,setManFecha]=useState("");
   const [manHoras,setManHoras]=useState("1");
   const [manGuardando,setManGuardando]=useState(false);
+  // Horas que todavía se pueden declarar en la publicación elegida. El límite
+  // real es ese, no la fecha: un docente puede dar dos clases el mismo día.
+  const [manDisp,setManDisp]=useState(null);
   // Horas declaradas por clase antes de registrarla (el alumno después aprueba u objeta).
   const [horasPorClase,setHorasPorClase]=useState({});
   // Link a la grabación de la clase (evidencia; se borra a las 72 hs o al aprobarse).
@@ -223,6 +226,13 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
 
   const hoyISO=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;})();
   const postsDocente=posts.filter(p=>p._rol==="docente");
+  useEffect(()=>{
+    let vivo=true;
+    if(!manPub){setManDisp(null);return;}
+    sb.horasPorRegistrar(manPub,session.access_token).then(h=>{if(vivo)setManDisp(h);});
+    return()=>{vivo=false;};
+  },[manPub,session.access_token]);
+
   const registrarManual=async()=>{
     if(!manPub||!manFecha){toast("Elegí la clase y la fecha","error");return;}
     const horas=Math.max(0.25,Number(manHoras)||1);
@@ -234,6 +244,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
         ?`Clase registrada. Avisamos a ${r.registradas} alumno${r.registradas!==1?"s":""} para que confirmen.`
         :"Esa clase ya estaba registrada","success",4000);
       setManFecha("");setManHoras("1");
+      if(typeof r?.horas_disponibles==="number")setManDisp(r.horas_disponibles);
     }catch(e){toast("No se pudo registrar: "+e.message,"error");}
     finally{setManGuardando(false);}
   };
@@ -307,7 +318,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                 </div>
                 <div style={{flex:"0 1 100px"}}>
                   <label htmlFor="man-horas" style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Horas</label>
-                  <input id="man-horas" type="number" min="0.25" step="0.25" value={manHoras} onChange={e=>setManHoras(e.target.value)}
+                  <input id="man-horas" type="number" min="0.25" step="0.25" max={manDisp??undefined} value={manHoras} onChange={e=>setManHoras(e.target.value)}
                     style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 10px",color:C.text,fontSize:13,fontFamily:FONT}}/>
                 </div>
                 <button onClick={registrarManual} disabled={manGuardando||!manPub||!manFecha}
@@ -315,6 +326,13 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                   {manGuardando?"Registrando…":"Registrar"}
                 </button>
               </div>
+              {manPub&&manDisp!==null&&(
+                <div style={{fontSize:12,color:manDisp>0?C.muted:C.warn,marginTop:10}}>
+                  {manDisp>0
+                    ?`Quedan ${manDisp} h compradas sin registrar en esta clase.`
+                    :"No quedan horas compradas sin registrar. El alumno tiene que sumar más horas."}
+                </div>
+              )}
             </div>
           )}
 

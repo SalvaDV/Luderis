@@ -714,6 +714,13 @@ export const deleteForoPost = (id: Id, token: Token) =>
 // que era la base de un circuito que libera plata y descuenta unidades compradas.
 // El docente declara cuántas horas dio; el alumno las aprueba u objeta.
 // `evidenciaUrl`: link a la grabación de la clase (se borra a las 72 hs o al aprobarse).
+// Cuántas horas quedan por registrar en una publicación (comprado − consumido −
+// ya declarado sin aprobar). Sirve para acotar el input antes de intentar.
+export const horasPorRegistrar = (pubId: Id, token: Token) =>
+  db('rpc/horas_por_registrar', 'POST', { p_pub_id: pubId }, token)
+    .then((r: any) => Number(r) || 0)
+    .catch(() => null);
+
 export const registrarClaseDictada = (pubId: Id, fecha: string, token: Token, horas: number = 1, evidenciaUrl: string | null = null) =>
   db('rpc/registrar_clase_dictada', 'POST', { p_pub_id: pubId, p_fecha: fecha, p_horas: horas, p_evidencia_url: evidenciaUrl }, token);
 // El admin fija las horas reales de una disputa (entre 0 y lo declarado) y liquida.
