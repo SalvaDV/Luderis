@@ -4,13 +4,11 @@ import * as sb from "../supabase";
 import {
   C, FONT, FONT_DISPLAY, LUD, accentFor,
   _avatarCache,
-  setLang, t, useLang,
+  t,
   Avatar,
 } from "../shared";
 
-export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,totalNotifsUnread,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,onForceRender,esAdmin,juegosBadge,onOpenAdmin,onOpenNotifPanel}){
-  // Se suscribe al idioma: al cambiarlo, este árbol se vuelve a renderizar solo.
-  const langActual=useLang();
+export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadCount,ofertasCount,notifCount,totalNotifsUnread,ofertasAceptadasNuevas,mobile,open,onClose,theme,onToggleTheme,esAdmin,juegosBadge,onOpenAdmin,onOpenNotifPanel}){
   const nombre=sb.getDisplayName(session.user.email);
   const nav=[
     {id:"explore",Icon:Search,label:t("explore")},
@@ -117,21 +115,12 @@ export default function Sidebar({page,setPage,session,onLogout,onNewPost,unreadC
             <LogOut size={15} strokeWidth={2}/> {t("logoutShort")}
           </button>
         </div>
-        {/* Idioma (compacto) */}
-        <div style={{display:"flex",gap:6}}>
-          {[["es",t("langEs")],["en",t("langEn")]].map(([key,label])=>(
-            <button key={key}
-              onClick={()=>{setLang(key);if(onForceRender)onForceRender();}}
-              aria-pressed={langActual===key}
-              style={{flex:1,background:langActual===key?accN.soft:"transparent",
-                border:`1px solid ${langActual===key?accN.solid:C.border}`,
-                borderRadius:8,color:langActual===key?accN.text:C.muted,
-                padding:"5px 8px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,
-                display:"flex",alignItems:"center",justifyContent:"center",gap:4,whiteSpace:"nowrap",transition:"all .14s"}}>
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* Selector de idioma retirado: traducía ~40 de las cientos de cadenas de
+            la app, así que al elegir inglés quedaba el menú traducido y el resto
+            en castellano — se leía como un producto roto. El mecanismo (STRINGS,
+            t(), useLang) queda intacto para cuando se haga i18n de verdad.
+            Mientras tanto index.html declara lang="es" y no hay `notranslate`,
+            así que el navegador le ofrece traducir a quien lo tenga en inglés. */}
       </div>
       </div>
   );
