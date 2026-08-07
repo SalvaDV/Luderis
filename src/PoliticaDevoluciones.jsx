@@ -85,11 +85,11 @@ function Badge({ type, children }) {
 
 function TablaPlazos() {
   const rows = [
-    { motivo: "Error de la plataforma (cobro duplicado, error técnico)", plazo: "24–48 hs", resultado: "Devolución automática" },
-    { motivo: "Clase cancelada por el Docente", plazo: "2–5 días hábiles", resultado: "Devolución completa" },
-    { motivo: "Clase no iniciada (sin aviso previo del Docente)", plazo: "2–5 días hábiles", resultado: "Devolución completa" },
-    { motivo: "Contenido engañoso verificado", plazo: "5–10 días hábiles", resultado: "Devolución completa o parcial" },
-    { motivo: "Acuerdo mutuo entre Alumno y Docente", plazo: "3–7 días hábiles", resultado: "Según lo acordado" },
+    { motivo: "Error de la plataforma (cobro duplicado, error técnico)", plazo: "5–7 días hábiles", resultado: "Devolución completa" },
+    { motivo: "Clase cancelada por el Docente", plazo: "5–7 días hábiles", resultado: "Devolución completa" },
+    { motivo: "Clase no iniciada (sin aviso previo del Docente)", plazo: "5–7 días hábiles", resultado: "Devolución completa" },
+    { motivo: "Contenido engañoso verificado", plazo: "5–7 días hábiles", resultado: "Devolución completa o parcial" },
+    { motivo: "Acuerdo mutuo entre Alumno y Docente", plazo: "5–7 días hábiles", resultado: "Según lo acordado" },
   ];
   return (
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
@@ -390,7 +390,7 @@ export default function PoliticaDevoluciones() {
               <Li>
                 Retirarlo a tu cuenta bancaria o de MercadoPago, solicitando el retiro desde
                 <strong> Mi cuenta → Billetera</strong>. Las solicitudes de retiro se procesan dentro de
-                las 24 a 48 horas hábiles.
+                los 5 a 7 días hábiles.
               </Li>
             </Ul>
             <P>

@@ -1189,10 +1189,10 @@ function BilleteraTab({session}){
       await sb.insertNotificacion({
         alumno_email:session.user.email,
         tipo:"retiro_solicitado",
-        pub_titulo:"Solicitud de retiro recibida. Tu saldo será acreditado en 24 a 48 horas hábiles.",
+        pub_titulo:"Solicitud de retiro recibida. Transferimos a tu cuenta dentro de los 5 a 7 días hábiles.",
         leida:false,
       },session.access_token);
-      toast("✓ Solicitud enviada. Acreditamos en 24–48 hs hábiles.","success");
+      toast("✓ Solicitud enviada. Transferimos en 5–7 días hábiles.","success");
       setRetiroMonto(""); setRetiroCbu(""); setRetiroTitular(""); setShowRetiroForm(false);
       cargar();
     }catch(e){toast("Error: "+e.message,"error");}
@@ -1244,7 +1244,7 @@ function BilleteraTab({session}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showRetiroForm?12:0}}>
             <div>
               <div style={{fontWeight:700,color:C.text,fontSize:14}}>Solicitar retiro</div>
-              {!showRetiroForm&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>Transferimos a tu CBU en 24–48 hs hábiles</div>}
+              {!showRetiroForm&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>Transferimos a tu CBU en 5–7 días hábiles</div>}
             </div>
             <button onClick={()=>setShowRetiroForm(v=>!v)}
               style={{background:showRetiroForm?C.bg:C.accent,border:`1px solid ${showRetiroForm?C.border:"transparent"}`,borderRadius:9,color:showRetiroForm?C.muted:"#fff",padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT}}>
@@ -1274,7 +1274,7 @@ function BilleteraTab({session}){
                 style={{background:C.accent,border:"none",borderRadius:9,color:"#fff",padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:FONT,opacity:(enviandoRetiro||!retiroMonto||!retiroCbu||!retiroTitular)?.5:1}}>
                 {enviandoRetiro?"Enviando…":"Confirmar solicitud de retiro"}
               </button>
-              <div style={{fontSize:11,color:C.muted}}>Al confirmar, Luderis procesará la transferencia a tu cuenta bancaria en 24–48 horas hábiles.</div>
+              <div style={{fontSize:11,color:C.muted}}>Al confirmar, Luderis procesará la transferencia a tu cuenta bancaria dentro de los 5 a 7 días hábiles.</div>
             </div>
           )}
           {/* Historial de retiros */}
