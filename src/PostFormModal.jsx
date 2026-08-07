@@ -192,7 +192,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
   const rolUsuario=localStorage.getItem("cl_rol_"+session.user.email)||"alumno";
   const soloAlumno=rolUsuario==="alumno";
   const [tipo,setTipo]=useState(postToEdit?.tipo||(soloAlumno?"busqueda":"oferta"));const [materia,setMateria]=useState(postToEdit?.materia||"");const [titulo,setTitulo]=useState(postToEdit?.titulo||"");const [descripcion,setDescripcion]=useState(postToEdit?.descripcion||"");
-  const [modo,setModo]=useState((postToEdit?.modo==="grupal"?"curso":postToEdit?.modo)||(modoInicial==="clases"?"particular":"curso"));const [precio,setPrecio]=useState(postToEdit?.precio||"");const [precioTipo,setPrecioTipo]=useState(postToEdit?.precio_tipo||"hora");
+  const [modo,setModo]=useState((postToEdit?.modo==="grupal"?"curso":postToEdit?.modo)||(modoInicial==="clases"?"particular":"curso"));const [precio,setPrecio]=useState(postToEdit?.precio||"");const [precioTipo,setPrecioTipo]=useState(postToEdit?.precio_tipo||"hora");const [duracionClase,setDuracionClase]=useState(postToEdit?.duracion_clase_min||60);
   const [tienePrueba,setTienePrueba]=useState(postToEdit?.tiene_prueba||false);const [precioPrueba,setPrecioPrueba]=useState(postToEdit?.precio_prueba||"");
   const [paquetes,setPaquetes]=useState(()=>{try{return JSON.parse(postToEdit?.paquetes||"[]");}catch{return [];}});
   const [sinc,setSinc]=useState(postToEdit?.sinc||"sinc");const [fechaInicio,setFechaInicio]=useState(postToEdit?.fecha_inicio||"");const [fechaFin,setFechaFin]=useState(postToEdit?.fecha_fin||"");
@@ -287,7 +287,7 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
           return{...pq,precio_total:total};
         });
         data.paquetes=JSON.stringify(paquetesResueltos);
-      }if(modo==="particular"){data.precio_tipo=precioTipo;if(sinc==="recurrente"&&clasesSinc.length){data.sinc="sinc";data.clases_sinc=JSON.stringify(clasesSinc);}}else{data.precio_tipo=null;data.sinc=sinc;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
+      }if(modo==="particular"){data.precio_tipo=precioTipo;data.duracion_clase_min=precioTipo==="clase"?(parseInt(duracionClase)||60):null;if(sinc==="recurrente"&&clasesSinc.length){data.sinc="sinc";data.clases_sinc=JSON.stringify(clasesSinc);}}else{data.precio_tipo=null;data.sinc=sinc;if(fechaInicio)data.fecha_inicio=fechaInicio;if(fechaFin)data.fecha_fin=fechaFin;if(sinc==="sinc")data.clases_sinc=JSON.stringify(clasesSinc);}}
       let savedPub=null;
       if(editing){
         await sb.updatePublicacion(postToEdit.id,data,session.access_token);
@@ -645,6 +645,23 @@ function PostFormModal({session,postToEdit,onClose,onSave,modoInicial}){
                     <option value="clase">/ clase</option>
                   </select>
                 </div>
+                {/* Cuánto dura una clase. Sin esto "1 clase" no significa nada: el
+                  sistema asumía 60 min, así que con clases de 30 el docente
+                  cobraba la mitad y al alumno le quedaba crédito que no compró. */}
+              {precioTipo==="clase"&&(
+                <div style={{marginTop:10}}>
+                  <Label>¿Cuánto dura una clase?</Label>
+                  <select value={duracionClase} onChange={e=>setDuracionClase(parseInt(e.target.value))}
+                    aria-label="Duración de la clase" style={{...iS,margin:0,cursor:"pointer"}}>
+                    {[30,45,60,75,90,120].map(m=>(
+                      <option key={m} value={m}>{m>=60?`${m/60} h${m%60?` ${m%60} min`:""}`:`${m} min`}</option>
+                    ))}
+                  </select>
+                  <div style={{fontSize:11,color:C.muted,marginTop:5}}>
+                    Es lo que el alumno compra cada vez. Se usa para calcular cuánto le queda y cuánto cobrás por clase dada.
+                  </div>
+                </div>
+                )}
               </div>
             ):(
               <div>

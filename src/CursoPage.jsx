@@ -5153,6 +5153,10 @@ function InscripcionModal({post,session,onClose,onDone}){
   // el alumno creía comprar la clase entera y en realidad pagaba una hora.
   const unidadLabel  = post.precio_tipo==="hora" ? "hora"  : "clase";
   const unidadPlural = post.precio_tipo==="hora" ? "horas" : "clases";
+  // Cuánto dura la unidad que se compra. Sin esto "1 clase" no le dice al
+  // alumno cuánto tiempo está pagando.
+  const unidadMin = post.precio_tipo==="clase" ? (post.duracion_clase_min||60) : 60;
+  const unidadDetalle = post.precio_tipo==="clase" ? ` de ${unidadMin} min` : "";
   // Cuántas unidades compra el alumno cuando no elige un paquete armado. Antes
   // la única opción era 1: si el docente no había definido paquetes, se pagaba
   // una sola hora y el resto quedaba sin cobrar.
@@ -5278,10 +5282,10 @@ function InscripcionModal({post,session,onClose,onDone}){
                     style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:FONT,textAlign:"left"}}>
                     <div>
                       <div style={{fontSize:13,fontWeight:700,color:opcion==="clase"?C.accent:C.text}}>
-                        {unidades} {unidades===1?unidadLabel:unidadPlural}
+                        {unidades} {unidades===1?unidadLabel:unidadPlural}{unidadDetalle}
                       </div>
                       <div style={{fontSize:11,color:C.muted}}>
-                        {tienePrecio?`$${precioBase.toLocaleString("es-AR")} por ${unidadLabel}`:"Gratis"}
+                        {tienePrecio?`$${precioBase.toLocaleString("es-AR")} por ${unidadLabel}${unidadDetalle}`:"Gratis"}
                       </div>
                     </div>
                     <div style={{fontWeight:800,fontSize:14,color:opcion==="clase"?C.accent:C.text}}>

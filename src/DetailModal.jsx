@@ -290,7 +290,7 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
               {post.precio?(
                 <div style={{marginBottom:16}}>
                   <span style={{...tx("price"),fontSize:24,color:getPubTipo(post).accent}}>{fmtPrice(post.precio,post.moneda)}</span>
-                  {post.modo==="particular"&&post.precio_tipo&&<span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo}</span>}
+                  {post.modo==="particular"&&post.precio_tipo&&<span style={{fontSize:14,color:C.muted,fontWeight:400}}> /{post.precio_tipo}{post.precio_tipo==="clase"&&post.duracion_clase_min?` de ${post.duracion_clase_min} min`:""}</span>}
                 </div>
               ):(
                 <div style={{fontSize:16,fontWeight:700,color:post.tipo==="busqueda"?C.muted:C.successText,marginBottom:16}}>{post.tipo==="busqueda"?"A convenir":"Gratis"}</div>
