@@ -736,6 +736,9 @@ export const objetarHorasClase = (claseId: Id, horas: number, motivo: string | n
 // El docente acepta el número del alumno → se liquida por esas horas.
 export const aceptarObjecionClase = (claseId: Id, token: Token) =>
   rpc('aceptar_objecion_clase', { p_clase_id: claseId }, token);
+// El docente sostiene sus horas y deja su descargo: la disputa la resuelve un admin.
+export const sostenerHorasClase = (claseId: Id, descargo: string | null, token: Token) =>
+  rpc('sostener_horas_clase', { p_clase_id: claseId, p_descargo: descargo }, token);
 
 // ── Escrow unificado (retención → liberación / reembolso al saldo interno) ────
 // El alumno confirma la recepción → libera el pago retenido al docente.

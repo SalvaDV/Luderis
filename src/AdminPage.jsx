@@ -2006,7 +2006,8 @@ function EscrowTab({ session }) {
                       : <span style={{ color: C.muted }}>Sin grabación adjunta</span>}
                   </div>
                 )}
-                {d.descripcion && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>"{d.descripcion}"</div>}
+                {d.descripcion && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>Alumno: "{d.descripcion}"</div>}
+                {d.descargo_docente && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>Docente: "{d.descargo_docente}"</div>}
                 {esHoras && (
                   <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
                     <label htmlFor={`horas-disp-${d.id}`} style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>Horas reales</label>

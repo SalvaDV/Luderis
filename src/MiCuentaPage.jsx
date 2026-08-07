@@ -707,6 +707,9 @@ function ClasesTab({session,misPubs}){
   const [objHoras,setObjHoras]=useState({});
   const [objMotivo,setObjMotivo]=useState({});
   const [objetando,setObjetando]=useState(null);
+  const [descAbierta,setDescAbierta]=useState({});// claseId → el docente está escribiendo su descargo
+  const [descTexto,setDescTexto]=useState({});
+  const [sostenidas,setSostenidas]=useState({});// claseId → ya dejó su descargo (no vuelve en la fila)
   const [liberando,setLiberando]=useState(null);
   const [liberados,setLiberados]=useState({});// claseId → true
   const [saving,setSaving]=useState(false);
@@ -756,6 +759,18 @@ function ClasesTab({session,misPubs}){
       if(r?.error){toast(r.error,"error");return;}
       await cargar();
       toast("Aceptaste las horas del alumno. Se liberó el pago correspondiente.","success",4500);
+    }catch(e){toast("Error: "+e.message,"error");}finally{setObjetando(null);}
+  };
+
+  // El docente sostiene sus horas: la disputa (ya abierta) pasa a manos del admin.
+  const sostenerHoras=async(clase)=>{
+    setObjetando(clase.id);
+    try{
+      const r=await sb.sostenerHorasClase(clase.id,descTexto[clase.id]||null,session.access_token);
+      if(r?.error){toast(r.error,"error");return;}
+      setDescAbierta(prev=>({...prev,[clase.id]:false}));
+      setSostenidas(prev=>({...prev,[clase.id]:true}));
+      toast("Enviamos tu versión. El equipo de Luderis resuelve las horas.","success",4500);
     }catch(e){toast("Error: "+e.message,"error");}finally{setObjetando(null);}
   };
 
@@ -827,6 +842,36 @@ function ClasesTab({session,misPubs}){
                         {c.objetada_motivo&&<span style={{color:C.muted,fontStyle:"italic"}}>— “{c.objetada_motivo}”</span>}
                       </div>
                     )}
+                    {/* El docente tiene que entender que aceptar no es su única salida */}
+                    {objetada&&soyDocente&&!sostenidas[c.id]&&!descAbierta[c.id]&&(
+                      <div style={{fontSize:11,color:C.muted,marginTop:6,lineHeight:1.5}}>
+                        Ya abrimos un ticket. Podés aceptar sus horas y cobrar por esas, o sostener las tuyas y que lo resuelva el equipo de Luderis. El pago queda retenido hasta entonces.
+                      </div>
+                    )}
+                    {/* Descargo del docente: sostiene sus horas y lo resuelve un admin */}
+                    {objetada&&soyDocente&&descAbierta[c.id]&&(
+                      <div style={{marginTop:10,padding:12,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10}}>
+                        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Contanos qué pasó</div>
+                        <textarea aria-label="Tu versión de la clase" rows={3}
+                          placeholder="Ej.: la clase arrancó 15:00 y terminó 16:00, quedó grabada en la videollamada"
+                          value={descTexto[c.id]??""}
+                          onChange={e=>setDescTexto(p=>({...p,[c.id]:e.target.value}))}
+                          style={{width:"100%",boxSizing:"border-box",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",color:C.text,fontSize:13,fontFamily:FONT,outline:"none",resize:"vertical"}}/>
+                        <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                          <button onClick={()=>sostenerHoras(c)} disabled={objetando===c.id}
+                            style={{background:C.accent,border:"none",borderRadius:20,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:FONT,opacity:objetando===c.id?.6:1}}>
+                            {objetando===c.id?"Enviando…":"Enviar a Luderis"}
+                          </button>
+                          <button onClick={()=>setDescAbierta(p=>({...p,[c.id]:false}))}
+                            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.muted,padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:FONT}}>
+                            Cancelar
+                          </button>
+                        </div>
+                        <div style={{fontSize:11,color:C.muted,marginTop:8,lineHeight:1.5}}>
+                          Un admin define las horas finales y libera el pago por esas horas.
+                        </div>
+                      </div>
+                    )}
                     {c.notas&&<div style={{fontSize:12,color:C.muted,marginTop:4,fontStyle:"italic"}}>{c.notas}</div>}
                     {/* Formulario de objeción (alumno) */}
                     {objAbierta[c.id]&&!objetada&&(
@@ -867,12 +912,21 @@ function ClasesTab({session,misPubs}){
                     ):(
                       <span style={{fontSize:11,background:"#F59E0B12",color:C.warn,border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2}/>Pendiente confirmación</span>
                     )}
-                    {/* Objetada: el docente puede aceptar el número del alumno */}
-                    {objetada&&soyDocente&&(
-                      <button onClick={()=>aceptarObjecion(c)} disabled={objetando===c.id}
-                        style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:objetando===c.id?0.5:1}}>
-                        {objetando===c.id?"...":`Aceptar ${(c.duracion_objetada_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h`}
-                      </button>
+                    {/* Objetada: el docente acepta el número del alumno o sostiene el suyo */}
+                    {objetada&&soyDocente&&!sostenidas[c.id]&&(
+                      <>
+                        <button onClick={()=>aceptarObjecion(c)} disabled={objetando===c.id}
+                          style={{background:C.success+"15",border:`1px solid ${C.success}33`,borderRadius:20,color:C.successText,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:objetando===c.id?0.5:1}}>
+                          {objetando===c.id?"...":`Aceptar ${(c.duracion_objetada_min/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h`}
+                        </button>
+                        <button onClick={()=>setDescAbierta(p=>({...p,[c.id]:!p[c.id]}))} disabled={objetando===c.id}
+                          style={{background:"none",border:`1px solid ${C.border}`,borderRadius:20,color:C.text,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:600,fontFamily:FONT,opacity:objetando===c.id?0.5:1}}>
+                          {`Sostengo ${((c.duracion_min||0)/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h`}
+                        </button>
+                      </>
+                    )}
+                    {objetada&&soyDocente&&sostenidas[c.id]&&(
+                      <span style={{fontSize:11,color:C.muted,textAlign:"right",maxWidth:180}}>Lo resuelve el equipo de Luderis</span>
                     )}
                     {objetada&&!soyDocente&&(
                       <span style={{fontSize:11,color:C.muted,textAlign:"right",maxWidth:180}}>Abrimos un ticket: el docente puede aceptar tus horas o lo resuelve el equipo de Luderis</span>
