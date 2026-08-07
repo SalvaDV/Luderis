@@ -933,9 +933,10 @@ function PagosTab({session}){
   },[session?.user?.id]);// eslint-disable-line
 
   // Estados del ledger interno (billetera_movimientos.estado). El pago se retiene
-  // (pendiente) y se libera al confirmar el alumno o a los 7 días.
+  // (pendiente) y se libera cuando el alumno aprueba las horas declaradas, o
+  // solo a las 72 hs si no responde. Una objeción frena ese reloj.
   const ESCROW_INFO={
-    pendiente:{label:"Retenido",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"Se libera cuando el alumno confirma o a los 7 días"},
+    pendiente:{label:"Retenido",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"Se libera cuando el alumno aprueba las horas, o solo a las 72 hs"},
     liberado:  {label:"Cobrado",color:"#10B981",bg:"#10B98118",Icon:CheckCircle2,desc:"Acreditado en tu saldo de Luderis"},
     reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#6B728018",Icon:RefreshCw,desc:"Devuelto al alumno"},
   };
@@ -1008,7 +1009,7 @@ function PagosTab({session}){
               <div><div style={{fontWeight:700,color:C.text,fontSize:14}}>No conectado</div><div style={{fontSize:12,color:C.muted,marginTop:2}}>Los pagos se retienen en Luderis hasta conectar tu MP.</div></div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[{n:1,t:"Conectás tu cuenta de Mercado Pago (1 click, seguro vía OAuth)"},{n:2,t:"El alumno paga al inscribirse o comprar un paquete"},{n:3,t:"El pago queda retenido y se te libera cuando el alumno confirma, o solo a los 7 días"}].map(s=>(
+              {[{n:1,t:"Conectás tu cuenta de Mercado Pago (1 click, seguro vía OAuth)"},{n:2,t:"El alumno paga al inscribirse o comprar un paquete"},{n:3,t:"El pago queda retenido y se te libera cuando el alumno aprueba las horas, o solo a las 72 hs"}].map(s=>(
                 <div key={s.n} style={{display:"flex",alignItems:"flex-start",gap:10}}>
                   <div style={{width:22,height:22,borderRadius:"50%",background:C.accentDim,color:C.accent,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{s.n}</div>
                   <div style={{fontSize:13,color:C.text,lineHeight:1.5}}>{s.t}</div>
@@ -1023,7 +1024,7 @@ function PagosTab({session}){
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
         <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:10}}>¿Por qué conectar MP?</div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {[{Icon:Sparkles,t:"Cobro automático — a los 7 días de finalizada la clase si el alumno no confirma antes"},{Icon:FileText,t:"100% seguro — OAuth oficial de Mercado Pago, sin contraseñas"},{Icon:BarChart2,t:"Seguí cada cobro y su estado desde tu billetera de Luderis"},{Icon:GraduationCap,t:"Funciona para clases particulares, cursos y paquetes de clases"}].map((f,i)=>(
+          {[{Icon:Sparkles,t:"Cobro automático — a las 72 hs de declarar las horas si el alumno no responde"},{Icon:FileText,t:"100% seguro — OAuth oficial de Mercado Pago, sin contraseñas"},{Icon:BarChart2,t:"Seguí cada cobro y su estado desde tu billetera de Luderis"},{Icon:GraduationCap,t:"Funciona para clases particulares, cursos y paquetes de clases"}].map((f,i)=>(
             <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}><f.Icon size={16} strokeWidth={1.8} color={C.muted} style={{flexShrink:0,marginTop:1}}/><span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>{f.t}</span></div>
           ))}
         </div>
