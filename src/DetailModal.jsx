@@ -3,7 +3,7 @@ import {
   Megaphone, Eye, BookOpen, HelpCircle, Layers, GraduationCap, Users, Lock,
   AlertTriangle, Check, Inbox, Video, Folder, FileText, Bell, Bookmark, Link2,
   User, Clock, Globe, MapPin, Calendar, Timer, BarChart2, Clipboard, RefreshCw,
-  Settings, Wrench, Palette, Search, Zap,
+  Settings, Wrench, Palette, Search, Zap, ArrowLeft,
 } from "lucide-react";
 import * as sb from "./supabase";
 import { trackPostView, trackChatStart } from "./analytics";
@@ -100,15 +100,22 @@ function DetailModal({post,session,onClose,onChat,onOpenCurso,onOpenPerfil,onOpe
       `}</style>
 
       {/* ── Barra superior ── */}
-      {(()=>{const T=getPubTipo(post);return(
-      <div className="dm-topbar" style={{position:"sticky",top:0,zIndex:10,background:C.surface,borderBottom:`2px solid ${T.accent}`,padding:"0 28px",height:64,display:"flex",alignItems:"center",gap:14,boxShadow:"0 1px 8px rgba(0,0,0,.06)"}}>
-        <button onClick={onClose}
-          style={{width:36,height:36,borderRadius:"50%",background:T.dim,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:T.accent,flexShrink:0,transition:"background .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.background=T.border}
-          onMouseLeave={e=>e.currentTarget.style.background=T.dim}>←</button>
+      {(()=>{const T=getPubTipo(post);
+      // Alto 72 para que respire (antes 64 con un botón de 36 quedaba apretada).
+      // Hairline abajo en vez del borde de 2px de acento, que la hacía leer como
+      // una franja; el acento pasa a una línea fina arriba, que identifica el
+      // tipo de publicación sin pesar.
+      return(
+      <div className="dm-topbar" style={{position:"sticky",top:0,zIndex:10,background:C.surface,borderTop:`3px solid ${T.accent}`,borderBottom:`1px solid ${C.border}`,padding:"0 28px",height:72,display:"flex",alignItems:"center",gap:14,boxShadow:"0 1px 12px rgba(16,27,46,.05)"}}>
+        <button onClick={onClose} aria-label="Volver"
+          style={{width:40,height:40,borderRadius:"50%",background:T.dim,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,flexShrink:0,transition:"background .15s, transform .15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.background=T.border;e.currentTarget.style.transform="translateX(-2px)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background=T.dim;e.currentTarget.style.transform="none";}}>
+          <ArrowLeft size={19} strokeWidth={2.2}/>
+        </button>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontWeight:700,color:C.text,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
-          <div style={{fontSize:12,color:C.muted,display:"flex",alignItems:"center",gap:5}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>· <Megaphone size={11} strokeWidth={2}/>Pedido</span>}</div>
+          <div style={{...tx("cardTitle"),color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.titulo}</div>
+          <div style={{...tx("micro"),color:C.muted,display:"flex",alignItems:"center",gap:5,marginTop:1}}>{post.materia}{post.tipo==="busqueda"&&<span style={{color:T.accent,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>· <Megaphone size={11} strokeWidth={2}/>Pedido</span>}</div>
         </div>
         <div style={{display:"flex",gap:8,flexShrink:0}}>
           <ShareBtn post={post} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:20,padding:"6px 12px",fontSize:12}}/>
