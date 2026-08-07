@@ -1836,7 +1836,7 @@ function EscrowTab({ session }) {
     setLoading(true);
     Promise.all([
       adminDb("pagos?estado_escrow=in.(retenido,en_disputa)&select=id,monto,docente_email,alumno_email,estado_escrow,clase_finalizada_at,liberado_at,publicacion_id,created_at&order=clase_finalizada_at.asc&limit=100", "GET", null, session.access_token),
-      adminDb("disputas?estado=eq.abierta&select=*&order=created_at.desc&limit=50", "GET", null, session.access_token),
+      adminDb("disputas?estado=eq.abierta&select=*,clases_realizadas(evidencia_url,fecha_clase,duracion_min,duracion_objetada_min)&order=created_at.desc&limit=50", "GET", null, session.access_token),
     ]).then(([p, d]) => {
       setPagosRetenidos(p || []);
       setDisputas(d || []);
@@ -1862,6 +1862,23 @@ function EscrowTab({ session }) {
       await adminAction("resolver_disputa", { disputa_id: disputa.id, estado, resolucion: resolucionText || null }, session.access_token);
       toast(`✓ Disputa resuelta a favor del ${estado === "resuelta_docente" ? "docente" : "alumno"}`, "success");
       setResolucionModal(null); setResolucionText("");
+      cargar();
+    } catch(e) { toast("Error: " + e.message, "error"); }
+    finally { setResolviendo(null); }
+  };
+
+  // Disputas de horas: el admin fija las horas reales (0 … declaradas) y se
+  // liquida por ese número. Mirá la grabación antes de decidir, si hay.
+  const [horasFijar, setHorasFijar] = useState({});
+  const resolverHoras = async (disputa) => {
+    const hs = Number(horasFijar[disputa.id] ?? disputa.horas_alumno);
+    if (!(hs >= 0)) { toast("Poné cuántas horas se dieron", "error"); return; }
+    setResolviendo(disputa.id);
+    try {
+      const r = await sb.resolverDisputaHoras(disputa.id, hs, resolucionText || null, session.access_token);
+      if (r?.error) { toast(r.error, "error"); return; }
+      toast(`✓ Disputa resuelta: ${hs} h · $${Number(r?.monto_liberado || 0).toLocaleString("es-AR")} liberados al docente`, "success", 4500);
+      setResolucionText("");
       cargar();
     } catch(e) { toast("Error: " + e.message, "error"); }
     finally { setResolviendo(null); }
@@ -1940,13 +1957,18 @@ function EscrowTab({ session }) {
           <div style={{ color: C.muted, fontSize: 13 }}>No hay disputas abiertas ✓</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {disputas.map(d => (
+            {disputas.map(d => {
+              const esHoras = d.motivo === "horas_declaradas";
+              const clase = d.clases_realizadas || null;
+              const evidencia = clase?.evidencia_url && /^https?:\/\//i.test(clase.evidencia_url) ? clase.evidencia_url : null;
+              return (
               <div key={d.id} style={{ background: C.bg, border: `1px solid ${C.danger}40`, borderRadius: 10, padding: "12px 16px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                   <div>
-                    <Badge color={C.danger}>{d.motivo}</Badge>
+                    <Badge color={esHoras ? C.warn : C.danger}>{esHoras ? "horas en disputa" : d.motivo}</Badge>
                     <span style={{ marginLeft: 8, fontSize: 12, color: C.muted }}>{fmt(d.created_at)}</span>
                   </div>
+                  {!esHoras && (
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => setResolucionModal({ disputa: d, tipo: "docente" })}
                       style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
@@ -1957,13 +1979,39 @@ function EscrowTab({ session }) {
                       ↩ Reembolso alumno
                     </button>
                   </div>
+                  )}
                 </div>
                 <div style={{ fontSize: 12, color: C.text }}>
                   <strong>Alumno:</strong> {d.alumno_email} · <strong>Docente:</strong> {d.docente_email}
+                  {esHoras && clase?.fecha_clase && <> · <strong>Clase:</strong> {fmt(clase.fecha_clase)}</>}
                 </div>
+                {esHoras && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: C.text, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+                    <span>Docente declaró <strong>{Number(d.horas_docente || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 })} h</strong></span>
+                    <span>Alumno dice <strong>{Number(d.horas_alumno || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 })} h</strong></span>
+                    {evidencia
+                      ? <a href={evidencia} target="_blank" rel="noopener noreferrer" style={{ color: C.accent, fontWeight: 600 }}>▶ Ver grabación de la clase</a>
+                      : <span style={{ color: C.muted }}>Sin grabación adjunta</span>}
+                  </div>
+                )}
                 {d.descripcion && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>"{d.descripcion}"</div>}
+                {esHoras && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <label htmlFor={`horas-disp-${d.id}`} style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>Horas reales</label>
+                    <input id={`horas-disp-${d.id}`} type="number" min="0" step="0.5" max={Number(d.horas_docente || 24)}
+                      value={horasFijar[d.id] ?? Number(d.horas_alumno || 0)}
+                      onChange={e => setHorasFijar(p => ({ ...p, [d.id]: e.target.value }))}
+                      style={{ width: 70, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 8px", color: C.text, fontSize: 12, fontFamily: FONT, outline: "none", textAlign: "center" }} />
+                    <button onClick={() => resolverHoras(d)} disabled={resolviendo === d.id}
+                      style={{ background: C.success, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT, opacity: resolviendo === d.id ? .6 : 1 }}>
+                      {resolviendo === d.id ? "Liquidando…" : "Fijar horas y liquidar"}
+                    </button>
+                    <span style={{ fontSize: 11, color: C.muted }}>Se libera al docente la parte proporcional y se consumen esas horas.</span>
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
