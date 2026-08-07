@@ -362,7 +362,11 @@ export default function App(){
     }).catch(()=>{});
   },[]);// eslint-disable-line
   // Valor del Context de acciones globales (estable: todas las fns son useCallback).
-  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge}),[openPub,openDetailById,openNewPost,resetCuentaBadge]);
+  // Abre Mi cuenta en una pestaña concreta. Lo usa la notificación de horas por
+  // aprobar: antes caía en la publicación, donde no hay nada para aprobar.
+  const [cuentaTabInicial,setCuentaTabInicial]=useState(null);
+  const openCuentaTab=useCallback((tab)=>{setCuentaTabInicial(tab);setPage("cuenta");},[]);
+  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge,openCuentaTab}),[openPub,openDetailById,openNewPost,resetCuentaBadge,openCuentaTab]);
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -711,6 +715,7 @@ export default function App(){
       busqueda_acordada: {icon:"🤝",label:"Búsqueda acordada",type:"success"},
       busqueda_eliminada:{icon:"❌",label:"Búsqueda eliminada",type:"error"},
       acuerdo_confirmado:{icon:"🤝",label:"Acuerdo confirmado",type:"success"},
+      confirmar_clase:   {icon:"⏱️",label:"Confirmá las horas de tu clase",type:"info"},
     };
     let ws,heartbeat,reconnectTimer,dead=false,retries=0,joinedToken=null;
     // Refresca la sesión si hay refresh_token; devuelve el token nuevo (o null)
@@ -1005,7 +1010,7 @@ export default function App(){
               />
             </React.Suspense>
           )}
-          {page==="cuenta"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}><MiCuentaPage key={myPostsKey} session={session} onOpenPerfil={openPerfil} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost} onEdit={p=>{setEditPost(p);setShowForm(true);}} onNew={()=>{setEditPost(null);setShowForm(true);}} onOpenChat={openChat} onRefreshOfertas={refreshUnread} onStartOnboarding={()=>{setOnboardingUpgrade(true);setShowOnboarding(true);}} onClearBadge={()=>{
+          {page==="cuenta"&&<React.Suspense fallback={<div style={{padding:"48px",textAlign:"center",color:C.muted,fontFamily:FONT}}>Cargando…</div>}><MiCuentaPage key={myPostsKey} session={session} tabInicial={cuentaTabInicial} onTabConsumida={()=>setCuentaTabInicial(null)} onOpenPerfil={openPerfil} onOpenDetail={setDetailPost} onOpenCurso={setCursoPost} onEdit={p=>{setEditPost(p);setShowForm(true);}} onNew={()=>{setEditPost(null);setShowForm(true);}} onOpenChat={openChat} onRefreshOfertas={refreshUnread} onStartOnboarding={()=>{setOnboardingUpgrade(true);setShowOnboarding(true);}} onClearBadge={()=>{
             setOfertasAceptadasNuevas(0);
             setOfertasCount(0);
             sb.marcarNotifsTipoLeidas(session.user.email,["oferta_aceptada","oferta_rechazada","contraoferta","nueva_oferta","nueva_inscripcion"],session.access_token).then(refreshUnread).catch(()=>{});

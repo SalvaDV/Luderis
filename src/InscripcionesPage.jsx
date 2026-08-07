@@ -152,6 +152,22 @@ export default function InscripcionesPage({session,onOpenCurso,onOpenChat,onMark
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,color:C.text,fontSize:14,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.titulo}</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:3}}>{p.materia} · {p.autor_nombre||safeDisplayName(p.autor_nombre,p.autor_email)}</div>
+            {/* Saldo de la cartera de horas. Antes el alumno compraba horas y no
+                tenía dónde ver cuántas le quedaban. */}
+            {(()=>{
+              const capMin=ins.minutos_totales??((ins.clases_totales||0)*60);
+              if(!capMin)return null;
+              const restanMin=Math.max(capMin-(ins.minutos_consumidos||0),0);
+              const fmtH=(m)=>(m/60).toLocaleString("es-AR",{maximumFractionDigits:2});
+              return(
+                <div style={{fontSize:11,color:restanMin>0?C.accent:C.muted,fontWeight:600,display:"inline-flex",alignItems:"center",gap:4,marginBottom:3}}>
+                  <Clock size={10} strokeWidth={2}/>
+                  {restanMin>0
+                    ?<>Te quedan <strong>{fmtH(restanMin)} h</strong> de {fmtH(capMin)} h</>
+                    :<>Usaste las {fmtH(capMin)} h que compraste</>}
+                </div>
+              );
+            })()}
             {pendienteConfirmacion&&<span style={{fontSize:11,color:C.warn,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Clock size={10} strokeWidth={2}/>El docente finalizó · Confirmá para liberar el pago (o se acredita automático en 7 días)</span>}
             {!pendienteConfirmacion&&tieneNotif&&<span style={{fontSize:11,color:C.accent,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><Bell size={10} strokeWidth={2}/>Clase finalizada — dejá tu reseña</span>}
             {!pendienteConfirmacion&&!tieneNotif&&(ti?<span style={{fontSize:11,color:ti.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>{ti.Icon&&<ti.Icon size={10} strokeWidth={2}/>}{ti.texto}</span>

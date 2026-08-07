@@ -1782,7 +1782,7 @@ function AjustesTab({session,nombre,displayName,bio,ubicacion,tituloProf,avatarU
   );
 }
 
-function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
+function MiCuentaPage({session,tabInicial,onTabConsumida,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNew,onOpenChat,onRefreshOfertas,onClearBadge,onStartOnboarding}){
   const {resetCuentaBadge}=useAppActions();
   const [pubs,setPubs]=useState([]);const [reseñas,setReseñas]=useState([]);const [docs,setDocs]=useState([]);const [loading,setLoading]=useState(true);
   const [toggling,setToggling]=useState(null);const [ofertasMap,setOfertasMap]=useState({});const [ofertasModal,setOfertasModal]=useState(null);
@@ -1922,7 +1922,13 @@ function MiCuentaPage({session,onOpenPerfil,onOpenDetail,onOpenCurso,onEdit,onNe
   const TIPOS_DOC=[{v:"titulo",l:"Título"},{v:"certificado",l:"Certificado"},{v:"experiencia",l:"Experiencia"},{v:"otro",l:"Otro"}];
   const TIPO_ICON={titulo:GraduationCap,certificado:ScrollText,experiencia:Briefcase,otro:FileText};
   const ofertas=pubs.filter(p=>p.tipo==="oferta");
-  const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return"publicaciones";});
+  const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return tabInicial||"publicaciones";});
+  // Entrada desde una notificación (ej. horas por aprobar → "Mis clases").
+  useEffect(()=>{
+    if(!tabInicial)return;
+    setTabCuenta(tabInicial);
+    if(onTabConsumida)onTabConsumida();
+  },[tabInicial]);// eslint-disable-line react-hooks/exhaustive-deps
   const [filtroPubsTipo,setFiltroPubsTipo]=useState("all");
   const [negocTab,setNegocTab]=useState("todas");
   const pendientesVal=pubs.filter(p=>p.tipo==="oferta"&&p.activo===false&&p.estado_validacion==="pendiente");

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { GraduationCap, Inbox, CheckCircle, XCircle, RefreshCw, MessageCircle, Video, BookOpen, Users, Star, Bell, CreditCard, Megaphone, VolumeX, HelpCircle } from "lucide-react";
+import { GraduationCap, Inbox, CheckCircle, XCircle, RefreshCw, MessageCircle, Video, BookOpen, Users, Star, Bell, CreditCard, Megaphone, VolumeX, HelpCircle, Clock } from "lucide-react";
 import { C, FONT, FONT_DISPLAY, Spinner, fmtRel, logError } from "../shared";
 import * as sb from "../supabase";
 import { useAppActions } from "../AppContext";
 
 export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurso}){
-  const {openPub,openDetail}=useAppActions();
+  const {openPub,openDetail,openCuentaTab}=useAppActions();
   const [notifs,setNotifs]=useState([]);
   const [loading,setLoading]=useState(true);
   const [tab,setTab]=useState("todas");
@@ -71,6 +71,11 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     busqueda_acordada:{Icon:CheckCircle,  color:"#2EC4A0",label:"Clase acordada ✓"},
     busqueda_eliminada:{Icon:XCircle,     color:"#E53E3E",label:"El pedido fue eliminado"},
     acuerdo_confirmado:{Icon:CheckCircle, color:"#2EC4A0",label:"Acuerdo confirmado ✓"},
+    // Horas declaradas por el docente: el alumno tiene 72 hs para aprobarlas u
+    // objetarlas, y después se aprueban solas. Sin etiqueta el alumno veía el
+    // string crudo "confirmar_clase" y el click lo dejaba en la publicación.
+    confirmar_clase:  {Icon:Clock,        color:"#F59E0B",label:"Confirmá las horas de tu clase",
+                       tab:"clases"},
   };
 
   const tabs=[
@@ -154,19 +159,21 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
                   return(
                     <div key={n.id||i}
                       role="button" tabIndex={0} aria-label={`Notificación: ${info.label}`}
-                      onKeyDown={e=>{if((e.key==="Enter"||e.key===" ")&&n.publicacion_id){e.preventDefault();e.currentTarget.click();}}}
+                      onKeyDown={e=>{if((e.key==="Enter"||e.key===" ")&&(n.publicacion_id||info.tab)){e.preventDefault();e.currentTarget.click();}}}
                       onClick={()=>{
-                        if(n.publicacion_id){
-                          sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});
-                          setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
-                          onClose();
-                          const fn=(n.tipo==="nueva_pregunta"||n.tipo==="pregunta_respondida")
-                            ?openDetail:openPub;
-                          if(fn)fn(n.publicacion_id);
-                        }
+                        if(!n.publicacion_id&&!info.tab)return;
+                        sb.db(`notificaciones?id=eq.${n.id}`,"PATCH",{leida:true},session.access_token,"return=minimal").catch(()=>{});
+                        setNotifs(p=>p.map(x=>x.id===n.id?{...x,leida:true}:x));
+                        onClose();
+                        // Algunas notificaciones no se resuelven en la publicación
+                        // sino en una pestaña de Mi cuenta (ej. aprobar horas).
+                        if(info.tab&&openCuentaTab){openCuentaTab(info.tab);return;}
+                        const fn=(n.tipo==="nueva_pregunta"||n.tipo==="pregunta_respondida")
+                          ?openDetail:openPub;
+                        if(fn)fn(n.publicacion_id);
                       }}
-                      style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,cursor:n.publicacion_id?"pointer":"default",background:n.leida?"transparent":C.accentDim+"80",display:"flex",gap:12,alignItems:"flex-start",transition:"background .12s"}}
-                      onMouseEnter={e=>{if(n.publicacion_id)e.currentTarget.style.background=C.bg;}}
+                      style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,cursor:(n.publicacion_id||info.tab)?"pointer":"default",background:n.leida?"transparent":C.accentDim+"80",display:"flex",gap:12,alignItems:"flex-start",transition:"background .12s"}}
+                      onMouseEnter={e=>{if(n.publicacion_id||info.tab)e.currentTarget.style.background=C.bg;}}
                       onMouseLeave={e=>e.currentTarget.style.background=n.leida?"transparent":C.accentDim+"80"}>
                       {/* Icono */}
                       <div style={{width:40,height:40,borderRadius:"50%",background:info.color+"18",border:`1px solid ${info.color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
