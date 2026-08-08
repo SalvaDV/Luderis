@@ -82,6 +82,115 @@ se puede, con Mercado Pago en modo sandbox.
 
 ---
 
+---
+
+## ⏸️ PENDIENTE — dónde quedó la prueba de dinero real (2026-08-08)
+
+Se corta acá porque hace falta la segunda cuenta (Bautista) y no está disponible.
+**Retomar desde el paso ⏸️.** No hace falta empezar de cero: la publicación, la
+compra y la disputa ya están vivas en producción.
+
+Cuentas: docente `salvadevedia@gmail.com` · alumno `bautistadevedia1999@gmail.com`.
+Publicación: "Historia de Boca Juniors", $1 la hora.
+
+- [x] Publicar la clase y comprar **3 horas por $3**. El selector de cantidad apareció.
+- [x] MP cobró. El webhook creó la inscripción (180 min) y el movimiento retenido
+      ($2,70 neto + $0,30 de comisión).
+- [x] Registrar **1 hora** desde la agenda. Le llegó la notificación al alumno.
+- [x] El alumno **aprobó** → se liberaron **$0,90** al docente.
+- [x] Registrar una segunda hora: al principio decía "esa clase ya está
+      registrada"; ahora el límite son las horas que quedan, no la fecha.
+- [x] El alumno **objetó** (1 h → 0,5 h). Se abrió la disputa y el pago quedó frenado.
+- [ ] ⏸️ **Retomar acá**: como docente, elegir entre **"Aceptar 0,5 h"** y
+      **"Sostengo 1 h"**. Probar las dos salidas.
+- [ ] ⏸️ Si sostenés: resolver la disputa desde **Admin → Disputas**, fijando las
+      horas finales. Verificar que liquide por esas horas y no por las declaradas.
+- [ ] ⏸️ **Presencia medida** (nuevo, sin probar todavía): entrar a la clase desde
+      las **dos cuentas a la vez**, dejar correr unos minutos y verificar que la
+      barra diga "Ambos conectados — se está midiendo". Después registrar la clase
+      desde la agenda: las horas tienen que venir **pre-cargadas** con lo medido.
+- [ ] ⏸️ Verificar que si **solo una** de las dos partes está conectada, la
+      medición sea **0** (es la propiedad que hace que no se pueda inflar solo).
+- [ ] ⏸️ **Reembolso** — ojo, ver el agujero B más abajo: hoy `reembolsar_inscripcion`
+      **rechaza los paquetes de horas**, así que este paso no puede pasar como está
+      escrito. Decidir el arreglo antes de probarlo.
+
+**Estado de la plata ahora mismo**: $0,90 liberados · $1,80 retenidos ·
+60 de 180 minutos consumidos · 1 disputa abierta.
+
+### También pendiente de deploy
+
+```bash
+supabase functions deploy mp-webhook --no-verify-jwt
+```
+
+El repo tiene un fix que producción no: `unidadPlural` se declaraba dentro de un
+`if` y se usaba fuera, lo que habría dado 500 en toda compra de paquete. La
+versión desplegada (v24) no tiene ese código, así que producción está sana, pero
+el repo y producción están desalineados. El flag es obligatorio: MP no manda JWT
+y la función valida la firma HMAC por su cuenta.
+
+---
+
+## 🕳️ Agujeros lógicos abiertos — decisiones de producto, no bugs
+
+Los tres son de la misma familia que el de las horas: **el sistema tiene que
+decidir algo y no tiene con qué**, o el incentivo empuja para el lado
+equivocado. Ninguno se disparó todavía en producción.
+
+### A. "El silencio es consentimiento" contradice la regla que acabamos de publicar
+
+`auto_liberar_inscripciones_vencidas` aprueba y paga las horas declaradas a las
+**72 hs sin respuesta del alumno**. Pero la regla que se acaba de publicar dice
+que **sin evidencia valen las horas del alumno**. Son incompatibles: una dice que
+callar aprueba, la otra que sin prueba no se cobra.
+
+En la práctica: un docente puede declarar las 3 horas el mismo día que el alumno
+compra y, si el alumno se va de viaje, cobrarlas a los 3 días sin haber dado
+clase. Ahora eso es **medible** (`minutos_presencia` quedaría en 0), pero nada
+actúa sobre esa medición.
+
+**Propuesta**: cuando hay medición y lo declarado la supera, que el reloj de 72 hs
+apruebe **solo hasta lo medido**; el excedente necesita un OK explícito del
+alumno. Cuando no hay medición (presencial), que siga aprobando todo — bloquearlo
+dejaría a esos docentes sin cobrar — pero que quede contado en el panel de
+patrones.
+
+### B. Los paquetes de horas no tienen reembolso
+
+`reembolsar_inscripcion` corta de entrada: *"Los paquetes de clases se gestionan
+por clase"*. Y los paquetes de horas son **el producto principal** hoy. O sea que
+un alumno que compró 3 horas y el docente desapareció **no tiene forma de
+recuperar la plata**: la única salida es esperar 30 días a `expirar_horas_vencidas`,
+que además devuelve **crédito en Luderis**, no el dinero.
+
+Esto además choca con lo que dice `PoliticaDevoluciones`.
+
+**Propuesta**: permitir reembolsar en cualquier momento la parte **no consumida**
+del hold (monto − monto_liberado), que es exactamente lo que ya hace la
+expiración a los 30 días. El código para hacerlo ya existe, solo hay que
+exponerlo a pedido.
+
+### C. Los retiros no validan el saldo — y nunca lo debitan
+
+Verificado: `solicitudes_retiro` no tiene **ningún** trigger, no existe ninguna
+función de retiro, y la policy de INSERT solo chequea `usuario_id = auth.uid()`.
+El alta la hace el cliente directo y el panel de admin, al aprobar, **solo cambia
+el estado y manda una notificación**.
+
+Consecuencias:
+1. Se puede pedir un retiro por **cualquier monto**, tenga o no saldo.
+2. Aprobar un retiro **no descuenta el saldo**, así que el mismo dinero se puede
+   retirar **una y otra vez**.
+3. Varios pedidos simultáneos por el saldo completo se aceptan todos.
+
+**Nunca se pidió un retiro** (0 filas en la tabla), así que no se perdió plata:
+es un agujero esperando al primero.
+
+**Propuesta**: una RPC `solicitar_retiro` que valide el saldo y lo reserve de
+forma atómica, revocar el INSERT directo, y que la aprobación del admin sea la
+que asiente el movimiento definitivo.
+
 ## 🔴 Cuenta de Mercado Pago — separar la personal de la plataforma
 
 Hoy el `MP_ACCESS_TOKEN` de Luderis es la **cuenta personal de Salvador**
