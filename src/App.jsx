@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useNavigate, useLocation } from "react-router-dom";
 import * as sb from "./supabase";
 import { AppActionsContext } from "./AppContext";
+import { BarraPresencia } from "./PresenciaClase";
 import { trackPage, trackLogin, trackPublicacionCreada, trackOnboardingComplete, trackFarosPlay, setUserId, setUserProperties, trackPurchase, trackPerfilView } from "./analytics";
 import {
   C, FONT, FONT_DISPLAY, _themeKey,
@@ -366,7 +367,15 @@ export default function App(){
   // aprobar: antes caía en la publicación, donde no hay nada para aprobar.
   const [cuentaTabInicial,setCuentaTabInicial]=useState(null);
   const openCuentaTab=useCallback((tab)=>{setCuentaTabInicial(tab);setPage("cuenta");},[]);
-  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge,openCuentaTab}),[openPub,openDetailById,openNewPost,resetCuentaBadge,openCuentaTab]);
+  // Presencia en clase. Vive acá y no en CursoPage para que el latido no se
+  // corte si el alumno navega a otra pantalla en el medio de la clase: la
+  // duración cobrable es el solapamiento entre ambas partes, así que un corte
+  // suyo le descuenta horas al docente.
+  const [presencia,setPresencia]=useState(null);// {pubId,titulo}
+  const entrarAClase=useCallback((pubId,titulo)=>{if(pubId)setPresencia({pubId,titulo:titulo||""});},[]);
+  const salirDeClase=useCallback(()=>setPresencia(null),[]);
+  const presenciaPubId=presencia?.pubId||null;
+  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge,openCuentaTab,entrarAClase,salirDeClase,presenciaPubId}),[openPub,openDetailById,openNewPost,resetCuentaBadge,openCuentaTab,entrarAClase,salirDeClase,presenciaPubId]);
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -1045,6 +1054,7 @@ export default function App(){
       <CookieBanner/>
       {showPushBanner&&<PushPermissionBanner onAccept={subscribePush} onDismiss={dismissPush}/>}
       <React.Suspense fallback={null}><NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={openDetail} onOpenCurso={setCursoPost}/></React.Suspense>
+      {presencia&&<BarraPresencia pubId={presencia.pubId} titulo={presencia.titulo} session={session} onSalir={salirDeClase}/>}
     </div>
     </AppActionsContext.Provider>
   );

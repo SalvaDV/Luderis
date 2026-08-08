@@ -1826,6 +1826,7 @@ function PaymentsTab({ session }) {
 function EscrowTab({ session }) {
   const [pagosRetenidos, setPagosRetenidos] = useState([]);
   const [disputas, setDisputas] = useState([]);
+  const [patron, setPatron] = useState({});// email → tasa de objeciones, para ver el patrón y no solo el caso
   const [loading, setLoading] = useState(true);
   const [liberando, setLiberando] = useState(null); // pago_id en proceso
   const [resolviendo, setResolviendo] = useState(null);
@@ -1839,10 +1840,12 @@ function EscrowTab({ session }) {
       // Antes consultaba pagos.estado_escrow, columna del modelo viejo que el
       // escrow vigente no popula: el tablero salía vacío habiendo plata retenida.
       adminDb("admin_escrow_retenido?select=*&order=created_at.asc&limit=100", "GET", null, session.access_token),
-      adminDb("disputas?estado=eq.abierta&select=*,clases_realizadas(evidencia_url,fecha_clase,duracion_min,duracion_objetada_min)&order=created_at.desc&limit=50", "GET", null, session.access_token),
-    ]).then(([p, d]) => {
+      adminDb("disputas?estado=eq.abierta&select=*,clases_realizadas(evidencia_url,fecha_clase,duracion_min,duracion_objetada_min,minutos_presencia)&order=created_at.desc&limit=50", "GET", null, session.access_token),
+      adminDb("admin_patron_disputas?select=*", "GET", null, session.access_token),
+    ]).then(([p, d, pat]) => {
       setPagosRetenidos(p || []);
       setDisputas(d || []);
+      setPatron(Object.fromEntries((pat || []).map(x => [x.email, x])));
     }).catch(() => toast("Error cargando escrow", "error"))
       .finally(() => setLoading(false));
   }, [session]);
@@ -2006,6 +2009,33 @@ function EscrowTab({ session }) {
                       : <span style={{ color: C.muted }}>Sin grabación adjunta</span>}
                   </div>
                 )}
+                {/* La evidencia que decide: minutos con AMBOS presentes. Si no hay,
+                    la regla publicada es que valen las horas del alumno. */}
+                {esHoras && (
+                  <div style={{ fontSize: 12, marginTop: 6, padding: "7px 10px", borderRadius: 8,
+                    background: clase?.minutos_presencia > 0 ? C.success + "12" : C.warn + "12",
+                    border: `1px solid ${clase?.minutos_presencia > 0 ? C.success + "33" : C.warn + "33"}`,
+                    color: clase?.minutos_presencia > 0 ? C.successText : C.warn, lineHeight: 1.5 }}>
+                    {clase?.minutos_presencia > 0
+                      ? <>Presencia registrada: <strong>{(clase.minutos_presencia / 60).toLocaleString("es-AR", { maximumFractionDigits: 2 })} h</strong> con los dos conectados a la vez.</>
+                      : <>Sin registro de presencia en la app. Sin otra evidencia, la política publicada dice que valen las horas del alumno.</>}
+                  </div>
+                )}
+                {/* El patrón importa más que el caso: quién repite la conducta. */}
+                {(() => {
+                  const pa = patron[d.alumno_email], pd = patron[d.docente_email];
+                  if (!pa && !pd) return null;
+                  const tasa = (o, t) => t > 0 ? Math.round((o / t) * 100) : 0;
+                  const ta = pa ? tasa(pa.objeto_veces, pa.clases_como_alumno) : 0;
+                  const td = pd ? tasa(pd.fue_objetado_veces, pd.clases_como_docente) : 0;
+                  const alerta = ta >= 50 || td >= 50;
+                  return (
+                    <div style={{ fontSize: 11, marginTop: 6, color: alerta ? C.danger : C.muted, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      {pa && <span>El alumno objetó <strong>{pa.objeto_veces} de {pa.clases_como_alumno}</strong> clases ({ta}%)</span>}
+                      {pd && <span>Al docente le objetaron <strong>{pd.fue_objetado_veces} de {pd.clases_como_docente}</strong> ({td}%)</span>}
+                    </div>
+                  );
+                })()}
                 {d.descripcion && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>Alumno: "{d.descripcion}"</div>}
                 {d.descargo_docente && <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>Docente: "{d.descargo_docente}"</div>}
                 {esHoras && (

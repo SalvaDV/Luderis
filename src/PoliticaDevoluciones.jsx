@@ -462,8 +462,26 @@ export default function PoliticaDevoluciones() {
                 Luderis</strong>, y su decisión determina las horas que se liquidan.
               </Li>
               <Li>
-                Como respaldo, el Docente puede adjuntar la grabación de la clase. Esa evidencia se
-                conserva un máximo de <strong>72 horas</strong> y luego se elimina.
+                <strong>Registro de presencia.</strong> Cuando la clase se cursa a través de
+                Luderis, la plataforma registra el tiempo en que Docente y Alumno estuvieron
+                presentes <strong>al mismo tiempo</strong>. Ese registro es la evidencia principal
+                para resolver un desacuerdo sobre horas.
+              </Li>
+              <Li>
+                <strong>Qué pasa si no hay registro.</strong> Si la clase no se cursó por Luderis
+                (por ejemplo, presencial o por un medio externo) y no hay otra evidencia, ante un
+                desacuerdo <strong>se toman las horas que reconoce el Alumno</strong>. El fundamento
+                es que el dinero es del Alumno hasta que se acredite la prestación, de modo que la
+                carga de la prueba recae sobre quien reclama el pago.
+              </Li>
+              <Li>
+                Como respaldo adicional, el Docente puede adjuntar la grabación de la clase. Esa
+                evidencia se conserva un máximo de <strong>72 horas</strong> y luego se elimina,
+                salvo que exista una disputa abierta, en cuyo caso se conserva hasta resolverla.
+              </Li>
+              <Li>
+                Luderis puede <strong>advertir o suspender</strong> las cuentas que muestren un
+                patrón de objeciones o de declaraciones de horas sin sustento.
               </Li>
             </Ul>
             <P>

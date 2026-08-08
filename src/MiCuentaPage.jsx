@@ -842,10 +842,19 @@ function ClasesTab({session,misPubs}){
                         {c.objetada_motivo&&<span style={{color:C.muted,fontStyle:"italic"}}>— “{c.objetada_motivo}”</span>}
                       </div>
                     )}
+                    {/* Lo que midió la app: es el dato que decide si hay desacuerdo */}
+                    <div style={{fontSize:11,color:c.minutos_presencia>0?C.successText:C.muted,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+                      {c.minutos_presencia>0?(
+                        <><CheckCircle2 size={11} strokeWidth={2}/>La app registró {(c.minutos_presencia/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con los dos conectados</>
+                      ):(
+                        <><AlertTriangle size={11} strokeWidth={2}/>Sin registro de presencia en la app</>
+                      )}
+                    </div>
                     {/* El docente tiene que entender que aceptar no es su única salida */}
                     {objetada&&soyDocente&&!sostenidas[c.id]&&!descAbierta[c.id]&&(
                       <div style={{fontSize:11,color:C.muted,marginTop:6,lineHeight:1.5}}>
                         Ya abrimos un ticket. Podés aceptar sus horas y cobrar por esas, o sostener las tuyas y que lo resuelva el equipo de Luderis. El pago queda retenido hasta entonces.
+                        {!(c.minutos_presencia>0)&&" Ojo: sin registro de presencia en la app, la regla es que valen las horas del alumno."}
                       </div>
                     )}
                     {/* Descargo del docente: sostiene sus horas y lo resuelve un admin */}
@@ -900,6 +909,9 @@ function ClasesTab({session,misPubs}){
                         </div>
                         <div style={{fontSize:11,color:C.muted,marginTop:8,lineHeight:1.5}}>
                           El pago queda frenado hasta que el docente acepte tus horas o lo resuelva un admin.
+                          {c.minutos_presencia>0
+                            ?` Tené en cuenta que la app registró ${(c.minutos_presencia/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con los dos conectados: si objetás menos, va a pesar ese registro.`
+                            :" Como no hay registro de presencia en la app, si no hay acuerdo se toman tus horas."}
                         </div>
                       </div>
                     )}

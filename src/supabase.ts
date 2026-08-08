@@ -740,6 +740,28 @@ export const aceptarObjecionClase = (claseId: Id, token: Token) =>
 export const sostenerHorasClase = (claseId: Id, descargo: string | null, token: Token) =>
   rpc('sostener_horas_clase', { p_clase_id: claseId, p_descargo: descargo }, token);
 
+// ── Presencia en clase ───────────────────────────────────────────────────────
+// Cada parte reporta la suya con un latido; la duración de la clase es el
+// solapamiento entre ambas. Los timestamps los pone el servidor.
+export const presenciaPing = (pubId: Id, token: Token) =>
+  rpc('presencia_ping', { p_pub_id: pubId }, token);
+export const presenciaCerrar = (pubId: Id, token: Token) =>
+  rpc('presencia_cerrar', { p_pub_id: pubId }, token);
+// Minutos ya medidos para una fecha: la agenda los usa para pre-cargar las horas.
+export const minutosMedidos = (pubId: Id, fecha: string, token: Token) =>
+  rpc('minutos_medidos', { p_pub_id: pubId, p_fecha: fecha }, token);
+// Cierre al cerrar la pestaña: keepalive para que el pedido sobreviva al unload.
+// Si igual no llega, el fin efectivo es el último latido, así que no se pierde nada.
+export const presenciaCerrarAlSalir = (pubId: Id, token: Token) => {
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/presencia_cerrar`, {
+      method: 'POST', keepalive: true,
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_pub_id: pubId }),
+    }).catch(() => {});
+  } catch { /* el heartbeat cubre este caso */ }
+};
+
 // ── Escrow unificado (retención → liberación / reembolso al saldo interno) ────
 // El alumno confirma la recepción → libera el pago retenido al docente.
 export const confirmarRecepcionInscripcion = (inscripcionId: Id, token: Token) =>

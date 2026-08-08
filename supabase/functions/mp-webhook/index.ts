@@ -169,10 +169,13 @@ serve(async (req) => {
       // Las recargas no inscriben a nada: solo suman saldo.
       let inscripcionId: string | null = null;
       let minutosComprados = 0;
+      // Se declara acá y no dentro del if: la descripción del movimiento la usa
+      // más abajo, fuera de ese bloque. Con `let` dentro del if daba
+      // ReferenceError y el webhook respondía 500 en toda compra de paquete.
+      let unidadPlural = "clases";
       if (alumno?.id && !ES_RECARGA) {
         const unidades = meta.clases_cantidad ? parseInt(meta.clases_cantidad) : 0;
 
-        let unidadPlural = "clases";
         // Cuánto dura una unidad. Una publicación que cobra "por clase" puede
         // tener clases de 90 o 120 min: asumir 60 le comía horas pagas al alumno.
         if (unidades > 0) {

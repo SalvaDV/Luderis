@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
+import { useAppActions } from "./AppContext";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
   C, FONT, FONT_DISPLAY, toast, accentFor, tx, Z,
@@ -326,10 +327,14 @@ function AyudanteBuscador({post,session,ayudantesActuales,onUpdate}){
   );
 }
 // ─── JITSI MODAL ─────────────────────────────────────────────────────────────
-function JitsiModal({roomName,displayName,onClose}){
+function JitsiModal({roomName,displayName,onClose,pubId,titulo}){
   const room=roomName.replace(/[^a-zA-Z0-9]/g,"").slice(0,32)||"luderisclase";
   const url=`https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(displayName)}"`;
   const [copied,setCopied]=useState(false);
+  const {entrarAClase}=useAppActions();
+  // Entrar a la llamada arranca el registro de presencia. La duración que se
+  // puede cobrar es el solapamiento con la otra parte, no este click.
+  const alEntrar=()=>{if(pubId&&entrarAClase)entrarAClase(pubId,titulo);};
   const copiar=()=>{try{navigator.clipboard.writeText(url);}catch{} setCopied(true);setTimeout(()=>setCopied(false),2000);};
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}}>
@@ -354,7 +359,7 @@ function JitsiModal({roomName,displayName,onClose}){
           <p style={{color:"rgba(255,255,255,.55)",fontSize:13,margin:0,lineHeight:1.6}}>
             La videollamada se abre en una nueva pestaña. Podés compartir el link con los participantes.
           </p>
-          <a href={url} target="_blank" rel="noopener noreferrer"
+          <a href={url} target="_blank" rel="noopener noreferrer" onClick={alEntrar}
             style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:"none",borderRadius:12,color:"#fff",padding:"14px",fontWeight:700,fontSize:15,textDecoration:"none",textAlign:"center",boxShadow:"0 4px 16px rgba(26,110,216,.4)",cursor:"pointer"}}
             >
             <Video size={17} strokeWidth={2}/> Abrir videollamada →
@@ -599,7 +604,7 @@ function ChatCurso({post,session,ayudantes=[],ayudanteEmails=[],onNewMessages,es
       @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
       @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     `}</style>
-    {showJitsi&&<JitsiModal roomName={jitsiRoom} displayName={miDisplayName} onClose={()=>setShowJitsi(false)}/>}
+    {showJitsi&&<JitsiModal roomName={jitsiRoom} displayName={miDisplayName} pubId={post.id} titulo={post.titulo} onClose={()=>setShowJitsi(false)}/>}
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       {/* Header */}
       <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,background:C.surface}}>
@@ -4266,6 +4271,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [showJitsiCurso,setShowJitsiCurso]=useState(false);
   const jitsiRoomCurso=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
   const {confirm:confirmCP,confirmEl:confirmElCP}=useConfirm();
+  const {entrarAClase,presenciaPubId}=useAppActions();
   const esMio=post.autor_email===session.user.email||post.autor_id===session.user.id;const miEmail=session.user.email;const miUid=session.user.id;
   const docenteDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
   const iniciarClase=async()=>{
@@ -4286,6 +4292,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       const emails=inscs.map(i=>i.alumno_email).filter(Boolean);
       setClaseActiva(true);
       setShowJitsiCurso(true);
+      entrarAClase(post.id,post.titulo);// el docente ya está en clase: empieza a medirse
       if(emails.length===0){
         toast("Clase iniciada. No hay alumnos inscriptos todavía.","info",4000);
       } else {
@@ -4477,7 +4484,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     <div  ref={pageRef} style={{position:"fixed",inset:0,background:C.bg,zIndex:Z.overlayPage,overflowY:"auto",fontFamily:FONT}}>
       {confirmEl}
       {confirmElCP}
-      {showJitsiCurso&&<JitsiModal roomName={jitsiRoomCurso} displayName={docenteDisplayName} onClose={()=>{setShowJitsiCurso(false);if(esMio){setClaseActiva(false);}else{setTab("contenido");}}}/>}
+      {showJitsiCurso&&<JitsiModal roomName={jitsiRoomCurso} displayName={docenteDisplayName} pubId={post.id} titulo={post.titulo} onClose={()=>{setShowJitsiCurso(false);if(esMio){setClaseActiva(false);}else{setTab("contenido");}}}/>}
       {/* Banner "Clase en vivo" para alumnos */}
       {claseActiva&&!esMio&&(
         <div style={{background:"linear-gradient(135deg,#C8000015,#E0000022)",borderBottom:"1px solid #C8000033",padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -4506,6 +4513,11 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
             style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
             {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
+          </button>}
+          {!localFinalizado&&presenciaPubId!==post.id&&<button onClick={()=>entrarAClase(post.id,post.titulo)}
+            title="Deja constancia de que estás en la clase. Se mide el tiempo en que ambos estén presentes."
+            style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
+            <Video size={12} strokeWidth={2.4}/>Estoy en clase
           </button>}
           {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:C.success+"12",border:`1px solid ${C.success}33`,borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
           {esMio&&!localFinalizado&&<button onClick={cancelarConReembolso} disabled={cancelando} style={{background:C.danger+"12",border:`1px solid ${C.danger}33`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:cancelando?"default":"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap",opacity:cancelando?0.6:1}}>{cancelando?"Cancelando…":"Cancelar y reembolsar"}</button>}

@@ -197,6 +197,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   // Horas que todavía se pueden declarar en la publicación elegida. El límite
   // real es ese, no la fecha: un docente puede dar dos clases el mismo día.
   const [manDisp,setManDisp]=useState(null);
+  const [manMedido,setManMedido]=useState(null);// minutos medidos por presencia para pub+fecha
   // Horas declaradas por clase antes de registrarla (el alumno después aprueba u objeta).
   const [horasPorClase,setHorasPorClase]=useState({});
   // Link a la grabación de la clase (evidencia; se borra a las 72 hs o al aprobarse).
@@ -232,6 +233,19 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
     sb.horasPorRegistrar(manPub,session.access_token).then(h=>{if(vivo)setManDisp(h);});
     return()=>{vivo=false;};
   },[manPub,session.access_token]);
+
+  // Las horas no se tipean de memoria: si la clase pasó por la app, se pre-cargan
+  // los minutos en que docente y alumno estuvieron presentes al mismo tiempo.
+  useEffect(()=>{
+    let vivo=true;
+    if(!manPub||!manFecha){setManMedido(null);return;}
+    sb.minutosMedidos(manPub,manFecha,session.access_token).then(r=>{
+      if(!vivo||r?.error)return;
+      setManMedido(Number(r.minutos||0));
+      if(Number(r.horas)>0)setManHoras(String(r.horas));
+    }).catch(()=>{});
+    return()=>{vivo=false;};
+  },[manPub,manFecha,session.access_token]);
 
   const registrarManual=async()=>{
     if(!manPub||!manFecha){toast("Elegí la clase y la fecha","error");return;}
@@ -331,6 +345,13 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
                   {manDisp>0
                     ?`Quedan ${manDisp} h compradas sin registrar en esta clase.`
                     :"No quedan horas compradas sin registrar. El alumno tiene que sumar más horas."}
+                </div>
+              )}
+              {manPub&&manFecha&&manMedido!==null&&(
+                <div style={{fontSize:12,color:manMedido>0?C.successText:C.warn,marginTop:6,lineHeight:1.55}}>
+                  {manMedido>0
+                    ?`La app registró ${(manMedido/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con vos y el alumno conectados a la vez. Si declarás más, el alumno puede objetar la diferencia.`
+                    :"Ese día no quedó registro de presencia en la app. Podés declarar las horas igual, pero si el alumno objeta y no hay con qué contrastar, valen las horas que diga él. Para que quede registro, entrá a la clase desde Luderis."}
                 </div>
               )}
             </div>
