@@ -111,9 +111,17 @@ Publicación: "Historia de Boca Juniors", $1 la hora.
       desde la agenda: las horas tienen que venir **pre-cargadas** con lo medido.
 - [ ] ⏸️ Verificar que si **solo una** de las dos partes está conectada, la
       medición sea **0** (es la propiedad que hace que no se pueda inflar solo).
-- [ ] ⏸️ **Reembolso** — ojo, ver el agujero B más abajo: hoy `reembolsar_inscripcion`
-      **rechaza los paquetes de horas**, así que este paso no puede pasar como está
-      escrito. Decidir el arreglo antes de probarlo.
+- [ ] ⏸️ **Reembolso de las 2 h que quedan sin usar** (ya funciona: antes los
+      paquetes de horas no tenían reembolso). Desde la cuenta alumna,
+      desinscribirse de la publicación. Tiene que devolver **solo lo no
+      consumido** ($1,80) al saldo, no los $3. Probar primero con la disputa
+      abierta: debe negarse pidiendo resolver las horas declaradas.
+- [ ] ⏸️ **Retiro** (nuevo, sin probar): pedir un retiro por más del saldo → tiene
+      que rechazarlo citando el saldo real. Pedir uno válido → el saldo baja al
+      instante. Rechazarlo desde el panel → el saldo vuelve.
+- [ ] ⏸️ **Presencia automática**: entrar a la clase con las dos cuentas SIN tocar
+      ningún botón. La barra tiene que aparecer sola cuando los dos están dentro,
+      y no aparecer si estás solo mirando el contenido.
 
 **Estado de la plata ahora mismo**: $0,90 liberados · $1,80 retenidos ·
 60 de 180 minutos consumidos · 1 disputa abierta.
@@ -132,11 +140,12 @@ y la función valida la firma HMAC por su cuenta.
 
 ---
 
-## 🕳️ Agujeros lógicos abiertos — decisiones de producto, no bugs
+## ✅ Agujeros lógicos — CERRADOS el 2026-08-08
 
-Los tres son de la misma familia que el de las horas: **el sistema tiene que
-decidir algo y no tiene con qué**, o el incentivo empuja para el lado
-equivocado. Ninguno se disparó todavía en producción.
+Los tres eran de la misma familia que el de las horas: **el sistema tenía que
+decidir algo y no tenía con qué**, o el incentivo empujaba para el lado
+equivocado. Ninguno llegó a dispararse en producción. Quedan documentados acá
+porque conviene entender qué se cambió y por qué antes de tocarlo de nuevo.
 
 ### A. "El silencio es consentimiento" contradice la regla que acabamos de publicar
 
@@ -150,11 +159,11 @@ compra y, si el alumno se va de viaje, cobrarlas a los 3 días sin haber dado
 clase. Ahora eso es **medible** (`minutos_presencia` quedaría en 0), pero nada
 actúa sobre esa medición.
 
-**Propuesta**: cuando hay medición y lo declarado la supera, que el reloj de 72 hs
-apruebe **solo hasta lo medido**; el excedente necesita un OK explícito del
-alumno. Cuando no hay medición (presencial), que siga aprobando todo — bloquearlo
-dejaría a esos docentes sin cobrar — pero que quede contado en el panel de
-patrones.
+**CERRADO**: el reloj de 72 hs aprueba solo hasta lo medido. Sin medición
+(presencial) sigue aprobando todo. Si se midió CERO, el silencio no aprueba nada
+y hace falta que el alumno confirme o que lo resuelva un admin. Para eso se
+distinguió "se midió y dio cero" de "nadie abrió la app", que antes se
+confundían en un mismo NULL.
 
 ### B. Los paquetes de horas no tienen reembolso
 
@@ -166,10 +175,12 @@ que además devuelve **crédito en Luderis**, no el dinero.
 
 Esto además choca con lo que dice `PoliticaDevoluciones`.
 
-**Propuesta**: permitir reembolsar en cualquier momento la parte **no consumida**
-del hold (monto − monto_liberado), que es exactamente lo que ya hace la
-expiración a los 30 días. El código para hacerlo ya existe, solo hay que
-exponerlo a pedido.
+**CERRADO**: `reembolsar_horas_no_usadas` devuelve a pedido la parte no
+consumida, y `reembolsar_inscripcion` delega para que la UI de desinscripción que
+ya existía funcione. Se niega si hay horas declaradas sin confirmar, así el
+alumno no puede reembolsar justo antes de aprobar una clase que ya recibió.
+Además el frontend bloqueaba el reembolso apenas existía UNA clase registrada:
+ese guard ahora aplica solo a cursos.
 
 ### C. Los retiros no validan el saldo — y nunca lo debitan
 
@@ -187,9 +198,10 @@ Consecuencias:
 **Nunca se pidió un retiro** (0 filas en la tabla), así que no se perdió plata:
 es un agujero esperando al primero.
 
-**Propuesta**: una RPC `solicitar_retiro` que valide el saldo y lo reserve de
-forma atómica, revocar el INSERT directo, y que la aprobación del admin sea la
-que asiente el movimiento definitivo.
+**CERRADO**: el saldo se debita al PEDIR, con lock para que dos pedidos
+simultáneos no se lleven el mismo dinero. Si el admin rechaza, se devuelve. Se
+revocó el INSERT/UPDATE directo: todo pasa por `solicitar_retiro` y
+`resolver_retiro`.
 
 ## 🔴 Cuenta de Mercado Pago — separar la personal de la plataforma
 
