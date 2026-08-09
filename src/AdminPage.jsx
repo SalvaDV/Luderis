@@ -2125,20 +2125,11 @@ function RetiroTab({ session, onCountChange }) {
   const procesar = async (r, nuevoEstado) => {
     setProcesando(r.id);
     try {
-      await adminDb(`solicitudes_retiro?id=eq.${r.id}`, "PATCH", {
-        estado: nuevoEstado,
-        notas_admin: notas[r.id] || null,
-        procesado_at: new Date().toISOString(),
-      }, session.access_token);
-      const msg = nuevoEstado === "procesado"
-        ? "Tu retiro fue procesado. El dinero debería estar en tu cuenta en las próximas horas."
-        : `Tu solicitud de retiro fue rechazada.${notas[r.id] ? ` Motivo: ${notas[r.id]}` : ""}`;
-      await adminDb("notificaciones", "POST", {
-        alumno_email: r.email,
-        tipo: nuevoEstado === "procesado" ? "retiro_procesado" : "retiro_rechazado",
-        pub_titulo: msg,
-        leida: false,
-      }, session.access_token);
+      // Va por RPC: con un PATCH suelto, rechazar un retiro dejaba el saldo
+      // debitado sin devolverlo. La RPC asienta el movimiento y, si se rechaza,
+      // devuelve el monto al saldo. También manda el aviso al docente.
+      const res = await sb.resolverRetiro(r.id, nuevoEstado, notas[r.id] || null, session.access_token);
+      if (res?.error) { toast(res.error, "error"); return; }
       toast(`✓ Retiro ${nuevoEstado}`, "success");
       cargar();
     } catch(e) { toast("Error: " + e.message, "error"); }

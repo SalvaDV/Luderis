@@ -371,11 +371,24 @@ export default function App(){
   // corte si el alumno navega a otra pantalla en el medio de la clase: la
   // duración cobrable es el solapamiento entre ambas partes, así que un corte
   // suyo le descuenta horas al docente.
-  const [presencia,setPresencia]=useState(null);// {pubId,titulo}
-  const entrarAClase=useCallback((pubId,titulo)=>{if(pubId)setPresencia({pubId,titulo:titulo||""});},[]);
+  // `auto` = entró solo porque abrió la clase. Nadie tuvo que acordarse de nada,
+  // y es seguro porque la duración se mide por SOLAPAMIENTO: estar de más no
+  // suma, estar solo mide cero. En auto la barra queda oculta hasta que aparece
+  // la otra parte, para no molestar a quien solo está mirando el contenido, y se
+  // corta al salir de la clase. En modo explícito (entró a la videollamada o lo
+  // marcó a mano) sobrevive a la navegación.
+  const [presencia,setPresencia]=useState(null);// {pubId,titulo,auto}
+  const entrarAClase=useCallback((pubId,titulo,auto=false)=>{
+    if(!pubId)return;
+    setPresencia(prev=>(prev&&prev.pubId===pubId&&!prev.auto)?prev:{pubId,titulo:titulo||"",auto:!!auto});
+  },[]);
   const salirDeClase=useCallback(()=>setPresencia(null),[]);
+  const salirSiEsAuto=useCallback((pubId)=>{
+    setPresencia(prev=>(prev&&prev.auto&&(!pubId||prev.pubId===pubId))?null:prev);
+  },[]);
   const presenciaPubId=presencia?.pubId||null;
-  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge,openCuentaTab,entrarAClase,salirDeClase,presenciaPubId}),[openPub,openDetailById,openNewPost,resetCuentaBadge,openCuentaTab,entrarAClase,salirDeClase,presenciaPubId]);
+  const presenciaAuto=presencia?.auto??true;
+  const appActions=useMemo(()=>({openPub,openDetail:openDetailById,openNewPost,resetCuentaBadge,openCuentaTab,entrarAClase,salirDeClase,salirSiEsAuto,presenciaPubId,presenciaAuto}),[openPub,openDetailById,openNewPost,resetCuentaBadge,openCuentaTab,entrarAClase,salirDeClase,salirSiEsAuto,presenciaPubId,presenciaAuto]);
   const [ofertasAceptadasNuevas,setOfertasAceptadasNuevas]=useState(0);
   const [sidebarOpen,setSidebarOpen]=useState(false);const [isMobile,setIsMobile]=useState(window.innerWidth<768);
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -1054,7 +1067,7 @@ export default function App(){
       <CookieBanner/>
       {showPushBanner&&<PushPermissionBanner onAccept={subscribePush} onDismiss={dismissPush}/>}
       <React.Suspense fallback={null}><NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={openDetail} onOpenCurso={setCursoPost}/></React.Suspense>
-      {presencia&&<BarraPresencia pubId={presencia.pubId} titulo={presencia.titulo} session={session} onSalir={salirDeClase}/>}
+      {presencia&&<BarraPresencia pubId={presencia.pubId} titulo={presencia.titulo} auto={presencia.auto} session={session} onSalir={salirDeClase}/>}
     </div>
     </AppActionsContext.Provider>
   );

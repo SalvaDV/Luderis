@@ -14,7 +14,7 @@ import { C, FONT, tx } from "./shared";
 
 const LATIDO_MS = 60000;
 
-export function BarraPresencia({ pubId, titulo, session, onSalir }) {
+export function BarraPresencia({ pubId, titulo, session, onSalir, auto = false }) {
   const [otros, setOtros] = useState(0);
   const [error, setError] = useState("");
   const [ahora, setAhora] = useState(Date.now());
@@ -64,6 +64,11 @@ export function BarraPresencia({ pubId, titulo, session, onSalir }) {
   const reloj = (hh > 0 ? `${hh}:` : "") + `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
 
   const acompanado = otros > 0;
+
+  // En modo automático el latido corre igual, pero no se muestra nada hasta que
+  // aparece la otra parte: mientras estés solo mirando el contenido no medís
+  // nada y no tiene sentido ocupar pantalla diciéndolo.
+  if (auto && !acompanado && !error) return null;
 
   return (
     <div role="status" aria-live="polite"

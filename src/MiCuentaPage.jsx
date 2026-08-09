@@ -1249,23 +1249,11 @@ function BilleteraTab({session}){
     if(!retiroTitular.trim()){toast("Ingresá el nombre del titular","error");return;}
     setEnviandoRetiro(true);
     try{
-      const usrRows=await sb.db(`usuarios?email=eq.${encodeURIComponent(session.user.email)}&select=nombre,display_name`,"GET",null,session.access_token).catch(()=>[]);
-      const usr=usrRows?.[0]||{};
-      await sb.db("solicitudes_retiro","POST",{
-        usuario_id:session.user.id,
-        email:session.user.email,
-        nombre:usr?.display_name||usr?.nombre||session.user.email.split("@")[0],
-        monto:n,
-        cbu_alias:retiroCbu.trim(),
-        titular:retiroTitular.trim(),
-        estado:"pendiente",
-      },session.access_token);
-      await sb.insertNotificacion({
-        alumno_email:session.user.email,
-        tipo:"retiro_solicitado",
-        pub_titulo:"Solicitud de retiro recibida. Transferimos a tu cuenta dentro de los 5 a 7 días hábiles.",
-        leida:false,
-      },session.access_token);
+      // Va por RPC: el alta directa se revocó porque no validaba el saldo ni lo
+      // debitaba, así que el mismo dinero se podía retirar una y otra vez. La
+      // RPC lo reserva de forma atómica.
+      const r=await sb.solicitarRetiro(n,retiroCbu.trim(),retiroTitular.trim(),session.access_token);
+      if(r?.error){toast(r.error,"error");return;}
       toast("✓ Solicitud enviada. Transferimos en 5–7 días hábiles.","success");
       setRetiroMonto(""); setRetiroCbu(""); setRetiroTitular(""); setShowRetiroForm(false);
       cargar();

@@ -334,7 +334,7 @@ function JitsiModal({roomName,displayName,onClose,pubId,titulo}){
   const {entrarAClase}=useAppActions();
   // Entrar a la llamada arranca el registro de presencia. La duración que se
   // puede cobrar es el solapamiento con la otra parte, no este click.
-  const alEntrar=()=>{if(pubId&&entrarAClase)entrarAClase(pubId,titulo);};
+  const alEntrar=()=>{if(pubId&&entrarAClase)entrarAClase(pubId,titulo,false);};
   const copiar=()=>{try{navigator.clipboard.writeText(url);}catch{} setCopied(true);setTimeout(()=>setCopied(false),2000);};
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}}>
@@ -4271,8 +4271,17 @@ function CursoPage({post,session,onClose,onUpdatePost}){
   const [showJitsiCurso,setShowJitsiCurso]=useState(false);
   const jitsiRoomCurso=`luderis${post.id.replace(/-/g,"").slice(0,20)}`;
   const {confirm:confirmCP,confirmEl:confirmElCP}=useConfirm();
-  const {entrarAClase,presenciaPubId}=useAppActions();
+  const {entrarAClase,salirSiEsAuto,presenciaPubId,presenciaAuto}=useAppActions();
   const esMio=post.autor_email===session.user.email||post.autor_id===session.user.id;const miEmail=session.user.email;const miUid=session.user.id;
+  // Abrir la clase ya deja constancia de que estás. Nadie tiene que acordarse de
+  // apretar nada, y no hay riesgo de inflar: la duración es el solapamiento con
+  // la otra parte, así que estar de más no suma. Si no sos parte, presencia_ping
+  // rechaza el intento del lado del servidor.
+  useEffect(()=>{
+    if(!post?.id)return;
+    entrarAClase(post.id,post.titulo,true);
+    return()=>salirSiEsAuto(post.id);
+  },[post?.id,post?.titulo,entrarAClase,salirSiEsAuto]);
   const docenteDisplayName=sb.getDisplayName(miEmail)||miEmail.split("@")[0];const refreshPost=async()=>{try{const pubs=await sb.getMisPublicaciones(post.autor_email,session.access_token);const fresh=pubs.find(p=>p.id===post.id);if(fresh&&onUpdatePost)onUpdatePost(fresh);}catch{}};
   const iniciarClase=async()=>{
     setIniciandoClase(true);
@@ -4292,7 +4301,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       const emails=inscs.map(i=>i.alumno_email).filter(Boolean);
       setClaseActiva(true);
       setShowJitsiCurso(true);
-      entrarAClase(post.id,post.titulo);// el docente ya está en clase: empieza a medirse
+      entrarAClase(post.id,post.titulo,false);// dio la clase por iniciada: cuenta aunque navegue
       if(emails.length===0){
         toast("Clase iniciada. No hay alumnos inscriptos todavía.","info",4000);
       } else {
@@ -4380,7 +4389,13 @@ function CursoPage({post,session,onClose,onUpdatePost}){
     try{
       // Ventana de arrepentimiento: solo hasta que arranca la primera clase.
       const clases=await sb.getClasesRealizadas(miEmail,session.access_token).catch(()=>[]);
-      const clasesEmpezaron=(clases||[]).some(c=>c.publicacion_id===post.id);
+      // Un paquete de horas NO se bloquea porque haya arrancado: se reembolsa lo
+      // que quede sin usar. Con el guard viejo, registrar una sola clase dejaba
+      // al alumno atrapado con el resto de sus horas hasta que vencieran a los
+      // 30 días. Lo que protege al docente es la RPC, que solo devuelve
+      // monto − monto_liberado y se niega si hay horas declaradas sin confirmar.
+      const esPaqueteHoras=inscripcion.clases_totales!=null;
+      const clasesEmpezaron=!esPaqueteHoras&&(clases||[]).some(c=>c.publicacion_id===post.id);
       if(inscripcion.pagado_mp){
         // Pago retenido en escrow → reembolso automático al saldo, salvo que las
         // clases ya hayan empezado (el dinero ya no es reembolsable sin soporte).
@@ -4388,7 +4403,10 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           toast("Las clases ya comenzaron: el reembolso ya no es automático. Escribinos por soporte.","warn",6000);
           return;
         }
-        if(!await confirm({msg:"¿Querés desinscribirte? Te reembolsamos lo pagado a tu saldo de Luderis.",confirmLabel:"Desinscribirme y reembolsar",danger:true}))return;
+        if(!await confirm({msg:esPaqueteHoras
+          ?"¿Querés desinscribirte? Te devolvemos a tu saldo de Luderis las horas que no usaste."
+          :"¿Querés desinscribirte? Te reembolsamos lo pagado a tu saldo de Luderis.",
+          confirmLabel:"Desinscribirme y reembolsar",danger:true}))return;
         const r=await sb.reembolsarInscripcion(inscripcion.id,"Desinscripción del alumno",session.access_token);
         if(r?.error){toast("No se pudo reembolsar: "+r.error,"error",6000);return;}
         setInscripcion(null);
@@ -4514,8 +4532,8 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
             {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
           </button>}
-          {!localFinalizado&&presenciaPubId!==post.id&&<button onClick={()=>entrarAClase(post.id,post.titulo)}
-            title="Deja constancia de que estás en la clase. Se mide el tiempo en que ambos estén presentes."
+          {!localFinalizado&&(presenciaPubId!==post.id||presenciaAuto)&&<button onClick={()=>entrarAClase(post.id,post.titulo,false)}
+            title="Sigue contando tu presencia aunque te muevas a otra pantalla de Luderis."
             style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
             <Video size={12} strokeWidth={2.4}/>Estoy en clase
           </button>}

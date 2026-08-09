@@ -740,6 +740,17 @@ export const aceptarObjecionClase = (claseId: Id, token: Token) =>
 export const sostenerHorasClase = (claseId: Id, descargo: string | null, token: Token) =>
   rpc('sostener_horas_clase', { p_clase_id: claseId, p_descargo: descargo }, token);
 
+// ── Retiros ──────────────────────────────────────────────────────────────────
+// Van por RPC: el INSERT directo no validaba el saldo ni lo debitaba, así que el
+// mismo dinero se podía retirar indefinidamente. La RPC lo reserva atómicamente.
+export const solicitarRetiro = (monto: number, cbuAlias: string, titular: string, token: Token) =>
+  rpc('solicitar_retiro', { p_monto: monto, p_cbu_alias: cbuAlias, p_titular: titular }, token);
+export const resolverRetiro = (solicitudId: Id, estado: 'procesado' | 'rechazado', notas: string | null, token: Token) =>
+  rpc('resolver_retiro', { p_solicitud_id: solicitudId, p_estado: estado, p_notas: notas }, token);
+// Devuelve a pedido la parte no consumida de un paquete de horas.
+export const reembolsarHorasNoUsadas = (inscripcionId: Id, motivo: string | null, token: Token) =>
+  rpc('reembolsar_horas_no_usadas', { p_inscripcion_id: inscripcionId, p_motivo: motivo }, token);
+
 // ── Presencia en clase ───────────────────────────────────────────────────────
 // Cada parte reporta la suya con un latido; la duración de la clase es el
 // solapamiento entre ambas. Los timestamps los pone el servidor.

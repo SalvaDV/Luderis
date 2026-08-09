@@ -480,6 +480,22 @@ export default function PoliticaDevoluciones() {
                 salvo que exista una disputa abierta, en cuyo caso se conserva hasta resolverla.
               </Li>
               <Li>
+                <strong>Si el Alumno no responde.</strong> Pasadas 72 horas sin respuesta, las
+                horas se aprueban automáticamente, pero <strong>solo hasta el tiempo de presencia
+                registrado</strong>. Si la clase se cursó por Luderis y no hubo presencia
+                compartida, el silencio no aprueba el cobro: hace falta que el Alumno confirme o
+                que lo resuelva Luderis. Cuando no hay registro de presencia (clase presencial), el
+                silencio aprueba las horas declaradas.
+              </Li>
+              <Li>
+                <strong>Horas compradas y no usadas.</strong> El Alumno puede pedir la devolución
+                de las horas que no utilizó <strong>en cualquier momento</strong>, incluso si ya
+                tomó clases de ese mismo paquete. Se acredita a su saldo de Luderis. No se pueden
+                devolver horas que el Docente ya declaró y estén esperando confirmación: primero
+                hay que aprobarlas u objetarlas. Las horas que no se usen se acreditan igual, de
+                oficio, a los <strong>30 días</strong> de la compra.
+              </Li>
+              <Li>
                 Luderis puede <strong>advertir o suspender</strong> las cuentas que muestren un
                 patrón de objeciones o de declaraciones de horas sin sustento.
               </Li>
