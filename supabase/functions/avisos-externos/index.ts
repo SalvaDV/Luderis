@@ -7,6 +7,9 @@
  * corre cada 5 minutos por pg_cron y manda push + email de las críticas que
  * todavía no salieron.
  *
+ * El email usa EL MISMO diseño que send-email (header con degradé, tarjeta,
+ * botón, footer): el usuario no tiene por qué notar que lo mandó otro circuito.
+ *
  * Auth: header x-cron-key contra config.cron_secret_avisos (tabla no legible
  * por usuarios). Marca aviso_externo_at SIEMPRE (haya salido o no el envío):
  * mejor perder un aviso que reintentar infinito y spamear. Solo mira
@@ -14,7 +17,7 @@
  *
  * ?dry=1 → devuelve lo que mandaría, sin enviar ni marcar.
  *
- * Deploy: supabase functions deploy avisos-externos --no-verify-jwt
+ * Deploy: verify_jwt on; el cron manda Bearer anon + x-cron-key.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -38,23 +41,80 @@ const CRITICOS: Record<string, { titulo: string; cuerpo: (pt: string | null) => 
   pago_liberado:    { titulo: "Te pagaron una clase",             cuerpo: (pt) => pt ?? "Se liberó un pago a tu saldo de Luderis." },
 };
 
-function emailHtml(items: { titulo: string; cuerpo: string }[], appUrl: string): string {
-  const filas = items.map((i) => `
-    <tr><td style="padding:10px 0;border-bottom:1px solid #DDE5F5">
-      <div style="font-weight:700;color:#0D1F3C;font-size:15px">${i.titulo}</div>
-      <div style="color:#5A7294;font-size:13px;line-height:1.6;margin-top:2px">${i.cuerpo}</div>
-    </td></tr>`).join("");
-  return `
-  <div style="background:#F6F9FF;padding:28px 16px;font-family:system-ui,-apple-system,Segoe UI,sans-serif">
-    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #DDE5F5;border-radius:14px;padding:26px 28px">
-      <div style="font-weight:800;font-size:18px;color:#1A6ED8;margin-bottom:14px">Luderis</div>
-      <table style="width:100%;border-collapse:collapse">${filas}</table>
-      <a href="${appUrl}" style="display:block;text-align:center;background:#1A6ED8;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;font-size:14px;margin-top:20px">Abrir Luderis</a>
-      <div style="color:#5A7294;font-size:11px;margin-top:16px;line-height:1.5">
-        Recibís este aviso porque hay una novedad con plazos o dinero en tu cuenta.
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// ── Mismo molde visual que send-email ────────────────────────────────────────
+const BRAND = { blue: "#1A6ED8", teal: "#2EC4A0", bg: "#F6F9FF", text: "#0D1F3C", muted: "#5A7294", border: "#DDE5F5" };
+
+const emailBase = (content: string, appUrl: string, preheader = "") => `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Luderis</title>
+  <style>
+    body{margin:0;padding:0;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:${BRAND.text};}
+    .wrapper{max-width:600px;margin:0 auto;padding:32px 16px;}
+    .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,110,216,.08);border:1px solid ${BRAND.border};}
+    .header{background:linear-gradient(160deg,#0A2A5E 0%,#1A6ED8 55%,#2EC4A0 100%);padding:32px 40px;text-align:center;}
+    .header img{width:56px;height:56px;border-radius:14px;display:block;margin:0 auto 10px;}
+    .header h1{color:#fff;margin:0;font-size:28px;font-weight:800;letter-spacing:-.5px;}
+    .header p{color:rgba(255,255,255,.75);margin:6px 0 0;font-size:13px;letter-spacing:0.3px;}
+    .body{padding:32px 40px;}
+    .body h2{color:${BRAND.text};font-size:20px;font-weight:700;margin:0 0 12px;}
+    .body p{color:${BRAND.muted};font-size:15px;line-height:1.7;margin:0 0 16px;}
+    .body strong{color:${BRAND.text};}
+    .btn{display:inline-block;background:linear-gradient(135deg,${BRAND.blue},${BRAND.teal});color:#fff!important;text-decoration:none;padding:14px 32px;border-radius:24px;font-weight:700;font-size:15px;margin:8px 0;box-shadow:0 4px 14px rgba(26,110,216,.3);}
+    .info-box{background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin:16px 0;}
+    .info-box .label{font-size:11px;color:${BRAND.muted};font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+    .info-box .value{font-size:15px;color:${BRAND.text};font-weight:600;}
+    .divider{height:1px;background:${BRAND.border};margin:24px 0;}
+    .footer{padding:24px 40px;text-align:center;border-top:1px solid ${BRAND.border};background:${BRAND.bg};}
+    .footer p{color:${BRAND.muted};font-size:12px;margin:4px 0;}
+    .footer a{color:${BRAND.blue};text-decoration:none;}
+    @media(max-width:480px){.body,.header,.footer{padding:24px 20px!important;}}
+  </style>
+</head>
+<body>
+  ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${esc(preheader)}</div>` : ""}
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <img src="${appUrl}/logo.png" alt="Luderis"/>
+        <h1>Luderis</h1>
+        <p>Aprendé lo que quieras · Enseñá lo que sabés</p>
+      </div>
+      <div class="body">
+        ${content}
+      </div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} Luderis · Buenos Aires, Argentina</p>
+        <p><a href="${appUrl}">Ir a Luderis</a> · <a href="mailto:contacto@luderis.com">Contacto</a></p>
+        <p style="margin-top:8px;color:#A0AEC0;font-size:11px;">Recibís este email porque hay una novedad con plazos o dinero en tu cuenta de Luderis.</p>
       </div>
     </div>
-  </div>`;
+  </div>
+</body>
+</html>`;
+
+function emailContenido(items: { titulo: string; cuerpo: string }[], appUrl: string): string {
+  if (items.length === 1) {
+    return `
+      <h2>${esc(items[0].titulo)}</h2>
+      <p>${esc(items[0].cuerpo)}</p>
+      <div style="text-align:center"><a class="btn" href="${appUrl}">Abrir Luderis</a></div>`;
+  }
+  const cajas = items.map((i) => `
+    <div class="info-box">
+      <div class="label">${esc(i.titulo)}</div>
+      <div class="value" style="font-weight:500;line-height:1.6">${esc(i.cuerpo)}</div>
+    </div>`).join("");
+  return `
+    <h2>Tenés ${items.length} novedades</h2>
+    ${cajas}
+    <div style="text-align:center"><a class="btn" href="${appUrl}">Abrir Luderis</a></div>`;
 }
 
 Deno.serve(async (req) => {
@@ -89,8 +149,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, enviados: 0 }), { status: 200 });
     }
 
-    // Agrupar por destinatario: un solo email por persona por tick, con todas
-    // sus novedades adentro. El push sí va uno por noticia (el sistema los apila).
+    // Un solo email por persona por tick, con todas sus novedades adentro. El
+    // push va uno por noticia (el sistema los apila).
     const porEmail = new Map<string, typeof pendientes>();
     for (const n of pendientes) {
       if (!n.alumno_email) continue;
@@ -109,7 +169,6 @@ Deno.serve(async (req) => {
       resumen.push({ email, tipos: notifs.map((n) => n.tipo) });
       if (dry) continue;
 
-      // Push: send-push acepta el service role como caller interno.
       for (const it of items) {
         try {
           const r = await fetch(`${SB_URL}/functions/v1/send-push`, {
@@ -121,14 +180,16 @@ Deno.serve(async (req) => {
         } catch (e) { console.warn("push fallo:", (e as Error).message); }
       }
 
-      // Email: uno solo con todo.
       if (RESEND) {
         try {
           const asunto = items.length === 1 ? items[0].titulo : `Tenés ${items.length} novedades en Luderis`;
           const r = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND}` },
-            body: JSON.stringify({ from: `Luderis <${FROM}>`, to: [email], subject: asunto, html: emailHtml(items, APP_URL) }),
+            body: JSON.stringify({
+              from: `Luderis <${FROM}>`, to: [email], subject: asunto,
+              html: emailBase(emailContenido(items, APP_URL), APP_URL, items[0].cuerpo),
+            }),
           });
           if (r.ok) emailOk++;
           else console.warn("email fallo:", r.status, await r.text());

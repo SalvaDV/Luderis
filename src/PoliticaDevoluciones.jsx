@@ -506,12 +506,13 @@ export default function PoliticaDevoluciones() {
               </Li>
               <Li>
                 <strong>Cursos y clases grupales.</strong> El mecanismo de horas aplica solo a
-                las clases particulares (1 a 1). En cursos y grupales, el pago se libera al
-                Docente <strong>semana a semana</strong> sobre la duración del curso, siempre que
-                el curso se dicte y el material prometido se entregue —{" "}
-                <strong>la inasistencia del Alumno no suspende el cobro</strong>. El Alumno que no
-                desea continuar puede desinscribirse y recibe como reembolso la parte{" "}
-                <strong>aún no liberada</strong>, acreditada a su saldo.
+                las clases particulares (1 a 1). En cursos y grupales, el pago del Docente se{" "}
+                <strong>gana semana a semana</strong> sobre la duración del curso y se acredita{" "}
+                <strong>completo al finalizar el curso</strong>, siempre que el curso se dicte y el
+                material prometido se entregue — <strong>la inasistencia del Alumno no suspende el
+                cobro</strong>. El Alumno que no desea continuar puede desinscribirse en cualquier
+                momento: el Docente recibe en ese acto la parte ya ganada y el Alumno recupera el
+                resto (con su parte de la comisión), acreditado a su saldo.
               </Li>
               <Li>
                 Luderis puede <strong>advertir o suspender</strong> las cuentas que muestren un

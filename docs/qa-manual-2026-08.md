@@ -209,16 +209,18 @@ revocó el INSERT/UPDATE directo: todo pasa por `solicitar_retiro` y
 
 Explicado simple, para probar sin leer código:
 
-**Cursos y grupales cobran solos, semana a semana.** El docente de un curso ya
-no declara horas ni espera confirmaciones: la plata del curso se le libera por
-semana (sobre la duración del curso; si no cargó fechas, 4 semanas desde la
-compra). Que el alumno falte no frena el cobro. Si el alumno no quiere seguir,
-se desinscribe y recupera lo que todavía no se liberó.
+**Cursos y grupales: se gana por semana, se cobra al final.** El docente de un
+curso no declara horas ni espera confirmaciones. Su pago se va GANANDO semana a
+semana (sobre la duración del curso; sin fechas cargadas, 4 semanas desde la
+compra) pero se acredita TODO JUNTO cuando el curso termina. Si un alumno se
+baja a mitad de curso, en ese momento el docente cobra la parte ya ganada y el
+alumno recupera el resto con su comisión. Que el alumno falte no frena nada.
 - [ ] Comprar un curso grupal y verificar que el docente NO vea la opción de
       registrar horas para ese curso en la agenda.
-- [ ] (Requiere esperar o simular) Verificar que cada semana aparezca un
-      movimiento "Curso «…» — semana N de M" en la billetera del docente.
-- [ ] Desinscribirse a mitad de curso: debe volver solo la parte no liberada.
+- [ ] Desinscribirse a mitad de curso: el docente cobra su parte al instante y
+      al alumno le vuelve el resto (comisión incluida).
+- [ ] (Requiere esperar o simular fechas) Al terminar el curso, al docente le
+      llega "Terminó tu curso: liberamos el pago completo".
 
 **El reloj de aprobación ahora tiene dos velocidades.** Si la app midió la
 clase completa (los dos conectados), el silencio del alumno aprueba a las
