@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
 import BarraDeclararHoras from "./components/BarraDeclararHoras";
+import { AccionPrimaria, AccionNeutra, AccionEnVivo, Rol, MenuMas } from "./components/AccionesBar";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
   C, FONT, FONT_DISPLAY, toast, accentFor, tx, Z,
@@ -4528,31 +4529,48 @@ function CursoPage({post,session,onClose,onUpdatePost}){
         </div>
         {/* Row 2: actions — scrollable on mobile */}
         <div className="curso-actions" style={{padding:"0 14px 8px",borderTop:`1px solid ${C.border}`,paddingTop:6}}>
-          {esMio&&!localFinalizado&&!localCerrado&&<button onClick={()=>setShowCerrarInsc(true)} style={{background:C.warn+"12",border:`1px solid ${C.warn}33`,borderRadius:7,color:C.warn,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Cerrar inscrip.</button>}
-          {esMio&&!localFinalizado&&localCerrado&&<button onClick={async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){toast("Error: "+e.message,"error");}}} style={{background:C.success+"12",border:`1px solid ${C.success}33`,borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Reabrir inscrip.</button>}
-          {esMio&&!localFinalizado&&<button onClick={claseActiva?()=>setShowJitsiCurso(true):iniciarClase} disabled={iniciandoClase}
-            style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
-            {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
-          </button>}
-          {!localFinalizado&&(presenciaPubId!==post.id||presenciaAuto)&&<button onClick={()=>entrarAClase(post.id,post.titulo,false,"manual")}
-            title="Sigue contando tu presencia aunque te muevas a otra pantalla de Luderis."
-            style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
-            <Video size={12} strokeWidth={2.4}/>Estoy en clase
-          </button>}
-          {(esMio||esAyudante)&&!localFinalizado&&<button onClick={()=>setShowFinalizar(true)} style={{background:C.success+"12",border:`1px solid ${C.success}33`,borderRadius:7,color:C.successText,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap"}}>Finalizar</button>}
-          {esMio&&!localFinalizado&&<button onClick={cancelarConReembolso} disabled={cancelando} style={{background:C.danger+"12",border:`1px solid ${C.danger}33`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:cancelando?"default":"pointer",fontSize:11,fontFamily:FONT,fontWeight:600,whiteSpace:"nowrap",opacity:cancelando?0.6:1}}>{cancelando?"Cancelando…":"Cancelar y reembolsar"}</button>}
-          {localFinalizado&&(esMio||esAyudante)&&<span style={{fontSize:11,color:C.info,fontWeight:600,whiteSpace:"nowrap"}}>✓ Clase finalizada</span>}
-          {!esMio&&inscripcion&&<button onClick={()=>setShowDenuncia(true)} style={{background:C.danger+"12",border:`1px solid ${C.danger}33`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,whiteSpace:"nowrap"}}>Denunciar</button>}
-          {esMio?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Sos el docente</span>:
-            esAyudante?<span style={{fontSize:11,color:C.purple,fontWeight:600,whiteSpace:"nowrap"}}>✦ Co-docente</span>:(
-            inscLoading?<Spinner small/>:(
-              localFinalizado?<span style={{fontSize:11,color:C.info,whiteSpace:"nowrap"}}>Clase finalizada</span>:
-              localCerrado?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Inscripciones cerradas</span>:
-              inscripcion?<button onClick={desinscribirse} style={{background:"none",border:`1px solid ${C.danger}`,borderRadius:7,color:C.danger,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,whiteSpace:"nowrap"}}>Desinscribirme</button>
-              :(localCerrado||post.inscripciones_cerradas)?<span style={{fontSize:11,color:C.muted,whiteSpace:"nowrap"}}>Inscripciones cerradas</span>
-              :<Btn onClick={inscribirse} variant="success" style={{padding:"5px 12px",fontSize:11,whiteSpace:"nowrap"}}>Inscribirme →</Btn>
-            )
+          {/* Contexto primero: quien sos en esta clase. No es una accion. */}
+          {esMio       && <Rol>Sos el docente</Rol>}
+          {esAyudante  && <Rol color={C.purple}>✦ Co-docente</Rol>}
+          {!esMio && !esAyudante && inscripcion && !localFinalizado && <Rol>Estás inscripto</Rol>}
+          {localFinalizado && <Rol color={C.info}>✓ Clase finalizada</Rol>}
+          {!esMio && !esAyudante && !inscripcion && !inscLoading && (localCerrado||post.inscripciones_cerradas) && !localFinalizado &&
+            <Rol>Inscripciones cerradas</Rol>}
+          {inscLoading && <span style={{marginRight:"auto"}}><Spinner small/></span>}
+
+          {/* Una sola accion principal, segun rol y estado */}
+          {esMio && !localFinalizado && (claseActiva
+            ? <AccionEnVivo onClick={()=>setShowJitsiCurso(true)}>En vivo</AccionEnVivo>
+            : <AccionPrimaria onClick={iniciarClase} disabled={iniciandoClase}>
+                {iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
+              </AccionPrimaria>
           )}
+          {!esMio && !esAyudante && !inscripcion && !inscLoading && !localFinalizado
+            && !(localCerrado||post.inscripciones_cerradas) &&
+            <AccionPrimaria onClick={inscribirse}>Inscribirme →</AccionPrimaria>}
+
+          {/* Secundarias: neutras, sin color */}
+          {!localFinalizado && (presenciaPubId!==post.id||presenciaAuto) &&
+            <AccionNeutra onClick={()=>entrarAClase(post.id,post.titulo,false,"manual")}
+              title="Sigue contando tu presencia aunque te muevas a otra pantalla de Luderis.">
+              <Video size={12} strokeWidth={2.2}/>Estoy en clase
+            </AccionNeutra>}
+          {(esMio||esAyudante) && !localFinalizado &&
+            <AccionNeutra onClick={()=>setShowFinalizar(true)}>Finalizar</AccionNeutra>}
+
+          {/* Lo que se hace una vez, o lo que no tiene vuelta atras */}
+          <MenuMas items={[
+            {label:"Cerrar inscripciones", oculto:!(esMio&&!localFinalizado&&!localCerrado),
+             onClick:()=>setShowCerrarInsc(true)},
+            {label:"Reabrir inscripciones", oculto:!(esMio&&!localFinalizado&&localCerrado),
+             onClick:async()=>{try{await sb.updatePublicacion(post.id,{inscripciones_cerradas:false},session.access_token);post.inscripciones_cerradas=false;post.inscripcionesCerradas=false;setLocalCerrado(false);if(onUpdatePost)onUpdatePost({...post,inscripciones_cerradas:false});}catch(e){toast("Error: "+e.message,"error");}}},
+            {label:cancelando?"Cancelando…":"Cancelar clase y reembolsar", peligro:true, disabled:cancelando,
+             oculto:!(esMio&&!localFinalizado), onClick:cancelarConReembolso},
+            {label:"Desinscribirme", peligro:true,
+             oculto:!(!esMio&&!esAyudante&&inscripcion&&!localFinalizado), onClick:desinscribirse},
+            {label:"Denunciar esta clase", peligro:true,
+             oculto:!(!esMio&&inscripcion), onClick:()=>setShowDenuncia(true)},
+          ]}/>
         </div>
       </div>
       {desinscMsg&&(
