@@ -5140,7 +5140,8 @@ function InscripcionModal({post,session,onClose,onDone}){
       if(rInsc?.error)throw new Error(rInsc.error);
       sb.insertNotificacion({usuario_id:null,alumno_email:post.autor_email,tipo:"nueva_inscripcion",publicacion_id:post.id,pub_titulo:post.titulo,leida:false},session.access_token).catch(()=>{});
       const alumnoNombre=sb.getDisplayName(session.user.email)||session.user.email.split("@")[0];
-      sb.sendEmail("nueva_inscripcion",post.autor_email,{pub_titulo:post.titulo,pub_id:post.id,alumno_nombre:alumnoNombre},session.access_token).catch(()=>{});
+      // El mail al docente sale mas abajo, con el precio y el paquete: mandarlo
+      // aca tambien le duplicaba la notificacion por cada inscripcion.
       sb.sendPush(post.autor_email,`Nueva inscripción — ${post.titulo}`,`${alumnoNombre} se inscribió en tu curso`,`/?curso=${post.id}`,"nueva_inscripcion",session.access_token).catch(()=>{});
       // Info del mail según lo que eligió
       const paqueteInfo=paqueteElegido&&!esPruebaLocal?`${paqueteElegido.nombre||paqueteElegido.clases+" clases"}`:null;
@@ -5161,11 +5162,13 @@ function InscripcionModal({post,session,onClose,onDone}){
       sb.sendEmail("nueva_inscripcion",post.autor_email,{
         pub_titulo:post.titulo,
         pub_id:post.id,
-        alumno_nombre:session.user.email.split("@")[0],
+        alumno_nombre:alumnoNombre,
         precio:precioMail,
         moneda:post.moneda||"ARS",
         paquete:esPruebaLocal?"Clase de prueba":paqueteInfo,
         clases:clasesCount,
+        // Un curso se cobra al terminar; las horas, a medida que se aprueban.
+        es_curso:post.modo!=="particular",
       },session.access_token).catch(()=>{});
       toast("¡Inscripción exitosa! Ya tenés acceso","success",4000);
       setTimeout(()=>{onClose();onDone();},700);

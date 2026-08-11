@@ -131,25 +131,49 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
     `, "Tu cuenta está lista. Empezá a explorar."),
   }),
 
+  // Al docente, cuando alguien se inscribe. Lo importante no es solo "tenés un
+  // alumno" sino CUÁNDO vas a cobrar, que es distinto en un curso (al terminar)
+  // que en clases por hora (a medida que el alumno aprueba cada una).
   nueva_inscripcion: (data, appUrl) => ({
-    subject: `Nueva inscripción en "${data.pub_titulo}"`,
-    preheader: `${data.alumno_nombre} se inscribió en tu clase.`,
+    subject: `${data.alumno_nombre} se inscribió en "${data.pub_titulo}"`,
+    preheader: `Tenés un alumno nuevo en ${data.pub_titulo}.`,
     html: emailBase(`
-      <h2>¡Tenés un nuevo alumno!</h2>
-      <p><strong>${data.alumno_nombre}</strong> se inscribió en tu publicación.</p>
+      <h2>¡Tenés un alumno nuevo!</h2>
+      <p><strong>${data.alumno_nombre}</strong> se inscribió en <strong>${data.pub_titulo}</strong>.</p>
+      ${data.precio ? `
       <div class="info-box">
-        <div class="label">Publicación</div>
-        <div class="value">${data.pub_titulo}</div>
-      </div>
+        <div class="label">Lo que vas a cobrar</div>
+        <div class="value">$${Number(data.precio).toLocaleString("es-AR")} ${data.moneda || "ARS"}${data.paquete ? ` · ${data.paquete}` : ""}</div>
+      </div>` : ""}
       <div class="info-box">
-        <div class="label">Alumno</div>
-        <div class="value">${data.alumno_nombre}</div>
+        <div class="label">Cuándo se te acredita</div>
+        <div class="value" style="font-weight:500;line-height:1.6;">${
+          data.es_curso
+            ? "Al terminar el curso, todo junto. Si el alumno se da de baja antes, cobrás la parte que ya dictaste."
+            : "A medida que declarás las horas dictadas y el alumno las aprueba. Si no responde, se aprueban solas."
+        }</div>
       </div>
-      <p>Entrá a Luderis para ver los detalles y coordinar con tu nuevo alumno.</p>
+      <p>El pago queda retenido en Luderis hasta ese momento — es lo que le da confianza al alumno para comprar.</p>
       <p style="text-align:center;margin:24px 0;">
         <a href="${data.pub_id ? `${appUrl}?pub=${data.pub_id}` : `${appUrl}?page=cuenta`}" class="btn">Ver la clase →</a>
       </p>
-    `, `${data.alumno_nombre} se inscribió en tu clase.`),
+    `, `${data.alumno_nombre} se inscribió en ${data.pub_titulo}.`),
+  }),
+
+  // Se manda al iniciar una clase en vivo. Existía la llamada desde la app pero
+  // NO la plantilla: send-email respondía "Template desconocido" y el aviso no
+  // llegaba nunca por mail.
+  clase_iniciada: (data, appUrl) => ({
+    subject: `Empezó "${data.pub_titulo}" — entrá ahora`,
+    preheader: `${data.docente_nombre || "Tu docente"} está esperándote en la videollamada.`,
+    html: emailBase(`
+      <h2>Tu clase está empezando</h2>
+      <p><strong>${data.docente_nombre || "Tu docente"}</strong> inició <strong>${data.pub_titulo}</strong> y te está esperando.</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${data.jitsi_url || appUrl}" class="btn">Entrar a la videollamada →</a>
+      </p>
+      <p style="font-size:13px;color:${BRAND.muted};">Entrá desde Luderis para que quede registro de tu presencia: es lo que después respalda las horas de la clase.</p>
+    `, "Tu clase está empezando."),
   }),
 
   oferta_recibida: (data, appUrl) => ({
@@ -236,6 +260,158 @@ const TEMPLATES: Record<string, (data: any, appUrl: string) => { subject: string
       <p style="font-size:13px;color:${BRAND.muted};">Las reseñas son públicas y ayudan a la comunidad. ¡Gracias por participar!</p>
     `, "Contanos cómo fue tu experiencia."),
   }),
+
+  // ── Eventos con plazo o plata ───────────────────────────────────────────────
+  // Los manda avisos-externos. Antes salían todos con un molde genérico que no
+  // decía qué había que hacer ni para cuándo.
+
+  horas_por_confirmar: (data, appUrl) => ({
+    subject: `Confirmá las horas de "${data.pub_titulo || "tu clase"}"`,
+    preheader: "Si no respondés, se aprueban solas y se le paga al docente.",
+    html: emailBase(`
+      <h2>Tenés horas de clase por confirmar</h2>
+      <p>El docente registró las horas que dictó en <strong>${data.pub_titulo || "tu clase"}</strong>. Revisalas y aprobalas — o decinos si fueron menos.</p>
+      <div class="info-box">
+        <div class="label">Si no respondés</div>
+        <div class="value" style="font-weight:500;line-height:1.6;">Se aprueban solas y el pago se libera al docente. ${data.plazo || "Tenés 72 horas (24 si la app registró la clase completa)."}</div>
+      </div>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Revisar las horas →</a>
+      </p>
+      <p style="font-size:13px;color:${BRAND.muted};">Mientras tanto la plata sigue retenida en Luderis: no se le paga a nadie hasta que se resuelva.</p>
+    `, "Tenés horas de clase por confirmar."),
+  }),
+
+  horas_ajustadas: (data, appUrl) => ({
+    subject: "Revisamos las horas de una clase",
+    preheader: "Ajustamos las horas al registro de presencia de la app.",
+    html: emailBase(`
+      <h2>Revisamos las horas de una clase</h2>
+      <p>${data.detalle || "Ajustamos las horas de una clase con el registro de presencia de la app."}</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver la clase →</a>
+      </p>
+      <p style="font-size:13px;color:${BRAND.muted};">Si no estás de acuerdo, podés sostener tus horas desde Mi cuenta y lo revisa nuestro equipo.</p>
+    `, "Revisamos las horas de una clase."),
+  }),
+
+  reclamo_horas: (data, appUrl) => ({
+    subject: "Hay un reclamo de horas abierto",
+    preheader: "El pago queda retenido hasta resolverlo.",
+    html: emailBase(`
+      <h2>Se abrió un reclamo de horas</h2>
+      <p>${data.detalle || "Hay un desacuerdo sobre las horas de una clase."}</p>
+      <div class="info-box">
+        <div class="label">Qué pasa ahora</div>
+        <div class="value" style="font-weight:500;line-height:1.6;">El pago queda retenido. Si las partes no se ponen de acuerdo, lo resuelve el equipo de Luderis en un máximo de 5 días hábiles.</div>
+      </div>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver el reclamo →</a>
+      </p>
+    `, "Hay un reclamo de horas abierto."),
+  }),
+
+  reclamo_resuelto: (data, appUrl) => ({
+    subject: "Resolvimos el reclamo de horas",
+    preheader: "Ya definimos las horas finales de la clase.",
+    html: emailBase(`
+      <h2>Resolvimos el reclamo</h2>
+      <p>${data.detalle || "El reclamo de horas de tu clase quedó resuelto."}</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver el detalle →</a>
+      </p>
+    `, "Resolvimos el reclamo de horas."),
+  }),
+
+  // "Te pagaron" sonaba a que alguien te hizo una transferencia. Lo que pasa en
+  // realidad es que la plata que ya estaba retenida se liberó a tu saldo.
+  pago_liberado: (data, appUrl) => ({
+    subject: `Se liberó tu pago${data.monto ? ` — $${Number(data.monto).toLocaleString("es-AR")}` : ""}`,
+    preheader: "La plata retenida pasó a tu saldo disponible.",
+    html: emailBase(`
+      <h2>Se liberó tu pago</h2>
+      <p>${data.detalle || "La plata que estaba retenida ya pasó a tu saldo de Luderis."}</p>
+      ${data.monto ? `
+      <div class="info-box">
+        <div class="label">Monto liberado</div>
+        <div class="value">$${Number(data.monto).toLocaleString("es-AR")}</div>
+      </div>` : ""}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver mi saldo →</a>
+      </p>
+      <p style="font-size:13px;color:${BRAND.muted};">Podés retirarlo a tu cuenta bancaria cuando quieras, desde Mi cuenta → Dinero.</p>
+    `, "Se liberó tu pago."),
+  }),
+
+  horas_por_vencer: (data, appUrl) => ({
+    subject: "Tenés horas de clase por vencer",
+    preheader: "Tomá una clase y se renuevan solas.",
+    html: emailBase(`
+      <h2>Tenés horas por vencer</h2>
+      <p>${data.detalle || "Te quedan horas compradas sin usar que están por vencer."}</p>
+      <div class="info-box">
+        <div class="label">Cómo evitarlo</div>
+        <div class="value" style="font-weight:500;line-height:1.6;">Tomá una clase y la vigencia de las horas que te quedan se renueva sola por 30 días más. Si vencen, te devolvemos la plata a tu saldo de Luderis — no la perdés.</div>
+      </div>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver mis horas →</a>
+      </p>
+    `, "Tenés horas de clase por vencer."),
+  }),
+
+  retiro_procesado: (data, appUrl) => ({
+    subject: "Procesamos tu retiro",
+    preheader: "El dinero está en camino a tu cuenta bancaria.",
+    html: emailBase(`
+      <h2>Procesamos tu retiro</h2>
+      <p>Ya salió la transferencia${data.monto ? ` de <strong>$${Number(data.monto).toLocaleString("es-AR")}</strong>` : ""} hacia tu cuenta.</p>
+      <div class="info-box">
+        <div class="label">Cuándo llega</div>
+        <div class="value">En 5 a 7 días hábiles</div>
+      </div>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver mis movimientos →</a>
+      </p>
+    `, "Procesamos tu retiro."),
+  }),
+
+  retiro_rechazado: (data, appUrl) => ({
+    subject: "Tu retiro fue rechazado",
+    preheader: "Devolvimos el monto a tu saldo de Luderis.",
+    html: emailBase(`
+      <h2>No pudimos procesar tu retiro</h2>
+      <p>Rechazamos la solicitud y <strong>devolvimos el monto completo a tu saldo</strong>. No perdiste nada: podés volver a pedirlo cuando quieras.</p>
+      ${data.motivo ? `
+      <div class="info-box">
+        <div class="label">Motivo</div>
+        <div class="value" style="font-weight:500;line-height:1.6;">${data.motivo}</div>
+      </div>` : ""}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${appUrl}?page=cuenta" class="btn">Ver mi saldo →</a>
+      </p>
+    `, "Tu retiro fue rechazado."),
+  }),
+
+  // Varias novedades juntas: mejor un mail con todo que cinco seguidos.
+  resumen_novedades: (data, appUrl) => {
+    const items = (data.items as Array<{ titulo: string; cuerpo: string }>) || [];
+    const cajas = items.map((i) => `
+      <div class="info-box">
+        <div class="label">${i.titulo}</div>
+        <div class="value" style="font-weight:500;line-height:1.6;">${i.cuerpo}</div>
+      </div>`).join("");
+    return {
+      subject: `Tenés ${items.length} novedades en Luderis`,
+      preheader: items[0]?.titulo || "Novedades en tu cuenta.",
+      html: emailBase(`
+        <h2>Tenés ${items.length} novedades</h2>
+        ${cajas}
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${appUrl}?page=cuenta" class="btn">Abrir Luderis →</a>
+        </p>
+      `, items[0]?.titulo || "Novedades en tu cuenta."),
+    };
+  },
 
   nuevo_mensaje: (data, appUrl) => ({
     subject: `Nuevo mensaje de ${data.de_nombre}`,
@@ -517,6 +693,13 @@ const PUSH_CONFIGS: Record<string, (d: Record<string, unknown>, appUrl: string) 
     tag:   `contra-${d.pub_id ?? Date.now()}`,
   }),
 
+  clase_iniciada: (d, appUrl) => ({
+    title: "Empezó tu clase",
+    body: `${d.docente_nombre || "Tu docente"} te está esperando en ${d.pub_titulo || "la videollamada"}`,
+    url: "/",
+    tag: "clase-iniciada",
+  }),
+
   clase_finalizada: (d, appUrl) => ({
     title: "¿Cómo fue tu clase?",
     body:  `Dejá tu reseña de "${d.pub_titulo}"`,
@@ -627,7 +810,7 @@ Deno.serve(async (req) => {
       const USER_ALLOWED_TEMPLATES = new Set([
         "bienvenida", "nueva_inscripcion", "oferta_recibida", "oferta_aceptada",
         "contraoferta", "nueva_evaluacion", "nuevo_mensaje", "comprobante_inscripcion",
-        "nuevo_ayudante", "clase_iniciada",
+        "nuevo_ayudante", "clase_iniciada", "clase_finalizada",
       ]);
       if (callerRol !== "admin" && !USER_ALLOWED_TEMPLATES.has(template)) {
         return new Response(JSON.stringify({ error: "No autorizado para esta plantilla" }), {

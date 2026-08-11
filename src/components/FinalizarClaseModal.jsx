@@ -23,6 +23,15 @@ export default function FinalizarClaseModal({post,session,onClose,onFinalizado})
       pub_titulo:post.titulo,
       leida:false,
     },session.access_token).catch(e=>logError("notif confirmar_clase",e))));
+    // La plantilla clase_finalizada existia desde siempre pero nadie la llamaba:
+    // nunca le pedimos la resena a nadie, que es lo que hace crecer el catalogo.
+    inscripciones.forEach(ins=>{
+      if(!ins.alumno_email)return;
+      sb.sendEmail("clase_finalizada",ins.alumno_email,{
+        pub_titulo:post.titulo,
+        docente_nombre:post.autor_nombre||(post.autor_email||"").split("@")[0],
+      },session.access_token).catch(()=>{});
+    });
     onFinalizado();onClose();
   }catch(e){toast("Error al finalizar: "+e.message,"error");}finally{setSaving(false);}};
   return(

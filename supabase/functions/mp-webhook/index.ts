@@ -295,6 +295,39 @@ serve(async (req) => {
           leida:          false,
         });
       }
+
+      // ── 5. Comprobante al que pagó ─────────────────────────────────────
+      // El que compra por Mercado Pago no recibía NINGÚN email: el comprobante
+      // solo se mandaba en las inscripciones directas (gratis o de prueba). La
+      // plantilla pago_aprobado existía desde siempre pero nadie la llamaba.
+      if (meta.alumno_email && !ES_RECARGA && monto > 0) {
+        try {
+          const { data: pub } = await supabase
+            .from("publicaciones").select("titulo")
+            .eq("id", meta.publicacion_id).maybeSingle();
+          await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "apikey": SUPABASE_KEY,
+            },
+            body: JSON.stringify({
+              to: meta.alumno_email,
+              template: "pago_aprobado",
+              data: {
+                pub_titulo: pub?.titulo ?? "tu clase",
+                monto,
+                mp_payment_id: mpPayId,
+              },
+            }),
+          });
+        } catch (e) {
+          // Un comprobante que no sale no puede tumbar la acreditación: el pago
+          // ya está asentado y MP reintentaría todo el webhook.
+          console.warn("mp-webhook: no se pudo enviar el comprobante:", (e as Error).message);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true, estado }), {
