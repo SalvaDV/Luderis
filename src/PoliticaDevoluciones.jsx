@@ -480,12 +480,16 @@ export default function PoliticaDevoluciones() {
                 salvo que exista una disputa abierta, en cuyo caso se conserva hasta resolverla.
               </Li>
               <Li>
-                <strong>Si el Alumno no responde.</strong> Pasadas 72 horas sin respuesta, las
-                horas se aprueban automáticamente, pero <strong>solo hasta el tiempo de presencia
-                registrado</strong>. Si la clase se cursó por Luderis y no hubo presencia
-                compartida, el silencio no aprueba el cobro: hace falta que el Alumno confirme o
-                que lo resuelva Luderis. Cuando no hay registro de presencia (clase presencial), el
-                silencio aprueba las horas declaradas.
+                <strong>Si el Alumno no responde.</strong> Las horas declaradas se aprueban
+                automáticamente pasadas <strong>72 horas</strong> sin respuesta — o{" "}
+                <strong>24 horas</strong> cuando el registro de presencia de la plataforma
+                corrobora la clase completa. La aprobación automática alcanza{" "}
+                <strong>solo hasta el tiempo de presencia registrado</strong>: si la app midió
+                menos de lo declarado, el Docente es avisado y tiene <strong>48 horas</strong>{" "}
+                para pedir revisión antes de que el ajuste se aplique. Si la clase se cursó por
+                Luderis y no hubo presencia compartida, el silencio no aprueba el cobro: hace
+                falta que el Alumno confirme o que lo resuelva Luderis. Cuando no hay registro de
+                presencia (clase presencial), el silencio aprueba las horas declaradas.
               </Li>
               <Li>
                 <strong>Horas compradas y no usadas.</strong> El Alumno puede pedir la devolución
@@ -493,7 +497,21 @@ export default function PoliticaDevoluciones() {
                 tomó clases de ese mismo paquete. Se acredita a su saldo de Luderis. No se pueden
                 devolver horas que el Docente ya declaró y estén esperando confirmación: primero
                 hay que aprobarlas u objetarlas. Las horas que no se usen se acreditan igual, de
-                oficio, a los <strong>30 días</strong> de la compra.
+                oficio, a los <strong>30 días de la última clase tomada</strong> (cada clase
+                renueva la vigencia del resto), con un aviso 7 días antes.
+              </Li>
+              <Li>
+                <strong>Plazo de resolución.</strong> Cuando un desacuerdo queda en manos de
+                Luderis, se resuelve en un máximo de <strong>5 días hábiles</strong>.
+              </Li>
+              <Li>
+                <strong>Cursos y clases grupales.</strong> El mecanismo de horas aplica solo a
+                las clases particulares (1 a 1). En cursos y grupales, el pago se libera al
+                Docente <strong>semana a semana</strong> sobre la duración del curso, siempre que
+                el curso se dicte y el material prometido se entregue —{" "}
+                <strong>la inasistencia del Alumno no suspende el cobro</strong>. El Alumno que no
+                desea continuar puede desinscribirse y recibe como reembolso la parte{" "}
+                <strong>aún no liberada</strong>, acreditada a su saldo.
               </Li>
               <Li>
                 Luderis puede <strong>advertir o suspender</strong> las cuentas que muestren un

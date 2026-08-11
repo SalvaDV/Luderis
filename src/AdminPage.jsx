@@ -1840,7 +1840,7 @@ function EscrowTab({ session }) {
       // Antes consultaba pagos.estado_escrow, columna del modelo viejo que el
       // escrow vigente no popula: el tablero salía vacío habiendo plata retenida.
       adminDb("admin_escrow_retenido?select=*&order=created_at.asc&limit=100", "GET", null, session.access_token),
-      adminDb("disputas?estado=eq.abierta&select=*,clases_realizadas(evidencia_url,fecha_clase,duracion_min,duracion_objetada_min,minutos_presencia)&order=created_at.desc&limit=50", "GET", null, session.access_token),
+      adminDb("disputas?estado=eq.abierta&select=*,clases_realizadas(evidencia_url,fecha_clase,duracion_min,duracion_objetada_min,minutos_presencia,presencia_modo)&order=created_at.desc&limit=50", "GET", null, session.access_token),
       adminDb("admin_patron_disputas?select=*", "GET", null, session.access_token),
     ]).then(([p, d, pat]) => {
       setPagosRetenidos(p || []);
@@ -1982,6 +1982,12 @@ function EscrowTab({ session }) {
                   <div>
                     <Badge color={esHoras ? C.warn : C.danger}>{esHoras ? "horas en disputa" : d.motivo}</Badge>
                     <span style={{ marginLeft: 8, fontSize: 12, color: C.muted }}>{fmt(d.created_at)}</span>
+                    {/* El compromiso publicado es resolver en 5 días hábiles */}
+                    {(() => {
+                      const dias = Math.floor((Date.now() - new Date(d.created_at).getTime()) / 86400000);
+                      if (dias < 2) return null;
+                      return <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: dias >= 5 ? "#fff" : C.danger, background: dias >= 5 ? C.danger : C.danger + "18", border: `1px solid ${C.danger}55`, borderRadius: 20, padding: "2px 8px" }}>hace {dias} días</span>;
+                    })()}
                   </div>
                   {!esHoras && (
                   <div style={{ display: "flex", gap: 6 }}>
@@ -2017,7 +2023,11 @@ function EscrowTab({ session }) {
                     border: `1px solid ${clase?.minutos_presencia > 0 ? C.success + "33" : C.warn + "33"}`,
                     color: clase?.minutos_presencia > 0 ? C.successText : C.warn, lineHeight: 1.5 }}>
                     {clase?.minutos_presencia > 0
-                      ? <>Presencia registrada: <strong>{(clase.minutos_presencia / 60).toLocaleString("es-AR", { maximumFractionDigits: 2 })} h</strong> con los dos conectados a la vez.</>
+                      ? <>Presencia registrada: <strong>{(clase.minutos_presencia / 60).toLocaleString("es-AR", { maximumFractionDigits: 2 })} h</strong> con los dos conectados a la vez
+                        {clase.presencia_modo === "video" ? " (con videollamada abierta — evidencia fuerte)"
+                          : clase.presencia_modo === "manual" ? " (iniciada a mano)"
+                          : " (solo por estar en la página — evidencia débil)"}.
+                      </>
                       : <>Sin registro de presencia en la app. Sin otra evidencia, la política publicada dice que valen las horas del alumno.</>}
                   </div>
                 )}

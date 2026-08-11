@@ -378,9 +378,10 @@ export default function App(){
   // corta al salir de la clase. En modo explícito (entró a la videollamada o lo
   // marcó a mano) sobrevive a la navegación.
   const [presencia,setPresencia]=useState(null);// {pubId,titulo,auto}
-  const entrarAClase=useCallback((pubId,titulo,auto=false)=>{
+  const entrarAClase=useCallback((pubId,titulo,auto=false,modo)=>{
     if(!pubId)return;
-    setPresencia(prev=>(prev&&prev.pubId===pubId&&!prev.auto)?prev:{pubId,titulo:titulo||"",auto:!!auto});
+    const m=modo||(auto?"auto":"manual");
+    setPresencia(prev=>(prev&&prev.pubId===pubId&&!prev.auto)?prev:{pubId,titulo:titulo||"",auto:!!auto,modo:m});
   },[]);
   const salirDeClase=useCallback(()=>setPresencia(null),[]);
   const salirSiEsAuto=useCallback((pubId)=>{
@@ -738,6 +739,10 @@ export default function App(){
       busqueda_eliminada:{icon:"❌",label:"Búsqueda eliminada",type:"error"},
       acuerdo_confirmado:{icon:"🤝",label:"Acuerdo confirmado",type:"success"},
       confirmar_clase:   {icon:"⏱️",label:"Confirmá las horas de tu clase",type:"info"},
+      horas_ajustadas:   {icon:"⏱️",label:"Revisamos las horas de una clase",type:"info"},
+      disputa_abierta:   {icon:"⚠️",label:"Reclamo de horas abierto",type:"error"},
+      disputa_resuelta:  {icon:"✅",label:"Reclamo de horas resuelto",type:"success"},
+      horas_por_vencer:  {icon:"⏳",label:"Tenés horas por vencer",type:"info"},
     };
     let ws,heartbeat,reconnectTimer,dead=false,retries=0,joinedToken=null;
     // Refresca la sesión si hay refresh_token; devuelve el token nuevo (o null)
@@ -1067,7 +1072,7 @@ export default function App(){
       <CookieBanner/>
       {showPushBanner&&<PushPermissionBanner onAccept={subscribePush} onDismiss={dismissPush}/>}
       <React.Suspense fallback={null}><NotifPanel session={session} open={notifPanelOpen} onClose={()=>setNotifPanelOpen(false)} onOpenDetail={openDetail} onOpenCurso={setCursoPost}/></React.Suspense>
-      {presencia&&<BarraPresencia pubId={presencia.pubId} titulo={presencia.titulo} auto={presencia.auto} session={session} onSalir={salirDeClase}/>}
+      {presencia&&<BarraPresencia pubId={presencia.pubId} titulo={presencia.titulo} auto={presencia.auto} modo={presencia.modo||"auto"} session={session} onSalir={salirDeClase}/>}
     </div>
     </AppActionsContext.Provider>
   );

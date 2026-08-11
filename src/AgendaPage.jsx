@@ -226,7 +226,9 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   };
 
   const hoyISO=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;})();
-  const postsDocente=posts.filter(p=>p._rol==="docente");
+  // Solo particulares: los cursos y grupales cobran por goteo semanal
+  // automático, no declaran horas (el servidor además lo rechaza).
+  const postsDocente=posts.filter(p=>p._rol==="docente"&&p.modo==="particular");
   useEffect(()=>{
     let vivo=true;
     if(!manPub){setManDisp(null);return;}
@@ -350,7 +352,7 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
               {manPub&&manFecha&&manMedido!==null&&(
                 <div style={{fontSize:12,color:manMedido>0?C.successText:C.warn,marginTop:6,lineHeight:1.55}}>
                   {manMedido>0
-                    ?`La app registró ${(manMedido/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con vos y el alumno conectados a la vez. Si declarás más, el alumno puede objetar la diferencia.`
+                    ?`La app registró ${(manMedido/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con vos y el alumno conectados a la vez. Si declarás eso o menos, se aprueba sola a las 24 hs; si declarás más, el alumno puede objetar la diferencia.`
                     :"Ese día no quedó registro de presencia en la app. Podés declarar las horas igual, pero si el alumno objeta y no hay con qué contrastar, valen las horas que diga él. Para que quede registro, entrá a la clase desde Luderis."}
                 </div>
               )}

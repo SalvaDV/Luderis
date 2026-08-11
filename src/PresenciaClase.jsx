@@ -14,7 +14,7 @@ import { C, FONT, tx } from "./shared";
 
 const LATIDO_MS = 60000;
 
-export function BarraPresencia({ pubId, titulo, session, onSalir, auto = false }) {
+export function BarraPresencia({ pubId, titulo, session, onSalir, auto = false, modo = "auto" }) {
   const [otros, setOtros] = useState(0);
   const [error, setError] = useState("");
   const [ahora, setAhora] = useState(Date.now());
@@ -33,7 +33,7 @@ export function BarraPresencia({ pubId, titulo, session, onSalir, auto = false }
     let vivo = true;
     const latir = async () => {
       try {
-        const r = await sb.presenciaPing(pubId, session.access_token);
+        const r = await sb.presenciaPing(pubId, modo, session.access_token);
         if (!vivo) return;
         if (r?.error) { setError(r.error); return; }
         setError("");
@@ -51,7 +51,7 @@ export function BarraPresencia({ pubId, titulo, session, onSalir, auto = false }
       window.removeEventListener("pagehide", alCerrarPestana);
       sb.presenciaCerrar(pubId, session.access_token).catch(() => {});
     };
-  }, [pubId, session]);
+  }, [pubId, modo, session]);
 
   // Cronómetro visible
   useEffect(() => {

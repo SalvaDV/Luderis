@@ -203,6 +203,50 @@ simultáneos no se lleven el mismo dinero. Si el admin rechaza, se devuelve. Se
 revocó el INSERT/UPDATE directo: todo pasa por `solicitar_retiro` y
 `resolver_retiro`.
 
+---
+
+## 🆕 Reglas nuevas del 2026-08-10 — qué cambió y qué probar
+
+Explicado simple, para probar sin leer código:
+
+**Cursos y grupales cobran solos, semana a semana.** El docente de un curso ya
+no declara horas ni espera confirmaciones: la plata del curso se le libera por
+semana (sobre la duración del curso; si no cargó fechas, 4 semanas desde la
+compra). Que el alumno falte no frena el cobro. Si el alumno no quiere seguir,
+se desinscribe y recupera lo que todavía no se liberó.
+- [ ] Comprar un curso grupal y verificar que el docente NO vea la opción de
+      registrar horas para ese curso en la agenda.
+- [ ] (Requiere esperar o simular) Verificar que cada semana aparezca un
+      movimiento "Curso «…» — semana N de M" en la billetera del docente.
+- [ ] Desinscribirse a mitad de curso: debe volver solo la parte no liberada.
+
+**El reloj de aprobación ahora tiene dos velocidades.** Si la app midió la
+clase completa (los dos conectados), el silencio del alumno aprueba a las
+**24 hs**. Si no hubo medición (presencial), sigue siendo 72 hs. Y si la app
+midió MENOS de lo declarado, al docente le avisan y tiene **48 hs** para
+sostener sus horas antes de que se recorte a lo medido.
+- [ ] Clase medida completa + alumno en silencio → cobrada al día siguiente.
+- [ ] Declarar más de lo medido → llega el aviso y aparece la opción de
+      sostener; sin respuesta en 48 hs se paga lo medido.
+
+**Los avisos importantes llegan al mail y al celular.** Todo lo que tiene plata
+o plazo (aprobar horas, reclamos, retiros, vencimientos) ahora sale de la app:
+push + email, cada 5 minutos. Probado en vivo el 2026-08-10 (mail recibido).
+- [ ] Verificar que el alumno reciba el mail de "tenés horas por confirmar".
+
+**Las horas vencen por abandono, no por calendario.** Cada clase tomada renueva
+30 días la vida de las horas que quedan. Aviso 7 días antes de vencer. Y al
+devolver (por vencimiento o a pedido) vuelve TODO, comisión incluida — antes
+Luderis se quedaba la comisión de horas nunca dictadas.
+
+**Retiros:** mínimo $500 (ahora también lo exige el servidor) y el saldo se
+descuenta al pedir, no al aprobar.
+
+**Disputas:** compromiso publicado de resolver en 5 días hábiles; el panel
+marca en rojo las que pasan de 2 días y te re-avisa cada 48 hs.
+
+---
+
 ## 🔴 Cuenta de Mercado Pago — separar la personal de la plataforma
 
 Hoy el `MP_ACCESS_TOKEN` de Luderis es la **cuenta personal de Salvador**

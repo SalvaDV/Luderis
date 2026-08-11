@@ -754,8 +754,8 @@ export const reembolsarHorasNoUsadas = (inscripcionId: Id, motivo: string | null
 // ── Presencia en clase ───────────────────────────────────────────────────────
 // Cada parte reporta la suya con un latido; la duración de la clase es el
 // solapamiento entre ambas. Los timestamps los pone el servidor.
-export const presenciaPing = (pubId: Id, token: Token) =>
-  rpc('presencia_ping', { p_pub_id: pubId }, token);
+export const presenciaPing = (pubId: Id, modo: 'auto' | 'manual' | 'video', token: Token) =>
+  rpc('presencia_ping', { p_pub_id: pubId, p_modo: modo }, token);
 export const presenciaCerrar = (pubId: Id, token: Token) =>
   rpc('presencia_cerrar', { p_pub_id: pubId }, token);
 // Minutos ya medidos para una fecha: la agenda los usa para pre-cargar las horas.

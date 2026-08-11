@@ -816,6 +816,11 @@ function ClasesTab({session,misPubs}){
             const ambasConfirmaron=c.confirmado_docente&&c.confirmado_alumno;
             // Objeción abierta: el cobro está congelado hasta que haya acuerdo.
             const objetada=!!c.objetada_at;
+            // Cuándo se aprueba sola si nadie responde: 24 hs con la clase
+            // medida completa por la app, 72 en el resto.
+            const etaAprob=!objetada&&!ambasConfirmaron&&c.created_at
+              ?new Date(new Date(c.created_at).getTime()+(((c.minutos_presencia??0)>=(c.duracion_min||0)&&c.minutos_presencia>0)?24:72)*3600e3)
+              :null;
             return(
               <div key={c.id} style={{background:C.surface,border:`1px solid ${ambasConfirmaron?C.success+"44":C.border}`,borderLeft:`3px solid ${ambasConfirmaron?C.success:accentFor("cursos").solid}`,borderRadius:14,padding:16,boxShadow:C.shadow}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
@@ -853,7 +858,7 @@ function ClasesTab({session,misPubs}){
                     {/* El docente tiene que entender que aceptar no es su única salida */}
                     {objetada&&soyDocente&&!sostenidas[c.id]&&!descAbierta[c.id]&&(
                       <div style={{fontSize:11,color:C.muted,marginTop:6,lineHeight:1.5}}>
-                        Ya abrimos un ticket. Podés aceptar sus horas y cobrar por esas, o sostener las tuyas y que lo resuelva el equipo de Luderis. El pago queda retenido hasta entonces.
+                        Ya abrimos un ticket. Podés aceptar sus horas y cobrar por esas, o sostener las tuyas y que lo resuelva el equipo de Luderis en un máximo de 5 días hábiles. El pago queda retenido hasta entonces.
                         {!(c.minutos_presencia>0)&&" Ojo: sin registro de presencia en la app, la regla es que valen las horas del alumno."}
                       </div>
                     )}
@@ -908,7 +913,7 @@ function ClasesTab({session,misPubs}){
                           </button>
                         </div>
                         <div style={{fontSize:11,color:C.muted,marginTop:8,lineHeight:1.5}}>
-                          El pago queda frenado hasta que el docente acepte tus horas o lo resuelva un admin.
+                          El pago queda frenado hasta que el docente acepte tus horas o lo resuelva el equipo de Luderis (máximo 5 días hábiles).
                           {c.minutos_presencia>0
                             ?` Tené en cuenta que la app registró ${(c.minutos_presencia/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con los dos conectados: si objetás menos, va a pesar ese registro.`
                             :" Como no hay registro de presencia en la app, si no hay acuerdo se toman tus horas."}
@@ -923,6 +928,11 @@ function ClasesTab({session,misPubs}){
                       <span style={{fontSize:11,background:C.success+"15",color:C.successText,border:`1px solid ${C.success}33`,borderRadius:20,padding:"3px 10px",fontWeight:700}}>✓ Confirmada</span>
                     ):(
                       <span style={{fontSize:11,background:"#F59E0B12",color:C.warn,border:"1px solid #F59E0B33",borderRadius:20,padding:"3px 10px",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}><Clock size={10} strokeWidth={2}/>Pendiente confirmación</span>
+                    )}
+                    {etaAprob&&(
+                      <span style={{fontSize:10,color:C.muted,textAlign:"right"}}>
+                        Se aprueba sola el {etaAprob.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})} a las {etaAprob.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}
+                      </span>
                     )}
                     {/* Objetada: el docente acepta el número del alumno o sostiene el suyo */}
                     {objetada&&soyDocente&&!sostenidas[c.id]&&(
@@ -1002,7 +1012,7 @@ function PagosTab({session}){
   // (pendiente) y se libera cuando el alumno aprueba las horas declaradas, o
   // solo a las 72 hs si no responde. Una objeción frena ese reloj.
   const ESCROW_INFO={
-    pendiente:{label:"Retenido",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"Se libera cuando el alumno aprueba las horas, o solo a las 72 hs"},
+    pendiente:{label:"Retenido",color:"#F59E0B",bg:"#F59E0B20",Icon:Clock,desc:"Se libera cuando el alumno aprueba las horas, o sola a las 72 hs (24 si la app midió la clase completa)"},
     liberado:  {label:"Cobrado",color:"#10B981",bg:"#10B98118",Icon:CheckCircle2,desc:"Acreditado en tu saldo de Luderis"},
     reembolsado:{label:"Reembolsado",color:"#6B7280",bg:"#6B728018",Icon:RefreshCw,desc:"Devuelto al alumno"},
   };
@@ -1082,7 +1092,7 @@ function PagosTab({session}){
               <div><div style={{fontWeight:700,color:C.text,fontSize:14}}>No conectado</div><div style={{fontSize:12,color:C.muted,marginTop:2}}>Los pagos se retienen en Luderis hasta conectar tu MP.</div></div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[{n:1,t:"Conectás tu cuenta de Mercado Pago (1 click, seguro vía OAuth)"},{n:2,t:"El alumno paga al inscribirse o comprar un paquete"},{n:3,t:"El pago queda retenido y se te libera cuando el alumno aprueba las horas, o solo a las 72 hs"}].map(s=>(
+              {[{n:1,t:"Conectás tu cuenta de Mercado Pago (1 click, seguro vía OAuth)"},{n:2,t:"El alumno paga al inscribirse o comprar un paquete"},{n:3,t:"El pago queda retenido y se te libera cuando el alumno aprueba las horas, o solo (a las 24 hs si la app midió la clase, 72 si no)"}].map(s=>(
                 <div key={s.n} style={{display:"flex",alignItems:"flex-start",gap:10}}>
                   <div style={{width:22,height:22,borderRadius:"50%",background:C.accentDim,color:C.accent,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{s.n}</div>
                   <div style={{fontSize:13,color:C.text,lineHeight:1.5}}>{s.t}</div>
@@ -1097,7 +1107,7 @@ function PagosTab({session}){
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
         <div style={{fontWeight:700,color:C.text,fontSize:13,marginBottom:10}}>¿Por qué conectar MP?</div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {[{Icon:Sparkles,t:"Cobro automático — a las 72 hs de declarar las horas si el alumno no responde"},{Icon:FileText,t:"100% seguro — OAuth oficial de Mercado Pago, sin contraseñas"},{Icon:BarChart2,t:"Seguí cada cobro y su estado desde tu billetera de Luderis"},{Icon:GraduationCap,t:"Funciona para clases particulares, cursos y paquetes de clases"}].map((f,i)=>(
+          {[{Icon:Sparkles,t:"Cobro automático si el alumno no responde — a las 24 hs con la clase medida por la app, 72 hs si no"},{Icon:FileText,t:"100% seguro — OAuth oficial de Mercado Pago, sin contraseñas"},{Icon:BarChart2,t:"Seguí cada cobro y su estado desde tu billetera de Luderis"},{Icon:GraduationCap,t:"Funciona para clases particulares, cursos y paquetes de clases"}].map((f,i)=>(
             <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}><f.Icon size={16} strokeWidth={1.8} color={C.muted} style={{flexShrink:0,marginTop:1}}/><span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>{f.t}</span></div>
           ))}
         </div>
@@ -1306,7 +1316,7 @@ function BilleteraTab({session}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showRetiroForm?12:0}}>
             <div>
               <div style={{fontWeight:700,color:C.text,fontSize:14}}>Solicitar retiro</div>
-              {!showRetiroForm&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>Transferimos a tu CBU en 5–7 días hábiles</div>}
+              {!showRetiroForm&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>Transferimos a tu CBU en 5–7 días hábiles · mínimo $500</div>}
             </div>
             <button onClick={()=>setShowRetiroForm(v=>!v)}
               style={{background:showRetiroForm?C.bg:C.accent,border:`1px solid ${showRetiroForm?C.border:"transparent"}`,borderRadius:9,color:showRetiroForm?C.muted:"#fff",padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT}}>

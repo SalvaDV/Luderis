@@ -76,6 +76,12 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     // string crudo "confirmar_clase" y el click lo dejaba en la publicación.
     confirmar_clase:  {Icon:Clock,        color:"#F59E0B",label:"Confirmá las horas de tu clase",
                        tab:"clases"},
+    // Cada evento con su nombre: antes todos estos llegaban como
+    // "Confirmá las horas de tu clase" aunque el contenido fuera otro.
+    horas_ajustadas:  {Icon:Clock,        color:"#F59E0B",label:"Revisamos las horas de una clase", tab:"clases"},
+    disputa_abierta:  {Icon:HelpCircle,   color:"#E53E3E",label:"Reclamo de horas abierto",         tab:"clases"},
+    disputa_resuelta: {Icon:CheckCircle,  color:"#2EC4A0",label:"Reclamo de horas resuelto",        tab:"clases"},
+    horas_por_vencer: {Icon:Clock,        color:"#F59E0B",label:"Tenés horas por vencer",           tab:"inscripciones"},
   };
 
   const tabs=[

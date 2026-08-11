@@ -334,7 +334,7 @@ function JitsiModal({roomName,displayName,onClose,pubId,titulo}){
   const {entrarAClase}=useAppActions();
   // Entrar a la llamada arranca el registro de presencia. La duración que se
   // puede cobrar es el solapamiento con la otra parte, no este click.
-  const alEntrar=()=>{if(pubId&&entrarAClase)entrarAClase(pubId,titulo,false);};
+  const alEntrar=()=>{if(pubId&&entrarAClase)entrarAClase(pubId,titulo,false,"video");};
   const copiar=()=>{try{navigator.clipboard.writeText(url);}catch{} setCopied(true);setTimeout(()=>setCopied(false),2000);};
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:FONT}}>
@@ -4301,7 +4301,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
       const emails=inscs.map(i=>i.alumno_email).filter(Boolean);
       setClaseActiva(true);
       setShowJitsiCurso(true);
-      entrarAClase(post.id,post.titulo,false);// dio la clase por iniciada: cuenta aunque navegue
+      entrarAClase(post.id,post.titulo,false,"video");// dio la clase por iniciada: cuenta aunque navegue
       if(emails.length===0){
         toast("Clase iniciada. No hay alumnos inscriptos todavía.","info",4000);
       } else {
@@ -4532,7 +4532,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
             style={{background:claseActiva?"#C8000018":"linear-gradient(135deg,#1A6ED8,#2EC4A0)",border:claseActiva?"1px solid #C8000044":"none",borderRadius:7,color:claseActiva?"#C80000":"#fff",padding:"5px 11px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
             {claseActiva?<><span style={{width:5,height:5,borderRadius:"50%",background:"#C80000",animation:"pulse 1s infinite",display:"inline-block"}}/>En vivo</>:iniciandoClase?"Iniciando…":<><Play size={12} strokeWidth={2.4}/>Iniciar clase</>}
           </button>}
-          {!localFinalizado&&(presenciaPubId!==post.id||presenciaAuto)&&<button onClick={()=>entrarAClase(post.id,post.titulo,false)}
+          {!localFinalizado&&(presenciaPubId!==post.id||presenciaAuto)&&<button onClick={()=>entrarAClase(post.id,post.titulo,false,"manual")}
             title="Sigue contando tu presencia aunque te muevas a otra pantalla de Luderis."
             style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"5px 10px",cursor:"pointer",fontSize:11,fontFamily:FONT,fontWeight:700,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
             <Video size={12} strokeWidth={2.4}/>Estoy en clase
