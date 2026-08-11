@@ -190,14 +190,8 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   // conoce publicaciones con horario semanal (clases_sinc). Una clase pactada
   // por chat no tiene horario cargado, así que sin esto el docente no tenía
   // NINGÚN camino para registrarla — y sin registro no cobra.
-  const [manPub,setManPub]=useState("");
-  const [manFecha,setManFecha]=useState("");
-  const [manHoras,setManHoras]=useState("1");
-  const [manGuardando,setManGuardando]=useState(false);
   // Horas que todavía se pueden declarar en la publicación elegida. El límite
   // real es ese, no la fecha: un docente puede dar dos clases el mismo día.
-  const [manDisp,setManDisp]=useState(null);
-  const [manMedido,setManMedido]=useState(null);// minutos medidos por presencia para pub+fecha
   // Horas declaradas por clase antes de registrarla (el alumno después aprueba u objeta).
   const [horasPorClase,setHorasPorClase]=useState({});
   // Link a la grabación de la clase (evidencia; se borra a las 72 hs o al aprobarse).
@@ -226,44 +220,8 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
   };
 
   const hoyISO=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;})();
-  // Solo particulares: los cursos y grupales cobran por goteo semanal
-  // automático, no declaran horas (el servidor además lo rechaza).
-  const postsDocente=posts.filter(p=>p._rol==="docente"&&p.modo==="particular");
-  useEffect(()=>{
-    let vivo=true;
-    if(!manPub){setManDisp(null);return;}
-    sb.horasPorRegistrar(manPub,session.access_token).then(h=>{if(vivo)setManDisp(h);});
-    return()=>{vivo=false;};
-  },[manPub,session.access_token]);
 
-  // Las horas no se tipean de memoria: si la clase pasó por la app, se pre-cargan
-  // los minutos en que docente y alumno estuvieron presentes al mismo tiempo.
-  useEffect(()=>{
-    let vivo=true;
-    if(!manPub||!manFecha){setManMedido(null);return;}
-    sb.minutosMedidos(manPub,manFecha,session.access_token).then(r=>{
-      if(!vivo||r?.error)return;
-      setManMedido(Number(r.minutos||0));
-      if(Number(r.horas)>0)setManHoras(String(r.horas));
-    }).catch(()=>{});
-    return()=>{vivo=false;};
-  },[manPub,manFecha,session.access_token]);
 
-  const registrarManual=async()=>{
-    if(!manPub||!manFecha){toast("Elegí la clase y la fecha","error");return;}
-    const horas=Math.max(0.25,Number(manHoras)||1);
-    setManGuardando(true);
-    try{
-      const r=await sb.registrarClaseDictada(manPub,manFecha,session.access_token,horas);
-      if(r?.error){toast(r.error,"error");return;}
-      toast(r.registradas>0
-        ?`Clase registrada. Avisamos a ${r.registradas} alumno${r.registradas!==1?"s":""} para que confirmen.`
-        :"Esa clase ya estaba registrada","success",4000);
-      setManFecha("");setManHoras("1");
-      if(typeof r?.horas_disponibles==="number")setManDisp(r.horas_disponibles);
-    }catch(e){toast("No se pudo registrar: "+e.message,"error");}
-    finally{setManGuardando(false);}
-  };
 
   const marcarDictada=async(pubId,fecha,horas)=>{
     const key=`${pubId}_${iso(fecha)}`;
@@ -308,56 +266,6 @@ function AgendaPage({session,onOpenCurso,onGoExplore}){
         <>
           <style>{`@media(max-width:820px){.ld-agenda-grid{grid-template-columns:1fr!important}}`}</style>
 
-          {/* Registrar una clase sin horario fijo. La lista de abajo solo muestra
-              clases del calendario; una clase pactada por chat no está ahí. */}
-          {postsDocente.length>0&&(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:18}}>
-              <div style={{...tx("h3"),color:C.text,marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
-                <Check size={17} strokeWidth={2.2} color={C.accent}/>Registrar una clase que diste
-              </div>
-              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>
-                Al registrarla, cada alumno recibe el aviso para aprobar las horas. Con su aprobación se libera tu pago.
-              </div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
-                <div style={{flex:"2 1 220px",minWidth:0}}>
-                  <label htmlFor="man-pub" style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Clase</label>
-                  <select id="man-pub" value={manPub} onChange={e=>setManPub(e.target.value)}
-                    style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 10px",color:C.text,fontSize:13,fontFamily:FONT,cursor:"pointer"}}>
-                    <option value="">Elegí una…</option>
-                    {postsDocente.map(p=><option key={p.id} value={p.id}>{p.titulo}</option>)}
-                  </select>
-                </div>
-                <div style={{flex:"1 1 140px"}}>
-                  <label htmlFor="man-fecha" style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Fecha</label>
-                  <input id="man-fecha" type="date" value={manFecha} max={hoyISO} onChange={e=>setManFecha(e.target.value)}
-                    style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 10px",color:C.text,fontSize:13,fontFamily:FONT}}/>
-                </div>
-                <div style={{flex:"0 1 100px"}}>
-                  <label htmlFor="man-horas" style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Horas</label>
-                  <input id="man-horas" type="number" min="0.25" step="0.25" max={manDisp??undefined} value={manHoras} onChange={e=>setManHoras(e.target.value)}
-                    style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 10px",color:C.text,fontSize:13,fontFamily:FONT}}/>
-                </div>
-                <button onClick={registrarManual} disabled={manGuardando||!manPub||!manFecha}
-                  style={{background:(manGuardando||!manPub||!manFecha)?C.border:LUD.grad,border:"none",borderRadius:9,color:(manGuardando||!manPub||!manFecha)?C.muted:"#fff",padding:"10px 18px",fontWeight:700,fontSize:13,cursor:(manGuardando||!manPub||!manFecha)?"default":"pointer",fontFamily:FONT,flexShrink:0}}>
-                  {manGuardando?"Registrando…":"Registrar"}
-                </button>
-              </div>
-              {manPub&&manDisp!==null&&(
-                <div style={{fontSize:12,color:manDisp>0?C.muted:C.warn,marginTop:10}}>
-                  {manDisp>0
-                    ?`Quedan ${manDisp} h compradas sin registrar en esta clase.`
-                    :"No quedan horas compradas sin registrar. El alumno tiene que sumar más horas."}
-                </div>
-              )}
-              {manPub&&manFecha&&manMedido!==null&&(
-                <div style={{fontSize:12,color:manMedido>0?C.successText:C.warn,marginTop:6,lineHeight:1.55}}>
-                  {manMedido>0
-                    ?`La app registró ${(manMedido/60).toLocaleString("es-AR",{maximumFractionDigits:2})} h con vos y el alumno conectados a la vez. Si declarás eso o menos, se aprueba sola a las 24 hs; si declarás más, el alumno puede objetar la diferencia.`
-                    :"Ese día no quedó registro de presencia en la app. Podés declarar las horas igual, pero si el alumno objeta y no hay con qué contrastar, valen las horas que diga él. Para que quede registro, entrá a la clase desde Luderis."}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Clases dictadas pendientes de registrar (solo docente).
               Registrar es lo que arranca la doble confirmación: cuando el alumno

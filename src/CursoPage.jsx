@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
+import BarraDeclararHoras from "./components/BarraDeclararHoras";
 import { trackInscripcion, trackCheckoutStart, trackPurchase } from "./analytics";
 import {
   C, FONT, FONT_DISPLAY, toast, accentFor, tx, Z,
@@ -4514,6 +4515,7 @@ function CursoPage({post,session,onClose,onUpdatePost}){
           <button onClick={()=>setShowJitsiCurso(true)} style={{background:"#C80000",border:"none",borderRadius:9,color:"#fff",padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:FONT,display:"flex",alignItems:"center",gap:6}}><Video size={15} strokeWidth={2}/>Unirme ahora</button>
         </div>
       )}
+      <BarraDeclararHoras post={post} session={session} esMio={esMio}/>
       {/* ── STICKY HEADER: 2 rows ── */}
       <div style={{position:"sticky",top:0,zIndex:10,background:C.sidebar,borderBottom:`2px solid ${getPubTipo(post).accent}`}}>
         {/* Row 1: nav + title */}

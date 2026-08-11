@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { BarChart2, Eye, Clock, Clipboard, Bookmark, Star, CreditCard, Sparkles, Banknote, FileText, Gift, GraduationCap, BookOpen, CheckCircle2, Users, Bell, Globe, MapPin, RefreshCw, ArrowUp, ArrowDown, Briefcase, ScrollText, Megaphone, MessageCircle, Video, ExternalLink, Send, Camera, Upload, PlayCircle, TrendingUp, Trash2, BadgeCheck, Mail, Plus, AlertTriangle } from "lucide-react";
 import * as sb from "./supabase";
 import { useAppActions } from "./AppContext";
+import PendientesTab from "./components/PendientesTab";
 import {
   C, FONT, FONT_DISPLAY, toast, accentFor, tx, BANNER_PRESETS,
   Avatar, Spinner, Btn, Label, Modal,
@@ -2004,7 +2005,7 @@ function MiCuentaPage({session,tabInicial,onTabConsumida,onOpenPerfil,onOpenDeta
   const TIPOS_DOC=[{v:"titulo",l:"Título"},{v:"certificado",l:"Certificado"},{v:"experiencia",l:"Experiencia"},{v:"otro",l:"Otro"}];
   const TIPO_ICON={titulo:GraduationCap,certificado:ScrollText,experiencia:Briefcase,otro:FileText};
   const ofertas=pubs.filter(p=>p.tipo==="oferta");
-  const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return tabInicial||"publicaciones";});
+  const [tabCuenta,setTabCuenta]=useState(()=>{try{const p=new URLSearchParams(window.location.search);if(p.get("mp_connect"))return"finanzas";}catch{}return tabInicial||"pendientes";});
   // Entrada desde una notificación (ej. horas por aprobar → "Mis clases").
   useEffect(()=>{
     if(!tabInicial)return;
@@ -2018,18 +2019,46 @@ function MiCuentaPage({session,tabInicial,onTabConsumida,onOpenPerfil,onOpenDeta
   const rolLocal=localStorage.getItem("cl_rol_"+email)||"alumno";
   const esDocente=rolLocal==="docente"||ofertas.length>0;
   const ofertasVisibles=misOfertasEnv.filter(o=>!descartadas.includes(o.id));
-  const CUENTA_TABS=[
-    {id:"publicaciones",  label:"Publicaciones",  count:pubs.length},
-    ...(esDocente?[{id:"estadisticas",label:"Analytics",   count:null}]:[]),
-    ...(esDocente?[{id:"clases",      label:"Mis clases",  count:null}]:[]),
-    {id:"ofertas",         label:"Negociaciones",  count:ofertasVisibles.length||null},
-    ...(esDocente?[{id:"credenciales",label:"Credenciales",count:docs.length||null}]:[]),
-    ...(esDocente||reseñas.length>0?[{id:"resenas",label:"Reseñas",count:reseñas.length||null}]:[]),
-    {id:"alertas",         label:"Alertas",        count:null},
-    ...(esDocente?[{id:"referidos",   label:"Referidos",   count:null}]:[]),
-    {id:"finanzas",        label:"Finanzas",       count:null},
-    {id:"ajustes",         label:"Ajustes",        count:null},
+  // Navegación en dos niveles. Antes eran 10 pestañas planas que mezclaban el
+  // rol de docente con el de alumno y obligaban a adivinar dónde estaba cada
+  // cosa. Ahora cada grupo responde a una pregunta distinta: qué tengo que
+  // hacer, qué enseño, cuánta plata hay, cómo configuro mi cuenta.
+  //
+  // Los bloques de contenido no se movieron: siguen colgando de `tabCuenta`.
+  // Lo único que cambia es cómo se llega a ellos.
+  const GRUPOS=[
+    {id:"inicio", label:"Inicio", subs:[
+      {id:"pendientes", label:"Pendientes", count:null},
+      {id:"clases",     label:"Mis clases", count:null},
+      {id:"ofertas",    label:"Negociaciones", count:ofertasVisibles.length||null},
+    ]},
+    ...(esDocente?[{id:"ensenar", label:"Enseñar", subs:[
+      {id:"publicaciones", label:"Publicaciones", count:pubs.length},
+      {id:"estadisticas",  label:"Analytics",     count:null},
+      ...(reseñas.length>0?[{id:"resenas",label:"Reseñas",count:reseñas.length}]:[]),
+    ]}]:[]),
+    {id:"dinero", label:"Dinero", subs:[
+      {id:"finanzas", label:"Finanzas", count:null},
+    ]},
+    {id:"config", label:"Ajustes", subs:[
+      {id:"ajustes",      label:"Perfil y cuenta", count:null},
+      ...(esDocente?[{id:"credenciales",label:"Credenciales",count:docs.length||null}]:[]),
+      {id:"alertas",      label:"Alertas",   count:null},
+      ...(esDocente?[{id:"referidos",label:"Referidos",count:null}]:[]),
+      ...(!esDocente&&reseñas.length>0?[{id:"resenas",label:"Reseñas",count:reseñas.length}]:[]),
+    ]},
   ];
+  // A qué grupo pertenece la sub-pestaña activa (la notificación de horas, por
+  // ejemplo, entra directo en "clases" y tiene que abrir el grupo correcto).
+  const grupoActivo=GRUPOS.find(g=>g.subs.some(sb2=>sb2.id===tabCuenta))||GRUPOS[0];
+  const subsDelGrupo=grupoActivo.subs;
+  // Red de seguridad: si algo pide una pestaña que no existe (una notificación
+  // vieja, un link guardado), caer en Pendientes en vez de dejar la pantalla en
+  // blanco — no hay ningún bloque de contenido que responda a un id desconocido.
+  useEffect(()=>{
+    if(!GRUPOS.some(g=>g.subs.some(sb2=>sb2.id===tabCuenta)))setTabCuenta("pendientes");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[tabCuenta]);
   return(
     <div style={{fontFamily:FONT}}>
 
@@ -2388,19 +2417,37 @@ function MiCuentaPage({session,tabInicial,onTabConsumida,onOpenPerfil,onOpenDeta
         .cl-tabs-fade::after{content:'';position:absolute;right:0;top:0;bottom:2px;width:24px;background:linear-gradient(to right,transparent,${C.surface});pointer-events:none;z-index:1}
         @media(max-width:768px){.cl-tab-btn{padding:9px 11px!important;font-size:12px!important}}
       `}</style>
+      {/* Nivel 1: los cuatro grupos */}
       <div className="cl-tabs-scroll cl-tabs-fade" style={{display:"flex",gap:0,borderBottom:`2px solid ${C.border}`,background:C.surface,borderRadius:"10px 10px 0 0",padding:"0 2px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",touchAction:"pan-x"}}>
-        {CUENTA_TABS.map(tab=>{
-          const active=tabCuenta===tab.id;
+        {GRUPOS.map(g=>{
+          const active=grupoActivo.id===g.id;
+          const total=g.subs.reduce((a,s2)=>a+(s2.count||0),0);
           return(
-            <button key={tab.id} onClick={()=>{setTabCuenta(tab.id);if(tab.id==="ofertas"&&resetCuentaBadge)resetCuentaBadge();}} className="cl-tab-btn"
-              style={{padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:active?600:400,
+            <button key={g.id} onClick={()=>{const primera=g.subs[0];setTabCuenta(primera.id);if(g.id==="inicio"&&resetCuentaBadge)resetCuentaBadge();}} className="cl-tab-btn"
+              style={{padding:"12px 18px",border:"none",background:"transparent",cursor:"pointer",fontFamily:FONT,fontSize:14,fontWeight:active?700:500,
                 color:active?C.accent:C.muted,borderBottom:`2px solid ${active?C.accent:"transparent"}`,marginBottom:-2,transition:"all .15s",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-              {tab.label}
-              {tab.count!==null&&tab.count>0&&<span style={{fontSize:11,background:active?C.accentDim:C.bg,color:active?C.accent:C.muted,borderRadius:20,padding:"1px 7px",border:`1px solid ${active?C.accent+"33":C.border}`}}>{tab.count}</span>}
+              {g.label}
+              {total>0&&<span style={{fontSize:11,background:active?C.accentDim:C.bg,color:active?C.accent:C.muted,borderRadius:20,padding:"1px 7px",border:`1px solid ${active?C.accent+"33":C.border}`}}>{total}</span>}
             </button>
           );
         })}
       </div>
+      {/* Nivel 2: solo si el grupo tiene más de una sección */}
+      {subsDelGrupo.length>1&&(
+        <div className="cl-tabs-scroll" style={{display:"flex",gap:6,padding:"10px 2px 0",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+          {subsDelGrupo.map(s2=>{
+            const active=tabCuenta===s2.id;
+            return(
+              <button key={s2.id} onClick={()=>{setTabCuenta(s2.id);if(s2.id==="ofertas"&&resetCuentaBadge)resetCuentaBadge();}}
+                style={{padding:"6px 13px",border:`1px solid ${active?"transparent":C.border}`,background:active?C.accent:"transparent",borderRadius:20,cursor:"pointer",fontFamily:FONT,fontSize:12.5,fontWeight:active?700:500,
+                  color:active?"#fff":C.muted,transition:"all .15s",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                {s2.label}
+                {s2.count!==null&&s2.count>0&&<span style={{fontSize:11,background:active?"rgba(255,255,255,.22)":C.bg,color:active?"#fff":C.muted,borderRadius:20,padding:"0 6px"}}>{s2.count}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
       </div>
 
       {/* ── TAB: PUBLICACIONES ── */}
@@ -2483,6 +2530,7 @@ function MiCuentaPage({session,tabInicial,onTabConsumida,onOpenPerfil,onOpenDeta
       )}
 
       {/* ── TAB: MIS CLASES ── */}
+      {tabCuenta==="pendientes"&&<PendientesTab session={session} misPubs={pubs} onIr={setTabCuenta}/>}
       {tabCuenta==="clases"&&<ClasesTab session={session} misPubs={pubs}/>}
 
       {/* ── TAB: ACTIVIDAD (ofertas enviadas + recibidas) ── */}

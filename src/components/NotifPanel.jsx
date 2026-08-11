@@ -81,7 +81,7 @@ export default function NotifPanel({session,open,onClose,onOpenDetail,onOpenCurs
     horas_ajustadas:  {Icon:Clock,        color:"#F59E0B",label:"Revisamos las horas de una clase", tab:"clases"},
     disputa_abierta:  {Icon:HelpCircle,   color:"#E53E3E",label:"Reclamo de horas abierto",         tab:"clases"},
     disputa_resuelta: {Icon:CheckCircle,  color:"#2EC4A0",label:"Reclamo de horas resuelto",        tab:"clases"},
-    horas_por_vencer: {Icon:Clock,        color:"#F59E0B",label:"Tenés horas por vencer",           tab:"inscripciones"},
+    horas_por_vencer: {Icon:Clock,        color:"#F59E0B",label:"Tenés horas por vencer",           tab:"pendientes"},
   };
 
   const tabs=[
