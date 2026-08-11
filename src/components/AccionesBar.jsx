@@ -34,13 +34,18 @@ const BASE = {
   transition: "background .15s, border-color .15s, opacity .15s",
 };
 
+// El degradé de la marca. Se sostiene porque es la ÚNICA cosa con color fuerte
+// en la barra: lo que lo hacía ver mal antes no era el degradé, era competir
+// contra otros cuatro colores al lado.
 export function AccionPrimaria({ children, disabled, style, ...props }) {
   return (
     <button disabled={disabled} aria-disabled={disabled} {...props}
       style={{
         ...BASE,
-        background: C.accent, color: "#fff", border: "1px solid transparent",
+        background: `linear-gradient(135deg,${C.accent},${C.teal})`,
+        color: "#fff", border: "1px solid transparent",
         fontWeight: 700,
+        boxShadow: "0 2px 8px rgba(26,110,216,.22)",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.55 : 1,
         ...style,
